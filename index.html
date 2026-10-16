@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fudura · Installaties 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+  :root { --bg: #eef1f2; --kaart: #ffffff; --fg: #1b2a36; --muted: #5d6b73; --lijn: #d3d9dc; --blauw: #1b4f8a; --oranje: #e2701c; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #12181c; --kaart: #1b232a; --fg: #e6ebee; --muted: #93a1a9; --lijn: #2c363d; --blauw: #6fa4e0; --oranje: #f08a3c; } }
+  :root[data-theme="dark"] { --bg: #12181c; --kaart: #1b232a; --fg: #e6ebee; --muted: #93a1a9; --lijn: #2c363d; --blauw: #6fa4e0; --oranje: #f08a3c; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--fg); font: 16px/1.5 Barlow, system-ui, sans-serif; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: max(28px, env(safe-area-inset-top)) 16px 40px; }
+  header { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; }
+  h1 { font: 700 clamp(30px, 5vw, 44px)/1.05 "Barlow Semi Condensed", Arial, sans-serif; margin: 0; letter-spacing: .01em; }
+  h1 span { color: var(--blauw); }
+  .sub { color: var(--muted); margin: 0 0 28px; }
+  h2 { font: 600 13px "Barlow Semi Condensed", Arial, sans-serif; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 26px 0 10px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+  a.kaart, div.kaart { display: flex; flex-direction: column; gap: 6px; background: var(--kaart); border: 1px solid var(--lijn); border-radius: 10px; padding: 18px 18px 16px; color: inherit; text-decoration: none; transition: border-color .15s, transform .15s; min-height: 170px; }
+  a.kaart:hover { border-color: var(--blauw); transform: translateY(-2px); }
+  .kaart .type { font: 600 12px "Barlow Semi Condensed", Arial, sans-serif; text-transform: uppercase; letter-spacing: .07em; color: var(--oranje); }
+  .kaart h3 { font: 700 24px/1.15 "Barlow Semi Condensed", Arial, sans-serif; margin: 0; }
+  .kaart p { margin: 0; color: var(--muted); font-size: 14.5px; }
+  .kaart .voet { margin-top: auto; padding-top: 10px; font-weight: 600; color: var(--blauw); font-size: 14px; }
+  .kaart.later { opacity: .55; border-style: dashed; }
+  .kaart.later .voet { color: var(--muted); }
+  svg.ico { width: 34px; height: 34px; color: var(--blauw); }
+  footer { margin-top: 34px; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><h1><span>Fudura</span> · Installaties in 3D</h1></header>
+  <p class="sub">Kies het type installatie. Elke omgeving is te bekijken, door te lopen (WASD / pijltjes) en werkt ook op de telefoon.</p>
+
+  <h2>Type installatie</h2>
+  <div class="grid">
+    <a class="kaart" href="installaties/aio-fuse/">
+      <svg class="ico" viewBox="0 0 34 34" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="7" height="22" rx="1"/><rect x="12" y="7" width="7" height="22" rx="1"/><rect x="21" y="7" width="10" height="22" rx="1"/><path d="M6.5 12h0M15.5 12h0" stroke-linecap="round" stroke-width="3"/><path d="M24 13h4M24 17h4M24 21h4"/></svg>
+      <span class="type">BESS · Low Voltage</span>
+      <h3>AIO + FUSE kast</h3>
+      <p>5 × Delta DELTerra C 125 kW / 261 kWh op metal bases, met de Fudura/O&amp;K junction box (Jean Müller SL2/SL3) en de 95 mm²-singles door de kabelbanen.</p>
+      <span class="voet">Openen →</span>
+    </a>
+    <div class="kaart later">
+      <span class="type">BESS · MS-aansluiting</span>
+      <h3>Bol — 2,5 MW</h3>
+      <p>PCS, batterijcontainers, CS AUX en terrein. Volgt binnenkort.</p>
+      <span class="voet">Binnenkort</span>
+    </div>
+    <div class="kaart later">
+      <span class="type">Simulatie</span>
+      <h3>Plaatsingsvolgorde</h3>
+      <p>Stap voor stap: stelconplaten, kabels, skids, junction box en AIO's plaatsen. Volgt binnenkort.</p>
+      <span class="voet">Binnenkort</span>
+    </div>
+  </div>
+  <footer>Fudura · Engineering MS &amp; LS</footer>
+</div>
+</body>
+</html>
