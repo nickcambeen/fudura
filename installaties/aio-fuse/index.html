@@ -45,7 +45,7 @@
 <div id="paneel">
   <div id="pKop"><h3><a href="../../" style="color:#1b4f8a;text-decoration:none" title="Hoofdmenu">‹ menu</a> &nbsp;AIO + FUSE kast</h3><button class="pKnop" id="pDicht" title="Paneel inklappen" aria-label="Paneel inklappen">›</button></div>
   <details open><summary>Bekijken</summary>
-    <div class="knoprij"><button id="bOverzicht">overzicht</button><button id="bKast">junction box</button><button id="bAio">AIO 1</button><button id="bBoven">boven</button><button id="bAchter">achterzijde</button><button id="bSkid">kabelbanen</button></div>
+    <div class="knoprij"><button id="bOverzicht">overzicht</button><button id="bKast">junction box</button><button id="bAio">AIO 1</button><button id="bMccb">MCCB</button><button id="bBoven">boven</button><button id="bAchter">achterzijde</button><button id="bSkid">kabelbanen</button></div>
     <label>Rondlopen <small>P</small><input type="checkbox" id="tFP"></label>
   </details>
   <details open><summary>Weergave</summary>
@@ -53,7 +53,8 @@
     <label>Deuren junction box open <input type="checkbox" id="tKastDeur"></label>
     <label>NH-stroken uitgeklapt <input type="checkbox" id="tStrook"></label>
     <label>Metal bases doorzichtig (kabelbanen) <input type="checkbox" id="tSkid"></label>
-    <label>Afdekkappen (MCCB / SL3) <input type="checkbox" id="tKap"></label>
+    <label>Afdekkap MCCB (AIO) <input type="checkbox" id="tKapM"></label>
+    <label>Afdekkappen Jean Müller-stroken <input type="checkbox" id="tKapS" checked></label>
     <label>Grond doorzichtig (voeding) <input type="checkbox" id="tGrond"></label>
     <label>Kabels <input type="checkbox" id="tKabel" checked></label>
     <label>Labels <input type="checkbox" id="tLabel"></label>
@@ -65,7 +66,8 @@
       <li>Elke kast op een metal base 1020 × 1420 × 220 mm met kabelbanen voorin: AC #1..#5, signaal, comm (handleiding fig. 5-15)</li>
       <li>Binnen: 5 accupacks 780 × 1160 × 240 (MSD), koelunit, PCS 680 × 850 × 240, besturingskast, MCCB QF0 4P, energiemeter, brandbeveiliging in de deur</li>
       <li>Junction box Fudura/O&amp;K OFK252082 C02a: 1400 × 375 × 1350 + plint 220, RAL 7035, pertinax montageplaat; 2 × SL2-3x3/3A, SL3-3x6-1250 met 6 doorverbindingsmessen TM-3, 3 × SL2; N- en PE-rail; groepen F1..F5, hoofdschakelaar OT100, kastverlichting</li>
-      <li>Per AIO 5 singles 95 mm² (L1 L2 L3 N PE) door baan AC #n naar de MCCB-aansluitstrips; voeding 4 × 240 mm² per fase + N + PE op de SL3</li>
+      <li>Per AIO 4 singles 95 mm² (L1 L2 L3 N, geen PE) door baan AC #n naar de MCCB-aansluitvlaggen links; kasten onderling via de aardpunten doorverbonden en vanaf #1 naar de PE-rail (vereffening)</li>
+      <li>Voeding SL3 met 3F + N + PE (4 × 240 mm² per fase), door de sparing in de stelconplaat en een kort stuk door de grond</li>
       <li>Alles op stelconplaten 2000 × 2000 × 140</li>
     </ul>
   </details>
@@ -159,7 +161,7 @@ const KXW = XA(0) - AW/2 - 0.05 - KD/2, KZW = AZ;                               
 const SX0 = KXW - KD/2, SX1 = XA(N_AIO - 1) + AW/2;
 const N_PL = Math.ceil((SX1 - SX0)/PL), PX0 = SX0 - 0.0;                                // plaatrij begint in lijn met de deurzijde van de junction box
 const XP = k => PX0 + PL/2 + k*PL;
-const KLIK = [], doors = [], LABELS = [], MAAT = [], KABELS = [], STROKEN = [], HMI = [], KAPPEN = [];
+const KLIK = [], doors = [], LABELS = [], MAAT = [], KABELS = [], STROKEN = [], HMI = [], KAPPEN = [], KAP_MCCB = [], KAP_SL = [];
 
 // stelconplaat 2000 x 2000 x 140: beton met stalen randprofiel en 4 hijsankers
 function stelcon(x, z){
@@ -356,8 +358,8 @@ function bouwAIO(i){
   for(const [y, c] of [[pyP(120), 0xd9c15a], [pyP(178), 0x9fc6e8]]){ cyl(B, 0.15, 0.3, M(c, {metalness: 0.6, roughness: 0.3}), pxP(650), y, zPf + 0.15, 'z', 14); cyl(B, 0.12, 0.18, zwartK, pxP(650), y, zPf + 0.35, 'z', 12); }
   plak(B, 1.1, 0.55, lbl('JTES-PCS125K', 220, 110, '#f4f4f2', '#333', 'bold 26px Arial'), pxP(205), pyP(160), zPf + 0.02);
   // ===== (10) koelunit-automaat 3P + meter in wit kastje met greep, rechts van de PCS =====
-  { const x0 = 3.95; box(B, 1.3, 2.0, 0.8, wit, x0, 3.98, zPf - 0.4); for(let k = 0; k < 3; k++){ box(B, 0.24, 0.75, 0.3, matBlauw, x0 - 0.45 + k*0.26, 4.25, zPf + 0.15); box(B, 0.1, 0.18, 0.08, wit, x0 - 0.45 + k*0.26, 4.35, zPf + 0.32); }
-    box(B, 0.42, 0.62, 0.25, M(0xe4e7e5), x0 + 0.38, 4.25, zPf + 0.12); plak(B, 0.3, 0.22, texMeter, x0 + 0.38, 4.35, zPf + 0.26);
+  { const x0 = 4.15; box(B, 1.0, 2.0, 0.8, wit, x0, 3.98, zPf - 0.4); for(let k = 0; k < 3; k++){ box(B, 0.2, 0.75, 0.3, matBlauw, x0 - 0.35 + k*0.21, 4.25, zPf + 0.15); box(B, 0.1, 0.18, 0.08, wit, x0 - 0.35 + k*0.21, 4.35, zPf + 0.32); }
+    box(B, 0.3, 0.62, 0.25, M(0xe4e7e5), x0 + 0.33, 4.25, zPf + 0.12); plak(B, 0.24, 0.22, texMeter, x0 + 0.33, 4.35, zPf + 0.26);
     kabel(B, [[x0 - 0.6, 3.15, zPf + 0.2], [x0 - 0.7, 3.4, zPf + 0.3], [x0 - 0.7, 4.8, zPf + 0.3], [x0 - 0.6, 4.95, zPf + 0.2]], 0.05, M(0xc8cdd0, {metalness: 0.8, roughness: 0.25}), 0.1); }
   // ===== (12) besturingskast linksonder: J1..J8, Power/Fault, AC/DC Power-automaten, PE-bout; IO-extender + switch op de linkerwand =====
   const texC2 = ctex(410, 140, (g, w, h) => { g.fillStyle = '#e6e8e7'; g.fillRect(0, 0, w, h); g.strokeStyle = '#a3a8ab'; g.lineWidth = 3; g.strokeRect(2, 2, w - 4, h - 4);
@@ -418,13 +420,13 @@ function bouwAIO(i){
     cyl(B, 0.17, 0.14, M(0xd8dadb), gx, yB + 0.24, MC.z, null, 16); }
   // uitgang rechts: 4 vlaggen gestaffeld in de diepte, dikke kabels van de PCS-stekers erop
   const ZR = {L1: 0.38, L2: 0.13, L3: -0.13, N: -0.38};
-  ['N', 'L3', 'L2', 'L1'].forEach(f => { const y = POLY[f], z = MC.z + ZR[f], t = mR + 0.42;
-    box(B, 0.35, 0.08, 0.95, matKoper, mR + 0.12, y, MC.z); box(B, 0.4, 0.08, 0.3, matKoper, mR + 0.38, y, z);
+  ['N', 'L3', 'L2', 'L1'].forEach(f => { const y = POLY[f], z = MC.z + ZR[f], t = mR + 0.34;
+    box(B, 0.35, 0.08, 0.95, matKoper, mR + 0.12, y, MC.z); box(B, 0.3, 0.08, 0.3, matKoper, mR + 0.32, y, z);
     box(B, 0.3, 0.05, 0.3, matTin, t, y + 0.065, z); cyl(B, 0.13, 0.3, matTin, t, y + 0.25, z, null, 14); cyl(B, 0.08, 0.2, matZink, t, y - 0.06, z, null, 6);
-    const x0 = ACx[f]; kabel(B, [[x0, yCon - 0.8, zPf + 0.32], [x0, yCon - 1.05, zPf + 0.55], [x0 + 0.3, 3.3, zPf + 0.62], [t, 3.3, zPf + 0.62], [t, 2.9, z + 0.15], [t, y + 0.5, z], [t, y + 0.38, z]], 0.12, zwartK, 0.35);
+    const x0 = ACx[f], zr = zPf + 0.5 + ZR[f]*0.4; kabel(B, [[x0, yCon - 0.8, zPf + 0.32], [x0, yCon - 0.95, zPf + 0.45], [x0 + 0.35, 3.32, zr], [t + 0.25, 3.32, zr], [t, 3.0, z + 0.1], [t, y + 0.5, z], [t, y + 0.38, z]], 0.12, zwartK, 0.3);
     cyl(B, 0.13, 0.16, sleeve[f], t, y + 0.5, z, null, 14); });
   // beschermkap (fig. 5-37): schuin bovenvlak, 4 x M5, afneembaar (knop "afdekkappen")
-  { const kap = new THREE.Group(); B.add(kap); KAPPEN.push(kap); const km = M(0xdfe2e0, {roughness: 0.45, metalness: 0.3});
+  { const kap = new THREE.Group(); B.add(kap); KAP_MCCB.push(kap); const km = M(0xdfe2e0, {roughness: 0.45, metalness: 0.3});
     const kx0 = mL - 1.15, kx1 = mR + 0.85, ky0 = yB + 0.2, ky1 = 3.05, kz1 = MC.z + 1.0;
     box(kap, kx1 - kx0, (ky1 - ky0)*0.62, 0.05, km, (kx0 + kx1)/2, ky0 + (ky1 - ky0)*0.31, kz1);
     const sch = box(kap, kx1 - kx0, 0.05, 0.85, km, (kx0 + kx1)/2, ky0 + (ky1 - ky0)*0.8, kz1 - 0.38); sch.rotation.x = 0.75;
@@ -741,7 +743,7 @@ const KS = PL_H + KP, KT = KS + KH, KZ0 = -1.55;                                
 const JX = mm => mm/100 - KW/2, JY = mm => KT - mm/100;                                   // maten uit de O&K-tekening (mm vanaf links / vanaf boven)
 { const r = matRal7035, rd = M(0xc5c8c5, {roughness: 0.5, metalness: 0.15});
   // plint 220: vier wanden, voorplaat met kabeluitsparing, achterwand met doorvoer naar de metal base
-  box(K, KW, KP - 1.2, 0.08, rd, 0, PL_H + 1.2 + (KP - 1.2)/2, KD/2 - 0.04);
+  box(K, KW, KP, 0.08, rd, 0, PL_H + KP/2, KD/2 - 0.04);
   box(K, 0.08, KP, KD, rd, -KW/2 + 0.04, PL_H + KP/2, 0); box(K, 0.08, KP, KD, rd, KW/2 - 0.04, PL_H + KP/2, 0);
   const xo0 = KAN_Z0 - 0.15, xo1 = AD/2 - 0.05;                                                       // doorvoeropening achter (lokale x = wereld z)
   box(K, xo0 + KW/2, KP, 0.08, rd, (-KW/2 + xo0)/2, PL_H + KP/2, -KD/2 + 0.04); box(K, xo1 - xo0, 0.25, 0.08, rd, (xo0 + xo1)/2, KS - 0.125, -KD/2 + 0.04);
@@ -771,7 +773,7 @@ const SLOTS = [{t: 'SL2', c: 138, naar: 0}, {t: 'SL2', c: 238, naar: 1}, {t: 'SL
 SLOTS.forEach((s, n) => { const groot = s.t === 'SL3'; s.x = (s.c - 700)/100;
   s.st = JMLIB.buildStrip(groot ? {id: 'sl3', cols: 2, colW: 105, size: 'NH3', ox: s.c - 700, title: 'SL3-3X6/1250/HA', rating: '1250A · 690V', root: JMR}
                                 : {id: 'sl2-' + n, cols: 1, colW: 100, size: 'NH2', ox: s.c - 700, title: 'SL2-3X3/3A', rating: '400A · 690V', root: JMR});
-  s.st.cables.visible = false; KAPPEN.push(s.st.cover);
+  s.st.cables.visible = false; KAP_SL.push(s.st.cover);
   const dr = {m: s.st.pivot, as: 'x', open: THREE.MathUtils.degToRad(34), dicht: 0, doel: 0, hoek: 0, strook: true, naam: groot ? 'SL3-strook 1250 A (voeding)' : 'SL2-strook naar AIO #' + (s.naar + 1)};
   doors.push(dr); STROKEN.push(dr); s.st.pivot.traverse(m => { if(m.isMesh){ m.userData.deur = dr; KLIK.push(m); } });
   // aansluitpunten (onderkant kabelschoen) per fase / per bout, in KG-coördinaten
@@ -781,12 +783,17 @@ SLOTS.forEach((s, n) => { const groot = s.t === 'SL3'; s.x = (s.c - 700)/100;
   plak(K, s.st.TW/100 - 0.1, 0.22, lbl(groot ? 'VOEDING 1250 A' : 'AIO #' + (s.naar + 1), 200, 44, groot ? '#c0281f' : '#1b4f8a', '#fff', 'bold 26px Arial'), s.x, yRail[1] - 4.25, KZ0 + 0.1);
 });
 // C-profielen (strut) met kabelklemmen: houden de verticale kabels strak in het gelid
-const yStrut = [KS + 1.1, KS + 2.9];
+const yStrut = [KS + 0.75];
 { const texStrut = ctex(256, 32, (g, w, h) => { g.fillStyle = '#b9bec1'; g.fillRect(0, 0, w, h); g.fillStyle = '#5e6367'; for(let x = 6; x < w; x += 16) g.fillRect(x, 10, 9, 12); }, [8, 1]);
-  for(const y of yStrut) box(K, JX(812) - JX(70), 0.3, 0.22, M(0xffffff, {map: texStrut, roughness: 0.4, metalness: 0.7}), (JX(70) + JX(812))/2, y, KZ0 + 0.78); }
-const klemB = (x, y, z, r) => { box(K, r*2 + 0.12, 0.16, 0.08, matZwart, x, y, z + r + 0.04); box(K, 0.06, 0.16, r*2, matZwart, x - r - 0.05, y, z); box(K, 0.06, 0.16, r*2, matZwart, x + r + 0.05, y, z); cyl(K, 0.035, 0.12, matZink, x, y, z + r + 0.1, 'z', 6); };
+  for(const y of yStrut){ box(K, JX(812) - JX(70), 0.3, 0.22, M(0xffffff, {map: texStrut, roughness: 0.4, metalness: 0.7}), (JX(70) + JX(812))/2, y, KZ0 + 0.78); for(const x of [JX(75), JX(808)]) box(K, 0.25, 0.3, 1.0, matZink, x, y, KZ0 + 0.3); } }
+const klemB = (x, y, z, r) => { // kunststof trekontlastingsklem (2-delig) op C-profiel, 2 x M6
+  const kl = M(0x2a2d30, {roughness: 0.6}); const ring = new THREE.Mesh(new THREE.TorusGeometry(r + 0.04, 0.05, 6, 18), kl); ring.position.set(x, y, z); ring.rotation.x = Math.PI/2; ring.scale.set(1, 1, 2.6); K.add(ring);
+  box(K, r*2 + 0.32, 0.22, 0.06, kl, x, y, z - r - 0.06); for(const s of [-1, 1]) cyl(K, 0.035, 0.1, matZink, x + s*(r + 0.12), y, z - r + 0.02, 'z', 6);
+  box(K, 0.06, 0.26, Math.max(0.05, z - r - 0.1 - (KZ0 + 0.89)), kl, x, y, (z - r - 0.1 + KZ0 + 0.89)/2); };
 // N/PE-aansluitingen op de rails: kabelschoen + bout
-const railLug = (x, y, r) => { box(K, 0.3, 0.32, 0.05, matTin, x, y, KZ0 + 0.44); cyl(K, 0.08, 0.16, matZink, x, y, KZ0 + 0.5, 'z', 6); cyl(K, r + 0.01, 0.3, matTin, x, y - 0.32, KZ0 + 0.58, null, 12); };
+const railLug = (x, y, r, f) => { box(K, 0.3, 0.32, 0.05, matTin, x, y, KZ0 + 0.44); cyl(K, 0.08, 0.16, matZink, x, y, KZ0 + 0.5, 'z', 6); hexNut3(x, y, KZ0 + 0.56); cyl(K, r + 0.01, 0.3, matTin, x, y - 0.32, KZ0 + 0.58, null, 12);
+  cyl(K, r + 0.025, 0.22, f === 'N' ? M(0x1f5fbf) : ader.PE, x, y - 0.58, KZ0 + 0.6, null, 12); plak(K, 0.26, 0.15, lbl(f, 52, 30, f === 'N' ? '#1f5fbf' : '#3fa34d', '#fff', 'bold 20px Arial'), x, y + 0.27, KZ0 + 0.48); };
+const hexNut3 = (x, y, z) => { const n = cyl(K, 0.1, 0.07, matZink, x, y, z, 'z', 6); n.rotation.y = 0; };
 // rechts: bovenste kastje (router / WCD), onderste kastje met groepen (ABB) en hoofdschakelaar OT100 met zwarte draaihendel
 { const grijs = M(0xb6c4cc, {roughness: 0.4, metalness: 0.2}), zij = M(0x9aa8b0);
   const kastje = (x0, x1, t0, t1) => { const w = (x1 - x0)/100, h = (t1 - t0)/100, cx = JX((x0 + x1)/2), cy = JY((t0 + t1)/2);
@@ -825,27 +832,32 @@ const R95 = 0.1, R240 = 0.14, FLOW = [], zF1 = KZ0 + 0.96, zF2 = KZ0 + 0.62;
 const gland = (x, z, r) => { cyl(K, r + 0.1, 0.12, matZwart, x, KS + 0.18, z, null, 16); cyl(K, r + 0.06, 0.22, M(0x2b2e31), x, KS + 0.3, z, null, 12); cyl(K, r + 0.11, 0.08, matZwart, x, KS - 0.04, z, null, 6); };
 SLOTS.forEach(s => {
   if(s.t === 'SL3'){
-    const fases = ['L1', 'L2', 'L3'];
+    // voeding 3F + N + PE (4 x 240 mm² per fase, 4 x N, PE): recht omlaag door de plint en de sparing in de stelconplaat, kort stuk door de grond naar voren
+    const fases = ['L1', 'L2', 'L3'], uit = (x, z, y, i) => [V(x, -0.6, z), V(x, y + 0.6, z), V(x, y, z + 0.6), V(x, y, z + 7 + i*0.05)];
+    { const zs0 = zF2 - 0.3, zs1 = zF1 + 0.6, xs0 = s.x - 1.15, xs1 = s.x + 1.15;                                 // sparing 2300 x 1100 in de plaat
+      box(K, xs1 - xs0, PL_H + 0.04, zs1 - zs0, M(0x0b0c0d, {roughness: 0.9}), s.x, PL_H/2, (zs0 + zs1)/2, false);
+      box(K, xs1 - xs0 + 0.3, 0.04, zs1 - zs0 + 0.3, M(0x6f7273, {roughness: 0.9}), s.x, PL_H + 0.01, (zs0 + zs1)/2, false); }
     s.fase.forEach((bouten, p) => bouten.forEach((t, b) => [0, 1].forEach(q => { const z = zF1 + q*0.3, x = t.x, i4 = b*2 + q;
       if(q){ box(K, 0.25, 0.4, 0.05, matTin, x, t.y + 0.38, z - 0.1); cyl(K, R240 + 0.01, 0.3, matTin, x, t.y + 0.1, z, null, 12); }
-      const zt = KD/2 + 0.9 + (p*4 + i4)*0.32;
-      const lok = [V(x, t.y, z), V(x, KS + 0.1, z), V(x, PL_H + 0.45 + q*0.3, z), V(x, PL_H + 0.45 + q*0.3, KD/2 + 0.3), V(x, PL_H + 0.1, zt), V(x, -6.5, zt), V(x, -6.5, zt + 30)];
+      const lok = [V(x, t.y, z), ...uit(x, z, -4.6 - q*0.32, p*4 + i4)];
       gland(x, z, R240); yStrut.forEach(y => klemB(x, y, z, R240));
-      const k = kabel(KAB, lok.map(W), R240, ader[fases[p]], 0.6, 8); KABELS.push(k); if(p === 0 && i4 === 0) FLOW.push({curve: k.userData.curve, aio: -1, voeding: true}); })));
-    const nx = [-0.45, -0.15, 0.15, 0.45].map(d => s.x + d);
-    nx.forEach((x, q) => { railLug(x, yNr, R240); gland(x, zF2, R240);
-      const zt = KD/2 + 0.9 + (12 + q)*0.32; kabel(KAB, [V(x, yNr - 0.45, zF2), V(x, KS + 0.1, zF2), V(x, PL_H + 1.05, zF2), V(x, PL_H + 1.05, KD/2 + 0.3), V(x, PL_H + 0.1, zt), V(x, -6.5, zt), V(x, -6.5, zt + 30)].map(W), R240, ader.N, 0.6, 8); });
-    { const x = s.x + 0.8; railLug(x, yPEr, R240); gland(x, zF2, R240); const zt = KD/2 + 0.9 + 16*0.32;
-      kabel(KAB, [V(x, yPEr - 0.45, zF2), V(x, KS + 0.1, zF2), V(x, PL_H + 1.3, zF2), V(x, PL_H + 1.3, KD/2 + 0.3), V(x, PL_H + 0.1, zt), V(x, -6.5, zt), V(x, -6.5, zt + 30)].map(W), R240, ader.PE, 0.6, 8); }
+      const k = kabel(KAB, lok.map(W), R240, ader[fases[p]], 0.5, 8); KABELS.push(k); if(p === 0 && i4 === 0) FLOW.push({curve: k.userData.curve, aio: -1, voeding: true}); })));
+    const nx = [-0.69, -0.345, 0.345, 0.69].map(d => s.x + d);
+    nx.forEach((x, q) => { railLug(x, yNr, R240, 'N'); gland(x, zF2, R240); yStrut.forEach(y => klemB(x, y, zF2, R240));
+      kabel(KAB, [V(x, yNr - 0.45, zF2), ...uit(x, zF2, -5.5, 12 + q)].map(W), R240, ader.N, 0.5, 8); });
+    { const x = s.x; railLug(x, yPEr, R240, 'PE'); gland(x, zF2, R240); yStrut.forEach(y => klemB(x, y, zF2, R240));
+      kabel(KAB, [V(x, yPEr - 0.45, zF2), ...uit(x, zF2, -6.1, 16)].map(W), R240, ader.PE, 0.5, 8); }
     return;
   }
   const a = AIO[s.naar], kn = s.naar, zc = zKan(kn);
   const yRun = PL_H + 0.35 + kn*0.33;                                                               // plint: bundel #1 het laagst, geen kruisingen
-  const bron = {L1: [s.fase[0][0], zF1], L2: [s.fase[1][0], zF1], L3: [s.fase[2][0], zF1], N: [V(s.x - 0.15, yNr - 0.45, zF2), zF2], PE: [V(s.x + 0.15, yPEr - 0.45, zF2), zF2]};
-  railLug(s.x - 0.15, yNr, R95); railLug(s.x + 0.15, yPEr, R95);
-  ['L1', 'L2', 'L3', 'N', 'PE'].forEach((f, j) => { const [e, z] = bron[f], x = e.x, dyB = 0.12 + j*0.21, dz = (j % 2 ? 0.05 : -0.05), t = a.klem[f], g = a.gat[f];
+  const bron = {L1: [s.fase[0][0], zF1], L2: [s.fase[1][0], zF1], L3: [s.fase[2][0], zF1], N: [V(s.x + 0.39, yNr - 0.45, zF2), zF2]};      // AIO: alleen 3F + N, geen PE
+  railLug(s.x + 0.39, yNr, R95, 'N');
+  const XR = {L1: s.x - 0.39, L2: s.x - 0.13, L3: s.x + 0.13, N: s.x + 0.39};       // onder de strook: 4 aders naast elkaar in één rij
+  ['L1', 'L2', 'L3', 'N'].forEach((f, j) => { const [e, z0] = bron[f], x = XR[f], z = zF1, dyB = 0.12 + j*0.21, dz = (j % 2 ? 0.05 : -0.05), t = a.klem[f], g = a.gat[f];
     gland(x, z, R95); yStrut.forEach(y => klemB(x, y, z, R95));
-    const lok = [V(x, e.y, z), V(x, KS + 0.1, z), V(x, yRun, z), V(zc - 0.9 + (j - 2)*0.06, yRun, KZ0 + 0.5 - j*0.14), V(zc + dz, PL_H + dyB, -KD/2 + 0.6), V(zc + dz, PL_H + dyB, -KD/2 - 0.3)];
+    const kop = f === 'N' ? [V(e.x, e.y, z0), V(e.x, yNr - 0.75, z0 + 0.05), V(x, yNr - 1.05, z)] : [V(e.x, e.y, z), V(e.x, e.y - 0.7, z), V(x, e.y - 1.25, z)];
+    const lok = [...kop, V(x, KS + 0.1, z), V(x, yRun, z), V(zc - 0.9 + (j - 2)*0.06, yRun, KZ0 + 0.5 - j*0.14), V(zc + dz, PL_H + dyB, -KD/2 + 0.6), V(zc + dz, PL_H + dyB, -KD/2 - 0.3)];
     const pts = [...lok.map(W), V(XA(0) - AW/2 + 0.6, PL_H + dyB, zc + dz), V(g.x - 1.8, PL_H + dyB, zc + dz), V(g.x, PL_H + dyB + 0.2, zc + dz), V(g.x, SKY - 0.3, g.z), V(g.x, SKY + 0.95 + 0.35, g.z), V(t.x, t.y - 0.3, t.z), V(t.x, t.y, t.z)];
     const k = kabel(KAB, pts, R95, ader[f], 0.5, 8); KABELS.push(k); if(f === 'L1') FLOW.push({curve: k.userData.curve, aio: kn, voeding: false}); });
   // aderlabels (wit) net onder de strook
@@ -857,8 +869,17 @@ SLOTS.forEach(s => {
   const ent = i => V(XA(i) - 2.2, SKY + 1.0, AZ + AIO[i].MC.z + 0.2);
   kabel(KAB, [V(KXW - 30, -6.0, zc), V(KXW - 4, -6.0, zc), V(SX0 + 0.2, PL_H + 0.5, zc), V(XA(0) - AW/2 + 0.4, y0, zc), V(XA(0) - 3.4, y0, zc), V(XA(0) - 2.2, y0 + 0.4, zc), V(XA(0) - 2.2, SKY + 0.3, ent(0).z), ent(0)], 0.07, matCyaan, 0.6);
   for(let i = 0; i < N_AIO - 1; i++) [[matCyaan, -0.08], [matGrijsK, 0.08]].forEach(([m, dz]) => kabel(KAB, [ent(i).clone().add(V(0.2, 0, dz)), V(XA(i) - 2.0, y0 + 0.3, zc + dz), V(XA(i + 1) - 2.4, y0 + 0.3, zc + dz), ent(i + 1).clone().add(V(-0.2, 0, dz))], 0.06, m, 0.6));
-  kabel(KAB, [W(V(KW/2 + 0.06, KS + 0.4, -KD/2 + 0.4)), V(XA(0) - AW/2 - 0.02, KS + 0.2, AD/2 + 0.15), V(XA(0) - CW/2 + 0.3, SKY + 0.45, AD/2 + 0.12)], 0.08, ader.PE, 0.4); }
-{ const t = sprite('voeding 4 × 240 mm² per fase + N + PE (vanaf trafo / HVK)', W(V(-2.5, 3.0, KD/2 + 14)), 0.75, '#c0281f'); scene.add(t); LABELS.push(t); }
+}
+// vereffening: kasten onderling doorverbonden via de aardpunten (voorzijde onderstel, fig. 5-36), kast #1 naar de PE-rail in de junction box
+{ const aard = (i, sx) => V(XA(i) + sx*4.62, SKY + 0.45, AZ + AD/2 + 0.12), r = 0.075;
+  for(let i = 0; i < N_AIO - 1; i++){ const a = aard(i, 1), b = aard(i + 1, -1);
+    kabel(KAB, [a, V(a.x + 0.1, a.y - 0.35, a.z + 0.25), V(b.x - 0.1, b.y - 0.35, b.z + 0.25), b], r, ader.PE, 0.2);
+    for(const p of [a, b]) cyl(KAB, 0.13, 0.12, matTin, p.x, p.y, p.z + 0.02, 'z', 12); }
+  const xp = SLOTS[0].x + 0.6; railLug(xp, yPEr, 0.075, 'PE'); gland(xp, zF2, 0.075);
+  const p1 = aard(0, -1); cyl(KAB, 0.13, 0.12, matTin, p1.x, p1.y, p1.z + 0.02, 'z', 12);
+  kabel(KAB, [...[V(xp, yPEr - 0.45, zF2), V(xp, KS + 0.1, zF2), V(xp, PL_H + 0.5, zF2), V(xp - 0.6, PL_H + 0.5, -KD/2 + 0.6), V(xp - 0.6, PL_H + 0.5, -KD/2 - 0.2)].map(W), V(XA(0) - AW/2 + 0.3, PL_H + 0.6, p1.z + 0.3), V(p1.x, p1.y - 0.3, p1.z + 0.25), p1], r, ader.PE, 0.3);
+  const t = sprite('vereffening: aardpunten kast #1..#5 → PE-rail junction box', V(XA(2), SKY - 0.5, AD/2 + 2), 0.7, '#3fa34d'); scene.add(t); LABELS.push(t); }
+{ const t = sprite('voeding 3F + N + PE (4 × 240 mm² per fase) door sparing stelconplaat', W(V(-2.5, -2.0, KD/2 + 6)), 0.75, '#c0281f'); scene.add(t); LABELS.push(t); }
 
 // ---------- maatvoering ----------
 { const mL = new THREE.LineBasicMaterial({color: 0x1a4f9c, depthTest: false, transparent: true});
@@ -911,7 +932,10 @@ function simStap(dt){
     d.im.instanceMatrix.needsUpdate = true; });
 }
 
-LABELS.forEach(l => l.visible = false); KAPPEN.forEach(k => k.visible = false);
+LABELS.forEach(l => l.visible = false); KAP_MCCB.forEach(k => k.visible = false);
+// afdekkappen Jean Müller: rookglas (doorzichtig)
+{ const rook = new THREE.MeshStandardMaterial({color: 0xc9d3d6, roughness: 0.15, metalness: 0.1, transparent: true, opacity: 0.38, depthWrite: false}), rookD = rook.clone(); rookD.opacity = 0.55; rookD.color.set(0xaab5b9);
+  KAP_SL.forEach(c => c.traverse(o => { if(o.isMesh && !(o.material.map)) o.material = o.material.color && o.material.color.getHex() === 0xfafafa ? rookD : rook; })); }
 // ---------- camera + bediening ----------
 const target = new THREE.Vector3(16, 9, 0);
 let theta = 0.6, phi = 1.18, radius = 105, auto = false;
@@ -919,6 +943,7 @@ function updateCam(){ camera.position.set(target.x + radius*Math.sin(phi)*Math.s
 const VIEWS = {
   bOverzicht: () => { target.set(16, 9, 0); theta = 0.6; phi = 1.18; radius = 105; },
   bKast: () => { target.set(KXW, KS + 7, KZW); theta = -Math.PI/2 - 0.1; phi = 1.47; radius = 22; },
+  bMccb: () => { const a = AIO[0], p = a.klem.L2; target.set(p.x + 0.6, p.y + 0.2, p.z + 0.2); theta = 0.15; phi = 1.32; radius = 7.5; doors.forEach(d => { if(!d.strook && !d.kast && d.naam === 'kast #1') d.doel = d.open; }); },
   bAio: () => { target.set(XA(0), SKY + 11, AZ); theta = 0.25; phi = 1.42; radius = 40; },
   bSkid: () => { target.set((SX0 + SX1)/2, PL_H + 1.2, 4); theta = 0.35; phi = 1.2; radius = 42; $t('tSkid').checked = true; zetSkid(true); },
   bBoven: () => { target.set(18, 0, 0); theta = 0; phi = 0.04; radius = 110; },
@@ -950,7 +975,8 @@ $t('tStrook').addEventListener('change', e => STROKEN.forEach(d => d.doel = e.ta
 $t('tGrond').addEventListener('change', e => { GRONDMAT.forEach(m => { m.transparent = e.target.checked; m.opacity = e.target.checked ? 0.35 : 1; m.depthWrite = !e.target.checked; m.needsUpdate = true; }); });
 function zetSkid(a){ SKMAT.forEach(m => { m.transparent = a; m.opacity = a ? 0.18 : 1; m.depthWrite = !a; m.needsUpdate = true; }); }
 $t('tSkid').addEventListener('change', e => zetSkid(e.target.checked));
-$t('tKap').addEventListener('change', e => KAPPEN.forEach(k => k.visible = e.target.checked));
+$t('tKapM').addEventListener('change', e => KAP_MCCB.forEach(k => k.visible = e.target.checked));
+$t('tKapS').addEventListener('change', e => KAP_SL.forEach(k => k.visible = e.target.checked));
 $t('tKabel').addEventListener('change', e => { KAB.visible = KABK.visible = e.target.checked; });
 $t('tLabel').addEventListener('change', e => LABELS.forEach(l => l.visible = e.target.checked));
 $t('tMaat').addEventListener('change', e => MAAT.forEach(g => g.visible = e.target.checked));
