@@ -252,6 +252,11 @@ const matMeterF = M(0xffffff, {map: texMeter, roughness: 0.5});
 // ---------- metal base 1020 x 1420 x 220 (fig. 2-2 / 5-11 / 5-15): frame met kabelbaanzone aan de voorzijde, 5 x AC + signaal + comm ----------
 const KAN_Z0 = AD/2 - 0.1 - 7*0.34, KAN_DZ = 0.34;                       // 7 kabelbanen tussen 8 schotten, voorin
 const zKan = k => KAN_Z0 + (k + 0.5)*KAN_DZ;
+// goot-indeling (7 goten, van links naar rechts): tussen twee 95 mm²-bundels altijd 2 lege goten (warmte / groeperingsfactor).
+// DATA (CAT 6A S/FTP) en AUX (5G2,5) mogen in een lege goot. Max. 3 AIO-bundels in de skid (goot 1, 4, 7); AIO #4 en #5 via een mantelbuis door de grond.
+const KAN_AIO = [0, 3, 6], KAN_DATA = 1, KAN_AUX = 4, N_SKID = Math.min(N_AIO, 3);
+const kanAio = i => i < 3 ? KAN_AIO[i] : -1;
+const KAN_NAAM = [...Array(7)].map((_, k) => { const i = KAN_AIO.indexOf(k); return i >= 0 && i < N_AIO ? 'AIO' + (i + 1) : k === KAN_DATA ? 'DATA' : k === KAN_AUX ? 'AUX' : '–'; });
 function bouwBase(i){
   const G = new THREE.Group(); G.position.set(XA(i), PL_H, AZ); scene.add(G);
   const W = AW, D = AD, H = SKH, t = 0.06;
@@ -271,8 +276,10 @@ function bouwBase(i){
   for(const sx of [-1, 1]) for(const sz of [-1, 1]){ cyl(G, 0.22, 0.05, matZwart, sx*(W/2 - 0.45), H + 0.005, sz*(D/2 - 0.45), null, 14);
     cyl(G, 0.14, 0.18, matZink, sx*(W/2 - 0.79), 0.15, sz*(D/2 - 0.79), null, 6); }
   // kabelvenster-labels op de kopse zijde van de eerste en laatste base
-  if(i === 0 || i === N_AIO - 1){ const s = i === 0 ? -1 : 1; const tx = ctex(256, 64, (g, w, h) => { g.fillStyle = '#ffffff'; g.fillRect(0, 0, w, h); g.fillStyle = '#1b4f8a'; g.font = 'bold 22px Arial'; g.fillText('AC ' + NR + ' · SIG · COM', 10, 40); });
-    plak(G, 2.4, 0.5, tx, s*(W/2 + 0.01), H - 0.45, (zw0 + zw1)/2 - 2.0, s < 0 ? -Math.PI/2 : Math.PI/2); }
+  if(i === 0 || i === N_AIO - 1){ const s = i === 0 ? -1 : 1; const tx = ctex(448, 64, (g, w, h) => { g.fillStyle = '#ffffff'; g.fillRect(0, 0, w, h); const cw = w/7; g.textAlign = 'center'; g.textBaseline = 'middle';
+      KAN_NAAM.forEach((n, k) => { const kk = s < 0 ? k : 6 - k; g.fillStyle = n.startsWith('AIO') ? '#1b4f8a' : n === '–' ? '#eef0f1' : '#3fa34d'; g.fillRect(kk*cw + 2, 4, cw - 4, h - 8);
+        g.fillStyle = n === '–' ? '#9aa4aa' : '#fff'; g.font = 'bold ' + (n.length > 3 ? 17 : 20) + 'px Arial'; g.fillText(n, kk*cw + cw/2, h/2 + 1); }); });
+    plak(G, KAN_DZ*7, 0.42, tx, s*(W/2 + 0.01), H - 0.32, KAN_Z0 + KAN_DZ*3.5, s < 0 ? -Math.PI/2 : Math.PI/2); }
   return G;
 }
 
@@ -935,6 +942,21 @@ const HVK = (function(){
 const KAB = new THREE.Group(); scene.add(KAB); const KABK = new THREE.Group(); KG.add(KABK);
 const R95 = 0.1, R240 = 0.14, FLOW = [], zF1 = KZ0 + 0.96, zF2 = KZ0 + 0.62;
 const gland = (x, z, r) => { KABDEEL.push(cyl(K, r + 0.06, 0.22, M(0x2b2e31), x, KS + 0.3, z, null, 12)); cyl(K, r + 0.1, 0.12, matZwart, x, KS + 0.18, z, null, 16); cyl(K, r + 0.11, 0.08, matZwart, x, KS - 0.04, z, null, 6); };
+// AIO #4 / #5: mantelbuis Ø160 (4 × 95 mm² singles) onder de stelconplaten door, sparing onder de strook en onder de eigen metal base
+const matMantel = M(0xe06a1a, {roughness: 0.6, transparent: true, opacity: 0.45, depthWrite: false}), matSpar = M(0x0b0c0d, {roughness: 0.9});
+function grondRoute(s, a, kn){
+  const gs = ['L1', 'L2', 'L3', 'N'].map(f => a.gat[f]), gx = gs.reduce((q, g) => q + g.x, 0)/4, zg = gs.reduce((q, g) => q + g.z, 0)/4;
+  const zr = zg - 1.6 - (kn - 3)*1.3, yb = -3.4, P = W(V(s.x, -0.6, zF1)), x0 = P.x + 3.0;
+  box(K, 1.5, PL_H + 0.04, 1.3, matSpar, s.x, PL_H/2, zF1, false); box(K, 1.8, 0.04, 1.6, M(0x6f7273, {roughness: 0.9}), s.x, PL_H + 0.01, zF1, false);
+  const kp = Math.max(0, Math.min(N_PL - 1, Math.floor((gx - PX0)/PL))), pl = PLATEN[kp];
+  box(pl, 1.6, PL_H + 0.04, 1.6, matSpar, gx - XP(kp), PL_H/2, zg, false); box(pl, 1.9, 0.04, 1.9, M(0x6f7273, {roughness: 0.9}), gx - XP(kp), PL_H + 0.01, zg, false);
+  box(BASES[kn], 1.5, 0.02, 1.5, matSpar, gx - XA(kn), 0.075, zg - AZ, false);
+  const sv = CAT; CAT = 'mantel';
+  const m = kabel(scene, [V(P.x, -0.05, P.z), V(P.x, yb, P.z), V(x0, yb, zr), V(gx - 2.6, yb, zr), V(gx, yb, zg), V(gx, -0.05, zg)], 0.8, matMantel, 1.6, 16); m.renderOrder = 2;
+  CAT = sv;
+  const t = sprite('AIO #' + (kn + 1) + ': mantelbuis Ø160 door de grond (skid vol)', V((x0 + gx)/2, -1.5, zr), 0.55, '#e06a1a'); scene.add(t); LABELS.push(t);
+  return {gx, zg, zr, yb, x0};
+}
 SLOTS.forEach(s => {
   if(s.t === 'SL3'){
     // voeding 3F + N + PE (4 x 240 mm² per fase, 4 x N, PE): recht omlaag door de plint en de sparing in de stelconplaat, kort stuk door de grond naar voren
@@ -956,7 +978,8 @@ SLOTS.forEach(s => {
     return;
   }
   if(s.naar >= N_AIO){ const t = sprite('SL2 reserve (AIO #' + (s.naar + 1) + ')', W(V(s.x, yRail[1] + 2.4, KZ0 + 1.2)), 0.5, '#5d6b73'); scene.add(t); LABELS.push(t); return; }
-  CAT = 'aio'; const a = AIO[s.naar], kn = s.naar, zc = zKan(kn + 2);
+  CAT = 'aio'; const a = AIO[s.naar], kn = s.naar, ch = kanAio(kn), grondR = ch < 0, zc = grondR ? 0 : zKan(ch);
+  const GR = grondR ? grondRoute(s, a, kn) : null;
   const yRun = PL_H + 0.35 + kn*0.33;                                                               // plint: bundel #1 het laagst, geen kruisingen
   const bron = {L1: [s.fase[0][0], zF1], L2: [s.fase[1][0], zF1], L3: [s.fase[2][0], zF1], N: [V(s.x + 0.39, yNr - 0.45, zF2), zF2]};      // AIO: alleen 3F + N, geen PE
   railLug(s.x + 0.39, yNr, R95, 'N');
@@ -964,16 +987,20 @@ SLOTS.forEach(s => {
   ['L1', 'L2', 'L3', 'N'].forEach((f, j) => { const [e, z0] = bron[f], x = XR[f], z = zF1, dyB = 0.12 + j*0.21, dz = (j % 2 ? 0.05 : -0.05), t = a.klem[f], g = a.gat[f];
     gland(x, z, R95); yStrut.forEach(y => klemB(x, y, z, R95));
     const kop = f === 'N' ? [V(e.x, e.y, z0), V(e.x, yNr - 0.75, z0 + 0.05), V(x, yNr - 1.05, z)] : [V(e.x, e.y, z), V(e.x, e.y - 0.7, z), V(x, e.y - 1.25, z)];
-    const lok = [...kop, V(x, KS + 0.1, z), V(x, yRun, z), V(zc - 0.9 + (j - 2)*0.06, yRun, KZ0 + 0.5 - j*0.14), V(zc + dz, PL_H + dyB, -KD/2 + 0.6), V(zc + dz, PL_H + dyB, -KD/2 - 0.3)];
-    const pts = [...lok.map(W), V(XA(0) - AW/2 + 0.6, PL_H + dyB, zc + dz), V(g.x - 1.8, PL_H + dyB, zc + dz), V(g.x, PL_H + dyB + 0.2, zc + dz), V(g.x, SKY - 0.3, g.z), V(g.x, SKY + 0.95 + 0.35, g.z), V(t.x, t.y - 0.3, t.z), V(t.x, t.y, t.z)];
+    let pts;
+    if(!grondR){ const lok = [...kop, V(x, KS + 0.1, z), V(x, yRun, z), V(zc - 0.9 + (j - 2)*0.06, yRun, KZ0 + 0.5 - j*0.14), V(zc + dz, PL_H + dyB, -KD/2 + 0.6), V(zc + dz, PL_H + dyB, -KD/2 - 0.3)];
+      pts = [...lok.map(W), V(XA(0) - AW/2 + 0.6, PL_H + dyB, zc + dz), V(g.x - 1.8, PL_H + dyB, zc + dz), V(g.x, PL_H + dyB + 0.2, zc + dz), V(g.x, SKY - 0.3, g.z), V(g.x, SKY + 0.95 + 0.35, g.z), V(t.x, t.y - 0.3, t.z), V(t.x, t.y, t.z)]; }
+    else { const off = (j - 1.5)*0.17, P = W(V(x, -0.6, z));                    // recht omlaag door de eigen sparing, in de mantelbuis, onder de eigen base omhoog
+      pts = [...[...kop, V(x, KS + 0.1, z), V(x, PL_H + 0.3, z), V(x, -0.6, z)].map(W), V(P.x, GR.yb, P.z), V(GR.x0, GR.yb, GR.zr + off), V(GR.gx - 2.6, GR.yb, GR.zr + off),
+        V(GR.gx + off, GR.yb, GR.zg), V(GR.gx + off, -0.4, GR.zg), V(g.x, PL_H + 0.6, g.z), V(g.x, SKY + 0.95 + 0.35, g.z), V(t.x, t.y - 0.3, t.z), V(t.x, t.y, t.z)]; }
     const k = kabel(KAB, pts, R95, ader[f], 0.5, 8); KABELS.push(k); if(f === 'L1') FLOW.push({curve: k.userData.curve, aio: kn, voeding: false}); });
   // aderlabels (wit) net onder de strook
   ['L1', 'L2', 'L3'].forEach((f, p) => { const e = s.fase[p][0]; KABDEEL.push(cyl(K, R95 + 0.015, 0.2, M(0xf4f4f0), e.x, e.y - 0.9, zF1, null, 12)); });
-  for(let k = 0; k < 5; k++){ const x = XA(0) - AW/2 + 1.2 + k*((a.klem.L1.x - 2.2 - (XA(0) - AW/2 + 1.2))/4); const tb = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.03, 5, 16), matZwart); tb.position.set(x, PL_H + 0.62, zc); tb.rotation.y = Math.PI/2; tb.scale.set(0.38, 1.45, 1); tb.userData.cat = 'aio'; KAB.add(tb); }
+  if(!grondR) for(let k = 0; k < 5; k++){ const x = XA(0) - AW/2 + 1.2 + k*((a.klem.L1.x - 2.2 - (XA(0) - AW/2 + 1.2))/4); const tb = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.03, 5, 16), matZwart); tb.position.set(x, PL_H + 0.62, zc); tb.rotation.y = Math.PI/2; tb.scale.set(0.38, 1.45, 1); tb.userData.cat = 'aio'; KAB.add(tb); }
 });
 // EMS-communicatie (master) en 2 inter-kast comm-kabels per paar in baan COM; aardkabel junction box -> kast #1 (fig. 5-35)
 CAT = 'data';
-{ const zc = zKan(0), y0 = PL_H + 0.3;
+{ const zc = zKan(KAN_DATA), y0 = PL_H + 0.3;
   const ent = i => V(XA(i) - 2.2, SKY + 1.0, AZ + AIO[i].MC.z + 0.2);
   kabel(KAB, [V(KXW - 30, -6.0, zc), V(KXW - 4, -6.0, zc), V(SX0 + 0.2, PL_H + 0.5, zc), V(XA(0) - AW/2 + 0.4, y0, zc), V(XA(0) - 3.4, y0, zc), V(XA(0) - 2.2, y0 + 0.4, zc), V(XA(0) - 2.2, SKY + 0.3, ent(0).z), ent(0)], 0.07, matCyaan, 0.6);
   for(let i = 0; i < N_AIO - 1; i++) [[matCyaan, -0.08], [matGrijsK, 0.08]].forEach(([m, dz]) => kabel(KAB, [ent(i).clone().add(V(0.2, 0, dz)), V(XA(i) - 2.0, y0 + 0.3, zc + dz), V(XA(i + 1) - 2.4, y0 + 0.3, zc + dz), ent(i + 1).clone().add(V(-0.2, 0, dz))], 0.06, m, 0.6));
@@ -990,7 +1017,7 @@ CAT = 'vereff';
   const t = sprite('vereffening: aardpunten kast ' + NR + ' → PE-rail junction box', V(XA((N_AIO - 1)/2), SKY - 0.5, AD/2 + 2), 0.7, '#3fa34d'); scene.add(t); LABELS.push(t); }
 CAT = 'aux';
 // hulpvoeding: -F1..-F5 (3p+N B16 300 mA) per AIO een 5G2,5 via kanaal AUX naar de klemmenstrook (Control / Aux) in de besturingshoek van de kast
-{ const zc = zKan(1), r = 0.065, mAux = M(0x6d7378, {roughness: 0.55});
+{ const zc = zKan(KAN_AUX), r = 0.065, mAux = M(0x6d7378, {roughness: 0.55});
   AUXUIT.filter(u => u.i < N_AIO).forEach(u => { const i = u.i, yl = PL_H + 0.22 + i*0.14, xe = XA(i) - 2.6, ze = AZ + AIO[i].MC.z + 0.25;
     gland(u.x, u.z, r);
     const lok = [V(u.x, JY(1160) - 0.1, u.z), V(u.x, KS + 0.1, u.z), V(u.x, yl + 0.2, u.z), V(zc + (i - 2)*0.0, yl, -KD/2 + 0.6), V(zc, yl, -KD/2 - 0.3)];
@@ -1082,7 +1109,7 @@ const VIEWS = {
   for(let n = 1; n <= 5; n++){ const b = document.createElement('button'); b.textContent = n; b.title = n + ' × DELTerra C'; if(n === N_AIO) b.classList.add('aan');
     b.addEventListener('click', () => { if(n === N_AIO) return; const u = new URL(location.href); u.searchParams.set('n', n); location.href = u.toString(); }); box.appendChild(b); }
   const kW = N_AIO*125, kWh = N_AIO*261, In = Math.round(kW*1000/(Math.sqrt(3)*400));
-  document.getElementById('cfgInfo').innerHTML = kW + ' kW · ' + kWh + ' kWh · I<sub>n</sub> ≈ ' + In + ' A (400 V)<br>SL2 in gebruik: ' + N_AIO + ' van 5' + (N_AIO < 5 ? ' · ' + (5 - N_AIO) + ' reserve' : '');
+  document.getElementById('cfgInfo').innerHTML = kW + ' kW · ' + kWh + ' kWh · I<sub>n</sub> ≈ ' + In + ' A (400 V)<br>SL2 in gebruik: ' + N_AIO + ' van 5' + (N_AIO < 5 ? ' · ' + (5 - N_AIO) + ' reserve' : '') + '<br>Goten skid: ' + KAN_NAAM.join(' | ') + (N_AIO > 3 ? '<br><b style="color:#e06a1a">AIO #4' + (N_AIO > 4 ? ' en #5' : '') + ' via mantelbuis door de grond</b> (skid: max. 3 bundels met 2 lege goten ertussen)' : '');
   const h = document.getElementById('titel'); if(h) h.innerHTML = h.innerHTML.replace('AIO 5 ×', 'AIO ' + N_AIO + ' ×');
   document.querySelectorAll('.nAio').forEach(e => e.textContent = N_AIO); document.querySelectorAll('.nSlave').forEach(e => e.textContent = N_AIO > 1 ? ', #2..#' + N_AIO + ' slave' : '');
   document.title = document.title.replace('AIO 5 ×', 'AIO ' + N_AIO + ' ×'); }
@@ -1154,12 +1181,12 @@ const PLAATS = (function(){
   const CAT = {}; scene.traverse(o => { const c = o.userData && o.userData.cat; if(c) (CAT[c] = CAT[c] || []).push(o); });
   const groei = []; Object.entries(CAT).forEach(([c, l]) => l.forEach(o => { if(o.isMesh && o.geometry.type === 'TubeGeometry' && o.geometry.index) o.userData.n = o.geometry.index.count; }));
   const STAPPEN = [
-    {t: 'Uitgangssituatie', d: 'Kabelsleuf gegraven, de voedingskabels 3F + N + PE (4 × 240 mm² per fase) zijn vanaf de HVK getrokken en de aardpen is geslagen.', toon: ['voeding', 'pen'], groei: ['voeding'], cam: [KXW - 120, 0, 0, -1.25, 0.95, 230]},
+    {t: 'Uitgangssituatie', d: 'Kabelsleuf gegraven, de voedingskabels 3F + N + PE (4 × 240 mm² per fase) zijn vanaf de HVK getrokken en de aardpen is geslagen.' + (N_AIO > 3 ? ' Mantelbuizen Ø160 voor AIO #4' + (N_AIO > 4 ? ' en #5' : '') + ' liggen onder de toekomstige stelconplaten.' : ''), toon: ['voeding', 'pen', 'mantel'], groei: ['voeding'], cam: [KXW - 120, 0, 0, -1.25, 0.95, 230]},
     {t: 'Stelconplaten leggen', d: 'Stelconplaten 2000 × 2000 × 140 leggen. De plaat met de sparing gaat over de al getrokken voedingskabels heen.', val: () => PLATEN, cam: [10, 2, 0, -0.9, 1.0, 85]},
     {t: 'Plint (skid) junction box', d: 'De plint van de junction box boven de sparing op de stelconplaat zetten; de voedingskabels komen door de plint omhoog.', val: () => [PLINTG], cam: [KXW, 2, 0, -1.2, 1.15, 32]},
     {t: 'Junction box plaatsen', d: 'Junction box O&K OFK252082 op de plint plaatsen en verankeren; voedingskabels via de wartels invoeren.', val: () => [JBG], cam: [KXW, 7, 0, -1.2, 1.2, 40]},
     {t: 'Metal bases AIO plaatsen', d: 'Metal bases ' + NR + ' (1020 × 1420 × 220) tegen de junction box zetten, uitlijnen en verankeren met M16 expansiebouten.', val: () => BASES, cam: [16, 2, 2, 0.5, 1.05, 70]},
-    {t: 'Kabels doortrekken', d: 'Per AIO 4 × 95 mm² (L1 L2 L3 N) door het eigen kanaal ' + (N_AIO > 1 ? 'AIO1..AIO' + N_AIO : 'AIO1') + ', de hulpvoeding door kanaal AUX en de data door kanaal DATA trekken.', toon: ['aio', 'aux', 'data'], groei: ['aio', 'aux', 'data'], metal: true, cam: [12, 1.5, 4, 0.35, 1.15, 48]},
+    {t: 'Kabels doortrekken', d: 'Per AIO 4 × 95 mm² (L1 L2 L3 N) door de eigen goot (' + KAN_NAAM.join(' | ') + '), met 2 lege goten tussen de bundels; hulpvoeding in goot AUX, data in goot DATA.' + (N_AIO > 3 ? ' AIO #4' + (N_AIO > 4 ? ' en #5' : '') + ' door de mantelbuis onder de plaat en via de sparing onder de eigen base omhoog.' : ''), toon: ['aio', 'aux', 'data'], groei: ['aio', 'aux', 'data'], metal: true, cam: [12, 1.5, 4, 0.35, 1.15, 48]},
     {t: "AIO's plaatsen", d: 'DELTerra C ' + (N_AIO > 1 ? '#1 (master) t/m #' + N_AIO : '#1 (master)') + ' met kraan of heftruck op de metal bases zetten en met 16 × M10 (52 Nm) vastzetten.', val: () => AIO.map(a => a.G), cam: [16, 10, 0, 0.6, 1.15, 95]},
     {t: 'Aansluiten en vereffening', d: 'Singles op de MCCB-vlaggen (M10, 42 Nm), voeding op SL3 / N / PE (M12, 90 Nm). Kasten via de aardpunten doorverbinden en de aardpen op de PE-rail.', toon: ['vereff', 'aarde'], groei: ['vereff', 'aarde'], cam: [XA(0) - 3, SKY + 1, AD/2, -0.35, 1.3, 26]},
   ];
