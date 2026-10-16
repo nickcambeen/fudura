@@ -194,6 +194,268 @@ const camera = new THREE.PerspectiveCamera(38, 1, 1.5, 30000);
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.shadowMap.enabled = false;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+// ============ Jean Müller SL-lastscheiderstroken (SL2-3X3/3A, SL3-3X6/1250/HA), overgenomen uit 'Jean Müller SL-stroken 3D' ============
+// bouwt in mm (groep met schaal 0,01 = modeleenheid 100 mm); x = breedte, y = hoogte (0 = middelste rail), z = diepte (0 = voorkant rail)
+const JMLIB = (function(){
+const ANISO = renderer.capabilities.getMaxAnisotropy();
+// ---------- materials ----------
+const std = (c, r, m, extra)=> new THREE.MeshStandardMaterial(Object.assign({color:c, roughness:r, metalness:m||0}, extra||{}));
+const M = {
+  housing: std(0xd3d7d3,.5),          // licht grijs (RAL 7035)
+  housing2:std(0xbfc4c1,.55),
+  module:  std(0xdfe2df,.5),
+  black:   std(0x090a0b,.5),
+  black2:  std(0x131516,.55),
+  amber:   std(0xf0a500,.45),
+  cu:      std(0xc77f4a,.26,1),
+  tin:     std(0xd6d9db,.22,1),
+  steel:   std(0xb3b8bc,.28,1),
+  zinc:    std(0xc7c8bd,.35,1),
+  dark:    std(0x0b0c0d,.7),
+  ceramic: std(0xf2efe7,.72),
+  red:     std(0xd5281b,.4),
+  insul:   std(0x2c3033,.55),
+  plate:   std(0x8d9396,.55,.5),
+  cables: [std(0x5b3a20,.5), std(0x161718,.45), std(0x8b9195,.5)],
+};
+const XRAY = [M.housing, M.housing2];
+
+// ---------- geometry helpers (mm; root scaled 0.01) ----------
+const gcache = {};
+function rgeo(w,h,d,r){
+  r = Math.max(0.05, Math.min(r, w/2-0.05, h/2-0.05, d/2-0.05));
+  const k = [w,h,d,r].join('|'); if(gcache[k]) return gcache[k];
+  const e = Math.min(r, d/2-0.05) * 0.9;
+  const sw = w-2*e, sh = h-2*e, sr = Math.max(0.02, r-e);
+  const s = new THREE.Shape(), x=-sw/2, y=-sh/2;
+  s.moveTo(x+sr,y); s.lineTo(x+sw-sr,y); s.quadraticCurveTo(x+sw,y,x+sw,y+sr);
+  s.lineTo(x+sw,y+sh-sr); s.quadraticCurveTo(x+sw,y+sh,x+sw-sr,y+sh);
+  s.lineTo(x+sr,y+sh); s.quadraticCurveTo(x,y+sh,x,y+sh-sr);
+  s.lineTo(x,y+sr); s.quadraticCurveTo(x,y,x+sr,y);
+  const g = new THREE.ExtrudeGeometry(s,{depth:Math.max(0.01,d-2*e), bevelEnabled:true, bevelThickness:e, bevelSize:e, bevelSegments:3, curveSegments:6});
+  g.translate(0,0,-(d-2*e)/2); g.computeVertexNormals();
+  return gcache[k] = g;
+}
+function rb(w,h,d,r,mat,x,y,z,p){ const m = new THREE.Mesh(rgeo(w,h,d,r), mat); m.position.set(x||0,y||0,z||0); m.castShadow = m.receiveShadow = true; p.add(m); return m; }
+function bx(w,h,d,mat,x,y,z,p){ const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat); m.position.set(x||0,y||0,z||0); m.receiveShadow = true; p.add(m); return m; }
+function cy(r,h,mat,x,y,z,p,axis,seg){
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,seg||28), mat);
+  if(axis==='z') m.rotation.x = Math.PI/2; else if(axis==='x') m.rotation.z = Math.PI/2;
+  m.position.set(x||0,y||0,z||0); m.castShadow = m.receiveShadow = true; p.add(m); return m;
+}
+function screw(x,y,z,p,r,axis){
+  r = r||4; const g = new THREE.Group(); p.add(g); g.position.set(x,y,z);
+  if(axis==='y') g.rotation.x = -Math.PI/2;
+  const h = new THREE.Mesh(new THREE.CylinderGeometry(r*.92,r,r*.55,20), M.steel);
+  h.rotation.x = Math.PI/2; h.position.z = r*.27; h.castShadow = true; g.add(h);
+  const s1 = new THREE.Mesh(new THREE.BoxGeometry(r*1.5, r*.28, r*.4), M.dark); s1.position.z = r*.5; g.add(s1);
+  const s2 = s1.clone(); s2.rotation.z = Math.PI/2; g.add(s2);
+  return g;
+}
+function hexNut(x,y,z,p,s,h){ const n = new THREE.Mesh(new THREE.CylinderGeometry(s/Math.sqrt(3),s/Math.sqrt(3),h,6), M.zinc); n.rotation.x = Math.PI/2; n.rotation.y = Math.PI/6; n.position.set(x,y,z); n.castShadow = true; p.add(n); return n; }
+function loop(x,y,z,p){ const t = new THREE.Mesh(new THREE.TorusGeometry(2.6,.55,8,20), M.steel); t.scale.set(1,2,1); t.position.set(x,y,z); p.add(t);
+  bx(1,9,1,M.steel,x,y-9,z,p); }
+const texCache = {};
+function label(w,h,draw,p,x,y,z,ry,keyName){
+  let mat = keyName && texCache[keyName];
+  if(!mat){
+    const k = 10, c = document.createElement('canvas'); c.width = Math.round(w*k); c.height = Math.round(h*k);
+    const g = c.getContext('2d'); g.scale(k,k); draw(g,w,h);
+    const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = ANISO;
+    mat = new THREE.MeshStandardMaterial({map:t, roughness:.55, transparent:true});
+    if(keyName) texCache[keyName] = mat;
+  }
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w,h), mat);
+  m.position.set(x||0,y||0,z||0); if(ry) m.rotation.y = ry; m.receiveShadow = true; p.add(m); return m;
+}
+const FONT = '"Arial Narrow","Barlow Semi Condensed",Arial,sans-serif';
+function txt(g,s,x,y,size,weight,color,align){ g.font = `${weight||600} ${size}px ${FONT}`; g.fillStyle = color||'#111'; g.textAlign = align||'center'; g.textBaseline='middle'; g.fillText(s,x,y); }
+
+
+
+// ---------- shared geometry constants (mm) ----------
+// x = breedte, y = hoogte, z = diepte (0 = voorkant rail)
+const PITCH = 185, railY = [PITCH, 0, -PITCH];
+const yTop = 345, yBot = -395, Hh = yTop - yBot, yMid = (yTop+yBot)/2;
+const yHinge = -262, yLidTop = 322, LID_H = yLidTop - yHinge;
+const ZF = 128;                            // voorkant behuizing / achterkant kap
+const relPole = railY.map(y=> y - yHinge); // poolhartlijn t.o.v. scharnier
+const relBars = [ (relPole[0]+relPole[1])/2, (relPole[1]+relPole[2])/2 ];
+
+// ---------- NH fuse (front faces +z) ----------
+function makeFuse(size, p){
+  const nh3 = size === 'NH3';
+  const bw = nh3 ? 68 : 56, bd = nh3 ? 52 : 46, bh = 82;
+  const f = new THREE.Group(); p.add(f);
+  rb(bw, bh, bd, 5, M.ceramic, 0, 0, 0, f);
+  [-1,1].forEach(s=>{
+    rb(bw+4, 6, bd+4, 1.6, M.tin, 0, s*(bh/2+3), 0, f);                 // kopplaat
+    rb(nh3?32:25, 34, nh3?8:6, 1, M.tin, 0, s*(bh/2+6+17), 0, f);       // contactmes
+  });
+  const fz = bd/2;
+  // grijpplaten met schroeven en trekbeugel (zoals op de foto)
+  rb(bw*.62, 22, 3, 1.2, M.steel, 0, 28, fz+1.5, f);
+  screw(-bw*.2, 24, fz+3, f, 2.6); screw(-bw*.2, 33, fz+3, f, 2.6);
+  loop(bw*.12, 30, fz+3.4, f);
+  rb(bw*.7, 22, 3, 1.2, M.steel, 0, -30, fz+1.5, f);
+  [-1,1].forEach(s=>{ screw(s*bw*.24, -25, fz+3, f, 2.6); screw(s*bw*.24, -35, fz+3, f, 2.6); });
+  loop(0, -27, fz+3.4, f);
+  // opdruk
+  label(bw*.74, 30, (g,w,h)=>{
+    g.fillStyle='#f4f2ec'; g.fillRect(0,0,w,h);
+    txt(g,'VDE 0636 · IEC 60269',w/2,3.4,2.6,600,'#333');
+    txt(g,(nh3?'630A':'400A')+'-gL/gG',w/2,10.5,6.6,700,'#111');
+    txt(g,'~500V',w/2,18.5,5.6,700,'#111');
+    txt(g,'120kA',w/2,25.5,3.2,600,'#333');
+    g.fillStyle='#c22a1d'; g.beginPath(); g.arc(w*.2,17.5,1.6,0,7); g.fill();
+    txt(g,size,w*.82,17.5,3.2,700,'#333');
+  }, f, 0, 2, fz+.2, 0, 'fl-'+size);
+  // zwarte patroonhouder
+  [-1,1].forEach(s=> rb(6, 132, bd+6, 1.5, M.black2, s*(bw/2+5), 0, 3, f));
+  rb(bw+16, 13, 8, 2, M.black2, 0, 61, fz+2, f);
+  rb(16, 8, 9, 1.5, M.dark, 0, 61, fz+2.4, f);
+  rb(bw+16, 10, 8, 2, M.black2, 0, -60, fz+2, f);
+  return f;
+}
+
+// ---------- strip builder ----------
+const strips = [];
+function buildStrip(o){
+  const g = new THREE.Group(); g.position.x = o.ox; o.root.add(g);
+  const TW = o.cols * o.colW;
+  const colX = [...Array(o.cols)].map((_,i)=> -TW/2 + o.colW*(i+.5));
+  const fuseZ = -(o.size==='NH3' ? 30 : 27);   // fuse centre relative to lid back
+  const contactZ = ZF + fuseZ;
+
+  // housing body
+  rb(TW-6, Hh+12, 40, 3, M.housing2, 0, yMid-6, 20, g);
+  [-1,1].forEach(s=>{
+    const sx = s*(TW/2-3);
+    rb(6, Hh, ZF-40, 2.2, M.housing, sx, yMid, 40+(ZF-40)/2, g);
+    const fx = s*(TW/2+.1);
+    // round holes near front edge
+    for(let k=0;k<8;k++) cy(2.6, .6, M.dark, fx, yTop-50-k*88, ZF-12, g, 'x', 16);
+    // ventilation slot groups (two columns of 3)
+    railY.forEach(py=>{
+      [py+48, py-6].forEach(gy=>{
+        [ZF-34, ZF-42, ZF-50, ZF-68, ZF-76].forEach(z=> bx(.6, 26, 2.6, M.dark, fx, gy, z, g));
+      });
+      bx(.6, 13, 11, M.dark, fx, py-78, ZF-62, g);                // vierkante opening
+      const tri = new THREE.Mesh(new THREE.CylinderGeometry(4,4,1,3), M.housing2);
+      tri.rotation.set(0,0,Math.PI/2); tri.position.set(fx+s*.4, py+92, ZF-32); g.add(tri);
+    });
+    for(let k=0;k<3;k++) rb(1.4, 3, ZF-46, .6, M.housing2, fx, yTop-18-k*6, 40+(ZF-40)/2, g);
+  });
+  // column dividers, pole floors and chamber panels
+  for(let i=1;i<o.cols;i++) rb(5, Hh-20, ZF-40, 1.5, M.housing, -TW/2 + o.colW*i, yMid, 40+(ZF-40)/2, g);
+  colX.forEach(cx=>{
+    railY.forEach((py,k)=>{
+      rb(o.colW-12, PITCH-14, 4, 1.5, M.housing, cx, py, 42, g);
+      // contact shrouds (yellow) at pole boundaries
+      if(k<2) rb(o.colW*.34, 9, 14, 2, M.amber, cx, py - PITCH/2, ZF-16, g);
+      // grey angled guides visible through the frame
+      [-1,1].forEach(s=>{ const t = rb(4, 70, ZF-60, 1, M.housing2, cx + s*(o.colW/2-18), py - 30, 30+(ZF-60)/2+16, g); t.rotation.z = s*0.32; });
+      // spring jaw contacts
+      [py+60, py-60].forEach((jy,j)=>{
+        rb(o.colW*.42, 24, contactZ-50, 2.5, M.housing2, cx, jy + (j? -6:6), 48+(contactZ-50)/2, g);
+        [-1,1].forEach(s=> rb(o.colW*.34, 22, 2.4, .8, M.tin, cx, jy, contactZ + s*(o.size==='NH3'?5.5:4.5), g));
+        rb(o.colW*.38, 4, 18, 1.4, M.steel, cx, jy + (j? 10:-10), contactZ, g);
+      });
+    });
+    // rail clamps behind
+    railY.forEach(py=>{ [-1,1].forEach(s=> rb(o.colW*.6, 9, 22, 2, M.steel, cx, py + s*25, -9, g)); cy(5, 30, M.zinc, cx-o.colW*.18, py, 10, g, 'z'); cy(5, 30, M.zinc, cx+o.colW*.18, py, 10, g, 'z'); });
+  });
+  // head
+  const headH = yTop - yLidTop;
+  rb(TW, headH, ZF+4, 3, M.housing, 0, yLidTop + headH/2, (ZF+4)/2, g);
+  rb(TW-16, 4, ZF-20, 1, M.housing2, 0, yTop+1, (ZF+4)/2, g);
+
+  // ---------- lid (one pivot for all poles and columns) ----------
+  const pivot = new THREE.Group(); pivot.position.set(0, yHinge, ZF); g.add(pivot);
+  const LDp = 22;
+  colX.forEach(cx=>{
+    const rw = 13;
+    [-1,1].forEach(s=>{
+      const r = rb(rw, LID_H-60, LDp, 2.5, M.black, cx + s*(o.colW/2-rw/2-2), (LID_H-60)/2, LDp/2, pivot);
+      rb(4, LID_H-80, 4, 1.2, M.black2, cx + s*(o.colW/2-rw-1), (LID_H-70)/2, LDp+1, pivot);   // binnenrand
+    });
+    rb(o.colW-6, 16, LDp, 2.5, M.black, cx, 8, LDp/2, pivot);                                     // onderbalk
+    relBars.forEach(by=>{
+      rb(o.colW-6, 16, LDp-2, 2.5, M.black, cx, by, LDp/2, pivot);                                // tussenbalk
+      [-1,1].forEach(s=>{                                                                          // schoren (V)
+        const st = rb(9, 58, LDp-6, 2, M.black, cx + s*(o.colW*.2), by - 30, LDp/2-2, pivot);
+        st.rotation.z = -s*0.55;
+      });
+    });
+    relPole.forEach(ry=>{
+      const f = makeFuse(o.size, pivot); f.position.set(cx, ry, fuseZ);
+      // fuse carrier arms to lid frame
+      [-1,1].forEach(s=> rb(8, 26, -fuseZ, 2, M.black2, cx + s*(o.colW/2-14), ry + 50, fuseZ/2, pivot));
+    });
+  });
+  // handle across all columns
+  const hY = LID_H - 33;
+  rb(TW-6, 66, LDp+10, 4, M.black, 0, hY, (LDp+10)/2, pivot);
+  rb(TW-14, 14, 10, 3, M.black, 0, hY+18, LDp+12, pivot);
+  colX.forEach(cx=>{ for(let k=-2;k<=2;k++) rb(3.4, 26, 3, 1, M.dark, cx + k*(o.colW*.13), hY-12, LDp+10.4, pivot); });
+  rb(Math.min(84, TW*.5), 17, 2, 1.2, M.amber, o.cols>1 ? 0 : -6, hY+18, LDp+17.6, pivot);
+  label(Math.min(80, TW*.48), 13, (g2,w,h)=>{ g2.fillStyle='#f0a500'; g2.fillRect(0,0,w,h); txt(g2,'JEAN MÜLLER',w/2,h/2+.4,7.4,700,'#151515'); }, pivot, o.cols>1 ? 0 : -6, hY+18, LDp+18.7, 0, 'jm-'+o.cols);
+  if(o.cols>1){ screw(-TW/2+12, hY+18, LDp+17, pivot, 3); screw(TW/2-12, hY+18, LDp+17, pivot, 3); }
+  [-1,1].forEach(s=> cy(5.5, 16, M.black2, s*(TW/2-24), 0, 4, pivot, 'x'));
+  cy(1.8, TW-14, M.steel, 0, 0, 4, pivot, 'x');
+  pivot.traverse(m=>{ if(m.isMesh) m.userData.strip = o.id; });
+
+  // ---------- cable connection + terminal cover modules ----------
+  const cover = new THREE.Group(); g.add(cover);
+  const cables = new THREE.Group(); g.add(cables);
+  rb(TW-12, 6, ZF-40, 1.5, M.housing, 0, yHinge-3, 40+(ZF-40)/2, g);
+  const phX = o.cols>1 ? [-TW*.33, 0, TW*.33] : [-29, 0, 29];
+  const per = o.cols>1 ? [-15, 15] : [0];
+  const yBolt = -320;
+  phX.forEach((px,i)=>{
+    rb(o.cols>1?60:24, 92, 6, 1.2, M.tin, px, yBolt+30, 54, g);                          // aansluitstrip
+    if(i<2 && o.cols===1) rb(2.4, 110, 70, 1, M.housing2, px+14.5, -330, 76, g);
+    per.forEach(dx=>{
+      const x = px+dx;
+      cy(6, 40, M.zinc, x, yBolt, 72, g, 'z');
+      rb(25, 40, 5, 2, M.tin, x, yBolt-8, 59.5, g);
+      cy(9.5, 30, M.tin, x, yBolt-40, 61, g);
+      cy(9.9, 2, M.steel, x, yBolt-36, 61, g); cy(9.9, 2, M.steel, x, yBolt-46, 61, g);
+      cy(12, 3, M.zinc, x, yBolt, 63.5, g, 'z'); cy(10.5, 3, M.zinc, x, yBolt, 66.5, g, 'z');
+      hexNut(x, yBolt, 73, g, 19, 10);
+      cy(12.6, 22, M.cables[i], x, yBolt-64, 61, cables);
+      cy(11.4, 360, M.cables[i], x, yBolt-62-180, 61, cables);
+    });
+  });
+  colX.forEach((cx,ci)=>{
+    const mw = o.colW-6;
+    // bovenste kapdeel met typeplaatje
+    rb(mw, 64, ZF-26, 3, M.module, cx, yHinge-34, 30+(ZF-26)/2, cover);
+    rb(mw-8, 30, 8, 2, M.housing, cx, yHinge-40, ZF+6, cover);                            // schuifdeel
+    for(let k=0;k<4;k++) rb(mw-14, 1.4, 1.2, .5, M.housing2, cx, yHinge-30-k*6, ZF+10.4, cover);
+    label(mw-10, 22, (g2,w,h)=>{
+      g2.fillStyle='#eceeeb'; g2.fillRect(0,0,w,h);
+      txt(g2,'JEAN MÜLLER',3,3.5,3.4,700,'#1c1f21','left'); txt(g2,'CE',w-3,3.5,3,700,'#1c1f21','right');
+      txt(g2,'IEC/EN 60947-3  AC-22B 690V',3,8.5,2.4,500,'#333','left');
+      txt(g2,o.title,3,13,2.8,700,'#1c1f21','left');
+      txt(g2,o.rating,3,17.5,2.6,600,'#333','left');
+      txt(g2,o.size+'-'+(o.size==='NH3'?'630':'400')+'A',w-3,17.5,2.6,700,'#1c1f21','right');
+    }, cover, cx, yHinge-10, ZF+4.05, 0, 'tp-'+o.id);
+    // onderste kapdeel met wit etiketvlak
+    rb(mw, 64, ZF-26, 3, M.module, cx, yBot+33, 30+(ZF-26)/2, cover);
+    rb(mw-14, 40, 1, .5, std(0xfafafa,.6), cx, yBot+33, ZF+4.6, cover);
+    [-1,1].forEach(s=> rb(5, 18, 4, 1, M.housing2, cx + s*(mw/2-6), yBot+52, ZF+5, cover));
+  });
+  rb(TW, 6, ZF+2, 2, M.housing, 0, yBot+3, (ZF+2)/2, g);
+
+  const st = {id:o.id, group:g, pivot, cover, cables, TW, phX, per, yBolt, angle:0, target:0};
+  strips.push(st); return st;
+}
+
+
+return {buildStrip, strips, M, PITCH, yTop, yBot, ZF, rgeo, rb, cy, hexNut, label, txt};
+})();
+
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
@@ -2621,6 +2883,8 @@ function auxFeeder(fIdx, gz2, lane, eind){
     v(66, uy, zD - 3.0),                      // vloeiend afbuigen naar het tracé
     v(56, uy, -36.5 + lane*4.0)               // dicht langs de opstelling
   ];
+  { scene.updateMatrixWorld(true); const c = (window.JMBOL || []).map(o => auxModGroup.parent.worldToLocal(o.R.localToWorld(new THREE.Vector3(0, o.jm.yBolt - 75, 61)))).sort((a, b) => Math.abs(a.z - zS) - Math.abs(b.z - zS))[0];
+    if(c && Math.abs(c.z - zS) < 1.5){ W[0] = c.clone(); W[1] = v(c.x, Math.min(3.2, c.y - 1.5), c.z); W[2] = v(c.x - 0.4, 0.6, c.z); } }   // start op de kabelschoen onder de Jean Müller SL2
   if(gz2 > 0){
     // BC1: langs de opstelling, om BC2 heen en door de corridor terug
     W.push(
@@ -4344,67 +4608,27 @@ function buildLS(aux){
     const fT = 1.05/hS;                                   // aandeel klemmendeel onderin de textuur
     const matFuse = new THREE.MeshStandardMaterial({color: 0xe9e7df, roughness: 0.55});
     const matMes = new THREE.MeshStandardMaterial({color: 0xc9ced2, roughness: 0.25, metalness: 0.9});
+    // Jean Müller SL2-3X3/3A (NH2, 400 A) als volledig 3D-model (zelfde bibliotheek als de AIO + FUSE kast): veld 5 en 15
+    const JMY = {};
     for(const i of strook){
-      const sx = vx(i), bw = Math.abs(pitch)*0.95, hL = y1 - y0, zFr = zB - 1.125;
-      // vaste basis met railhaken en contactklemmen
-      mesh(new THREE.BoxGeometry(bw, hS, 0.45), matJM, sx, yT + hS/2, zB - 0.3);
-      railY.forEach(ry => { mesh(new THREE.BoxGeometry(bw*0.7, 0.35, 0.3), matJM, sx, ry + 0.75, zB - 0.02); });
-      const clips = [];
-      railY.forEach(ry => { for(const dy of [0.45, -0.45]){ const c = mesh(new THREE.BoxGeometry(bw*0.45, 0.2, 0.12), new THREE.MeshStandardMaterial({color: 0xd08a52, roughness: 0.3, metalness: 0.85, emissive: 0xff5a1a, emissiveIntensity: 0}), sx, ry + dy, zB - 0.56); clips.push(c); } });
-      // vast klemmendeel onderin (wit), met eigen stuk van de textuur
-      { const g = new THREE.PlaneGeometry(bw, 1.05); const uv = g.attributes.uv; for(let k = 0; k < uv.count; k++) uv.setY(k, uv.getY(k)*fT);
-        const t = new THREE.Mesh(g, new THREE.MeshStandardMaterial({map: JMT[variant(i)], roughness: 0.5})); t.position.set(sx, yT + 0.525, zFr - 0.002); t.rotation.y = Math.PI; (meshTarget || scene).add(t);
-        mesh(new THREE.BoxGeometry(bw, 1.05, 0.6), matJM, sx, yT + 0.525, zB - 0.825); }
-      // klapdeksel met patronen: scharnier aan de onderkant, voorzijde
-      const lid = new THREE.Group(); lid.position.set(sx, y0, zFr); (meshTarget || scene).add(lid);
-      const lg = new THREE.BoxGeometry(bw, hL, 0.6); const uv = lg.attributes.uv;
-      const fm = new THREE.MeshStandardMaterial({map: JMT[variant(i)], roughness: 0.45, metalness: 0.12});
-      // UV's van het front (-z, index 5 -> vertices 20..23) op het bovenste deel van de textuur
-      for(let k = 20; k < 24; k++) uv.setY(k, fT + uv.getY(k)*(1 - fT));
-      const lm = new THREE.Mesh(lg, [matJM, matJM, matJM, matJM, matJM, fm]); lm.position.set(0, hL/2, 0.3); lid.add(lm);
-      // ---- 3D-detail Jean Müller SL2-3x3/3A (NH2, 400 A, 185 mm-railsysteem, onderaansluiting met bout M12) ----
-      { const k = hS/1984, tw = bw/256, ph = 0.205*hS;
-        const mGrip = new THREE.MeshStandardMaterial({color: 0x2a2d31, roughness: 0.55}), mGlas = new THREE.MeshStandardMaterial({color: 0xeaf4f8, transparent: true, opacity: 0.12, roughness: 0.04, metalness: 0.3, depthWrite: false});
-        const mRand = new THREE.MeshStandardMaterial({color: 0x0d0e10, roughness: 0.5});
-        const add = (geo, m, x, y, z) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); lid.add(o); return o; };
-        for(const sxx of [-1, 1]) add(new THREE.BoxGeometry(0.05, hL - 0.1, 0.1), mRand, sxx*(bw/2 - 0.025), hL/2, -0.05);        // zijribben
-        railY.forEach((ry, p) => {
-          const yl = ry - y0, top = yl + ph/2;
-          add(new THREE.BoxGeometry(bw*0.64, 34*k, 0.14), mGrip, 0, top - 27*k, -0.07);                                  // greeplip
-          for(let q = 0; q < 3; q++) add(new THREE.BoxGeometry(26*tw, 12*k, 0.05), mRand, (-40 + q*40)*tw, top - 27*k, -0.15);
-          const wh = 0.36*ph, wy = top - 56*k - wh/2;
-          add(new THREE.BoxGeometry((256 - 76)*tw, wh - 8*k, 0.1), mGlas, 0, wy, -0.07);                                // kijkglas
-          if(p < 2) add(new THREE.BoxGeometry(bw*0.9, 0.05, 0.16), mRand, 0, yl - ph/2 - (railY[p] - railY[p + 1] - ph)/2, -0.08);  // scheidingsrib tussen polen
-        });
-      }
-      const leds = [];
-      railY.forEach(ry => {
-        const yl = ry - y0;
-        const fu = new THREE.Mesh(new THREE.BoxGeometry(bw*0.62, 0.62, 0.42), matFuse); fu.position.set(0, yl, 0.82); lid.add(fu);   // NH-patroon
-        for(const dy of [0.45, -0.45]){ const ms = new THREE.Mesh(new THREE.BoxGeometry(bw*0.4, 0.22, 0.09), matMes); ms.position.set(0, yl + dy, 0.9); lid.add(ms); }
-        const led = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 8), new THREE.MeshStandardMaterial({color: 0x3a1a18, emissive: 0xff2a1f, emissiveIntensity: 0})); led.position.set(bw*0.32, yl + 0.55, -0.03); lid.add(led); leds.push(led);
-      });
-      const sp = {open: false, lid, leds, clips, veld: i + 1}; st.strips.push(sp);
-      LSANIM.push({type: 'lid', obj: lid, target: () => sp.open ? -1.15 : 0});
-      lid.userData.klik = () => {
+      const sx = vx(i);
+      const R = new THREE.Group(); R.scale.setScalar(0.01); R.rotation.y = Math.PI; R.position.set(sx, railY[1], zB); (meshTarget || scene).add(R);   // front naar de LS-deuren (-z)
+      const jm = JMLIB.buildStrip({id: 'bol-sl2-' + i, cols: 1, colW: 100, size: 'NH2', ox: 0, title: 'SL2-3X3/3A', rating: '400A · 690V', root: R}); jm.cables.visible = false;
+      JMY[i] = railY[1] + (jm.yBolt - 58)/100;
+      (window.JMBOL = window.JMBOL || []).push({R, jm});
+      const sp = {open: false, lid: jm.pivot, leds: [], clips: [], veld: i + 1}; st.strips.push(sp);
+      LSANIM.push({type: 'lid', obj: jm.pivot, target: () => sp.open ? THREE.MathUtils.degToRad(34) : 0});
+      jm.group.userData.klik = () => {
         sp.open = !sp.open; lsBijwerken(st);
         if(sp.open) lsMelding('Veld ' + sp.veld + ': Jean Müller-strook <b>uitgeklapt</b> — afgaande kabel spanningsloos.' + (st.closed ? ' <b>Let op:</b> de contactklemmen op de rails staan nog onder spanning!' : ' Rails zijn spanningsloos.'), st.closed ? '#b3261e' : '#1f7a3a');
         else lsMelding('Veld ' + sp.veld + ': strook <b>ingeklapt</b>' + (st.closed ? ' — afgaande groep weer onder spanning.' : ' (rails spanningsloos).'));
       };
-      LSKLIK.push(lid);
-      // onderaansluiting: 3x bout M12 met moer en vertinde kabelschoen achter de transparante kap
-      for(let k = 0; k < 3; k++){ const kx = sx - bw*0.3 + k*bw*0.3;
-        const bt = mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.3, 8), matBolt, kx, yT + 0.62, zFr - 0.12); bt.rotation.x = Math.PI/2;
-        const mo = mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.09, 6), matBolt, kx, yT + 0.62, zFr - 0.2); mo.rotation.x = Math.PI/2;
-        if(i === 4 || i === 14){ mesh(new THREE.BoxGeometry(0.2, 0.42, 0.05), matTinned, kx, yT + 0.5, zFr - 0.12);
-          mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.3, 10), matTinned, kx, yT + 0.17, zFr - 0.12);
-          mesh(new THREE.CylinderGeometry(0.11, 0.11, 2.4, 10), matSheath, kx, yT - 1.18, zFr - 0.12); } }
-      mesh(new THREE.BoxGeometry(bw*0.94, 0.62, 0.05), new THREE.MeshStandardMaterial({color: 0xd6e2e8, transparent: true, opacity: 0.25, roughness: 0.05, depthWrite: false}), sx, yT + 0.4, zFr - 0.28);
+      LSKLIK.push(jm.group);
     }
     // afgaande LS-kabels: vanaf de onderaansluiting omlaag de open kelder in en door de afsluitplaat in de LS-sparing naar buiten
     if(aux){
       const gaten = []; for(let n = 0; n < 20; n++) gaten.push([-5.4 + Math.floor(n/2)*1.2, n%2 ? 1.5 : 2.5]);
-      const volg = strook.map(i => ({x: vx(i), enkel: i === 4 || i === 14, r: 0.19, gat: i === 4 ? 3 : 16}));
+      const volg = strook.map(i => ({x: vx(i), enkel: i === 4 || i === 14, r: 0.19, gat: i === 4 ? 3 : 16, jmY: JMY[i]}));
       volg.push({x: vx(19) - Math.abs(pitch)/4, enkel: false, r: 0.13, gat: 18});   // NH00 -> meterkast betreedbaar station
       volg.sort((a, b) => a.x - b.x);
       const zFr = zB - 1.125;
@@ -4414,9 +4638,9 @@ function buildLS(aux){
         const enkel = fd.enkel;
         const aders = enkel ? [-1, 0, 1] : [0];
         aders.forEach(j => {
-          const ox = enkel ? j*Math.abs(pitch)*0.3 : 0, hj = enkel ? j*0.13 : 0;
-          const y0c = enkel ? yT - 1.0 : yT + 0.3;
-          const P = [new THREE.Vector3(sx + ox, y0c, zFr - 0.12), new THREE.Vector3(sx + ox, 6.0, zFr - 0.12), new THREE.Vector3(sx*0.75 + hx*0.25 + hj, 3.6, 22.9),
+          const ox = enkel ? j*0.29 : 0, hj = enkel ? j*0.13 : 0;
+          const y0c = enkel ? fd.jmY - 0.55 : yT + 0.3, zc = enkel ? zB - 0.61 : zFr - 0.12;      // enkel: vanaf de kabelschoen onder de JM-strook (bout M12)
+          const P = [new THREE.Vector3(sx + ox, y0c, zc), new THREE.Vector3(sx + ox, 6.0, zc), new THREE.Vector3(sx*0.75 + hx*0.25 + hj, 3.6, 22.9),
             new THREE.Vector3(hx + hj, hy + 0.2, 22.35), new THREE.Vector3(hx + hj, hy, 21.4), new THREE.Vector3(hx + hj, hy - 0.3, 18.5)];
           const kb = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(P, false, 'centripetal'), 60, enkel ? 0.11 : fd.r, 8, false), matSheath); (meshTarget || scene).add(kb); if(enkel) window.LSAUXSTUB.push(kb);
         });
@@ -6515,6 +6739,13 @@ PCSMOD.MAAT.forEach(g => g.visible = false); AUXMOD.MAAT.forEach(g => g.visible 
 stationAux.visible = false; if(window.OUD_AUXPLAAT) OUD_AUXPLAAT.visible = false;
 // AC: de bestaande ladderbaankabels sluiten aan op het bestaande railveld; de rails/kabelstompen van de module vervallen (afdekkap blijft)
 PCSMOD.ACD.visible = false; PCSMOD.AUXSTUB.forEach(o => o.visible = false);
+// afdekkap AC passend maken over het bestaande AC-railveld (rails + kabelschoenen), met 35 mm speling rondom in de hoogte
+{ scene.updateMatrixWorld(true); const kap = PCSMOD.ACKAP, a = new THREE.Box3().setFromObject(acGroup);
+  const want0 = a.min.y - 0.35, want1 = a.max.y + 0.35;
+  let k = new THREE.Box3().setFromObject(kap); kap.scale.y *= (want1 - want0)/(k.max.y - k.min.y); scene.updateMatrixWorld(true);
+  k = new THREE.Box3().setFromObject(kap); const sy = kap.parent.getWorldScale(new THREE.Vector3()).y; kap.position.y += (want0 - k.min.y)/sy;
+  k = new THREE.Box3().setFromObject(kap);
+  if(a.max.z + 0.1 > k.max.z) kap.scale.z *= 1 + (a.max.z + 0.1 - k.max.z)/((k.max.z - k.min.z) || 1); scene.updateMatrixWorld(true); }
 // aux-stompjes onder de NH2-stroken in het LS-rek vervallen: de YMvKas loopt daar al vanaf de strook
 (window.LSAUXSTUB || []).forEach(o => o.visible = false);
 // hulpvoeding YMvKas: opnieuw trekken naar de nieuwe invoer (wartel rechtsonder in de verdeelkop) van BC1 en BC2
@@ -7831,7 +8062,7 @@ wrap.addEventListener('wheel', e => {
 function resize(){
   const w = wrap.clientWidth, h = wrap.clientHeight;
   renderer.setSize(w, h);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
   camera.aspect = w/h;
   camera.updateProjectionMatrix();
 }
@@ -7986,7 +8217,8 @@ animate();
   #mob .fpOnly{display:none}
   #mob.fp .fpOnly{display:flex}
   #mob.fp #mobPad{display:grid}
-  #mobPad{display:none}
+  #mobPad{display:grid}
+  @media (pointer:fine){#mob:not(.fp) #mobPad{display:none}}
   #mobHint{position:absolute;left:50%;top:calc(12px + env(safe-area-inset-top));transform:translateX(-50%);background:rgba(36,48,56,.85);color:#fff;padding:7px 12px;border-radius:8px;font-size:12px;
     pointer-events:none;opacity:0;transition:opacity .4s;white-space:nowrap}
   #mobHint.toon{opacity:1}
@@ -8049,6 +8281,16 @@ animate();
     if(was >= 2){ e.stopPropagation(); dragging = false; if(T.size === 1){ g0 = null; } }
     if(T.size === 0) g0 = null; };
   window.addEventListener('pointerup', los, true); window.addEventListener('pointercancel', los, true);
+  // vrij bewegen buiten de loopmodus: pijltjestoetsen / pijltjesknoppen schuiven het kijkpunt (vooruit, achteruit, opzij); shift = sneller
+  const KO = {}; const PIJL = ['arrowup', 'arrowdown', 'arrowleft', 'arrowright'];
+  window.addEventListener('keydown', e => { const k = e.key.toLowerCase(); if(e.key === 'Shift') KO.shift = true; if(!FP.aan && PIJL.includes(k) && !(e.target.tagName === 'INPUT' && e.target.type === 'range')){ KO[k] = true; e.preventDefault(); } });
+  window.addEventListener('keyup', e => { KO[e.key.toLowerCase()] = false; if(e.key === 'Shift') KO.shift = false; }); window.addEventListener('blur', () => { for(const k in KO) KO[k] = false; });
+  let tO = performance.now();
+  (function orbitLoop(){ requestAnimationFrame(orbitLoop); const t = performance.now(), dt = Math.min(0.05, (t - tO)/1000); tO = t; if(FP.aan) return;
+    const q = k => KO[k] || FP.keys[k], fw = (q('arrowup') ? 1 : 0) - (q('arrowdown') ? 1 : 0), sd = (q('arrowright') ? 1 : 0) - (q('arrowleft') ? 1 : 0);
+    if(!fw && !sd) return; try{ if(typeof auto !== 'undefined') auto = false; }catch(_){}
+    const v = Math.max(10, Math.min(300, radius))*0.6*dt*(KO.shift || FP.keys.shift ? 2.5 : 1);
+    target.x += (-Math.sin(theta)*fw + Math.cos(theta)*sd)*v; target.z += (-Math.cos(theta)*fw - Math.sin(theta)*sd)*v; if(typeof VUIL !== 'undefined') VUIL.n = Math.max(VUIL.n, 2); })();
   if(window.matchMedia('(pointer:coarse)').matches) setTimeout(() => toonHint('1 vinger = draaien · 2 vingers = zoomen/schuiven · tik = deur open'), 1500);
 })();
 </script>
