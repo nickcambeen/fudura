@@ -111,7 +111,8 @@
     <ul>
       <li>Slepen: draaien · rechts slepen / shift: schuiven · scroll: zoomen</li>
       <li>Klik op een deur of NH-strook: open / dicht</li>
-      <li>Rondlopen (P): WASD of pijltjes, muis = kijken, shift = rennen, Q/E = bukken/opstaan</li>
+      <li>Vrij kijken: WASD of pijltjes = schuiven, spatie = stijgen, Ctrl = dalen, shift = sneller</li>
+      <li>Rondlopen (P): WASD of pijltjes, muis = kijken, shift = rennen, Q/Ctrl = bukken, E/spatie = opstaan</li>
       <li>Elektrische step (F): W = gas, S = remmen/achteruit, A/D = sturen, shift = turbo (± 50 km/h)</li>
       <li>Telefoon: 1 vinger draaien, 2 vingers zoomen/schuiven, knoppen om te lopen</li>
     </ul>
@@ -1698,7 +1699,7 @@ window.addEventListener('keydown', e => {
   FP.keys[e.key.toLowerCase()] = true; if(e.key === 'Shift') FP.keys.shift = true;
   if(e.key === 'p' || e.key === 'P'){ zetFP(!FP.aan); return; }
   if(e.key === 'f' || e.key === 'F'){ zetStep(!FP.step); return; }
-  if(FP.aan && ['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(e.key.toLowerCase())) e.preventDefault();
+  if(FP.aan && ['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' ', 'control'].includes(e.key.toLowerCase())) e.preventDefault();
   if(!FP.aan && (e.key === '+' || e.key === '=')) radius = Math.max(4, radius*0.85);
   if(!FP.aan && e.key === '-') radius = Math.min(900, radius*1.18);
   if(e.key === '0'){ if(FP.aan) zetFP(false); VIEWS.bOverzicht(); } });
@@ -1733,7 +1734,7 @@ function stapFP(dt){
   else {
   if(k.w || k.arrowup) FP.pos.addScaledVector(f, v); if(k.s || k.arrowdown) FP.pos.addScaledVector(f, -v);
   if(k.d || k.arrowright) FP.pos.addScaledVector(rt, v); if(k.a || k.arrowleft) FP.pos.addScaledVector(rt, -v); }
-  if(k.q) FP.oog = Math.max(6, FP.oog - 20*dt); if(k.e) FP.oog = Math.min(17, FP.oog + 20*dt);
+  if(k.q || k.control) FP.oog = Math.max(6, FP.oog - 20*dt); if(k.e || k[' ']) FP.oog = Math.min(17, FP.oog + 20*dt);
   const yv = Math.abs(FP.pos.z) < PL/2 + 0.3 && FP.pos.x > XP(0) - PL/2 && FP.pos.x < XP(N_PL - 1) + PL/2 ? PL_H : 0;      // op de stelconplaten 14 cm hoger
   const oog = FP.oog + yv + (FP.step ? 1.2 : 0); STEP.g.visible = !!FP.step;
   if(FP.step){ STEP.g.position.set(FP.pos.x - Math.sin(FP.yaw)*3.0, yv, FP.pos.z - Math.cos(FP.yaw)*3.0); STEP.g.rotation.set(0, FP.yaw, 0); STEP.g.rotateZ(stuur*0.14*Math.min(1, Math.abs(FP.v)/50)); const rw = FP.v*dt/1.0; STEP.wv.rotation.x -= rw; STEP.wa.rotation.x -= rw; STEP.zetKmh(FP.v); }
@@ -1847,11 +1848,13 @@ animate();
   // vrij bewegen buiten de loopmodus: pijltjestoetsen / pijltjesknoppen schuiven het kijkpunt (vooruit, achteruit, opzij); shift = sneller
   const KO = {}; const PIJL = ['arrowup', 'arrowdown', 'arrowleft', 'arrowright'];
   const WASD = {w: 'arrowup', a: 'arrowleft', s: 'arrowdown', d: 'arrowright'};
-  window.addEventListener('keydown', e => { if(e.target.tagName === 'INPUT' && e.target.type !== 'checkbox' && e.target.type !== 'range') return; const k = WASD[e.key.toLowerCase()] || e.key.toLowerCase(); if(e.key === 'Shift') KO.shift = true; if(!FP.aan && PIJL.includes(k) && !(e.target.tagName === 'INPUT' && e.target.type === 'range')){ KO[k] = true; e.preventDefault(); } });
+  window.addEventListener('keydown', e => { if(e.target.tagName === 'INPUT' && e.target.type !== 'checkbox' && e.target.type !== 'range') return; const k = WASD[e.key.toLowerCase()] || e.key.toLowerCase(); if(e.key === 'Shift') KO.shift = true; if(!FP.aan && (PIJL.includes(k) || k === 'control' || k === ' ') && !(e.target.tagName === 'INPUT' && e.target.type === 'range')){ KO[k] = true; e.preventDefault(); } });
   window.addEventListener('keyup', e => { KO[WASD[e.key.toLowerCase()] || e.key.toLowerCase()] = false; if(e.key === 'Shift') KO.shift = false; }); window.addEventListener('blur', () => { for(const k in KO) KO[k] = false; });
   let tO = performance.now();
   (function orbitLoop(){ requestAnimationFrame(orbitLoop); const t = performance.now(), dt = Math.min(0.05, (t - tO)/1000); tO = t; if(FP.aan) return;
     const q = k => KO[k] || FP.keys[k], fw = (q('arrowup') ? 1 : 0) - (q('arrowdown') ? 1 : 0), sd = (q('arrowright') ? 1 : 0) - (q('arrowleft') ? 1 : 0);
+    const up = (KO[' '] ? 1 : 0) - (KO.control ? 1 : 0);
+    if(up){ target.y = Math.max(-15, Math.min(80, target.y + up*Math.max(6, Math.min(60, radius*0.3))*dt*(KO.shift ? 2.5 : 1))); if(typeof VUIL !== 'undefined') VUIL.n = Math.max(VUIL.n, 2); }
     if(!fw && !sd) return; try{ if(typeof auto !== 'undefined') auto = false; }catch(_){}
     const v = Math.max(10, Math.min(300, radius))*0.6*dt*(KO.shift || FP.keys.shift ? 2.5 : 1);
     target.x += (-Math.sin(theta)*fw + Math.cos(theta)*sd)*v; target.z += (-Math.cos(theta)*fw - Math.sin(theta)*sd)*v; if(typeof VUIL !== 'undefined') VUIL.n = Math.max(VUIL.n, 2); })();
