@@ -1255,11 +1255,13 @@ CAT = null;
 // ---------- losse GLB-modellen (exact uit de EMS- en Xiria-pagina), pas na de eerste render geladen ----------
 const GLB = (() => { let ld = null;
   return (url, cb) => { try{ if(!ld){ ld = new THREE.GLTFLoader(); if(window.MeshoptDecoder) ld.setMeshoptDecoder(MeshoptDecoder); }
-    ld.load(url, g => { g.scene.traverse(o => { if(o.isMesh){ const tr = [].concat(o.material).some(m => m.transparent); o.castShadow = !tr; o.receiveShadow = true; } }); cb(g.scene); renderer.shadowMap.needsUpdate = true; vuil(6); }, undefined, e => console.warn('GLB', url, e)); }catch(e){ console.warn('GLB', e); } }; })();
+    const klaar = g => { g.scene.traverse(o => { if(o.isMesh){ const tr = [].concat(o.material).some(m => m.transparent); o.castShadow = !tr; o.receiveShadow = true; } }); cb(g.scene); renderer.shadowMap.needsUpdate = true; vuil(6); };
+    const reserve = () => fetch(url.replace(/\.glb$/, '.b64.txt')).then(r => r.text()).then(t => { const b = atob(t.trim()), a = new Uint8Array(b.length); for(let i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); ld.parse(a.buffer, '', klaar, e => console.warn('GLB', e)); }).catch(e => console.warn('GLB', url, e));
+    ld.load(url, klaar, undefined, reserve); }catch(e){ console.warn('GLB', e); } }; })();
 setTimeout(() => GLB('models/xiria.glb', s => { s.scale.setScalar(10); s.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(s); s.position.set(-(b.min.x + b.max.x)/2, -b.min.y, -b.min.z); HVK.XR.add(s); }), 600);
 const EMSV = (function(){
   // EMS-buitenkast (Pegeo KVSP1-413/SVD met EMS Groot) aan de kopse kant voorbij de laatste AIO; model 1-op-1 uit de EMS-pagina (mm → ×0,01)
-  const PWd = 7.85, PDd = 4.72, G = new THREE.Group(); scene.add(G); const ex = XA(N_AIO - 1) + AW/2 + 2.5 + PWd/2, ez = AZ + AD/2 - PDd/2;
+  const PWd = 7.85, PDd = 4.72, G = new THREE.Group(); scene.add(G); const ex = XA(N_AIO - 1) + AW/2 + 5.0 + PWd/2, ez = AZ + AD/2 - PDd/2;
   G.position.set(ex, 0, ez);
   const M3 = new THREE.Group(); M3.scale.setScalar(0.01); G.add(M3);
   const piv = new THREE.Group(); piv.position.set(392.5, 0, 236); M3.add(piv);
