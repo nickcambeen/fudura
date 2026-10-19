@@ -87,7 +87,7 @@
       <li><span class="nAio">5</span> × Delta DELTerra C 125 kW / 261 kWh (1P260S, 832 V, LFP 314 Ah), kast 1000 × 1420 × 2250 mm, 2720 kg; #1 master met controller<span class="nSlave">, #2..#5 slave</span></li>
       <li>Elke kast op een metal base 1020 × 1420 × 220 mm met kabelbanen voorin: AC #1..#5 (goten DATA en AIO-bundels, 2 lege goten ertussen), signaal, comm (handleiding fig. 5-15)</li>
       <li>Binnen: 5 accupacks 780 × 1160 × 240 (MSD), koelunit, PCS 680 × 850 × 240, besturingskast, MCCB QF0 4P, energiemeter, brandbeveiliging in de deur</li>
-      <li>Junction box Fudura/O&amp;K OFK252082 C02a: 1400 × 375 × 1350 + plint 220, RAL 7035, pertinax montageplaat; 2 × SL2-3x3/3A, SL3-3x6-1250 met 6 doorverbindingsmessen TM-3, 3 × SL2; N- en PE-rail; groepen F1..F5, hoofdschakelaar OT100, kastverlichting</li>
+      <li>Junction box Fudura/O&amp;K OFK252082 C03a (uit STEP): romp 1400 × 355 × 1315, kap 375 diep, RVS-plint 220, montageplaat 1290 × 1275; 2 × SL2-3x3/3A, SL3-3x6/1250/HA met 6 × TM-3, 3 × SL2 op Cu-rails 60 × 10; N- en PE-rail 40 × 10 × 750; VMS64 + VMS43 met S203-B10 3P+N, DS201 B16 30 mA, 2 × wcd; kastverlichting en deurschakelaar</li>
       <li>Per AIO 4 singles 95 mm² (L1 L2 L3 N, geen PE) door baan AC #n naar de MCCB-aansluitvlaggen links; kasten onderling via de aardpunten doorverbonden en vanaf #1 naar de PE-rail (vereffening)</li>
       <li>Voeding SL3 met 3F + N + PE (4 × 240 mm² per fase), door de sparing in de stelconplaat en een kort stuk door de grond</li>
       <li>Alles op stelconplaten 2000 × 2000 × 140</li>
@@ -174,13 +174,13 @@ const grond = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000), matGras); gron
 const grindvlak = new THREE.Mesh(new THREE.PlaneGeometry(150, 70), matGrind); grindvlak.rotation.x = -Math.PI/2; grindvlak.position.set(28, 0.05, -2); grindvlak.receiveShadow = true; scene.add(grindvlak);
 const GRONDMAT = [matGras, matGrind];
 
-// ---------- opstelling: Delta DELTerra C (handleiding V1.4, jan 2026) + Fudura/O&K junction box OFK252082 (C02a) ----------
+// ---------- opstelling: Delta DELTerra C (handleiding V1.4, jan 2026) + Fudura/O&K junction box OFK252082 (C03a, STEP 21-9-2026) ----------
 // kast 1000 x 1420 x 2250 mm op metal base 1020 x 1420 x 220 mm (tabel 2-1), 5 kasten tegen elkaar (master #1 + slave #2..#5, fig. 5-17)
 const N_AIO = (() => { let n = 5; try{ n = parseInt(new URLSearchParams(location.search).get('n')) || 5; }catch(_){} return Math.max(1, Math.min(5, n)); })(), PL = 20, PL_H = 1.4;
 const NR = N_AIO > 1 ? '#1..#' + N_AIO : '#1';
 const CW = 10.0, AW = 10.2, AD = 14.2, AH = 22.5, AZ = 0;
 const SKH = 2.2, SD = AD, SKY = PL_H + SKH;
-const KW = 14.0, KD = 3.75, KH = 13.5, KP = 2.2;                                       // O&K: 1400 breed, 375 diep, 1350 kast + 220 plint
+const KW = 14.0, KD = 3.55, KH = 13.15, KP = 2.2;                                      // O&K C03a: romp 1400 × 355 × 1315, kap 1400 × 375 × 35 (20 mm overstek voor), plint 220
 const XA = i => i*AW;
 const KXW = XA(0) - AW/2 - 0.05 - KD/2, KZW = AZ;                                       // junction box 90° gedraaid tegen de zijkant van #1, deuren naar buiten (-x)
 const SX0 = KXW - KD/2, SX1 = XA(N_AIO - 1) + AW/2;
@@ -766,135 +766,137 @@ function buildStrip(o){
 return {buildStrip, strips, M, PITCH, yTop, yBot, ZF, rgeo, rb, cy, hexNut, label, txt};
 })();
 
-// ---------- junction box O&K OFK252082 C02a (Fudura): 1400 x 375 x 1350 + plint 220, RAL 7035, montageplaat pertinax ----------
-// stuklijst: SL3-3x6-1250 met 6 doorverbindingsmessen TM-3/ISM 1250 A (voeding), 5 x SL2-3x3/3A (NH2), N- en PE-rail,
-// hoofdschakelaar OT100F4N2 (4p 100 A, hendel OHBS2AJ), 5 x DS203NC 3p+N B16 300 mA (groep F1..F5), 2 x DS201 1P+N 16 A 30 mA, 1 x 300 mA,
-// 2 x WCD 2P+RA op DIN, JUNG 622W wcd, kastverlichting met deurcontact, 27 rijgklemmen UK5N
+// ---------- junction box O&K OFK252082 C03a (Fudura), maten uit de STEP (Solid Edge, 21-9-2026) ----------
+// romp 1400 × 355 × 1315 (2 mm plaat, boven en onder open), kap 1400 × 375 × 35 met isolatie, RVS-plint 220, montageplaat 1290 × 1275 × 18 (bruin, houten inslagmoeren M8)
+// 2 × SL2-3x3/3A, SL3-3x6/1250/HA (4 × M12, 6 × TM-3 ISM 1250 A), 3 × SL2; Cu-rails 60 × 10 (L1/L2/L3), N-rail en PE-rail Cu 40 × 10 × 750
+// VMS64 + VMS43 met S203-B10 3P+N, DS201 B16 30 mA, PTV 4-klemmen, 2 × wcd, N/PE-hakenrail; kastverlichting Finder 6 W, deurschakelaar
 const KG = new THREE.Group(); KG.position.set(KXW, 0, KZW); KG.rotation.y = -Math.PI/2; scene.add(KG);
 const K = new THREE.Group(); KG.add(K);
-const KS = PL_H + KP, KT = KS + KH, KZ0 = -1.55;                                          // onderkant / bovenkant kast, montageplaat
-const JX = mm => mm/100 - KW/2, JY = mm => KT - mm/100;                                   // maten uit de O&K-tekening (mm vanaf links / vanaf boven)
+const KS = PL_H + KP, KT = KS + KH, KZ0 = -KD/2 + 0.31;                                  // onderkant / bovenkant romp, voorvlak montageplaat (31 mm uit de achterwand)
+const JX = mm => mm/100 - KW/2, JY = mm => KT - mm/100, JB = mm => KS + mm/100, JZ = mm => -KD/2 + mm/100;   // mm vanaf links / boven / plint / achterwand
+const matRVS = M(0xb8bdc0, {roughness: 0.35, metalness: 0.75});
 { const r = matRal7035, rd = M(0xc5c8c5, {roughness: 0.5, metalness: 0.15});
-  // plint 220: vier wanden, voorplaat met kabeluitsparing, achterwand met doorvoer naar de metal base
-  box(K, KW, KP, 0.08, rd, 0, PL_H + KP/2, KD/2 - 0.04);
-  box(K, 0.08, KP, KD, rd, -KW/2 + 0.04, PL_H + KP/2, 0); box(K, 0.08, KP, KD, rd, KW/2 - 0.04, PL_H + KP/2, 0);
+  // RVS-plint 220: voor- en achterpaneel 1396 × 40, zijpanelen 52 × 351 (achter een doorvoer naar de metal base), 6 × M10 naar de romp
+  box(K, KW - 0.04, KP, 0.4, matRVS, 0, PL_H + KP/2, KD/2 - 0.2); box(K, KW - 0.04, 0.15, 0.4, matRVS, 0, KS - 0.075, KD/2 - 0.2);
+  for(const s of [-1, 1]) box(K, 0.52, KP, KD - 0.04, matRVS, s*(KW/2 - 0.26), PL_H + KP/2, 0);
   const xo0 = KAN_Z0 - 0.15, xo1 = AD/2 - 0.05;                                                       // doorvoeropening achter (lokale x = wereld z)
-  box(K, xo0 + KW/2, KP, 0.08, rd, (-KW/2 + xo0)/2, PL_H + KP/2, -KD/2 + 0.04); box(K, xo1 - xo0, 0.25, 0.08, rd, (xo0 + xo1)/2, KS - 0.125, -KD/2 + 0.04);
-  // kastlichaam
-  box(K, KW, KH, 0.08, r, 0, KS + KH/2, -KD/2 + 0.04);
-  for(const s of [-1, 1]) box(K, 0.08, KH, KD, r, s*(KW/2 - 0.04), KS + KH/2, 0);
-  box(K, KW, 0.12, KD, M(0xaab0b3), 0, KS + 0.06, 0);                                                  // bodemplaat
-  box(K, KW + 0.24, 0.2, KD + 0.24, r, 0, KT + 0.1, 0.05); box(K, KW + 0.1, 0.06, KD + 0.1, rd, 0, KT + 0.23, 0.05);
-  for(const x of [JX(62), JX(1342)]){ const o = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.08, 8, 18), matZink); o.position.set(x, KT + 0.62, 0); K.add(o); cyl(K, 0.15, 0.3, matZink, x, KT + 0.35, 0, null, 10); }
-  // montageplaat (pertinax) en voorframe
-  box(K, JX(1345) - JX(53), JY(100) - JY(1292), 0.12, matPertinax, (JX(53) + JX(1345))/2, (JY(100) + JY(1292))/2, KZ0 - 0.06);
-  for(const s of [-1, 1]) box(K, 0.3, KH - 0.2, 0.25, rd, s*(KW/2 - 0.3), KS + KH/2, KD/2 - 0.35);
-}
-// fase-rails L1/L2/L3 (Jean Müller 185 mm-raster) achter de stroken
-const yRail = [JY(330), JY(515), JY(700)];
-yRail.forEach((y, k) => { box(K, JX(806) - JX(70), 0.3, 0.1, matKoper, (JX(70) + JX(806))/2, y, KZ0 + 0.3);
-  for(const x of [JX(78), JX(798)]) box(K, 0.4, 0.55, 0.32, M(0xc0392b, {roughness: 0.6}), x, y, KZ0 + 0.16); });
-// N- en PE-rail onderin met boutenrij
-const yNr = JY(1114), yPEr = JY(1218);
-for(const [y, txt] of [[yNr, 'N'], [yPEr, 'PE']]){ box(K, JX(815) - JX(62), 0.35, 0.12, matKoper, (JX(62) + JX(815))/2, y, KZ0 + 0.35);
-  for(const x of [JX(80), JX(797)]) box(K, 0.35, 0.5, 0.3, matIso, x, y, KZ0 + 0.15);
-  for(let k = 0; k < 12; k++) cyl(K, 0.08, 0.16, matZink, JX(110 + k*60), y, KZ0 + 0.48, 'z', 6);
-  plak(K, 0.6, 0.3, lbl(txt, 96, 48, txt === 'N' ? '#1f5fbf' : '#3fa34d', '#fff'), JX(40), y, KZ0 + 0.02); }
-// NH-lastscheiderstroken Jean Müller (3D-model SL-stroken): van links SL2 (#1), SL2 (#2), SL3-3X6/1250/HA (voeding), SL2 (#3), SL2 (#4), SL2 (#5)
-const JMR = new THREE.Group(); JMR.scale.setScalar(0.01); JMR.position.set(0, yRail[1], KZ0 + 0.35); KG.add(JMR);
-const SLOTS = [{t: 'SL2', c: 138, naar: 0}, {t: 'SL2', c: 238, naar: 1}, {t: 'SL3', c: 393, naar: -1}, {t: 'SL2', c: 548, naar: 2}, {t: 'SL2', c: 648, naar: 3}, {t: 'SL2', c: 748, naar: 4}];
-SLOTS.forEach((s, n) => { const groot = s.t === 'SL3'; s.x = (s.c - 700)/100;
-  s.st = JMLIB.buildStrip(groot ? {id: 'sl3', cols: 2, colW: 105, size: 'NH3', ox: s.c - 700, title: 'SL3-3X6/1250/HA', rating: '1250A · 690V', root: JMR}
+  box(K, xo0 + KW/2, KP, 0.4, matRVS, (-KW/2 + xo0)/2, PL_H + KP/2, -KD/2 + 0.2); box(K, xo1 - xo0, 0.25, 0.4, matRVS, (xo0 + xo1)/2, KS - 0.125, -KD/2 + 0.2);
+  for(let k = 0; k < 3; k++) for(const s of [-1, 1]) cyl(K, 0.09, 0.06, matZink, JX(150 + k*550), KS - 0.4, s*(KD/2 + 0.01), 'z', 6);
+  // romp: achterwand, zijwanden, voorframe 24 mm, boven en onder open; verwijderbaar bodemprofiel voor
+  box(K, KW, KH, 0.02, r, 0, KS + KH/2, -KD/2 + 0.01);
+  for(const s of [-1, 1]){ box(K, 0.02, KH, KD, r, s*(KW/2 - 0.01), KS + KH/2, 0); box(K, 0.24, KH, 0.2, r, s*(KW/2 - 0.12), KS + KH/2, KD/2 - 0.1); }
+  box(K, KW, 0.24, 0.2, r, 0, KT - 0.12, KD/2 - 0.1); box(K, JX(1372) - JX(28), 0.3, 0.65, r, 0, KS + 0.15, JZ(355 - 32.5));
+  // kap 1400 × 375 × 35 (20 mm overstek aan de voorzijde) met isolatie, 2 hijshoeken met 4 × oogbout M12
+  box(K, KW, 0.35, KD + 0.2, r, 0, KT + 0.175, 0.1); box(K, JX(1348) - JX(52), 0.2, 2.57, M(0x6f7376, {roughness: 0.9}), 0, KT - 0.1, JZ(50 + 128.5));
+  for(const x of [JX(40), JX(1360)]){ box(K, 0.71, 0.38, KD - 0.3, rd, x, KT + 0.19 + 0.18, 0);
+    for(const z of [-1.0, 1.0]){ const o = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.06, 8, 18), matZink); o.position.set(x, KT + 0.85, z); K.add(o); cyl(K, 0.12, 0.3, matZink, x, KT + 0.6, z, null, 10); } }
+  // montageplaat 1290 × 1275 × 18 (x 54,6–1344,6, y 2–1277) met 4 houten inslagmoeren M8
+  box(K, 12.9, 12.75, 0.18, matPertinax, JX(54.6 + 645), JB(2 + 637.5), KZ0 - 0.09);
+  for(const [x, y] of [[90, 40], [1310, 40], [90, 1240], [1310, 1240]]) cyl(K, 0.08, 0.04, matZink, JX(x), JB(y), KZ0 + 0.02, 'z', 6);
+  // deuraardrail 20 × 6 aan de binnenzijde rechts
+  box(K, 0.06, 0.2, 2.1, matKoper, JX(1365), JB(72), JZ(218)); }
+// fase-rails L1/L2/L3: Cu 60 × 10, 630 lang (x 159–789), plat op 2 × SH100-railhouders, achter een isolerende schotplaat
+const yRail = [JB(1052), JB(867), JB(682)];
+yRail.forEach((y, k) => { box(K, 6.3, 0.6, 0.1, matKoper, JX(474), y, JZ(103));
+  plak(K, 0.35, 0.3, lbl('L' + (k + 1), 64, 48, ['#7a4a22', '#1c1c1c', '#8e9397'][k], '#fff', 'bold 30px Arial'), JX(800), y, JZ(108.5)); });
+box(K, 6.44, 4.69, 0.36, M(0x9da3a7, {roughness: 0.6, transparent: true, opacity: 0.85}), JX(474), JB(863.5), JZ(89));                                        // schotplaat
+for(const x of [224, 724]){ box(K, 0.38, 4.3, 0.4, M(0x2e3134, {roughness: 0.6}), JX(x), JB(852), JZ(51)); yRail.forEach(y => box(K, 0.38, 0.75, 0.37, M(0xc0392b, {roughness: 0.6}), JX(x), y, JZ(89.5))); }   // SH100 185
+for(const [x0, x1] of [[205, 291], [657, 743]]) box(K, (x1 - x0)/100, 4.3, 0.06, matZink, JX((x0 + x1)/2), JB(852), JZ(34));
+// N- en PE-rail: Cu 40 × 10 × 750; N op M8-steunisolatoren (y 232), PE op Ricolit 30 × 30 (y 132)
+const yNr = JB(232), yPEr = JB(132);
+for(const [y, txt, zc, xa] of [[yNr, 'N', 76, [126, 827]], [yPEr, 'PE', 66, [127, 827]]]){ box(K, 7.5, 0.4, 0.1, matKoper, JX(476.8), y, JZ(zc));
+  for(const x of xa) box(K, 0.38, 0.38, (zc - 36)/100, txt === 'N' ? M(0xc0392b, {roughness: 0.6}) : matIso, JX(x), y, JZ((zc + 26)/2));
+  for(let k = 0; k < 12; k++) cyl(K, 0.08, 0.16, matZink, JX(160 + k*55), y, JZ(zc + 8), 'z', 6);
+  plak(K, 0.5, 0.3, lbl(txt, 96, 48, txt === 'N' ? '#1f5fbf' : '#3fa34d', '#fff'), JX(75), y, KZ0 + 0.02); }
+// NH-lastscheiderstroken Jean Müller: SL2 #1 (x 124–224), SL2 #2 (224–324), SL3-3x6/1250/HA (324–524), SL2 #3..#5 (524–824); railvoorkant 108 mm
+const JMZ = JZ(108);
+const JMR = new THREE.Group(); JMR.scale.setScalar(0.01); JMR.position.set(0, yRail[1], JMZ); KG.add(JMR);
+const SLOTS = [{t: 'SL2', c: 174, naar: 0}, {t: 'SL2', c: 274, naar: 1}, {t: 'SL3', c: 424, naar: -1}, {t: 'SL2', c: 574, naar: 2}, {t: 'SL2', c: 674, naar: 3}, {t: 'SL2', c: 774, naar: 4}];
+const matBlauwKap = new THREE.MeshStandardMaterial({color: 0x0a5fa8, roughness: 0.35, transparent: true, opacity: 0.88});
+SLOTS.forEach((s, n) => { const groot = s.t === 'SL3'; s.x = JX(s.c);
+  s.st = JMLIB.buildStrip(groot ? {id: 'sl3', cols: 2, colW: 100, size: 'NH3', ox: s.c - 700, title: 'SL3-3X6/1250/HA', rating: '1250A · 690V', root: JMR}
                                 : {id: 'sl2-' + n, cols: 1, colW: 100, size: 'NH2', ox: s.c - 700, title: 'SL2-3X3/3A', rating: '400A · 690V', root: JMR});
   s.st.cables.visible = false; KAP_SL.push(s.st.cover);
   const dr = {m: s.st.pivot, as: 'x', open: THREE.MathUtils.degToRad(34), dicht: 0, doel: 0, hoek: 0, strook: true, naam: groot ? 'SL3-strook 1250 A (voeding)' : 'SL2-strook naar AIO #' + (s.naar + 1)};
   doors.push(dr); STROKEN.push(dr); s.st.pivot.traverse(m => { if(m.isMesh){ m.userData.deur = dr; KLIK.push(m); } });
-  // aansluitpunten (onderkant kabelschoen) per fase / per bout, in KG-coördinaten
-  const yL = yRail[1] + (s.st.yBolt - 58)/100, zL = KZ0 + 0.35 + 0.61;
+  const yL = yRail[1] + (s.st.yBolt - 58)/100, zL = JMZ + 0.61;
   s.fase = s.st.phX.map(px => s.st.per.map(dx => V(s.x + (px + dx)/100, yL, zL)));
-  // stroomrichting-pijl/etiket onder de strook
-  plak(K, s.st.TW/100 - 0.1, 0.22, lbl(groot ? 'VOEDING 1250 A' : 'AIO #' + (s.naar + 1), 200, 44, groot ? '#c0281f' : '#1b4f8a', '#fff', 'bold 26px Arial'), s.x, yRail[1] - 4.25, KZ0 + 0.1);
+  // afdekkappen aansluitruimte: SL2 grijs (778886, y 390–495), SL3 blauw 4 × M12 (y 269–495)
+  const kap = groot ? box(K, 1.96, 2.26, 0.12, matBlauwKap, s.x, JB(382), JZ(318), false) : box(K, 0.98, 1.05, 0.1, new THREE.MeshStandardMaterial({color: 0xb7bcbf, roughness: 0.5, transparent: true, opacity: 0.82}), s.x, JB(442.5), JZ(308), false);
+  KAP_SL.push(kap);
+  plak(K, s.st.TW/100 - 0.1, 0.22, lbl(groot ? 'VOEDING 1250 A' : 'AIO #' + (s.naar + 1), 200, 44, groot ? '#c0281f' : '#1b4f8a', '#fff', 'bold 26px Arial'), s.x, JB(groot ? 255 : 375), KZ0 + 0.1);
 });
-// C-profielen (strut) met kabelklemmen: houden de verticale kabels strak in het gelid
+// C-profiel met kabelklemmen (trekontlasting) boven de plintdoorvoer
 const yStrut = [KS + 0.75];
 { const texStrut = ctex(256, 32, (g, w, h) => { g.fillStyle = '#b9bec1'; g.fillRect(0, 0, w, h); g.fillStyle = '#5e6367'; for(let x = 6; x < w; x += 16) g.fillRect(x, 10, 9, 12); }, [8, 1]);
-  for(const y of yStrut){ box(K, JX(812) - JX(70), 0.3, 0.22, M(0xffffff, {map: texStrut, roughness: 0.4, metalness: 0.7}), (JX(70) + JX(812))/2, y, KZ0 + 0.78); for(const x of [JX(75), JX(808)]) box(K, 0.25, 0.3, 1.0, matZink, x, y, KZ0 + 0.3); } }
+  for(const y of yStrut){ box(K, JX(850) - JX(100), 0.3, 0.22, M(0xffffff, {map: texStrut, roughness: 0.4, metalness: 0.7}), (JX(100) + JX(850))/2, y, KZ0 + 0.78); for(const x of [JX(105), JX(845)]) box(K, 0.25, 0.3, 0.8, matZink, x, y, KZ0 + 0.4); } }
 const klemB = (x, y, z, r) => { // kunststof trekontlastingsklem (2-delig) op C-profiel, 2 x M6
   const kl = M(0x2a2d30, {roughness: 0.6}); const ring = new THREE.Mesh(new THREE.TorusGeometry(r + 0.04, 0.05, 6, 18), kl); ring.position.set(x, y, z); ring.rotation.x = Math.PI/2; ring.scale.set(1, 1, 2.6); K.add(ring); KABDEEL.push(ring);
   box(K, r*2 + 0.32, 0.22, 0.06, kl, x, y, z - r - 0.06); for(const s of [-1, 1]) cyl(K, 0.035, 0.1, matZink, x + s*(r + 0.12), y, z - r + 0.02, 'z', 6);
   box(K, 0.06, 0.26, Math.max(0.05, z - r - 0.1 - (KZ0 + 0.89)), kl, x, y, (z - r - 0.1 + KZ0 + 0.89)/2); };
 // N/PE-aansluitingen op de rails: kabelschoen + bout
-const railLug = (x, y, r, f) => { box(K, 0.3, 0.32, 0.05, matTin, x, y, KZ0 + 0.44); cyl(K, 0.08, 0.16, matZink, x, y, KZ0 + 0.5, 'z', 6); hexNut3(x, y, KZ0 + 0.56); KABDEEL.push(cyl(K, r + 0.01, 0.3, matTin, x, y - 0.32, KZ0 + 0.58, null, 12));
-  KABDEEL.push(cyl(K, r + 0.025, 0.22, f === 'N' ? M(0x1f5fbf) : ader.PE, x, y - 0.58, KZ0 + 0.6, null, 12)); plak(K, 0.26, 0.15, lbl(f, 52, 30, f === 'N' ? '#1f5fbf' : '#3fa34d', '#fff', 'bold 20px Arial'), x, y + 0.27, KZ0 + 0.48); };
+const railLug = (x, y, r, f) => { const z0 = f === 'N' ? JZ(81) : JZ(71); box(K, 0.3, 0.32, 0.05, matTin, x, y, z0 + 0.03); cyl(K, 0.08, 0.16, matZink, x, y, z0 + 0.09, 'z', 6); hexNut3(x, y, z0 + 0.15); KABDEEL.push(cyl(K, r + 0.01, 0.3, matTin, x, y - 0.32, z0 + 0.17, null, 12));
+  KABDEEL.push(cyl(K, r + 0.025, 0.22, f === 'N' ? M(0x1f5fbf) : ader.PE, x, y - 0.58, z0 + 0.19, null, 12)); plak(K, 0.26, 0.15, lbl(f, 52, 30, f === 'N' ? '#1f5fbf' : '#3fa34d', '#fff', 'bold 20px Arial'), x, y + 0.27, z0 + 0.07); };
 const hexNut3 = (x, y, z) => { const n = cyl(K, 0.1, 0.07, matZink, x, y, z, 'z', 6); n.rotation.y = 0; };
-// rechts: 2 VMS-kunststofkasten (RAL 7035, rookglas deksel) op de pertinax plaat, met ABB-modulaire apparatuur volgens stuklijst OFK252082:
-//   boven: WCD 2P+RA (-WC02, router), ruimte voor router/modem;  onder: -HS OT100F4N2 + hendel OHBS2AJ, -F01/-F02 DS201 1P+N B16 30 mA, -F03 1P+N B16 300 mA,
-//   -WC01 WCD 2P+RA, rij 2 en 3 reserve (geen hulpvoeding AIO), 27 rijgklemmen UK5N met eindsteunen en sluitplaten
+// rechts: VMS64 (boven, y 507–1150, lege montageplaat) + VMS43 (onder, y 187–510) op x 853,6–1296,6, diepte 31–160, deksels met venster tot 210
+//   VMS43: DIN-rail (y 348,5): -F0 ABB S203-B10NA 3P+N, -F1 DS201 B16 30 mA, 3 × PTV 4 grijs + 3 × PTV 4 blauw met FBS-bruggen, 2 × wcd 230 V; N/PE-hakenrail (16 klemmen)
 const AUXUIT = [];
 { const kunst = M(0xd5d8d4, {roughness: 0.55}), kunstD = M(0xb9bdb9, {roughness: 0.6}), abbW = M(0xeeeeea, {roughness: 0.5}), abbG = M(0xc9ccc9, {roughness: 0.5});
   const rook = new THREE.MeshStandardMaterial({color: 0xbfcfd4, transparent: true, opacity: 0.32, roughness: 0.08, metalness: 0.1, depthWrite: false});
-  const zB = KZ0 + 0.1, zDin = zB + 0.12;
-  const vms = (x0, x1, t0, t1) => { const w = (x1 - x0)/100, h = (t1 - t0)/100, cx = JX((x0 + x1)/2), cy = JY((t0 + t1)/2), d = 1.3;
-    box(K, w, h, 0.08, kunst, cx, cy, zB - 0.04); for(const s of [-1, 1]){ box(K, 0.08, h, d, kunst, cx + s*(w/2 - 0.04), cy, zB + d/2); box(K, w, 0.08, d, kunst, cx, cy + s*(h/2 - 0.04), zB + d/2); }
-    const dk = box(K, w - 0.04, h - 0.04, 0.05, rook, cx, cy, zB + d + 0.02, false); KAP_SL.push(dk); dk.userData.vms = true;
-    for(const [dx, dy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]){ cyl(K, 0.09, 0.06, kunstD, cx + dx*(w/2 - 0.16), cy + dy*(h/2 - 0.16), zB + d + 0.05, 'z', 12); cyl(K, 0.035, 0.07, M(0x333), cx + dx*(w/2 - 0.16), cy + dy*(h/2 - 0.16), zB + d + 0.08, 'z', 6); }
+  const zB = KZ0 + 0.02, zDin = JZ(111);
+  const vms = (x0, x1, y0, y1) => { const w = (x1 - x0)/100, h = (y1 - y0)/100, cx = JX((x0 + x1)/2), cy = JB((y0 + y1)/2), d = 1.29;
+    box(K, w, h, 0.06, kunst, cx, cy, zB + 0.03); for(const s of [-1, 1]){ box(K, 0.06, h, d, kunst, cx + s*(w/2 - 0.03), cy, zB + d/2); box(K, w, 0.06, d, kunst, cx, cy + s*(h/2 - 0.03), zB + d/2); }
+    for(const s of [-1, 1]){ box(K, 0.08, h, 0.5, kunst, cx + s*(w/2 - 0.04), cy, zB + d + 0.25); box(K, w, 0.08, 0.5, kunst, cx, cy + s*(h/2 - 0.04), zB + d + 0.25); }      // verhoogd deksel (tot 210)
+    const dk = box(K, w - 0.12, h - 0.12, 0.04, rook, cx, cy, zB + d + 0.48, false); KAP_SL.push(dk); dk.userData.vms = true;
+    for(const [dx, dy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]){ cyl(K, 0.09, 0.06, M(0x1f5fbf), cx + dx*(w/2 - 0.12), cy + dy*(h/2 - 0.12), zB + d + 0.52, 'z', 12); }   // blauwe dekselschroeven
     return {cx, cy, w, h, x0: cx - w/2, y1: cy + h/2}; };
-  const din = (x0, x1, y) => { box(K, x1 - x0, 0.35, 0.075, M(0xc0c4c6, {metalness: 0.8, roughness: 0.3}), (x0 + x1)/2, y, zDin - 0.04); };
-  const etiket = (t, x, y, w) => plak(K, w, 0.12, lbl(t, Math.round(w*160), 20, '#ffffff', '#111', 'bold 13px Arial'), x, y, zDin + 0.79);
-  // ABB-modulair apparaat: n modules van 18 mm, basis 45 mm diep + front 45 mm met kap; type bepaalt het front
-  const abb = (x, y, n, type, tag) => { const w = n*0.18 - 0.01, xc = x + n*0.09;
-    box(K, w, 0.9, 0.42, abbW, xc, y, zDin + 0.21); box(K, w, 0.45, 0.28, abbW, xc, y, zDin + 0.56);
-    for(const s of [-1, 1]) box(K, w, 0.08, 0.3, abbG, xc, y + s*0.38, zDin + 0.31);                                 // klemschroeven boven/onder
+  const din = (x0, x1, y) => { box(K, x1 - x0, 0.35, 0.15, M(0xc0c4c6, {metalness: 0.8, roughness: 0.3}), (x0 + x1)/2, y, zDin - 0.075); };
+  const etiket = (t, x, y, w) => plak(K, w, 0.12, lbl(t, Math.round(w*160), 20, '#ffffff', '#111', 'bold 13px Arial'), x, y, zDin + 0.69);
+  const abb = (x, n, type, tag, tekst) => { const y = JB(348.5), w = n*0.18 - 0.01, xc = x + n*0.09;
+    box(K, w, 0.9, 0.42, abbW, xc, y, zDin + 0.21); box(K, w, 0.45, 0.26, abbW, xc, y, zDin + 0.55);
+    for(const s of [-1, 1]) box(K, w, 0.08, 0.3, abbG, xc, y + s*0.38, zDin + 0.31);
     for(let k = 0; k < n; k++) for(const s of [-1, 1]) cyl(K, 0.035, 0.04, M(0x8a8f92, {metalness: 0.7}), x + 0.09 + k*0.18, y + s*0.38, zDin + 0.47, 'z', 8);
-    if(type === 'ls'){ box(K, 0.12, 0.2, 0.12, M(0x2b2d30), x + (n - 1)*0.09 + 0.09, y + 0.03, zDin + 0.76); box(K, w*0.9, 0.06, 0.02, M(0xc0281f), xc, y + 0.18, zDin + 0.71);
-      box(K, 0.1, 0.07, 0.04, M(0x1f5fbf), xc + w/2 - 0.08, y - 0.16, zDin + 0.72); plak(K, w*0.9, 0.08, lbl(n > 2 ? 'DS203NC B16 0,3A' : 'DS201 B16 30mA', 220, 22, '#eeeeea', '#333', 'bold 14px Arial'), xc, y - 0.08, zDin + 0.705); }
-    if(type === 'wcd'){ box(K, w*0.86, 0.38, 0.04, M(0x2e3134), xc, y, zDin + 0.72); cyl(K, 0.12, 0.05, M(0x1b1c1e), xc, y, zDin + 0.75, 'z', 20); for(const s of [-1, 1]) cyl(K, 0.02, 0.06, matZwart, xc + s*0.05, y, zDin + 0.77, 'z', 8); }
-    if(type === 'ot'){ box(K, w, 0.9, 0.5, M(0x3a3e43), xc, y, zDin + 0.25); box(K, 0.3, 0.3, 0.2, M(0x2b2d30), xc, y, zDin + 0.6); cyl(K, 0.03, 0.85, matZink, xc, y, zDin + 0.95, 'z', 8);   // as 6 mm L = 85 mm naar de hendel
-      plak(K, w*0.9, 0.1, lbl('OT100F4N2  100A', 200, 22, '#3a3e43', '#eee', 'bold 14px Arial'), xc, y - 0.32, zDin + 0.51); }
+    if(type === 'ls'){ box(K, 0.12, 0.2, 0.12, M(0x2b2d30), x + (n - 1)*0.09 + 0.09, y + 0.03, zDin + 0.74); box(K, w*0.9, 0.06, 0.02, M(0xc0281f), xc, y + 0.18, zDin + 0.69);
+      plak(K, w*0.9, 0.08, lbl(tekst, 220, 22, '#eeeeea', '#333', 'bold 14px Arial'), xc, y - 0.08, zDin + 0.685); }
+    if(type === 'wcd'){ box(K, w*0.86, 0.38, 0.04, M(0x2e3134), xc, y, zDin + 0.7); cyl(K, 0.12, 0.05, M(0x1b1c1e), xc, y, zDin + 0.73, 'z', 20); for(const s of [-1, 1]) cyl(K, 0.02, 0.06, matZwart, xc + s*0.05, y, zDin + 0.75, 'z', 8); }
     etiket(tag, xc, y - 0.55, Math.max(0.17, w)); return {x0: x, x1: x + n*0.18, xc}; };
-  // bovenste kast
-  const b1 = vms(891, 1208, 204, 516); din(b1.x0 + 0.2, b1.x0 + b1.w - 0.2, b1.cy - 0.6);
-  abb(b1.x0 + 0.35, b1.cy - 0.6, 2.5, 'wcd', '-WC02 router');
-  box(K, 1.4, 0.32, 1.0, M(0x222428), b1.cx + 0.55, b1.cy + 0.6, zB + 0.55); for(let k = 0; k < 4; k++) box(K, 0.05, 0.05, 0.02, M(0x22d06a, {emissive: 0x22d06a, emissiveIntensity: 0.8}), b1.cx + 0.05 + k*0.15, b1.cy + 0.62, zB + 1.06, false);   // router / modem
-  // onderste kast
-  const b2 = vms(891, 1208, 528, 1160), X0 = b2.x0 + 0.22;
-  const rijY = [b2.y1 - 0.85, b2.y1 - 2.2, b2.y1 - 3.55, b2.y1 - 4.9];
-  rijY.forEach(y => din(b2.x0 + 0.12, b2.x0 + b2.w - 0.12, y));
-  const goot = y => { box(K, b2.w - 0.24, 0.32, 0.6, M(0x8f969a), b2.cx, y, zDin + 0.3); for(let k = 0; k < 18; k++) box(K, 0.06, 0.06, 0.62, M(0x6c7377), b2.x0 + 0.25 + k*0.16, y + 0.16, zDin + 0.3, false); };
-  [b2.y1 - 0.25, b2.y1 - 1.53, b2.y1 - 2.88, b2.y1 - 4.22].forEach(goot);
-  const hs = abb(X0, rijY[0], 5, 'ot', '-HS');
-  const f01 = abb(hs.x1 + 0.08, rijY[0], 2, 'ls', '-F01'), f02 = abb(f01.x1, rijY[0], 2, 'ls', '-F02'), f03 = abb(f02.x1, rijY[0], 2, 'ls', '-F03'), wc1 = abb(f03.x1 + 0.05, rijY[0], 2.5, 'wcd', '-WC01');
-  const F = [];                                                                                      // geen hulpvoeding naar de AIO's: rij 2 en 3 reserve, afgedekt met blindstroken
-  [rijY[1], rijY[2]].forEach(y => { box(K, b2.w - 0.5, 0.45, 0.04, M(0xe9eae6, {roughness: 0.6}), b2.cx, y, zDin + 0.6); etiket('reserve', b2.cx, y - 0.4, 0.6); });
-  // rijgklemmen UK5N (27) met eindsteunen E/AL-NS 35 en sluitplaten, klemstrook -X1..-X6
-  { const kl = [], y = rijY[3]; let x = X0 + 0.1; box(K, 0.1, 0.55, 0.45, M(0x3a3e43), x - 0.08, y, zDin + 0.22);
-    for(let k = 0; k < 27; k++){ const c = (k % 5 === 3) ? M(0x2f6fd0) : (k % 5 === 4 ? ader.PE : M(0xc9c3b4)); box(K, 0.055, 0.6, 0.48, c, x + 0.031, y, zDin + 0.24); cyl(K, 0.02, 0.03, matZink, x + 0.031, y + 0.2, zDin + 0.49, 'z', 6); cyl(K, 0.02, 0.03, matZink, x + 0.031, y - 0.2, zDin + 0.49, 'z', 6); x += 0.062; if(k % 5 === 4) x += 0.02; }
-    box(K, 0.1, 0.55, 0.45, M(0x3a3e43), x + 0.06, y, zDin + 0.22); etiket('-X1 .. -X6  UK5N', X0 + 0.9, y - 0.45, 1.4); }
-  // bedrading: voeding op -HS vanaf de rails (4 x 16 mm²), interne bedrading naar de goten, uitgaande hulpvoeding per AIO (5G2,5) naar beneden
+  const b1 = vms(853.6, 1296.6, 507, 1150);                                                                   // VMS64: lege montageplaat 380 × 580 (router/EMS-ruimte)
+  box(K, 3.8, 5.8, 0.03, matZink, JX(1075), JB(828.5), zB + 0.2); plak(K, 1.4, 0.2, lbl('reserve / router', 280, 40, '#c8cdd0', '#5d6b73', 'bold 22px Arial'), JX(1075), JB(828.5), zB + 0.22);
+  const b2 = vms(853.6, 1296.6, 187, 510);                                                                    // VMS43
+  din(JX(877.6), JX(1272.6), JB(348.5));
+  const f0 = abb(JX(895), 3.9, 'ls', '-F0', 'S203-B10NA 3P+N'), f1 = abb(JX(965), 1.95, 'ls', '-F1', 'DS201 B16 30mA');
+  // 3 × PTV 4 grijs + 3 × PTV 4 blauw met FBS 3-6 bruggen
+  for(let k = 0; k < 6; k++){ const x = JX(1003 + k*6.2); box(K, 0.06, 0.62, 0.46, k < 3 ? M(0xc9c3b4) : M(0x2f6fd0), x, JB(348.5), zDin + 0.23); for(const s of [-1, 1]) box(K, 0.04, 0.06, 0.04, M(0xf28a00), x, JB(348.5) + s*0.2, zDin + 0.48); }
+  for(const k of [0, 3]) box(K, 0.18, 0.04, 0.03, M(0xc8281c), JX(1009 + k*6.2), JB(348.5), zDin + 0.49);
+  etiket('-X1', JX(1019), JB(348.5) - 0.45, 0.3);
+  const w1 = abb(JX(1037), 2.45, 'wcd', '-WCD1'), w2 = abb(JX(1081), 2.45, 'wcd', '-WCD2');
+  // N/PE-hakenrail L = 330 met 16 klemmen
+  box(K, 3.34, 0.12, 0.12, matKoper, JX(1075), JB(223.5), zB + 0.3); for(let k = 0; k < 16; k++) cyl(K, 0.035, 0.12, matZink, JX(918 + k*21), JB(223.5), zB + 0.4, 'z', 6);
+  // M32-doorvoertule links in VMS43 en bedrading vanaf de Cu-rails (4 × 6 mm²) naar -F0
+  cyl(K, 0.19, 0.12, matZwart, JX(849.5), JB(438), zB + 0.65, 'x', 16);
   const dw = (pts, k, r) => KABDEEL.push(kabel(K, pts, r || 0.035, k, 0.08, 6));
-  ['L1', 'L2', 'L3', 'N'].forEach((f, k) => { const x = hs.x0 + 0.15 + k*0.2; dw([[x, rijY[0] + 0.42, zDin + 0.48], [x, b2.y1 - 0.25, zDin + 0.5]], ader[f], 0.045); });
-  for(const d of [f01, f02, f03, wc1]) for(let k = 0; k < 2; k++){ const x = d.x0 + 0.09 + k*0.18; dw([[x, rijY[0] - 0.42, zDin + 0.48], [x, rijY[0] - 0.6, zDin + 0.5], [x + 0.05, b2.y1 - 1.53, zDin + 0.5]], k ? ader.N : ader.L1); }
-  F.forEach((d, i) => { const y = i < 3 ? rijY[1] : rijY[2]; ['L1', 'L2', 'L3', 'N'].forEach((f, k) => { const x = d.x0 + 0.09 + k*0.18;
-      dw([[x, y + 0.42, zDin + 0.48], [x, y + 0.6, zDin + 0.5]], ader[f]); dw([[x, y - 0.42, zDin + 0.48], [x, y - 0.66, zDin + 0.5]], ader[f]); }); });
-  // uitgaande hulpvoedingskabels: van de goot onder -F1..-F5 via wartels in de bodem van de VMS-kast, rechts langs de wand omlaag naar de bodemplaat
-  F.forEach((d, i) => { const x = b2.x0 + b2.w - 0.45 - i*0.2, y0 = (i < 3 ? b2.y1 - 2.88 : b2.y1 - 4.22);
-    cyl(K, 0.11, 0.12, matZwart, x, JY(1160) - 0.04, zDin + 0.55, null, 12);
-    AUXUIT.push({i, x, y0, z: zDin + 0.55, xd: d.xc}); });
+  ['L1', 'L2', 'L3', 'N'].forEach((f, k) => { const x = f0.x0 + 0.09 + k*0.18, yb = f === 'N' ? yNr : yRail[k], xb = f === 'N' ? JX(845) : JX(782);
+    dw([[xb, yb, JZ(f === 'N' ? 82 : 109)], [xb + 0.25, yb, zB + 0.7 + k*0.05], [JX(840), JB(438) + (k - 1.5)*0.06, zB + 0.65], [x, JB(348.5) + 0.75, zDin + 0.5], [x, JB(348.5) + 0.42, zDin + 0.48]], ader[f], 0.05); });
+  dw([[f0.x0 + 0.09, JB(348.5) - 0.42, zDin + 0.48], [f0.x0 + 0.09, JB(290), zDin + 0.5], [f1.x0 + 0.09, JB(290), zDin + 0.5], [f1.x0 + 0.09, JB(348.5) - 0.42, zDin + 0.48]], ader.L1);
+  for(const d of [w1, w2]) for(let k = 0; k < 2; k++) dw([[f1.x0 + 0.09 + k*0.18, JB(348.5) + 0.42, zDin + 0.48], [f1.x0 + 0.09 + k*0.18, JB(420), zDin + 0.5], [d.xc - 0.06 + k*0.12, JB(420), zDin + 0.5], [d.xc - 0.06 + k*0.12, JB(348.5) + 0.42, zDin + 0.48]], k ? ader.N : ader.L1);
 }
-{
-  // kastverlichting (LED-armatuur onder het dak) en deurcontact, JUNG wcd
-  box(K, JX(1273) - JX(965), 0.15, 0.3, M(0xffffff, {emissive: 0xfff6dd, emissiveIntensity: 0.9}), (JX(965) + JX(1273))/2, JY(100), KZ0 + 0.9);
-  box(K, 0.6, 1.3, 0.5, M(0xf1f2ef), JX(1285), JY(275), KZ0 + 0.3); box(K, 0.9, 0.55, 0.6, M(0xe6e7e4), JX(1285), JY(1222), KZ0 + 0.35); }
-// deuren 2 x 700 met draaigreep
-{ const yb = KS + 0.06, dh = KH - 0.12;
-  for(const s of [-1, 1]){ const w = KW/2 - 0.04; const piv = new THREE.Group(); piv.position.set(s*KW/2, yb, KD/2 + 0.01); KG.add(piv);
+{ // kastverlichting Finder 6 W (x 961–1272, y 1227–1270) en deurschakelaar met M20-wartel rechtsboven
+  box(K, 3.11, 0.43, 0.44, M(0xf1f2ef), JX(1116.5), JB(1248.5), JZ(286)); box(K, 3.0, 0.08, 0.36, M(0xffffff, {emissive: 0xfff6dd, emissiveIntensity: 0.9}), JX(1116.5), JB(1227), JZ(286));
+  box(K, 0.31, 0.31, 1.08, M(0xd9b100, {roughness: 0.45}), JX(1314.5), JB(1156.5), JZ(279)); cyl(K, 0.1, 0.15, matZwart, JX(1314.5), JB(1135), JZ(279), null, 6); }
+// deuren: links de eerstsluitende deur (geen greep, ± 725 breed), rechts de deur met espagnoletgreep, halve profielcilinder, documentenhouder en logo
+{ const yb = KS + 0.41, dh = 12.29;
+  [{s: -1, w: 7.25, z: 0.0}, {s: 1, w: 6.95, z: 0.03}].forEach(({s, w, z}) => { const piv = new THREE.Group(); piv.position.set(s*(KW/2 - 0.47), yb, KD/2 + 0.01 + z); KG.add(piv);
     const p = box(piv, w, dh, 0.12, matRal7035, -s*w/2, dh/2, 0.06);
-    if(s > 0){ box(piv, 0.3, 1.6, 0.25, matZwart, -s*(w - 0.45), dh*0.55, 0.18); cyl(piv, 0.12, 0.2, matZink, -s*(w - 0.45), dh*0.55 + 0.5, 0.25, 'z', 10); }
-    plak(piv, 1.2, 1.05, texWaarsch, -s*w/2, dh*0.8, 0.125, 0, {t: true});
-    if(s < 0){ const tp = ctex(256, 128, (g, W2, H2) => { g.fillStyle = '#f4f4f2'; g.fillRect(0, 0, W2, H2); g.fillStyle = '#1b2a36'; g.font = 'bold 24px Arial'; g.fillText('Junction Box', 14, 36); g.font = '16px Arial'; g.fillText('O&K  OFK252082  C02a', 14, 66); g.fillText('3 x 400 V + N + PE  ·  1250 A', 14, 92); g.fillText('RAL 7035', 14, 116); });
-      plak(piv, 1.6, 0.8, tp, -s*w/2, dh*0.62, 0.125); box(piv, 2.2, 2.6, 0.12, M(0x8a9092), -s*w/2, dh*0.4, -0.08); }
-    const dr = {m: piv, open: s*1.95, dicht: 0, doel: 0, hoek: 0, kast: true, naam: 'junction box'}; doors.push(dr); p.userData.deur = dr; KLIK.push(p); } }
-{ const t = sprite('Junction box O&K OFK252082 · 2×SL2 · SL3 1250 A · 3×SL2', V(0, KT + 2.6, 0), 1.0); KG.add(t); LABELS.push(t); }
+    for(const t of [0.12, 0.5, 0.88]) cyl(K, 0.09, 0.4, M(0x9fa39c), s*(KW/2 - 0.47), yb + dh*t, KD/2 + 0.05, null, 10);              // 3 scharnieren per deur
+    if(s > 0){ box(piv, 0.32, 1.7, 0.18, matZwart, -s*(w - 0.5), dh*0.55, 0.18); box(piv, 0.18, 1.2, 0.14, M(0x2b2e31), -s*(w - 0.5), dh*0.55, 0.3); cyl(piv, 0.1, 0.2, matZink, -s*(w - 0.5), dh*0.55 - 0.7, 0.25, 'z', 10);
+      for(const t of [-1, 1]) box(piv, 0.06, dh*0.42, 0.04, matZink, -s*(w - 0.5), dh*0.55 + t*dh*0.25, -0.03);                                // espagnoletstangen
+      const tp = ctex(256, 128, (g, W2, H2) => { g.fillStyle = '#f4f4f2'; g.fillRect(0, 0, W2, H2); g.fillStyle = '#1b2a36'; g.font = 'bold 24px Arial'; g.fillText('Junction Box', 14, 36); g.font = '16px Arial'; g.fillText('O&K  OFK252082  C03a', 14, 66); g.fillText('3 x 400 V + N + PE  ·  1250 A', 14, 92); g.fillText('RAL 7035', 14, 116); });
+      plak(piv, 1.6, 0.8, tp, -s*w/2, dh*0.68, 0.125); box(piv, 2.2, 2.6, 0.2, M(0x2b2e31), -s*w/2, dh*0.4, -0.1); }
+    plak(piv, 1.2, 1.05, texWaarsch, -s*w/2, dh*0.82, 0.125, 0, {t: true});
+    const dr = {m: piv, open: s*1.95, dicht: 0, doel: 0, hoek: 0, kast: true, naam: 'junction box'}; doors.push(dr); p.userData.deur = dr; KLIK.push(p);
+    // deurvanger
+    box(piv, 0.04, 0.04, 1.2, matZink, -s*0.4, dh - 0.6, -0.6); }); }
+{ const t = sprite('Junction box O&K OFK252082 C03a · 2×SL2 · SL3 1250 A · 3×SL2', V(0, KT + 2.6, 0), 1.0); KG.add(t); LABELS.push(t); }
 KG.updateMatrixWorld(true);
 const W = p => KG.localToWorld(p.clone());
 
@@ -941,8 +943,8 @@ const HVK = (function(){
 // per AIO 5 singles 95 mm² (L1 L2 L3 N PE) door de plint naar baan AC #n in de metal bases, onder de kast omhoog naar de MCCB (fig. 5-15/5-16/5-39).
 // voeding: 4 x 240 mm² per fase (2 per bout) + 4 x N + PE op de SL3, door de plint naar voren de grond in.
 const KAB = new THREE.Group(); scene.add(KAB); const KABK = new THREE.Group(); KG.add(KABK);
-const R95 = 0.1, R240 = 0.14, FLOW = [], zF1 = KZ0 + 0.96, zF2 = KZ0 + 0.62;
-const gland = (x, z, r) => { KABDEEL.push(cyl(K, r + 0.06, 0.22, M(0x2b2e31), x, KS + 0.3, z, null, 12)); cyl(K, r + 0.1, 0.12, matZwart, x, KS + 0.18, z, null, 16); cyl(K, r + 0.11, 0.08, matZwart, x, KS - 0.04, z, null, 6); };
+const R95 = 0.1, R240 = 0.14, FLOW = [], zF1 = JMZ + 0.61, zF2 = KZ0 + 0.7;
+const gland = () => {};                                                               // C03a: onderzijde romp open, kabels via de plint (geen wartelplaat)
 // AIO #4 / #5: 4 × 95 mm² singles direct in de grond (zandbed, geen mantelbuis) onder de stelconplaten door, sparing onder de strook en onder de eigen metal base
 const matMantel = M(0xe06a1a, {roughness: 0.6, transparent: true, opacity: 0.45, depthWrite: false}), matSpar = M(0x0b0c0d, {roughness: 0.9});
 function grondRoute(s, a, kn){
@@ -1051,8 +1053,8 @@ CAT = null;
   maat(V(SX1, SKY, AD/2), V(SX1, SKY + AH, AD/2), V(3, 0, 3), '2250');
   maat(V(SX1, PL_H, -AD/2), V(SX1, SKY, -AD/2), V(3, 0, -2), 'metal base 220');
   maat(V(KXW - KD/2, KT, KZW + KW/2), V(KXW - KD/2, KT, KZW - KW/2), V(-3, 3, 0), 'junction box 1400');
-  maat(V(KXW - KD/2, KT, KZW + KW/2), V(KXW + KD/2, KT, KZW + KW/2), V(0, 3, 2), '375');
-  maat(V(KXW - KD/2, PL_H, KZW + KW/2), V(KXW - KD/2, KT, KZW + KW/2), V(-3, 0, 2), '220 + 1350 = 1570');
+  maat(V(KXW - KD/2, KT, KZW + KW/2), V(KXW + KD/2, KT, KZW + KW/2), V(0, 3, 2), '355 (kap 375)');
+  maat(V(KXW - KD/2, PL_H, KZW + KW/2), V(KXW - KD/2, KT, KZW + KW/2), V(-3, 0, 2), '220 + 1315 + 35 = 1570');
   maat(V(XA(0) - 4, SKY + 1, AD/2), V(XA(0) - 4, SKY + 1, AD/2 + 30), V(-2, 0, 0), 'vrije ruimte voor ≥ 3000');
 }
 
@@ -1203,7 +1205,7 @@ const PLAATS = (function(){
   const a0 = AIO[0], s0 = SLOTS.find(q => q.naar === 0), nZ = V(0, 0, 1), nJB = W(V(0, 0, 1)).sub(W(V(0, 0, 0))).normalize();
   ['L1', 'L2', 'L3', 'N'].forEach(f => { const t = a0.klem[f]; PNT.push({kant: 'mccb', f, pers: V(t.x, t.y - 0.28, t.z), bout: V(t.x, t.y + 0.12, t.z), n: nZ, nm: 'M10 · 42 Nm'}); });
   ['L1', 'L2', 'L3'].forEach((f, p) => { const e = s0.fase[p][0]; PNT.push({kant: 'jb', f, pers: W(V(e.x, e.y - 0.12, e.z)), bout: W(V(e.x, e.y + 0.58, e.z)), n: nJB, nm: 'M12 · JM-moment'}); });
-  PNT.push({kant: 'jb', f: 'N', pers: W(V(s0.x + 0.39, yNr - 0.52, zF2)), bout: W(V(s0.x + 0.39, yNr, KZ0 + 0.56)), n: nJB, nm: 'M12 · N-rail'});
+  PNT.push({kant: 'jb', f: 'N', pers: W(V(s0.x + 0.39, yNr - 0.52, zF2)), bout: W(V(s0.x + 0.39, yNr, JZ(81) + 0.15)), n: nJB, nm: 'M12 · N-rail'});
   const matPersing = M(0x3a3d40, {roughness: 0.5, metalness: 0.6});
   PNT.forEach(q => { q.merk = new THREE.Group(); scene.add(q.merk); q.merk.visible = false;                                            // 2 zeskantpersingen op de kabelschoen
     for(const dy of [-0.07, 0.07]){ const m = new THREE.Mesh(new THREE.CylinderGeometry(R95 + 0.035, R95 + 0.035, 0.05, 6), matPersing); m.position.set(q.pers.x, q.pers.y + dy, q.pers.z); q.merk.add(m); }
