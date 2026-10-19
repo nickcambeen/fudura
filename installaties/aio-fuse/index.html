@@ -1014,6 +1014,7 @@ const AUXUIT = []; let F0 = null, METCOM = null;
 // deuren: links de eerstsluitende deur (geen greep, ± 725 breed), rechts de deur met espagnoletgreep, halve profielcilinder, documentenhouder en logo
 { const yb = KS + 0.41, dh = 12.29;
   box(KG, KW - 0.1, KS + KH - (yb + dh) + 0.02, 0.1, matRal7035, 0, (yb + dh + KS + KH)/2, KD/2 - 0.03); box(KG, KW - 0.1, 0.43, 0.1, matRal7035, 0, KS + 0.2, KD/2 - 0.03);   // dichte boven- en onderregel van het deurkozijn
+  for(const sx of [-1, 1]) box(KG, 0.52, KH, 0.12, matRal7035, sx*(KW/2 - 0.26), KS + KH/2, KD/2 - 0.02);                                   // dichte kozijnstijlen links en rechts
   [{s: -1, w: 7.25, z: 0.0}, {s: 1, w: 6.95, z: 0.03}].forEach(({s, w, z}) => { const piv = new THREE.Group(); piv.position.set(s*(KW/2 - 0.47), yb, KD/2 + 0.01 + z); KG.add(piv);
     const p = box(piv, w, dh, 0.12, matRal7035, -s*w/2, dh/2, 0.06);
     for(const t of [0.12, 0.5, 0.88]) cyl(K, 0.09, 0.4, M(0x9fa39c), s*(KW/2 - 0.47), yb + dh*t, KD/2 + 0.05, null, 10);              // 3 scharnieren per deur
