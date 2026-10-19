@@ -71,6 +71,7 @@
     <label>Deuren junction box + HVK open <input type="checkbox" id="tKastDeur"></label>
     <label>Technische ruimte HVK doorzichtig <input type="checkbox" id="tTR"></label>
     <label>Metcom MC301-meters (junction box) <input type="checkbox" id="tMet"></label>
+    <label>EMS-buitenkast <input type="checkbox" id="tEMS" checked></label>
     <label>NH-stroken uitgeklapt <input type="checkbox" id="tStrook"></label>
     <label>Metal bases doorzichtig (kabelbanen) <input type="checkbox" id="tSkid"></label>
     <label>Afdekkap MCCB (AIO) <input type="checkbox" id="tKapM"></label>
@@ -1112,6 +1113,47 @@ CAT = 'pen';
 CAT = null;
 { const t = sprite('voeding 3F + N + PE (4 × 240 mm² per fase) door sparing stelconplaat', W(V(-2.5, 2.0, KD/2 + 150)), 0.75, '#c0281f'); scene.add(t); LABELS.push(t); }
 
+// ---------- EMS-buitenkast: Pegeo KVSP1-413/SVD (785 × 1364 × 472) naast de junction box aan de voorzijde, met de EMS Groot (Moducenter 640 × 760) erin ----------
+// 230 V YMvK 3G2,5 vanaf de onderste VMS-kast van de junction box (groep -F1), data CAT 6A S/FTP door de grond naar AIO #1 (master, kanaal DATA)
+const EMSV = (function(){
+  const G = new THREE.Group(); scene.add(G); const ex = KXW - 1.0, ez = KZW + KW/2 + 6.5;                       // naast de JB, voor de rij AIO's, deur naar de bedienzijde (+z)
+  G.position.set(ex, 0, ez);
+  const poly = M(0xcfd2cc, {roughness: 0.75}), PW = 7.85, PH = 13.64, PD = 4.72;
+  box(G, PW + 1.2, 0.3, PD + 1.2, matBeton, 0, 0.15, 0);                                                         // tegels / sokkel
+  box(G, PW, PH, 0.12, poly, 0, 0.3 + PH/2, -PD/2 + 0.06); for(const s of [-1, 1]) box(G, 0.12, PH, PD, poly, s*(PW/2 - 0.06), 0.3 + PH/2, 0);
+  box(G, PW + 0.4, 0.25, PD + 0.4, M(0xc7cac4, {roughness: 0.7}), 0, 0.3 + PH + 0.12, 0); box(G, PW, 0.12, PD, poly, 0, 0.36, 0);
+  for(const s of [-1, 1]) for(let k = 0; k < 6; k++) box(G, 0.04, 0.06, 1.6, M(0x8f938d), s*(PW/2 + 0.02), PH - 1.0 - k*0.14, 0, false);
+  // EMS Groot op de montageplaat: 4 modules, heldere kappen met blauwe schroeven, inhoud vereenvoudigd (SmartLogger, Teltonika, Mean Well, accu)
+  const E = new THREE.Group(); E.position.set(0, 3.6, -PD/2 + 0.45); G.add(E);
+  box(E, 6.6, 9.0, 0.06, M(0xb9bfc3, {metalness: 0.8, roughness: 0.35}), 0, 3.8, -0.1);
+  const kast = M(0xd4d7d1, {roughness: 0.55}), helder = new THREE.MeshStandardMaterial({color: 0xe4ecee, transparent: true, opacity: 0.22, roughness: 0.04, depthWrite: false});
+  [[-1.6, 5.43, 4.34], [1.6, 5.43, 4.34], [-1.6, 1.6, 3.2], [1.6, 1.6, 3.2]].forEach(([x, y, h]) => { box(E, 3.17, h, 0.1, kast, x, y, 0.05);
+    for(const s of [-1, 1]){ box(E, 0.05, h, 1.12, kast, x + s*1.56, y, 0.56); box(E, 3.17, 0.05, 1.12, kast, x, y + s*(h/2 - 0.025), 0.56); }
+    box(E, 3.1, h - 0.06, 0.04, helder, x, y, 1.6, false); for(const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) cyl(E, 0.08, 0.05, M(0x1f6fd0), x + sx*1.45, y + sy*(h/2 - 0.12), 1.63, 'z', 12); });
+  box(E, 2.3, 1.3, 0.6, M(0x141517), -1.6, 6.1, 0.4); plak(E, 1.8, 0.2, lbl('SmartLogger      HUAWEI', 360, 40, '#141517', '#eee', 'bold 22px Arial'), -1.6, 6.6, 0.71);
+  box(E, 0.9, 0.7, 0.5, M(0x1e2024), 0.9, 6.5, 0.3); box(E, 0.42, 1.28, 1.0, M(0x232529), 0.96, 4.56, 0.5); box(E, 0.52, 1.1, 1.0, M(0x1b1d20), 2.14, 4.85, 0.5);
+  for(let k = 0; k < 4; k++) cyl(E, 0.03, 0.95, M(0x1a1b1d), 1.96 + k*0.12, 5.9, 0.6, null, 8);
+  box(E, 0.63, 1.25, 1.1, M(0x1f7cc4), -1.29, 2.14, 0.55); box(E, 0.4, 1.25, 1.1, M(0x1f7cc4), -0.74, 2.14, 0.55); box(E, 0.86, 1.9, 1.1, M(0xc3c8cb, {metalness: 0.6}), 0.81, 1.65, 0.55);
+  box(E, 0.74, 0.74, 0.1, M(0x18191b), -1.85, 0.86, 1.65); box(E, 0.6, 0.15, 0.14, M(0xd8261c), -1.85, 0.86, 1.75);
+  // deur (scharnier rechts) — wordt meegeschakeld met 'Deuren junction box + HVK open'
+  const piv = new THREE.Group(); piv.position.set(PW/2, 0.3, PD/2); G.add(piv);
+  const dp = box(piv, PW - 0.04, PH - 0.4, 0.16, poly, -PW/2, (PH - 0.4)/2 + 0.1, 0.08);
+  box(piv, 0.46, 1.5, 0.22, M(0x34383c), -PW + 0.7, PH/2, 0.24); plak(piv, 1.1, 1.1, texWaarsch, -PW/2, PH - 2.2, 0.17, 0, {t: true});
+  plak(piv, 2.2, 0.7, lbl('EMS-kast', 220, 70, '#f1f2ee', '#1b2a36', 'bold 34px Arial'), -PW/2, PH - 3.6, 0.17);
+  const dr = {m: piv, open: 1.85, dicht: 0, doel: 0, hoek: 0, kast: true, naam: 'EMS-kast'}; doors.push(dr); dp.userData.deur = dr; KLIK.push(dp);
+  // kabels
+  const K2 = new THREE.Group(); KAB.add(K2);
+  const wO = V(ex - 1.0, 0.4, ez - 0.6), dO = V(ex + 0.6, 0.4, ez - 0.6);                                          // invoer bodem veldkast
+  // 230 V vanaf de JB (onderste VMS-kast, -F1) door de plint omlaag, door de grond naar de veldkast
+  const jbUit = W(V(JX(1100), KS + 0.3, zF2)), jbG = W(V(JX(1100), -0.6, zF2));
+  kabel(K2, [W(V(JX(1100), JB(187) - 0.2, KZ0 + 0.7)), jbUit, jbG, V(jbG.x, -5.0, jbG.z), V(wO.x, -5.0, wO.z), V(wO.x, -0.4, wO.z), V(wO.x, 3.0, wO.z), V(wO.x, 3.6, wO.z + 0.4)], 0.065, M(0x1d1e20, {roughness: 0.65}), 0.6, 8);
+  // CAT 6A S/FTP (paars) naar AIO #1 (master): door de grond, onder de metal base in kanaal DATA naar de controller
+  const a0 = AIO[0], tgt = V(XA(0) - 2.2, SKY + 1.0, AZ + a0.MC.z + 0.2), zc = zKan(KAN_DATA);
+  kabel(K2, [V(dO.x, 3.6, dO.z + 0.4), V(dO.x, 3.0, dO.z), V(dO.x, -0.4, dO.z), V(dO.x, -5.2, dO.z), V(XA(0) - AW/2 + 1.0, -5.2, AD/2 + 2.0), V(XA(0) - AW/2 + 1.0, -0.6, zc), V(XA(0) - AW/2 + 1.0, PL_H + 0.45, zc), V(XA(0) - 2.2, PL_H + 0.45, zc), V(tgt.x, SKY + 0.3, tgt.z), tgt], 0.07, M(0x7a3fbf, {roughness: 0.45}), 0.6, 8);
+  { const t = sprite('EMS-kast (Pegeo veldkast, EMS Groot) · 230 V vanaf JB -F1 · CAT 6A S/FTP naar AIO #1', V(ex, 16.5, ez), 0.6, '#7a3fbf'); scene.add(t); LABELS.push(t); }
+  return {G, K2, zet: v => { G.visible = v; K2.visible = v; }};
+})();
+
 // ---------- maatvoering ----------
 { const mL = new THREE.LineBasicMaterial({color: 0x1a4f9c, depthTest: false, transparent: true});
   const maat = (a, b, off, txt) => { const g = new THREE.Group(); const a2 = a.clone().add(off), b2 = b.clone().add(off);
@@ -1218,6 +1260,7 @@ $t('tGrond').addEventListener('change', e => { GRONDMAT.forEach(m => { m.transpa
 function zetSkid(a){ SKMAT.forEach(m => { m.transparent = a; m.opacity = a ? 0.18 : 1; m.depthWrite = !a; m.needsUpdate = true; }); }
 $t('tSkid').addEventListener('change', e => zetSkid(e.target.checked));
 $t('tTR').addEventListener('change', e => HVK.zetTR(e.target.checked));
+$t('tEMS').addEventListener('change', e => EMSV.zet(e.target.checked));
 $t('tMet').addEventListener('change', e => { METCOM.MG.visible = e.target.checked; METCOM.lblRes.visible = !e.target.checked; });
 $t('tKapM').addEventListener('change', e => KAP_MCCB.forEach(k => k.visible = e.target.checked));
 $t('tKapS').addEventListener('change', e => KAP_SL.forEach(k => k.visible = e.target.checked));
