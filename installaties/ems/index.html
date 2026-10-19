@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EMS-kast · Fudura</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #dfe4e2; font-family: system-ui, sans-serif; overflow: hidden; }
+  #wrap { width: 100%; height: 100%; cursor: grab; touch-action: none; }
+  #paneel { position: fixed; top: 14px; right: 14px; z-index: 31; width: 250px; background: rgba(255,255,255,.95); border: 1px solid #c3ccd2; border-radius: 10px; padding: 10px 14px 12px; box-shadow: 0 4px 16px rgba(0,0,0,.12); font-size: 13px; color: #243038;
+    transition: transform .25s ease; max-height: calc(100vh - 28px); overflow-y: auto; box-sizing: border-box; }
+  #paneel.dicht { transform: translateX(calc(100% + 20px)); }
+  #pKop { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  #pKop h3 { margin: 0; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: #243038; }
+  .pKnop { border: 1px solid #c3ccd2; background: #fff; color: #243038; border-radius: 6px; width: 26px; height: 26px; cursor: pointer; font-size: 15px; line-height: 1; padding: 0; }
+  #pOpen { position: fixed; top: 14px; right: 14px; z-index: 30; width: 34px; height: 34px; font-size: 18px; box-shadow: 0 4px 16px rgba(0,0,0,.12); display: none; }
+  #pOpen.toon { display: block; }
+  #paneel details { border-top: 1px solid #e1e6e9; padding: 6px 0 2px; }
+  #paneel summary { cursor: pointer; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #5d6b73; padding: 2px 0; list-style: none; }
+  #paneel summary::-webkit-details-marker { display: none; }
+  #paneel summary::before { content: '\25B8'; display: inline-block; width: 12px; transition: transform .15s; }
+  #paneel details[open] summary::before { transform: rotate(90deg); }
+  #paneel label { display: flex; align-items: center; justify-content: space-between; padding: 5px 0; cursor: pointer; gap: 8px; }
+  #paneel input[type=checkbox] { appearance: none; width: 34px; height: 20px; border-radius: 10px; background: #c3ccd2; position: relative; cursor: pointer; transition: background .2s; flex: none; margin: 0; }
+  #paneel input[type=checkbox]::after { content: ''; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: left .2s; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+  #paneel input[type=checkbox]:checked { background: #1b4f8a; }
+  #paneel input[type=checkbox]:checked::after { left: 17px; }
+  #paneel input[type=range] { width: 100%; accent-color: #1b4f8a; }
+  .knoprij { display: flex; flex-wrap: wrap; gap: 5px; padding: 4px 0; }
+  .knoprij button { font: 600 11px system-ui, sans-serif; padding: 6px 9px; border: 1px solid #9aa6ad; border-radius: 5px; background: #fff; color: #3f4b52; cursor: pointer; }
+  .knoprij button:hover { background: #eef2f4; }
+  #cfgN button { min-width: 36px; font-size: 13px; }
+  #cfgN button.aan { background: #1b4f8a; border-color: #1b4f8a; color: #fff; }
+  .cfgKop { font-size: 12px; color: #3f4b52; margin-top: 2px; }
+  .cfgInfo { font-size: 11.5px; color: #5d6b73; line-height: 1.4; padding: 2px 0 4px; }
+  .knoprij button.aan { background: #243038; color: #fff; border-color: #243038; }
+  #paneel ul { margin: 2px 0 4px; padding-left: 16px; color: #4a5258; font-size: 12px; line-height: 1.5; }
+  #simInfo { font-size: 12px; color: #4a5258; padding: 2px 0 4px; font-variant-numeric: tabular-nums; }
+  #melding { position: fixed; left: 14px; bottom: 14px; z-index: 29; max-width: min(460px, calc(100vw - 28px)); background: rgba(36,48,56,.9); color: #fff; font-size: 13px; padding: 8px 12px; border-radius: 8px; opacity: 0; transition: opacity .3s; pointer-events: none; }
+  #melding.toon { opacity: 1; }
+  #stap { position: fixed; left: 14px; bottom: 14px; z-index: 32; width: min(440px, calc(100vw - 28px)); background: rgba(255,255,255,.96); border: 1px solid #c3ccd2; border-radius: 10px; padding: 12px 14px; box-shadow: 0 6px 22px rgba(0,0,0,.16); display: none; color: #243038; box-sizing: border-box; }
+  #stap.toon { display: block; }
+  #stap .sk { font: 700 11px system-ui; letter-spacing: .07em; text-transform: uppercase; color: #e2701c; }
+  #stap .st { font: 700 19px system-ui; margin: 2px 0 4px; }
+  #stap .sd { font-size: 13.5px; line-height: 1.45; color: #3f4b52; }
+  #stap .sb { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  #stap .sb button { font: 600 12px system-ui; padding: 6px 10px; border: 1px solid #9aa6ad; border-radius: 6px; background: #fff; color: #243038; cursor: pointer; }
+  #stap .sb button:hover { background: #eef2f4; }
+  #stap .sdots { display: flex; gap: 5px; margin-top: 10px; } #stap .sdots i { flex: 1; height: 4px; border-radius: 2px; background: #d3d9dc; } #stap .sdots i.a { background: #1b4f8a; }
+  #fpHud { position: fixed; left: 50%; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; border: 2px solid rgba(255,255,255,.9); box-shadow: 0 0 0 1px rgba(0,0,0,.35); pointer-events: none; display: none; z-index: 20; }
+
+  #mobFP, #mob .fpOnly { display: none !important; }
+  .info { font-size: 11.5px; color: #5d6b73; line-height: 1.45; padding: 2px 0 4px; }
+</style>
+</head>
+<body>
+<div id="wrap"></div>
+<div id="melding"></div>
+<button class="pKnop" id="pOpen" title="Paneel openen" aria-label="Paneel openen">‹</button>
+<div id="paneel">
+  <div id="pKop"><h3 id="titel"><a href="../../" style="color:#1b4f8a;text-decoration:none" title="Hoofdmenu">‹ menu</a> &nbsp;EMS-kast</h3><button class="pKnop" id="pDicht" title="Paneel inklappen" aria-label="Paneel inklappen">›</button></div>
+  <details open><summary>Opstelling</summary>
+    <div class="knoprij" id="modus"><button data-m="binnen">binnen (wand)</button><button data-m="buiten">buiten (veldkast)</button></div>
+    <div class="info" id="modInfo"></div>
+  </details>
+  <details open><summary>Bekijken</summary>
+    <div class="knoprij"><button id="bOverzicht">overzicht</button><button id="bFront">vooraanzicht</button><button id="bOpen">deksels open</button><button id="bNet">netwerk / 24 V</button><button id="bVoed">230 V / voeding</button><button id="bOnder">kabelinvoer</button></div>
+  </details>
+  <details open><summary>Weergave</summary>
+    <label>Deksels EMS open <input type="checkbox" id="tDeksel"></label>
+    <label>Deur veldkast open <input type="checkbox" id="tDeur"></label>
+    <label>Kabels <input type="checkbox" id="tKabel" checked></label>
+    <label>Labels <input type="checkbox" id="tLabel"></label>
+    <label>Grond doorzichtig (buiten) <input type="checkbox" id="tGrond"></label>
+  </details>
+  <details><summary>Componenten (OFK260437 / OFK260960)</summary>
+    <ul>
+      <li>Moducenter 640 × 760 mm: 2 × MC43 (boven) + 2 × MC33 (onder) met verhoogd deksel en venster, RAL 7035, IP65, NEN-EN 61439-2, TN-S, 230 V / 24 V DC, In 16 A</li>
+      <li>-HS ABB OT16F3 lastscheider 3p 16 A met verlengas 265 mm en bedieningsknop op het deksel</li>
+      <li>-F1 ABB DS201 B10 30 mA aardlekautomaat 1P+N</li>
+      <li>-WCD1..3 ABB M1175 DIN-wandcontactdozen 16 A</li>
+      <li>-U1 Mean Well NDR-240-24 voeding 230 V AC / 24 V DC 10 A · -U2 Mean Well DUPS20 DC-UPS · -U3 Phoenix Contact UPS-BAT/PB/24DC/4AH accumodule</li>
+      <li>-X03 2 × Phoenix PT 2X10 potentiaalverdeler (24 V + / −)</li>
+      <li>-W1 WTG controller en -W2 Teltonika RUT951 router (derden: alleen 24 V DC aanleggen via tulpconnector -XW1/-XW2), -W3 Teltonika TSW212 switch</li>
+      <li>-P1 EFB keystone patchpaneel 8 poorten; onderling CAT 6A S/FTP</li>
+      <li>Kabelinvoer M20 wartel + blinddop onderin linksonder</li>
+      <li>Buiten: Pegeo KVSP1-413/SVD polyester veldkast 1364 × 785 × 472, IP44, RAL 7035, driepuntsluiting met halve europrofielcilinder; -DS Omron D4N deurschakelaar, -H1 Finder 7L armatuur 6 W</li>
+    </ul>
+  </details>
+  <details><summary>Bediening</summary>
+    <ul>
+      <li>Slepen: draaien · rechts slepen / shift: schuiven · scroll: zoomen · pijltjes: verplaatsen</li>
+      <li>Klik op een deksel of de deur van de veldkast: open / dicht (verlichting gaat aan bij open deur)</li>
+      <li>Telefoon: 1 vinger draaien, 2 vingers zoomen/schuiven, pijltjesknoppen</li>
+    </ul>
+  </details>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// EMS-kast "EMS Groot" (O&K OFK260437) — binnen aan de wand of buiten in de Pegeo-veldkast KVSP1-413/SVD (O&K OFK260960)
+// modelleren in mm onder ROOT (schaal 0,1): wereldeenheid = 1 cm. x = breedte, y = hoogte, z = naar voren (+), maaiveld/vloer y = 0
+const wrap = document.getElementById('wrap');
+const renderer = new THREE.WebGLRenderer({antialias: true});
+renderer.outputEncoding = THREE.sRGBEncoding; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+wrap.appendChild(renderer.domElement);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0xdfe6e8); scene.fog = new THREE.Fog(0xdfe6e8, 1500, 4000);
+const camera = new THREE.PerspectiveCamera(40, 1, 1, 8000);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8a9188, 0.8));
+const zon = new THREE.DirectionalLight(0xffffff, 1.0); zon.position.set(250, 500, 400); zon.castShadow = true;
+zon.shadow.mapSize.set(2048, 2048); Object.assign(zon.shadow.camera, {left: -250, right: 250, top: 250, bottom: -250, near: 10, far: 1500}); zon.shadow.bias = -0.0004; scene.add(zon);
+const fill = new THREE.DirectionalLight(0xdfe8ff, 0.4); fill.position.set(-300, 200, 300); scene.add(fill);
+const binnenLicht = new THREE.PointLight(0xfff4e0, 0.0, 220); scene.add(binnenLicht);
+
+// ---------- hulpjes (mm) ----------
+const M = (c, o) => new THREE.MeshStandardMaterial(Object.assign({color: c, roughness: 0.6, metalness: 0.1}, o || {}));
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const KLIK = [], KABELS = [], LABELS = [], doors = [];
+function box(par, w, h, d, m, x, y, z, sch){ const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); if(sch !== false){ o.castShadow = true; o.receiveShadow = true; } par.add(o); return o; }
+function cyl(par, r, h, m, x, y, z, as, seg){ const o = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, seg || 16), m); o.position.set(x, y, z); if(as === 'x') o.rotation.z = Math.PI/2; else if(as === 'z') o.rotation.x = Math.PI/2; o.castShadow = true; par.add(o); return o; }
+function rr(g, x, y, w, h, r){ g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+function ctex(w, h, f, rep){ const c = document.createElement('canvas'); c.width = w; c.height = h; f(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = 8;
+  if(rep){ t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rep[0], rep[1]); } return t; }
+// rechthoekig plaatje met tekst/tekening op het voorvlak (+z)
+function plak(par, w, h, tex, x, y, z, ry){ const o = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({map: tex, roughness: 0.55, transparent: true})); o.position.set(x, y, z); if(ry) o.rotation.y = ry; par.add(o); return o; }
+const txtTex = (lines, w, h, bg, fg, px) => ctex(w, h, (g, W, H) => { g.fillStyle = bg || '#fff'; g.fillRect(0, 0, W, H); g.fillStyle = fg || '#111'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  const L = Array.isArray(lines) ? lines : [lines]; L.forEach((t, i) => { g.font = (i === 0 ? 'bold ' : '') + (px || 22) + 'px Arial'; g.fillText(t, W/2, H*(i + 0.5)/L.length); }); });
+function filletPath(Win, R, seg){
+  const W = [Win[0]]; for(let q = 1; q < Win.length; q++) if(Win[q].distanceTo(W[W.length - 1]) > 1e-6) W.push(Win[q]);
+  if(W.length < 3) return W.map(p => p.clone());
+  const out = [W[0].clone()];
+  for(let i = 1; i < W.length - 1; i++){ const p = W[i], a = W[i-1], b = W[i+1];
+    const v1 = V().subVectors(a, p).normalize(), v2 = V().subVectors(b, p).normalize(), ang = Math.acos(Math.max(-1, Math.min(1, v1.dot(v2))));
+    if(ang > Math.PI - 0.01 || ang < 0.01){ out.push(p.clone()); continue; }
+    const t = Math.min(R/Math.tan(ang/2), a.distanceTo(p)*0.49, b.distanceTo(p)*0.49), rEff = t*Math.tan(ang/2);
+    const P1 = p.clone().addScaledVector(v1, t), P2 = p.clone().addScaledVector(v2, t), Cc = p.clone().addScaledVector(V().addVectors(v1, v2).normalize(), rEff/Math.sin(ang/2));
+    const u1 = V().subVectors(P1, Cc), u2 = V().subVectors(P2, Cc), axis = V().crossVectors(u1, u2).normalize(), tot = u1.angleTo(u2);
+    for(let k = 0; k <= seg; k++) out.push(u1.clone().applyAxisAngle(axis, tot*k/seg).add(Cc)); }
+  out.push(W[W.length - 1].clone()); return out; }
+function kabel(par, pts, r, m, R){ const c = new THREE.CatmullRomCurve3(filletPath(pts.map(p => p.isVector3 ? p : V(p[0], p[1], p[2])), R === undefined ? 12 : R, 6), false, 'centripetal');
+  const o = new THREE.Mesh(new THREE.TubeGeometry(c, Math.max(40, pts.length*20), r, 8, false), m); o.castShadow = true; par.add(o); KABELS.push(o); return o; }
+function sprite(txt, p, s, kleur){ const c = document.createElement('canvas'); const m = c.getContext('2d'); m.font = 'bold 40px system-ui, Arial'; const tw = Math.ceil(m.measureText(txt).width + 40), W = Math.max(256, tw + 20);
+  c.width = W; c.height = 96; const g = c.getContext('2d'); g.font = 'bold 40px system-ui, Arial';
+  g.fillStyle = 'rgba(255,255,255,0.94)'; rr(g, (W - tw)/2, 10, tw, 76, 14); g.fill(); g.strokeStyle = kleur || '#1b4f8a'; g.lineWidth = 4; g.stroke();
+  g.fillStyle = '#1d2b33'; g.textAlign = 'center'; g.fillText(txt, W/2, 62); const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({map: t, depthTest: false, transparent: true})); const k = s || 1; sp.scale.set(14*k*W/512, 14*k*96/512, 1); sp.position.copy(p); sp.renderOrder = 10; sp.visible = false; LABELS.push(sp); scene.add(sp); return sp; }
+const meld = (() => { const el = document.getElementById('melding'); let t = 0; return h => { el.innerHTML = h; el.classList.add('toon'); clearTimeout(t); t = setTimeout(() => el.classList.remove('toon'), 3500); }; })();
+const ruis = (g, w, h, basis, n, a) => { g.fillStyle = basis; g.fillRect(0, 0, w, h); for(let k = 0; k < n; k++){ const v = Math.random(); g.fillStyle = `rgba(${v > 0.5 ? '255,255,255' : '0,0,0'},${Math.random()*a})`; g.fillRect(Math.random()*w, Math.random()*h, 2 + Math.random()*3, 2 + Math.random()*3); } };
+
+// ---------- materialen ----------
+const RAL7035 = M(0xd4d7d1, {roughness: 0.55}), RAL7035d = M(0xc3c6c0, {roughness: 0.6}), polyester = M(0xcfd2cc, {roughness: 0.75});
+const rook = new THREE.MeshStandardMaterial({color: 0xc9d6da, transparent: true, opacity: 0.28, roughness: 0.05, metalness: 0.1, depthWrite: false});
+const zink = M(0xb9bfc3, {roughness: 0.35, metalness: 0.85}), din = M(0xc8cdd0, {roughness: 0.3, metalness: 0.9}), zwart = M(0x1d1f22, {roughness: 0.6}), wit = M(0xf1f2ee, {roughness: 0.5});
+const abbW = M(0xeeeee9, {roughness: 0.5}), abbG = M(0xc6c9c5, {roughness: 0.55}), mwGrijs = M(0x9aa1a6, {roughness: 0.45, metalness: 0.6}), teltonika = M(0x2b2e33, {roughness: 0.5});
+const ader = {L: M(0x7a4a22), N: M(0x1f5fbf), PE: null, P24: M(0xc8281c), M24: M(0x161616), CAT: M(0x2f8bc9, {roughness: 0.5}), mantel: M(0x202224, {roughness: 0.7}), mantelGr: M(0x9aa0a4, {roughness: 0.6})};
+['L', 'N', 'P24', 'M24'].forEach(k => ader[k].color.convertSRGBToLinear());
+ader.PE = M(0xffffff, {map: ctex(32, 32, (g, w, h) => { g.fillStyle = '#3fa34d'; g.fillRect(0, 0, w, h); g.fillStyle = '#f2d21b'; for(let k = -2; k < 4; k++){ g.save(); g.translate(k*10, 0); g.rotate(0.6); g.fillRect(0, -10, 5, 80); g.restore(); } }, [1, 6])});
+
+// ---------- wereld ----------
+const ROOT = new THREE.Group(); ROOT.scale.setScalar(0.1); scene.add(ROOT);
+const BINNEN = new THREE.Group(), BUITEN = new THREE.Group(); ROOT.add(BINNEN); ROOT.add(BUITEN);
+// buiten: gras, grindbed, tegels
+const texGras = ctex(256, 256, (g, w, h) => ruis(g, w, h, '#7e9a5e', 5000, 0.18), [60, 60]);
+const texGrind = ctex(256, 256, (g, w, h) => ruis(g, w, h, '#b9b6ad', 6000, 0.25), [8, 8]);
+const matGras = M(0xffffff, {map: texGras, roughness: 1}), matGrind = M(0xffffff, {map: texGrind, roughness: 1});
+const GRONDMAT = [matGras, matGrind];
+{ const g = new THREE.Mesh(new THREE.PlaneGeometry(30000, 30000), matGras); g.rotation.x = -Math.PI/2; g.receiveShadow = true; BUITEN.add(g);
+  const gr = new THREE.Mesh(new THREE.PlaneGeometry(2400, 1800), matGrind); gr.rotation.x = -Math.PI/2; gr.position.set(0, 1, 300); gr.receiveShadow = true; BUITEN.add(gr); }
+// binnen: technische ruimte — vloer, achterwand (kalkzandsteen), zijwand
+const texKZS = ctex(512, 512, (g, w, h) => { g.fillStyle = '#e7e5de'; g.fillRect(0, 0, w, h); g.strokeStyle = '#cfccc3'; g.lineWidth = 3;
+  for(let r = 0; r < 8; r++){ const y = r*64; g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); for(let c = 0; c < 4; c++){ const x = c*128 + (r % 2)*64; g.beginPath(); g.moveTo(x, y); g.lineTo(x, y + 64); g.stroke(); } } }, [8, 6]);
+const texVloer = ctex(256, 256, (g, w, h) => ruis(g, w, h, '#9ea4a6', 3000, 0.12), [10, 10]);
+{ const v = new THREE.Mesh(new THREE.PlaneGeometry(4000, 3000), M(0xffffff, {map: texVloer, roughness: 0.8})); v.rotation.x = -Math.PI/2; v.position.z = 1300; v.receiveShadow = true; BINNEN.add(v);
+  const w = new THREE.Mesh(new THREE.PlaneGeometry(4000, 3000), M(0xffffff, {map: texKZS, roughness: 0.9})); w.position.set(0, 1500, -2); w.receiveShadow = true; BINNEN.add(w);
+  const w2 = new THREE.Mesh(new THREE.PlaneGeometry(2800, 3000), M(0xffffff, {map: texKZS, roughness: 0.9})); w2.rotation.y = Math.PI/2; w2.position.set(-1800, 1500, 1400); w2.receiveShadow = true; BINNEN.add(w2);
+  box(BINNEN, 4000, 80, 12, M(0x7c8285), 0, 40, 4); }                                                                                 // plint
+
+// =====================================================================================================
+// EMS-KAST "EMS Groot" — Moducenter 640 × 760 mm, 2 × MC43 (boven) + 2 × MC33 (onder), RAL 7035, IP65, deksels met venster
+// =====================================================================================================
+const EMS = new THREE.Group();                                       // oorsprong: achterzijde midden-onder
+const DB = 112, DL = 48, DT = DB + DL;                               // diepte onderbak, verhoogd deksel, totaal
+const MOD = [{n: 'MC43', x0: -320, x1: -3, y0: 326, y1: 760}, {n: 'MC43', x0: 3, x1: 320, y0: 326, y1: 760},
+             {n: 'MC33', x0: -320, x1: -3, y0: 0, y1: 320}, {n: 'MC33', x0: 3, x1: 320, y0: 0, y1: 320}];
+const DEKSELS = [];
+MOD.forEach((m, i) => { const w = m.x1 - m.x0, h = m.y1 - m.y0, cx = (m.x0 + m.x1)/2, cy = (m.y0 + m.y1)/2;
+  // onderbak met ribbels en hoekversterking, gelijmde koppelflens naar de buurmodule
+  box(EMS, w, h, 4, RAL7035d, cx, cy, 2);
+  for(const s of [-1, 1]){ box(EMS, 5, h, DB, RAL7035, cx + s*(w/2 - 2.5), cy, DB/2); box(EMS, w, 5, DB, RAL7035, cx, cy + s*(h/2 - 2.5), DB/2); }
+  for(const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) cyl(EMS, 9, DB - 6, RAL7035d, cx + sx*(w/2 - 13), cy + sy*(h/2 - 13), DB/2, 'z', 12);   // schroefdomes deksel
+  box(EMS, w - 8, 3, 6, RAL7035d, cx, cy + h/2 - 1.5, DB + 2); box(EMS, w - 8, 3, 6, RAL7035d, cx, cy - h/2 + 1.5, DB + 2);
+  // montageplaat (verzinkt) op afstandsbussen
+  box(EMS, w - 36, h - 36, 2, zink, cx, cy, 14);
+  for(const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) cyl(EMS, 3, 2, zink, cx + sx*(w/2 - 32), cy + sy*(h/2 - 32), 15.5, 'z', 8);
+  // verhoogd deksel (VHR) met venster (DF), scharnier links, 4 kwartslagsluitingen
+  const rechts = m.x0 > 0, piv = new THREE.Group(); piv.position.set(rechts ? m.x1 - 2 : m.x0 + 2, cy, DB); EMS.add(piv);     // linker kolom scharnier links, rechter kolom rechts
+  const dk = new THREE.Group(); dk.position.x = rechts ? -(w/2 - 2) : w/2 - 2; piv.add(dk);
+  for(const s of [-1, 1]){ box(dk, 10, h, DL, RAL7035, s*(w/2 - 5), 0, DL/2); box(dk, w, 10, DL, RAL7035, 0, s*(h/2 - 5), DL/2); }
+  box(dk, w - 20, h - 20, 3, rook, 0, 0, DL - 2, false);                                                                                   // venster
+  for(const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]){ cyl(dk, 7, 4, RAL7035d, sx*(w/2 - 13), sy*(h/2 - 13), DL + 1, 'z', 16); box(dk, 6, 1.5, 1, zwart, sx*(w/2 - 13), sy*(h/2 - 13), DL + 3.2, false); }
+  plak(dk, 90, 14, txtTex(m.n + '+VHR+DF', 256, 40, '#d4d7d1', '#333', 22), -w/2 + 60, h/2 - 7, DL + 0.6);
+  const dr = {m: piv, as: 'y', open: rechts ? 1.75 : -1.75, dicht: 0, doel: 0, hoek: 0, naam: 'deksel ' + ['linksboven', 'rechtsboven', 'linksonder', 'rechtsonder'][i]}; doors.push(dr); DEKSELS.push(dr);
+  dk.traverse(o => { if(o.isMesh){ o.userData.deur = dr; KLIK.push(o); } }); });
+// koppelstukken tussen de modules en 4 wandbevestigingsogen (sleutelgat)
+box(EMS, 6, 760, DB - 10, RAL7035d, 0, 380, (DB - 10)/2); box(EMS, 640, 6, DB - 10, RAL7035d, 0, 323, (DB - 10)/2);
+for(const [sx, y] of [[-1, 778], [1, 778], [-1, -18], [1, -18]]){ const x = sx*310; box(EMS, 34, 40, 6, RAL7035d, x, y, 3); const k = box(EMS, 9, 18, 7, M(0x707478), x, y + 2, 3.5, false); }
+
+// ---- DIN-rail met eindsteunen ----
+const rail = (x0, x1, y) => { box(EMS, x1 - x0, 35, 7.5, din, (x0 + x1)/2, y, 19); for(const x of [x0 + 4, x1 - 4]) box(EMS, 8, 44, 30, M(0x3a3e43), x, y, 31); };
+const ZF = 22;                                                        // voorkant DIN-rail
+// ABB modulair apparaat: n modules van 18 mm, 45 mm hoog front, 68 mm diep
+const etiket = (tag, x, y, w) => plak(EMS, Math.max(16, w), 9, txtTex(tag, 160, 32, '#ffffff', '#111', 20), x, y, ZF + 72);
+function abb(x, y, n, soort, tag, tekst){ const w = n*17.8 - 0.6, xc = x + n*8.9;
+  box(EMS, w, 90, 44, abbW, xc, y, ZF + 22); box(EMS, w, 45, 24, abbW, xc, y, ZF + 56);
+  for(const s of [-1, 1]){ box(EMS, w, 8, 26, abbG, xc, y + s*38, ZF + 30); for(let k = 0; k < n; k++) cyl(EMS, 2.6, 2, M(0x8a8f92, {metalness: 0.7}), x + 8.9 + k*17.8, y + s*38, ZF + 44, 'z', 8); }
+  if(soort === 'ls'){ box(EMS, 9, 16, 9, M(0x2b2d30), xc - w/2 + 9, y + 4, ZF + 72); box(EMS, w*0.92, 5, 1.5, M(0xc0281f), xc, y + 17, ZF + 68.8); box(EMS, 9, 6, 3, M(0x1f5fbf), xc + w/2 - 7, y - 12, ZF + 69);
+    plak(EMS, w*0.9, 7, txtTex(tekst || 'DS201 B10 A30', 200, 30, '#eeeee9', '#333', 18), xc, y - 5, ZF + 68.4); }
+  if(soort === 'wcd'){ box(EMS, w*0.9, 40, 3, M(0x2e3134), xc, y, ZF + 69); cyl(EMS, 14, 4, M(0x1b1c1e), xc, y, ZF + 71, 'z', 24); for(const s of [-1, 1]) cyl(EMS, 2.2, 5, zwart, xc + s*5.6, y, ZF + 72, 'z', 8);
+    for(const s of [-1, 1]) box(EMS, 4, 7, 2, zink, xc, y + s*13.5, ZF + 72, false); }
+  if(soort === 'ot'){ box(EMS, w, 90, 50, M(0x3a3e43), xc, y, ZF + 25); box(EMS, 24, 24, 12, M(0x2b2d30), xc, y, ZF + 56); cyl(EMS, 3, DB + DL - ZF - 60, zink, xc, y, (ZF + 60 + DB + DL)/2, 'z', 8);   // as 6 mm naar de hendel op het deksel
+    plak(EMS, w*0.9, 8, txtTex('OT16F3  16A', 160, 30, '#3a3e43', '#eee', 18), xc, y - 30, ZF + 50.4); }
+  if(soort) etiket(tag, xc, y - 52, w);
+  return {x0: x, x1: x + n*17.8, xc, w}; }
+// klem (rijgklem 5,2 mm)
+const klem = (x, y, m, n) => { for(let k = 0; k < n; k++){ box(EMS, 5.1, 46, 44, m(k), x + k*5.2, y, ZF + 22); cyl(EMS, 1.6, 2, zink, x + k*5.2, y + 14, ZF + 45, 'z', 6); cyl(EMS, 1.6, 2, zink, x + k*5.2, y - 14, ZF + 45, 'z', 6); } };
+
+// ---------- MC43 linksboven: 2 DIN-rails, reserve ----------
+rail(-300, -23, 628); rail(-300, -23, 456);
+plak(EMS, 110, 14, txtTex('reserve', 200, 30, '#f1f2ee', '#888', 18), -160, 545, 16);
+
+// ---------- MC43 rechtsboven: W1 WTG-controller, X03, W3 TSW212, W2 RUT951 ----------
+rail(23, 300, 628); rail(23, 300, 456);
+const lblDev = (w, h, lines, bg, fg, px) => txtTex(lines, Math.round(w*3), Math.round(h*3), bg, fg, px);
+// W1 WTG controller (levering derden; alleen 24 V DC aanleggen)
+{ const x = 120, y = 628; box(EMS, 150, 105, 55, M(0x2c3035, {roughness: 0.5}), x, y, ZF + 27.5); plak(EMS, 140, 40, lblDev(140, 40, ['WTG controller', '-W1  24 V DC'], '#2c3035', '#e8edf0', 34), x, y + 22, ZF + 55.5);
+  for(let k = 0; k < 2; k++){ box(EMS, 16, 14, 6, M(0x111214), x - 50 + k*22, y - 18, ZF + 57); box(EMS, 12, 2, 2, M(0x3aa655, {emissive: 0x3aa655, emissiveIntensity: 0.8}), x - 50 + k*22, y - 9, ZF + 60, false); }
+  for(let k = 0; k < 2; k++){ cyl(EMS, 4, 10, M(0xd8b84a, {metalness: 0.8, roughness: 0.3}), x + 30 + k*22, y + 58, ZF + 30, null, 10); const a = cyl(EMS, 3.5, 55, zwart, x + 30 + k*22, y + 90, ZF + 30, null, 10); }   // antennes
+  box(EMS, 18, 12, 8, M(0x1b1c1e), x + 62, y - 18, ZF + 57); }
+// X03 potentiaalverdeler PT 2X10 (2 st), rood (+) en zwart (−)
+{ const y = 456; [[34, 0xc8281c], [52, 0x222426]].forEach(([x, c]) => { box(EMS, 16, 70, 42, M(c, {roughness: 0.5}), x, y, ZF + 21); for(let r = 0; r < 4; r++) for(const s of [-1, 1]) cyl(EMS, 2.4, 3, zink, x + s*4, y - 27 + r*18, ZF + 43, 'z', 8); });
+  etiket('-X03', 43, y - 45, 34); }
+// W3 Teltonika TSW212 (8 × GbE + 2 SFP), DIN
+const W3 = {x: 92, y: 456};
+{ const {x, y} = W3; box(EMS, 42, 128, 100, teltonika, x, y, ZF + 50); plak(EMS, 40, 126, ctex(120, 384, (g, w, h) => { g.fillStyle = '#2b2e33'; g.fillRect(0, 0, w, h); g.fillStyle = '#3ec1f0'; g.font = 'bold 18px Arial'; g.textAlign = 'center'; g.fillText('TELTONIKA', w/2, 26); g.fillStyle = '#ccd'; g.font = '15px Arial'; g.fillText('TSW212', w/2, 46);
+    for(let k = 0; k < 8; k++){ const yy = 70 + Math.floor(k/2)*58, xx = k % 2 ? 66 : 14; g.fillStyle = '#0d0e10'; g.fillRect(xx, yy, 40, 34); g.fillStyle = '#c9a43a'; g.fillRect(xx + 6, yy + 4, 28, 4); g.fillStyle = '#4fdc6a'; g.fillRect(xx + 2, yy + 36, 8, 5); }
+    g.fillStyle = '#0d0e10'; g.fillRect(14, 310, 92, 26); g.fillRect(14, 342, 92, 26); g.fillStyle = '#aab'; g.font = '12px Arial'; g.fillText('SFP 1   SFP 2', w/2, 380); }), x, y, ZF + 100.5); etiket('-W3', x, y - 74, 30); }
+// W2 RUT951 (levering derden), staand op de rail, met 4 antennes en PE-klem -X
+const W2 = {x: 235, y: 450};
+{ const {x, y} = W2; box(EMS, 52, 110, 100, M(0xdfe2e5, {roughness: 0.4, metalness: 0.4}), x, y, ZF + 50); plak(EMS, 50, 108, ctex(150, 324, (g, w, h) => { g.fillStyle = '#e1e4e7'; g.fillRect(0, 0, w, h); g.fillStyle = '#1b6fb3'; g.font = 'bold 20px Arial'; g.textAlign = 'center'; g.fillText('RUT951', w/2, 30);
+    for(let k = 0; k < 4; k++){ g.fillStyle = '#16181b'; g.fillRect(28, 60 + k*52, 94, 36); g.fillStyle = '#c9a43a'; g.fillRect(40, 64 + k*52, 70, 5); g.fillStyle = '#333'; g.font = '13px Arial'; g.fillText(k < 3 ? 'LAN ' + (k + 1) : 'WAN', w/2, 112 + k*52); }
+    g.fillStyle = '#2a8d3a'; for(let k = 0; k < 5; k++){ g.beginPath(); g.arc(30 + k*22, 290, 5, 0, 7); g.fill(); } }), x, y, ZF + 100.5);
+  for(let k = 0; k < 4; k++){ cyl(EMS, 4, 8, M(0xd8b84a, {metalness: 0.8, roughness: 0.3}), x - 18 + k*12, y + 59, ZF + 50, null, 10); cyl(EMS, 3.5, 45, zwart, x - 18 + k*12, y + 85, ZF + 50, null, 10); }
+  etiket('-W2', x, y - 70, 30); box(EMS, 6, 46, 44, ader.PE, x + 40, y, ZF + 22); etiket('-X', x + 40, y - 32, 14); }
+
+// ---------- MC33 linksonder: WCD1/2, U1 NDR-240-24, U2 DUPS20, WCD3, HS OT16, F1 DS201, Xi ----------
+rail(-300, -23, 214); rail(-300, -23, 86);
+const WCD1 = abb(-296, 214, 2.5, 'wcd', '-WCD1'), WCD2 = abb(WCD1.x1, 214, 2.5, 'wcd', '-WCD2');
+const U1 = {x0: -150, x1: -87}, U2 = {x0: -84, x1: -44};
+{ // U1 Mean Well NDR-240-24 (63 × 125 × 113,5)
+  const x = (U1.x0 + U1.x1)/2, y = 214; box(EMS, 63, 125, 106, mwGrijs, x, y, ZF + 53); for(let k = 0; k < 14; k++) box(EMS, 52, 2.5, 1, M(0x5d6368), x, y + 50 - k*7.5, ZF + 106.5, false);
+  plak(EMS, 58, 30, lblDev(58, 30, ['MEAN WELL', 'NDR-240-24', '24V 10A'], '#e9ecee', '#1b3d6b', 26), x, y - 38, ZF + 106.6); for(let k = 0; k < 6; k++) cyl(EMS, 2.2, 2, zink, x - 25 + k*10, y + 56, ZF + 107, 'z', 8);
+  // U2 Mean Well DUPS20 (40 × 125)
+  const x2 = (U2.x0 + U2.x1)/2; box(EMS, 40, 125, 106, mwGrijs, x2, y, ZF + 53); plak(EMS, 36, 36, lblDev(36, 36, ['DUPS20', 'DC-UPS', '24V 20A'], '#e9ecee', '#1b3d6b', 30), x2, y + 10, ZF + 106.6);
+  for(let k = 0; k < 3; k++) box(EMS, 4, 4, 2, M([0x22d06a, 0xffb000, 0x22d06a][k], {emissive: [0x22d06a, 0xffb000, 0x22d06a][k], emissiveIntensity: 0.6}), x2 - 10 + k*10, y - 22, ZF + 107, false);
+  etiket('-U1', x, y - 70, 30); etiket('-U2', x2, y - 70, 30); }
+const WCD3 = abb(-296, 86, 2.5, 'wcd', '-WCD3'), HS = abb(WCD3.x1 + 4, 86, 2.5, 'ot', '-HS'), F1 = abb(HS.x1 + 4, 86, 2, 'ls', '-F1', 'DS201 B10 A30');
+klem(F1.x1 + 8, 86, k => k === 2 ? ader.PE : (k === 1 ? M(0x2f6fd0) : M(0xc9c3b4)), 3); box(EMS, 2, 46, 44, M(0x8a8f92), F1.x1 + 8 + 15.6, 86, ZF + 22); etiket('-Xi', F1.x1 + 13, 86 - 32, 18);
+// hendel OT16 op het deksel (voor deksel bedienbaar) — meedraaiend met het deksel linksonder
+{ const dk = DEKSELS[2].m.children[0]; const hx = HS.xc - (MOD[2].x0 + MOD[2].x1)/2, hy = 86 - 160;
+  cyl(dk, 26, 6, M(0xf2c200, {roughness: 0.4}), hx, hy, DL + 3, 'z', 24); box(dk, 46, 12, 12, M(0xc8281c, {roughness: 0.45}), hx, hy, DL + 10);
+  plak(dk, 50, 9, txtTex('0 — I', 120, 22, '#f2c200', '#111', 18), hx, hy - 34, DL + 6.2); }
+// wartel M20 + blinddop onderin linksonder
+const GW = {x: -100, y: 0}, BD = {x: -60, y: 0};
+cyl(EMS, 13, 14, M(0x2b2e31), GW.x, -7, 60, null, 6); cyl(EMS, 11, 8, zwart, GW.x, -16, 60, null, 16);
+const blind = cyl(EMS, 11, 6, M(0x2b2e31), BD.x, -3, 60, null, 16);
+
+// ---------- MC33 rechtsonder: U3 accumodule 24 V 4 Ah, P1 patchpaneel ----------
+rail(23, 300, 165);
+{ const x = 81, y = 165; box(EMS, 86, 190, 110, M(0x58616a, {roughness: 0.5}), x, y, ZF + 55); plak(EMS, 80, 60, lblDev(80, 60, ['PHOENIX CONTACT', 'UPS-BAT/PB/24DC/4AH', '-U3'], '#e9ecee', '#1b1b1b', 22), x, y + 40, ZF + 110.6);
+  for(let k = 0; k < 2; k++) cyl(EMS, 3, 3, zink, x - 15 + k*30, y + 92, ZF + 70, null, 8);
+  // P1 keystone patchpaneel 8 poorten (EFB)
+  const px = 260; box(EMS, 54, 140, 70, M(0x9aa1a6, {metalness: 0.6, roughness: 0.4}), px, y, ZF + 35);
+  plak(EMS, 50, 136, ctex(150, 408, (g, w, h) => { g.fillStyle = '#a3a9ad'; g.fillRect(0, 0, w, h); g.fillStyle = '#222'; g.font = 'bold 18px Arial'; g.textAlign = 'center'; g.fillText('-P1', w/2, 24);
+    for(let k = 0; k < 8; k++){ const yy = 44 + k*44; g.fillStyle = '#0f1012'; g.fillRect(40, yy, 70, 34); g.fillStyle = '#d6d6d0'; g.fillRect(36, yy + 36, 78, 6); g.fillStyle = '#222'; g.font = '12px Arial'; g.fillText(String(k + 1), 22, yy + 22); } }), px, y, ZF + 70.5); etiket('-P1', px, y - 80, 26); }
+// kabelgoot onderin rechtsonder
+box(EMS, 250, 30, 40, M(0x8f969a), 160, 38, ZF + 20); for(let k = 0; k < 14; k++) box(EMS, 4, 4, 41, M(0x6c7377), 45 + k*17, 52, ZF + 20, false);
+
+// ---------- bedrading ----------
+const KAB = new THREE.Group(); EMS.add(KAB);
+const R25 = 1.9, R15 = 1.6, RCAT = 3.4;
+const dr = (pts, m, r) => kabel(KAB, pts.map(p => V(p[0], p[1], p[2])), r || R25, m, 6);
+const zW = ZF + 50;                                                                 // hoogte bedrading boven de montageplaat
+// 230 V: wartel → HS (L, N), PE naar Xi
+[['L', -5], ['N', 5]].forEach(([f, dx]) => dr([[GW.x + dx, 6, 60], [GW.x + dx, 24, zW], [HS.xc - 9 + (f === 'N' ? 18 : 0), 30, zW], [HS.xc - 9 + (f === 'N' ? 18 : 0), 86 - 38, ZF + 44]], ader[f]));
+dr([[GW.x + 12, 6, 60], [GW.x + 12, 24, zW], [F1.x1 + 18.4, 30, zW], [F1.x1 + 18.4, 86 - 38, ZF + 44]], ader.PE);
+// HS → F1 → rijgklemmen L/N → WCD's en U1
+[['L', 0], ['N', 1]].forEach(([f, k]) => { const xh = HS.xc - 9 + k*18, xf = F1.x0 + 8.9 + k*17.8;
+  dr([[xh, 86 + 38, ZF + 44], [xh, 140, zW], [xf, 140, zW], [xf, 86 + 38, ZF + 44]], ader[f], R15);
+  dr([[xf, 86 - 38, ZF + 44], [xf, 32, zW], [F1.x1 + 8 + k*5.2, 32, zW], [F1.x1 + 8 + k*5.2, 86 - 14, ZF + 44]], ader[f], R15);
+  // vanaf Xi omhoog naar WCD1..3 en U1 (230 V)
+  dr([[F1.x1 + 8 + k*5.2, 86 + 14, ZF + 44], [F1.x1 + 8 + k*5.2, 150, zW + 8], [-160 - k*6, 150, zW + 8], [-160 - k*6, 272, zW + 8], [WCD1.xc - 6 + k*12, 272, zW + 8], [WCD1.xc - 6 + k*12, 214 + 38, ZF + 44]], ader[f], R15);
+  dr([[WCD1.xc - 6 + k*12, 272, zW + 8], [WCD2.xc - 6 + k*12, 272, zW + 8], [WCD2.xc - 6 + k*12, 214 + 38, ZF + 44]], ader[f], R15);
+  dr([[-160 - k*6, 150, zW + 8], [WCD3.xc - 6 + k*12, 150, zW + 8], [WCD3.xc - 6 + k*12, 86 + 38, ZF + 44]], ader[f], R15);
+  dr([[-160 - k*6, 272, zW + 8], [U1.x0 + 8 + k*10, 290, zW + 8], [U1.x0 + 8 + k*10, 278, ZF + 108]], ader[f], R15); });
+// 24 V DC: U1 → U2 → X03 (rood/zwart, door de koppelopening naar rechtsboven), U3 → U2
+const P = [['P24', 0], ['M24', 1]];
+P.forEach(([f, k]) => { const xu = U1.x1 - 12 + k*8, x2 = U2.x0 + 8 + k*10, x3 = (U2.x0 + U2.x1)/2 + 8 + k*6, xx = [34, 52][k];
+  dr([[xu, 278, ZF + 108], [xu, 296, zW + 14], [x2, 296, zW + 14], [x2, 278, ZF + 108]], ader[f], R15);
+  dr([[x3, 278, ZF + 108], [x3, 300, zW + 14], [-12 + k*6, 300, zW + 14], [-12 + k*6, 340, zW + 14], [xx, 380, zW], [xx, 456 - 36, ZF + 43]], ader[f], R15);
+  dr([[x2 + 4, 151, ZF + 108], [x2 + 4, 132, zW + 14], [-12 + k*6, 110, zW + 14], [40 + k*12, 110, zW + 14], [60 + k*12, 260, ZF + 110]], ader[f], R15);   // U3 accu → U2
+  // X03 → W3 (TSW212), W1 en W2 (via tulpconnector -XW1/-XW2)
+  dr([[xx, 456 + 36, ZF + 43], [xx, 520, zW], [W3.x - 6 + k*12, 520, zW], [W3.x - 6 + k*12, 456 + 64, ZF + 60]], ader[f], R15);
+  dr([[xx, 456 + 36, ZF + 43], [xx + 10, 560, zW + 4], [120 - 66 + k*8, 560, zW + 4], [120 - 66 + k*8, 628 - 30, ZF + 56]], ader[f], R15);
+  dr([[xx, 456 - 36, ZF + 43], [xx + 4, 380, zW + 4], [W2.x - 10 + k*8, 380, zW + 4], [W2.x - 10 + k*8, 450 - 56, ZF + 70]], ader[f], R15); });
+// CAT 6A S/FTP: W3 → W1, W3 → W2, W3 → P1 (patchpaneel, door de koppelopening)
+dr([[W3.x - 8, 456 + 40, ZF + 101], [W3.x - 8, 520, ZF + 110], [70, 600, ZF + 70], [70, 610, ZF + 58]], ader.CAT, RCAT);
+dr([[W3.x + 8, 456 + 20, ZF + 101], [150, 476, ZF + 112], [W2.x, 476, ZF + 112], [W2.x, 450 + 20, ZF + 101]], ader.CAT, RCAT);
+dr([[W3.x + 8, 456 - 50, ZF + 101], [W3.x + 8, 380, ZF + 112], [160, 330, ZF + 100], [250, 300, ZF + 90], [260, 165 + 50, ZF + 71]], ader.CAT, RCAT);
+// tulpconnectoren -XW1 / -XW2 en kabeladapter (Delock 65487)
+for(const [x, y] of [[120 - 62, 628 - 34], [W2.x - 6, 450 - 60]]) cyl(KAB, 4, 14, zwart, x, y, ZF + 62, null, 10);
+
+// =====================================================================================================
+// PEGEO KVSP1-413/SVD polyester veldkast 785 × 1364 × 472 (IP44, RAL 7035, driepuntsluiting met halve europrofielcilinder)
+// =====================================================================================================
+const PG = new THREE.Group(); BUITEN.add(PG);
+const PW = 785, PH = 1364, PD = 472, PS = 12;                       // breedte, hoogte, diepte, wanddikte
+{ const y0 = 0;
+  // fundatiesokkel (ingegraven, 500 mm) en voetrand
+  box(PG, PW - 20, 500, PD - 30, polyester, 0, -250, 0); box(PG, PW + 6, 30, PD + 6, M(0x9fa39c, {roughness: 0.8}), 0, 15, 0);
+  box(PG, PS, PH, PD, polyester, -PW/2 + PS/2, PH/2, 0); box(PG, PS, PH, PD, polyester, PW/2 - PS/2, PH/2, 0); box(PG, PW, PH, PS, polyester, 0, PH/2, -PD/2 + PS/2);
+  box(PG, PW, PS, PD, polyester, 0, 30 + PS/2, 0);                                                                                   // bodem met kabelinvoer
+  // dak met overstek en afloop
+  const dak = box(PG, PW + 40, 26, PD + 40, M(0xc7cac4, {roughness: 0.7}), 0, PH + 13, 0); box(PG, PW + 20, 8, PD + 20, polyester, 0, PH + 30, 0);
+  // ventilatieroosters in de zijwanden
+  for(const s of [-1, 1]) for(let k = 0; k < 6; k++) box(PG, 3, 6, 160, M(0x8f938d), s*(PW/2 + 1), PH - 120 - k*14, 0, false);
+  // montageplaat (verzinkt) op de achterwand
+  box(PG, PW - 120, PH - 260, 3, zink, 0, PH/2 + 40, -PD/2 + PS + 30); for(const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) cyl(PG, 8, 28, zink, sx*(PW/2 - 80), PH/2 + 40 + sy*(PH/2 - 160), -PD/2 + PS + 15, 'z', 8);
+  // H1 Finder 7L armatuur (6 W) bovenin en -DS deurschakelaar Omron D4N
+  box(PG, 300, 22, 40, wit, 0, PH - 50, -PD/2 + 70); box(PG, 290, 6, 30, M(0xfffbe8, {emissive: 0xfff2c8, emissiveIntensity: 0.0}), 0, PH - 62, -PD/2 + 70).userData.led = true;
+  plak(PG, 120, 14, txtTex('-H1  FINDER 7L', 220, 30, '#ffffff', '#333', 18), 0, PH - 50, -PD/2 + 90.5);
+  box(PG, 30, 50, 35, M(0xf2c200, {roughness: 0.5}), PW/2 - 45, PH - 60, PD/2 - 40); box(PG, 6, 6, 20, zink, PW/2 - 45, PH - 60, PD/2 - 12);
+  plak(PG, 40, 12, txtTex('-DS  D4N', 160, 30, '#ffffff', '#333', 18), PW/2 - 45, PH - 98, PD/2 - 22);
+  // deur (scharnier rechts, handgreep links) met driepuntsluiting, typeplaat en waarschuwingsbord
+  const piv = new THREE.Group(); piv.position.set(PW/2, 0, PD/2); PG.add(piv);
+  const deur = new THREE.Group(); deur.position.x = -PW/2; piv.add(deur);
+  const dp = box(deur, PW - 4, PH - 40, 16, polyester, 0, PH/2 + 10, 8); box(deur, PW - 60, PH - 120, 4, M(0xc4c7c1, {roughness: 0.7}), 0, PH/2 + 10, -1);
+  box(deur, 46, 150, 22, M(0x34383c, {roughness: 0.5}), -PW/2 + 70, PH/2 + 20, 24); box(deur, 26, 90, 18, M(0x1d1f22), -PW/2 + 70, PH/2 + 30, 38);           // handgreep
+  cyl(deur, 9, 10, zink, -PW/2 + 70, PH/2 - 40, 37, 'z', 16); box(deur, 3, 10, 2, zwart, -PW/2 + 70, PH/2 - 40, 43, false);                              // cilinder
+  for(const y of [140, PH - 120]) box(deur, 18, 40, 10, M(0x9fa39c), PW/2 - 14, y, 14);                                                            // scharnieren
+  const bord = ctex(256, 256, (g, w, h) => { g.fillStyle = '#ffffff'; g.fillRect(0, 0, w, h); g.fillStyle = '#f2c400'; g.beginPath(); g.moveTo(128, 20); g.lineTo(236, 200); g.lineTo(20, 200); g.closePath(); g.fill(); g.strokeStyle = '#111'; g.lineWidth = 9; g.stroke();
+    g.fillStyle = '#111'; g.beginPath(); g.moveTo(138, 70); g.lineTo(108, 135); g.lineTo(130, 135); g.lineTo(116, 182); g.lineTo(152, 115); g.lineTo(130, 115); g.lineTo(146, 70); g.closePath(); g.fill(); g.font = 'bold 26px Arial'; g.textAlign = 'center'; g.fillText('EMS', 128, 240); });
+  plak(deur, 110, 110, bord, 0, PH - 230, 16.5);
+  plak(deur, 180, 60, txtTex(['ODINK & KOENDERINK', 'OFK260960 · EMS buitenkast', 'IP44 · NEN-EN 61439-5'], 540, 180, '#f1f2ee', '#222', 30), 0, PH - 380, 16.5);
+  const drp = {m: piv, as: 'y', open: 1.85, dicht: 0, doel: 0, hoek: 0, naam: 'deur veldkast'}; doors.push(drp); deur.traverse(o => { if(o.isMesh){ o.userData.deur = drp; KLIK.push(o); } }); }
+const PG_DEUR = doors[doors.length - 1];
+
+// =====================================================================================================
+// OPSTELLING: binnen (wandmontage, onderkant 1000 mm) of buiten (in de Pegeo-veldkast op de montageplaat)
+// =====================================================================================================
+ROOT.add(EMS);
+const EXT = new THREE.Group(); ROOT.add(EXT);                             // externe kabels (per opstelling opnieuw)
+const zwartKab = M(0x1c1d1f, {roughness: 0.65}), grijsKab = M(0x8d9499, {roughness: 0.6});
+let MODUS = 'binnen';
+function zetModus(m){
+  MODUS = m; BINNEN.visible = m === 'binnen'; BUITEN.visible = m === 'buiten';
+  while(EXT.children.length){ const o = EXT.children.pop(); const i = KABELS.indexOf(o); if(i >= 0) KABELS.splice(i, 1); }
+  if(m === 'binnen'){ EMS.position.set(0, 1000, 0); }
+  else { EMS.position.set(0, 330, -PD/2 + PS + 32); }
+  EMS.updateMatrixWorld(true);
+  const g = (x, y, z) => V(x + EMS.position.x, y + EMS.position.y, z + EMS.position.z);                // EMS-lokaal → ROOT
+  if(m === 'binnen'){
+    // kabelgoot 60 × 40 langs de wand vanaf de vloer, voedingskabel YMvK 3G2,5 en datakabel CAT 6A
+    box(EXT, 60, 1000 - 60, 40, M(0xd8dbd6, {roughness: 0.6}), -100, (1000 - 60)/2, 22); box(EXT, 64, 6, 44, M(0xc8cbc6), -100, 1000 - 60, 22);
+    kabel(EXT, [V(-110, 0, 22), V(-110, 900, 22), g(GW.x, -60, 60), g(GW.x, -16, 60)], 5, zwartKab, 30);
+    kabel(EXT, [V(-90, 0, 22), V(-90, 900, 22), g(BD.x, -60, 60), g(BD.x, -10, 60)], 3.4, ader.CAT, 30);
+    blind.visible = false; bindOk('CAT 6A via de 2e invoer (blinddop vervangen door wartel)');
+    binnenLicht.intensity = 0;
+  } else {
+    // vanuit de grond door de sokkel en de kabelinvoer in de bodem omhoog naar de wartels
+    kabel(EXT, [V(-120, -650, 0), V(-120, 60, -60), g(GW.x, -120, 60), g(GW.x, -16, 60)], 5, zwartKab, 60);
+    kabel(EXT, [V(-60, -650, 20), V(-60, 60, -40), g(BD.x, -120, 60), g(BD.x, -10, 60)], 3.4, ader.CAT, 60);
+    // -DS / -H1 (230 V) vanaf -Xi via de kabelgoot langs de montageplaat naar de deurschakelaar en het armatuur
+    kabel(EXT, [g(F1.x1 + 15, 60, ZF + 60), g(330, 60, 70), g(345, 820, 20), V(PW/2 - 45, PH - 60, PD/2 - 60)], 2.4, grijsKab, 30);
+    kabel(EXT, [V(PW/2 - 45, PH - 60, PD/2 - 60), V(PW/2 - 60, PH - 40, -PD/2 + 60), V(120, PH - 50, -PD/2 + 60)], 2.4, grijsKab, 30);
+    blind.visible = false; bindOk('CAT 6A via de 2e invoer (blinddop vervangen door wartel)');
+  }
+  EXT.children.forEach(o => o.visible = $t('tKabel').checked);
+  document.querySelectorAll('#modus button').forEach(b => b.classList.toggle('aan', b.dataset.m === m));
+  document.getElementById('modInfo').innerHTML = m === 'binnen'
+    ? 'Wandmontage in de technische ruimte, onderkant op 1000 mm. Voeding en data via een kabelgoot vanaf de vloer naar de wartels onderin.'
+    : 'Buiten in de Pegeo KVSP1-413/SVD (1364 × 785 × 472, IP44) op de verzinkte montageplaat. Kabels uit de grond door de fundatiesokkel; -DS deurschakelaar en -H1 kastverlichting op -Xi.';
+  VIEWS.bOverzicht();
+}
+function bindOk(){}
+
+// ---------- labels ----------
+const LBL = [['-W1 WTG controller (24 V DC, derden)', [120, 700, 160]], ['-W2 Teltonika RUT951 router', [235, 540, 180]], ['-W3 Teltonika TSW212 switch', [92, 380, 170]], ['-X03 potentiaalverdeler 24 V', [43, 400, 150]],
+  ['-U1 Mean Well NDR-240-24', [-118, 300, 190]], ['-U2 Mean Well DUPS20', [-64, 250, 190]], ['-U3 Phoenix UPS-BAT 24 V 4 Ah', [81, 280, 180]], ['-P1 patchpaneel 8 × RJ45', [260, 260, 130]],
+  ['-HS ABB OT16 (voor deksel bedienbaar)', [HS.xc, 20, 220]], ['-F1 ABB DS201 B10 30 mA', [F1.xc, 140, 170]], ['-WCD1..3 ABB M1175', [-260, 270, 150]], ['M20 wartel + blinddop', [-80, -50, 120]]];
+const LBLOBJ = LBL.map(([t, p]) => ({t, p: V(...p), s: sprite(t, V(), 0.32, '#1b4f8a')}));
+
+// ---------- camera + bediening ----------
+const target = new THREE.Vector3(0, 140, 0);
+let theta = 0.35, phi = 1.35, radius = 260, auto = false;
+function updateCam(){ camera.position.set(target.x + radius*Math.sin(phi)*Math.sin(theta), target.y + radius*Math.cos(phi), target.z + radius*Math.sin(phi)*Math.cos(theta)); camera.lookAt(target); }
+const emsW = (x, y, z) => { const p = V(x, y, z).applyMatrix4(EMS.matrixWorld); return p; };
+const VIEWS = {
+  bOverzicht: () => { if(MODUS === 'binnen'){ target.set(0, 120, 30); theta = 0.4; phi = 1.35; radius = 250; } else { target.set(0, 80, 0); theta = 0.55; phi = 1.25; radius = 380; } },
+  bFront: () => { const c = emsW(0, 380, 0); target.set(c.x, c.y, c.z + 10); theta = 0.0; phi = Math.PI/2 - 0.02; radius = 150; DEKSELS.forEach(d => d.doel = d.dicht); if(MODUS === 'buiten') PG_DEUR.doel = PG_DEUR.open; },
+  bOpen: () => { const c = emsW(0, 380, 0); target.set(c.x, c.y, c.z + 10); theta = 0.25; phi = 1.45; radius = 150; DEKSELS.forEach(d => d.doel = d.open); if(MODUS === 'buiten') PG_DEUR.doel = PG_DEUR.open; },
+  bNet: () => { const c = emsW(160, 540, 60); target.copy(c); theta = 0.2; phi = 1.45; radius = 60; DEKSELS.forEach(d => d.doel = d.open); if(MODUS === 'buiten') PG_DEUR.doel = PG_DEUR.open; },
+  bVoed: () => { const c = emsW(-160, 170, 60); target.copy(c); theta = -0.2; phi = 1.4; radius = 60; DEKSELS.forEach(d => d.doel = d.open); if(MODUS === 'buiten') PG_DEUR.doel = PG_DEUR.open; },
+  bOnder: () => { const c = emsW(-80, 0, 60); target.copy(c); theta = 0.3; phi = 2.2; radius = 70; },
+};
+Object.keys(VIEWS).forEach(id => document.getElementById(id).addEventListener('click', () => VIEWS[id]()));
+const ray = new THREE.Raycaster();
+function hitDeur(e){ const r = wrap.getBoundingClientRect(); ray.setFromCamera(new THREE.Vector2(((e.clientX - r.left)/r.width)*2 - 1, -((e.clientY - r.top)/r.height)*2 + 1), camera);
+  const h = ray.intersectObjects(KLIK.filter(o => { let p = o; while(p){ if(!p.visible) return false; p = p.parent; } return true; }), false); return h.length ? h[0].object.userData.deur : null; }
+let dragging = false, pannen = false, px = 0, py = 0, sleep = 0;
+function schuif(dx, dy){ const s = radius*0.0016, f = V(Math.sin(theta), 0, Math.cos(theta)), rgt = V(f.z, 0, -f.x); target.addScaledVector(rgt, dx*s); target.y = Math.max(-80, target.y - dy*s); }
+wrap.addEventListener('contextmenu', e => e.preventDefault());
+wrap.addEventListener('pointerdown', e => { dragging = true; pannen = (e.button === 2 || e.shiftKey); px = e.clientX; py = e.clientY; sleep = 0; wrap.setPointerCapture(e.pointerId); });
+wrap.addEventListener('pointermove', e => { if(!dragging){ wrap.style.cursor = hitDeur(e) ? 'pointer' : 'grab'; return; }
+  const dx = e.clientX - px, dy = e.clientY - py; sleep += Math.abs(dx) + Math.abs(dy);
+  if(pannen) schuif(dx, dy); else { theta -= dx*0.006; phi = Math.min(2.6, Math.max(0.05, phi - dy*0.005)); } px = e.clientX; py = e.clientY; });
+wrap.addEventListener('pointerup', e => { dragging = false; if(sleep < 6 && e.button === 0){ const d = hitDeur(e); if(d){ d.doel = Math.abs(d.doel - d.open) < 1e-3 ? d.dicht : d.open; meld(d.naam + ' ' + (d.doel === d.open ? 'open' : 'dicht')); } } });
+wrap.addEventListener('wheel', e => { e.preventDefault(); radius = Math.min(1500, Math.max(15, radius*(1 + e.deltaY*0.0012))); }, {passive: false});
+const $t = id => document.getElementById(id);
+$t('pDicht').addEventListener('click', () => { $t('paneel').classList.add('dicht'); $t('pOpen').classList.add('toon'); });
+$t('pOpen').addEventListener('click', () => { $t('paneel').classList.remove('dicht'); $t('pOpen').classList.remove('toon'); });
+$t('tDeksel').addEventListener('change', e => DEKSELS.forEach(d => d.doel = e.target.checked ? d.open : d.dicht));
+$t('tDeur').addEventListener('change', e => { PG_DEUR.doel = e.target.checked ? PG_DEUR.open : PG_DEUR.dicht; });
+$t('tKabel').addEventListener('change', e => { KAB.visible = e.target.checked; EXT.children.forEach(o => o.visible = e.target.checked); });
+$t('tLabel').addEventListener('change', e => LABELS.forEach(l => l.visible = e.target.checked));
+$t('tGrond').addEventListener('change', e => GRONDMAT.forEach(m => { m.transparent = e.target.checked; m.opacity = e.target.checked ? 0.35 : 1; m.depthWrite = !e.target.checked; m.needsUpdate = true; }));
+document.querySelectorAll('#modus button').forEach(b => b.addEventListener('click', () => zetModus(b.dataset.m)));
+window.addEventListener('keydown', e => { if(e.key === '+' || e.key === '=') radius = Math.max(15, radius*0.85); if(e.key === '-') radius = Math.min(1500, radius*1.18); if(e.key === '0') VIEWS.bOverzicht(); });
+const FP = {aan: false, keys: {}, pos: V(), yaw: 0};               // geen loopmodus op deze pagina; pijltjes schuiven het kijkpunt
+function zetFP(){}
+function resize(){ const w = wrap.clientWidth, h = wrap.clientHeight; renderer.setSize(w, h); renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); camera.aspect = w/h; camera.updateProjectionMatrix(); }
+window.addEventListener('resize', resize); resize();
+zetModus(new URLSearchParams(location.search).get('opstelling') === 'buiten' ? 'buiten' : 'binnen');
+let tPrev = performance.now();
+function animate(){ requestAnimationFrame(animate); const t = performance.now(), dt = Math.min(0.05, (t - tPrev)/1000); tPrev = t;
+  doors.forEach(d => { d.hoek += (d.doel - d.hoek)*Math.min(1, dt*6); d.m.rotation[d.as || 'y'] = d.hoek; });
+  // kastverlichting -H1 brandt als de deur van de veldkast open is (deurschakelaar -DS)
+  const aan = MODUS === 'buiten' && Math.abs(PG_DEUR.hoek) > 0.15; binnenLicht.intensity = aan ? 0.9 : 0; binnenLicht.position.copy(V(0, PH - 80, 0).multiplyScalar(0.1));
+  LBLOBJ.forEach(l => { l.s.position.copy(emsW(l.p.x, l.p.y, l.p.z)); });
+  updateCam(); renderer.render(scene, camera); }
+animate();
+
+// ============ MOBIEL: aanraakbediening + pijltjes om te lopen ============
+// 1 vinger: draaien (of rondkijken in loopmodus) · 2 vingers: knijpen = zoomen (lopen = vooruit/achteruit), slepen = schuiven
+// Pijltjesknoppen linksonder lopen in loopmodus; rechts: loopmodus aan/uit, bukken/opstaan, rennen.
+(function(){
+  const st = document.createElement('style');
+  st.textContent = `
+  #mob{position:fixed;inset:0;pointer-events:none;z-index:30;font:600 13px system-ui,sans-serif;-webkit-user-select:none;user-select:none}
+  #mob button{pointer-events:auto;touch-action:none;border:1px solid rgba(36,48,56,.25);background:rgba(255,255,255,.88);color:#243038;border-radius:12px;
+    box-shadow:0 2px 10px rgba(0,0,0,.18);font:600 20px/1 system-ui,sans-serif;width:54px;height:54px;padding:0;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
+  #mob button:active,#mob button.aan{background:#243038;color:#fff}
+  #mobPad{position:absolute;left:calc(14px + env(safe-area-inset-left));bottom:calc(16px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(3,54px);grid-template-rows:repeat(3,54px);gap:6px}
+  #mobPad .leeg{visibility:hidden}
+  #mobRe{position:absolute;right:calc(14px + env(safe-area-inset-right));bottom:calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+  #mob #mobFP{width:auto;padding:0 16px;font-size:14px;height:46px}
+  #mob .fpOnly{display:none}
+  #mob.fp .fpOnly{display:flex}
+  #mob.fp #mobPad{display:grid}
+  #mobPad{display:grid}
+  @media (pointer:fine){#mob:not(.fp) #mobPad{display:none}}
+  #mobHint{position:absolute;left:50%;top:calc(12px + env(safe-area-inset-top));transform:translateX(-50%);background:rgba(36,48,56,.85);color:#fff;padding:7px 12px;border-radius:8px;font-size:12px;
+    pointer-events:none;opacity:0;transition:opacity .4s;white-space:nowrap}
+  #mobHint.toon{opacity:1}
+  @media (max-width:760px){
+    #paneel{top:auto!important;bottom:0!important;right:0!important;left:0!important;width:100%!important;max-height:58vh!important;border-radius:14px 14px 0 0!important;
+      padding-bottom:calc(14px + env(safe-area-inset-bottom))!important;font-size:14px!important}
+    #paneel.dicht{transform:translateY(calc(100% + 20px))!important}
+    #paneel label{padding:8px 0!important}
+    #pOpen{top:calc(12px + env(safe-area-inset-top))!important;right:12px!important;width:44px!important;height:44px!important;font-size:22px!important}
+    #mob.paneelOpen #mobPad,#mob.paneelOpen #mobRe{display:none}
+    #simHud{max-width:calc(100vw - 82px)!important;max-height:45vh;overflow-y:auto;box-sizing:border-box}
+  }`;
+  document.head.appendChild(st);
+  const vm = document.querySelector('meta[name=viewport]'); if(vm) vm.content = 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover';
+  const M = document.createElement('div'); M.id = 'mob';
+  M.innerHTML = `<div id="mobHint"></div>
+    <div id="mobPad"><button class="leeg"></button><button data-k="arrowup" aria-label="vooruit">&#9650;</button><button class="leeg"></button>
+      <button data-k="arrowleft" aria-label="links">&#9664;</button><button data-k="arrowdown" aria-label="achteruit">&#9660;</button><button data-k="arrowright" aria-label="rechts">&#9654;</button>
+      <button class="leeg"></button><button class="leeg"></button><button class="leeg"></button></div>
+    <div id="mobRe"><button class="fpOnly" data-k="e" aria-label="opstaan">&#8679;</button><button class="fpOnly" data-k="q" aria-label="bukken">&#8681;</button>
+      <button class="fpOnly" id="mobRen" aria-label="rennen">&#187;</button><button id="mobFP">&#128694; Lopen</button></div>`;
+  document.body.appendChild(M);
+  const hint = M.querySelector('#mobHint'); let hintT = 0;
+  const toonHint = t => { hint.textContent = t; hint.classList.add('toon'); clearTimeout(hintT); hintT = setTimeout(() => hint.classList.remove('toon'), 3200); };
+  // pijltjes: ingedrukt houden = lopen
+  M.querySelectorAll('button[data-k]').forEach(b => { const k = b.dataset.k;
+    const aan = e => { e.preventDefault(); e.stopPropagation(); FP.keys[k] = true; b.classList.add('aan'); try{ b.setPointerCapture(e.pointerId); }catch(_){} };
+    const uit = e => { FP.keys[k] = false; b.classList.remove('aan'); };
+    b.addEventListener('pointerdown', aan); b.addEventListener('pointerup', uit); b.addEventListener('pointercancel', uit); b.addEventListener('lostpointercapture', uit);
+    b.addEventListener('contextmenu', e => e.preventDefault()); });
+  const ren = M.querySelector('#mobRen');
+  ren.addEventListener('click', e => { e.stopPropagation(); FP.keys.shift = !FP.keys.shift; ren.classList.toggle('aan', !!FP.keys.shift); });
+  const fpKnop = M.querySelector('#mobFP');
+  fpKnop.addEventListener('click', e => { e.stopPropagation(); zetFP(!FP.aan); if(FP.aan) toonHint('Pijltjes = lopen · 1 vinger slepen = rondkijken · knijpen = stappen'); });
+  // status volgen (ook als loopmodus via toets P of het paneel wordt gezet)
+  setInterval(() => { M.classList.toggle('fp', !!FP.aan); fpKnop.innerHTML = FP.aan ? '&#10005; Stop lopen' : '&#128694; Lopen'; fpKnop.classList.toggle('aan', !!FP.aan);
+    const p = document.getElementById('paneel'); M.classList.toggle('paneelOpen', !!(p && !p.classList.contains('dicht'))); if(!FP.aan && FP.keys.shift){ FP.keys.shift = false; ren.classList.remove('aan'); } }, 250);
+  // paneel op een smal scherm standaard ingeklapt
+  if(window.matchMedia('(max-width:760px)').matches){ const pd = document.getElementById('pDicht'); if(pd) pd.click(); const ov = document.getElementById('bPcs'); if(ov) setTimeout(() => { ov.click(); setTimeout(() => { if(typeof radius !== 'undefined') radius *= 1.6; }, 50); }, 300); }
+
+  // ---- 2 vingers: knijpen en schuiven (vóór de gewone 1-vingerbediening afgevangen) ----
+  const wrapEl = document.getElementById('wrap') || renderer.domElement.parentNode;
+  const T = new Map(); let g0 = null;
+  const pan = (dx, dy) => { if(typeof schuif === 'function') return schuif(dx, dy);
+    const s = radius*0.0016, f = new THREE.Vector3(Math.sin(theta), 0, Math.cos(theta)), rgt = new THREE.Vector3(f.z, 0, -f.x); target.addScaledVector(rgt, dx*s); target.y -= dy*s; };
+  const gebaar = () => { const [a, b] = [...T.values()]; return {d: Math.hypot(a.x - b.x, a.y - b.y), x: (a.x + b.x)/2, y: (a.y + b.y)/2}; };
+  const binnen = e => wrapEl.contains(e.target);
+  window.addEventListener('pointerdown', e => { if(e.pointerType !== 'touch' || !binnen(e)) return;
+    T.set(e.pointerId, {x: e.clientX, y: e.clientY}); if(typeof auto !== 'undefined') try{ auto = false; }catch(_){}
+    if(T.size === 2){ g0 = gebaar(); dragging = false; if(typeof sleepAfstand !== 'undefined') sleepAfstand = 999; if(typeof sleep !== 'undefined') sleep = 999; e.stopPropagation(); }
+    else if(T.size > 2) e.stopPropagation(); }, true);
+  window.addEventListener('pointermove', e => { if(e.pointerType !== 'touch' || !T.has(e.pointerId)) return;
+    T.get(e.pointerId).x = e.clientX; T.get(e.pointerId).y = e.clientY;
+    if(T.size < 2 || !g0) return; e.stopPropagation(); e.preventDefault();
+    const g = gebaar(), sc = g.d/Math.max(1, g0.d);
+    if(FP.aan){ FP.pos.addScaledVector(new THREE.Vector3(-Math.sin(FP.yaw), 0, -Math.cos(FP.yaw)), (g.d - g0.d)*0.06); }
+    else { radius = Math.min(9000, Math.max(4, radius/sc)); pan(g.x - g0.x, g.y - g0.y); }
+    g0 = g; }, {capture: true, passive: false});
+  const los = e => { if(e.pointerType !== 'touch' || !T.has(e.pointerId)) return; const was = T.size; T.delete(e.pointerId);
+    if(was >= 2){ e.stopPropagation(); dragging = false; if(T.size === 1){ g0 = null; } }
+    if(T.size === 0) g0 = null; };
+  window.addEventListener('pointerup', los, true); window.addEventListener('pointercancel', los, true);
+  // vrij bewegen buiten de loopmodus: pijltjestoetsen / pijltjesknoppen schuiven het kijkpunt (vooruit, achteruit, opzij); shift = sneller
+  const KO = {}; const PIJL = ['arrowup', 'arrowdown', 'arrowleft', 'arrowright'];
+  window.addEventListener('keydown', e => { const k = e.key.toLowerCase(); if(e.key === 'Shift') KO.shift = true; if(!FP.aan && PIJL.includes(k) && !(e.target.tagName === 'INPUT' && e.target.type === 'range')){ KO[k] = true; e.preventDefault(); } });
+  window.addEventListener('keyup', e => { KO[e.key.toLowerCase()] = false; if(e.key === 'Shift') KO.shift = false; }); window.addEventListener('blur', () => { for(const k in KO) KO[k] = false; });
+  let tO = performance.now();
+  (function orbitLoop(){ requestAnimationFrame(orbitLoop); const t = performance.now(), dt = Math.min(0.05, (t - tO)/1000); tO = t; if(FP.aan) return;
+    const q = k => KO[k] || FP.keys[k], fw = (q('arrowup') ? 1 : 0) - (q('arrowdown') ? 1 : 0), sd = (q('arrowright') ? 1 : 0) - (q('arrowleft') ? 1 : 0);
+    if(!fw && !sd) return; try{ if(typeof auto !== 'undefined') auto = false; }catch(_){}
+    const v = Math.max(10, Math.min(300, radius))*0.6*dt*(KO.shift || FP.keys.shift ? 2.5 : 1);
+    target.x += (-Math.sin(theta)*fw + Math.cos(theta)*sd)*v; target.z += (-Math.cos(theta)*fw - Math.sin(theta)*sd)*v; if(typeof VUIL !== 'undefined') VUIL.n = Math.max(VUIL.n, 2); })();
+  if(window.matchMedia('(pointer:coarse)').matches) setTimeout(() => toonHint('1 vinger = draaien · 2 vingers = zoomen/schuiven · tik = deur open'), 1500);
+})();
+
+</script>
+</body>
+</html>
