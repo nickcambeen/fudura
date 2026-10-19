@@ -944,7 +944,11 @@ const PW = 785, PH = 1364, PD = 472, PS = 12;
     cyl(PG, 4, 30, matSchroef, dx, dy, dz + 32, 'z', 10); cyl(PG, 7, 6, M(0x222222), dx, dy, dz + 48, 'z', 16); box(PG, 4, 60, 6, zink, dx + 18, dy, dz - 10);
     plak(PG, 26, 10, frontTxt(['OMRON D4N', '-DS'], 140, 56, '#d9b100', '#111', 20), dx, dy - 14, dz + 20.4); }
   // bodem: kabelinvoerplaat met gespleten rubber doorvoer
-  box(PG, 320, 4, 140, M(0x2b2e31), -60, 30 + PS + 2, -20); for(let k = 0; k < 3; k++) cyl(PG, 22, 6, M(0x1a1b1d), -160 + k*90, 30 + PS + 4, -20, null, 24);
+  // kabelinvoerplaat in de bodem met 3 membraandoorvoeren (rubber, kegel met insnijding); 1 = voeding YMvK 3G2,5, 2 = CAT 6A, 3 = reserve (dicht)
+  { const yb = 30 + PS + 2, rubber = M(0x1a1b1d, {roughness: 0.85}); box(PG, 320, 4, 140, M(0x2b2e31), -60, yb, -20); for(const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) schroef(PG, -60 + sx*148, yb + 2.5, -20 + sz*58, 3, 'y+');
+    for(let k = 0; k < 3; k++){ const x = -160 + k*90; const ring = new THREE.Mesh(new THREE.TorusGeometry(19, 4, 10, 28), rubber); ring.rotation.x = Math.PI/2; ring.position.set(x, yb + 3, -20); PG.add(ring);
+      const kegel = new THREE.Mesh(new THREE.CylinderGeometry(k < 2 ? (k ? 5.5 : 7) : 3, 17, 16, 28, 1, true), rubber); kegel.position.set(x, yb + 11, -20); PG.add(kegel);
+      if(k === 2) cyl(PG, 3, 1, rubber, x, yb + 19, -20, null, 16); } }
   // deur (scharnier rechts, handgreep links) met dichting, driepuntsluiting, documentenvak en deuraarding
   const piv = new THREE.Group(); piv.position.set(PW/2, 0, PD/2); PG.add(piv);
   const deur = new THREE.Group(); deur.position.x = -PW/2; piv.add(deur);
@@ -994,8 +998,9 @@ function zetModus(m){
     binnenLicht.intensity = 0;
   } else {
     // vanuit de grond door de sokkel en de kabelinvoer in de bodem omhoog naar de wartels
-    kabel(EXT, [V(-120, -650, 0), V(-120, 60, -60), g(GW.x, -120, 60), g(GW.x, -16, 60)], 5, zwartKab, 60);
-    kabel(EXT, [V(-60, -650, 20), V(-60, 60, -40), g(BD.x, -120, 60), g(BD.x, -10, 60)], 3.4, ader.CAT, 60);
+    // recht omhoog door de sokkel en door het hart van membraandoorvoer 1 en 2, dan naar de wartels van de onderste module
+    kabel(EXT, [V(-160, -650, -20), V(-160, 130, -20), g(GW.x, -120, 60), g(GW.x, -16, 60)], 5, zwartKab, 60);
+    kabel(EXT, [V(-70, -650, -20), V(-70, 130, -20), g(BD.x, -120, 60), g(BD.x, -10, 60)], 3.4, ader.CAT, 60);
     // -DS / -H1 (230 V) vanaf -Xi via de kabelgoot langs de montageplaat naar de deurschakelaar en het armatuur
     kabel(EXT, [g(F1.x1 + 15, 60, ZF + 60), g(330, 60, 70), g(345, 820, 20), V(PW/2 - 45, PH - 60, PD/2 - 60)], 2.4, grijsKab, 30);
     kabel(EXT, [V(PW/2 - 45, PH - 60, PD/2 - 60), V(PW/2 - 60, PH - 40, -PD/2 + 60), V(120, PH - 50, -PD/2 + 60)], 2.4, grijsKab, 30);
