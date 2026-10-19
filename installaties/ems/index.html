@@ -468,6 +468,7 @@ function schroefklem(par, x, y, z, s, b, kleurBlok){ box(par, b || 7.5, 9, 9, kl
 function pushIn(par, x, y, z, s, b){ box(par, b || 5.2, 12, 9, M(0xbcbfbd, {roughness: 0.5}), x, y, z - 4.5); box(par, (b || 5.2) - 1.6, 4, 2, D2.oranje, x, y - s*2.5, z + 0.4); box(par, 2.2, 2.2, 9.4, D2.donker, x, y + s*3.8, z - 4.6, false); cyl(par, 0.7, 2, D2.donker, x, y - s*5.2, z + 0.2, 'z', 6);
   return {x, y: y + s*14, z: z - 4.6, s}; }
 
+const pinLbl = (par, t, x, y, z, bg, fg, w) => plak(par, w || Math.max(4.2, t.length*2.1), 3.4, tekst('pin' + t + (bg || ''), 96, 40, (c, W, H) => { c.fillStyle = bg || '#16181b'; c.fillRect(0, 0, W, H); c.fillStyle = fg || '#f2f2f2'; c.font = 'bold 26px Arial'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(t, W/2, H/2 + 1); }), x, y, z);
 // ---------- ABB DS201 B10 A30 (aardlekautomaat 1P+N, 2 modules) ----------
 ds201 = function(x, y, tag){ const n = 2, w = n*17.8 - 0.4, xc = x + n*8.9, g = new THREE.Group(); EMS.add(g);
   // profiel SystemPro M: basis 85 hoog, schouder 45 hoog / 68 diep, afgeschuinde overgangen
@@ -667,10 +668,10 @@ tsw212 = function(xc, y){ const g = new THREE.Group(); EMS.add(g); const w = 42,
   plak(g, w - 6, 4, tekst('tsfp', 128, 16, (c, W, Ht) => { c.fillStyle = '#232529'; c.fillRect(0, 0, W, Ht); c.fillStyle = '#ccc'; c.font = '12px Arial'; c.fillText('SFP 1      SFP 2', 10, 12); }), xc, y - 52, ZF + D + 0.2);
   led(g, xc - 14, y + 48, ZF + D + 0.6, 0x37e05c, true, 1.2); led(g, xc - 9, y + 48, ZF + D + 0.6, 0x2b8df0, true, 1.2);
   // voedingsconnector 4-polig (groen, schroefbaar) bovenop, aardschroef, resetgat
-  box(g, 20, 10, 14, D2.groenKl, xc, y + H/2 + 4, ZF + D - 14); for(let k = 0; k < 4; k++){ schroef(g, xc - 7.5 + k*5, y + H/2 + 9.5, ZF + D - 14, 1.4, 'y+'); box(g, 3, 3, 1, D2.donker, xc - 7.5 + k*5, y + H/2 + 4, ZF + D - 6.6, false); }
+  box(g, 20, 10, 14, D2.groenKl, xc, y + H/2 + 4, ZF + D - 14); for(let k = 0; k < 4; k++){ schroef(g, xc - 7.5 + k*5, y + H/2 + 9.5, ZF + D - 14, 1.4, 'y+'); pinLbl(g, ['V1+', 'V1−', 'V2+', 'V2−'][k], xc - 7.5 + k*5, y + H/2 + 4, ZF + D - 6.8, '#2aa04a', '#fff', 4.6); box(g, 3, 3, 1, D2.donker, xc - 7.5 + k*5, y + H/2 + 4, ZF + D - 6.6, false); }
   schroef(g, xc + 15, y + H/2 + 0.6, ZF + D - 30, 2.4, 'y+'); cyl(g, 1.2, 1, D2.donker, xc + 15, y - 55, ZF + D + 0.4, 'z', 8);
   plak(g, 8, 8, qrTex(212), xc + w/2 + 0.2, y + 30, ZF + 60, Math.PI/2);
-  etiket('-W3', xc, y - H/2 - 8, 22, ZF + 60); return {xc, y, poort, pw: {x: xc, y: y + H/2 + 10, z: ZF + D - 14}}; };
+  etiket('-W3', xc, y - H/2 - 8, 22, ZF + 60); return {xc, y, poort, pw: {x: xc - 7.5, dx: 5, y: y + H/2 + 10, z: ZF + D - 14}}; };
 
 // ---------- Teltonika RUT951 (LTE-router, 4 × SMA, 3 × LAN + WAN) ----------
 rut951 = function(xc, y){ const g = new THREE.Group(); EMS.add(g); const w = 52, H = 110, D = 100;
@@ -686,9 +687,9 @@ rut951 = function(xc, y){ const g = new THREE.Group(); EMS.add(g); const w = 52,
   // 4 × SMA + antennes (Mobile1, WiFi, WiFi, Mobile2) en 4-polige voedingsconnector onderzijde
   for(let k = 0; k < 4; k++){ const ax = xc - 18 + k*12; sma(g, ax, y + H/2, ZF + 60); antenne(g, ax, y + H/2 + 4, ZF + 60, 95, -(k - 1.5)*0.1);
     plak(g, 6, 3, tekst('ant' + k, 48, 20, (c, W, Ht) => { c.fillStyle = '#1b1d20'; c.fillRect(0, 0, W, Ht); c.fillStyle = '#ddd'; c.font = '12px Arial'; c.textAlign = 'center'; c.fillText(['MOB1', 'WiFi', 'WiFi', 'MOB2'][k], W/2, 14); }), ax, y + H/2 - 4, ZF + D + 0.2); }
-  box(g, 20, 10, 14, D2.groenKl, xc + 12, y - H/2 - 4, ZF + D - 14); for(let k = 0; k < 4; k++) schroef(g, xc + 4.5 + k*5, y - H/2 - 9.5, ZF + D - 14, 1.4, 'y-');
+  box(g, 20, 10, 14, D2.groenKl, xc + 12, y - H/2 - 4, ZF + D - 14); for(let k = 0; k < 4; k++){ schroef(g, xc + 4.5 + k*5, y - H/2 - 9.5, ZF + D - 14, 1.4, 'y-'); pinLbl(g, ['+', '−', 'I', 'O'][k], xc + 4.5 + k*5, y - H/2 - 4, ZF + D - 6.8, '#2aa04a', '#fff', 4.4); }
   box(g, 16, 30, 6, D2.staal, xc, y, ZF + 3); plak(g, 8, 8, qrTex(951), xc + w/2 + 0.2, y + 10, ZF + 60, Math.PI/2);
-  etiket('-W2', xc, y - H/2 - 18, 22, ZF + 60); return {xc, y, poort, pw: {x: xc + 12, y: y - H/2 - 10, z: ZF + D - 14}}; };
+  etiket('-W2', xc, y - H/2 - 18, 22, ZF + 60); return {xc, y, poort, pw: {x: xc + 4.5, dx: 5, y: y - H/2 - 10, z: ZF + D - 14}}; };
 
 // ---------- -W1 controller (zwart, blauw label 'teleport', 1 antenne) ----------
 wtg = function(xc, y){ const g = new THREE.Group(); EMS.add(g); const w = 92, H = 72, D = 48;
@@ -697,10 +698,11 @@ wtg = function(xc, y){ const g = new THREE.Group(); EMS.add(g); const w = 92, H 
   for(const s of [-1, 1]) box(g, 12, H + 14, 3, D2.staal, xc + s*(w/2 - 10), y, 17); for(const s of [-1, 1]) for(const t of [-1, 1]) schroef(g, xc + s*(w/2 - 10), y + t*(H/2 + 3), 19, 2.6);
   plak(g, w - 10, 16, tekst('w1f', 300, 56, (c, W, Ht) => { c.fillStyle = '#1f5fbf'; c.fillRect(0, 0, W, Ht); c.fillStyle = '#fff'; c.font = 'bold 26px Arial'; c.fillText('teleport', 12, 36); c.font = '18px Arial'; c.fillText('W1 · 24 V DC', 170, 36); }), xc, y + H/2 - 12, ZF + D + 3.3);
   const poort = []; for(let k = 0; k < 2; k++){ const px = xc - 26 + k*20; rj45(g, px, y - 22, ZF + D + 1.5, 0, true); poort.push({x: px, y: y - 22, z: ZF + D + 3}); }
-  box(g, 22, 10, 12, D2.groenKl, xc + 28, y - 22, ZF + D + 2); for(let k = 0; k < 3; k++) schroef(g, xc + 21 + k*7, y - 22, ZF + D + 8.3, 1.4);
+  box(g, 22, 10, 12, D2.groenKl, xc + 28, y - 22, ZF + D + 2); for(let k = 0; k < 3; k++){ schroef(g, xc + 21 + k*7, y - 22, ZF + D + 8.3, 1.4); pinLbl(g, ['+', '−', 'gnd'][k], xc + 21 + k*7, y - 14, ZF + D + 0.4, null, null, 5); }
+  ['ETH1', 'ETH2'].forEach((t, k) => pinLbl(g, t, xc - 26 + k*20, y - 11, ZF + D + 0.4, null, null, 10));
   led(g, xc + 36, y + 8, ZF + D + 1.4, 0x37e05c, true, 1.4); led(g, xc + 36, y + 2, ZF + D + 1.4, 0x2b8df0, true, 1.4);
   { const ax = xc - 32; sma(g, ax, y + H/2, ZF + D/2); const a = antenne(g, ax, y + H/2 + 4, ZF + D/2, 90, -1.2); }
-  etiket('-W1', xc - 30, y + H/2 + 8, 22, ZF + D + 0.4); return {xc, y, poort, dc: {x: xc + 28, y: y - 26, z: ZF + D + 6}}; };
+  etiket('-W1', xc - 30, y + H/2 + 8, 22, ZF + D + 0.4); return {xc, y, poort, dc: {x: xc + 21, dx: 7, y: y - 28, z: ZF + D + 2}}; };
 
 // ---------- Phoenix PT 2X10 potentiaalverdeler (push-in) ----------
 pt2x10 = function(x, y, kleur, tag){ const g = new THREE.Group(); EMS.add(g); const w = 12.2, H = 74;
@@ -734,12 +736,13 @@ smartLogger = function(xc, y){ const g = new THREE.Group(); EMS.add(g); const w 
   const poort = []; for(let k = 0; k < 2; k++){ rj45(g, xc - 92 + k*20, y - H/2 + 10, ZF + D + 0.5, 0, true); poort.push({x: xc - 92 + k*20, y: y - H/2 + 10, z: ZF + D + 2}); }
   box(g, 12, 6, 6, D2.staal, xc - 58, y - H/2 + 8, ZF + D - 2); box(g, 9, 3, 6.4, D2.donker, xc - 58, y - H/2 + 8, ZF + D - 2, false);
   for(let k = 0; k < 8; k++) pushIn(g, xc - 40 + k*6, y - H/2 + 10, ZF + D + 0.5, -1, 5.6);
-  for(let k = 0; k < 6; k++){ box(g, 6.2, 10, 10, D2.groenKl, xc + 14 + k*6.4, y - H/2 + 9, ZF + D - 4); schroef(g, xc + 14 + k*6.4, y - H/2 + 9, ZF + D + 1.4, 1.5); }
-  plak(g, 120, 4, tekst('slgp', 512, 18, (c, W, Ht) => { c.fillStyle = '#141517'; c.fillRect(0, 0, W, Ht); c.fillStyle = '#bbb'; c.font = '13px Arial'; c.fillText('WAN   LAN    USB    COM1   COM2   COM3      DI1  DI2  AI1  12V  GND  PE', 4, 14); }), xc - 20, y - H/2 + 20, ZF + D + 0.3);
+  for(let k = 0; k < 6; k++){ box(g, 6.2, 10, 10, D2.groenKl, xc + 14 + k*6.4, y - H/2 + 9, ZF + D - 4); schroef(g, xc + 14 + k*6.4, y - H/2 + 9, ZF + D + 1.4, 1.5); pinLbl(g, ['24V+', '24V−', 'DI1', 'DI2', 'AI1', 'PE'][k], xc + 14 + k*6.4, y - H/2 + 17, ZF + D + 0.3, null, null, 6); }
+  ['WAN', 'LAN'].forEach((t, k) => pinLbl(g, t, xc - 92 + k*20, y - H/2 + 20, ZF + D + 0.3, null, null, 12)); pinLbl(g, 'USB', xc - 58, y - H/2 + 16, ZF + D + 0.3, null, null, 9);
+  ['COM1', 'COM2', 'COM3', 'GND'].forEach((t, k) => pinLbl(g, t, xc - 37 + k*12, y - H/2 + 20, ZF + D + 0.3, null, null, 11)); pinLbl(g, '4G', xc + 85, y - H/2 + 6, ZF + D + 0.3, null, null, 6);
   sma(g, xc + 85, y - H/2 - 4, ZF + D - 8);
   for(const s of [-1, 1]) box(g, 18, 26, 4, D2.staal, xc + s*80, y, ZF + 2);                                                        // DIN-beugels
   etiket('-A1 SmartLogger', xc - 70, y + H/2 + 8, 40, ZF + D + 0.5);
-  return {xc, y, poort, pw: {x: xc + 41, y: y - H/2 - 2, z: ZF + D - 5}}; };
+  return {xc, y, poort, pw: {x: xc + 14, dx: 6.4, y: y - H/2 - 2, z: ZF + D - 5}}; };
 
 // =====================================================================================================
 // INDELING (volgens indelingstekening 26043701 blad 30)
@@ -863,13 +866,13 @@ const pt = (p, s, dz) => ({x: p.x, y: p.y, z: p.z + (dz || 0), s});             
   const tw = (p, m, dx, s, via, info, z) => lijn(pt(p, s), {x: dx.x, y: dx.y, z: dx.z, s: dx.s}, via, m, R15, 1.5, z, info);
   [[X03p, ader.P24, '+24 V', 0], [X03m, ader.M24, '0 V', 1]].forEach(([X, m, n, j]) => {
     // W3 TSW212 (voedingsklem boven)
-    tw(X.pts[19], m, {x: W3.pw.x - 3 + j*6, y: W3.pw.y, z: W3.pw.z, s: 1}, 1, [[X.pts[19].x, 548 + j*3], [W3.pw.x - 3 + j*6, 548 + j*3]], n + ' -X03 → -W3 TSW212', 70 + j*3);
+    tw(X.pts[19], m, {x: W3.pw.x + j*W3.pw.dx, y: W3.pw.y, z: W3.pw.z, s: 1}, 1, [[X.pts[19].x, 548 + j*3], [W3.pw.x + j*W3.pw.dx, 548 + j*3]], n + ' -X03 → -W3 TSW212', 70 + j*3);
     // W1 (groene klem onderzijde front)
-    tw(X.pts[17], m, {x: W1.dc.x - 4 + j*8, y: 617, z: 74, s: -1}, 1, [[X.pts[17].x, 566 + j*3], [W1.dc.x - 4 + j*8, 566 + j*3]], n + ' -X03 → -W1 (via -XW1)', 78 + j*3);
+    tw(X.pts[17], m, {x: W1.dc.x + j*W1.dc.dx, y: W1.dc.y, z: W1.dc.z, s: -1}, 1, [[X.pts[17].x, 566 + j*3], [W1.dc.x + j*W1.dc.dx, 566 + j*3]], n + ' -X03 → -W1 (via -XW1)', 78 + j*3);
     // W2 RUT951 (voedingsklem onder)
-    tw(X.pts[3], m, {x: W2.pw.x - 3 + j*6, y: W2.pw.y, z: W2.pw.z, s: -1}, -1, [[X.pts[3].x, 386 - j*3], [W2.pw.x - 3 + j*6, 386 - j*3]], n + ' -X03 → -W2 RUT951 (via -XW2)', 84 + j*3);
+    tw(X.pts[3], m, {x: W2.pw.x + j*W2.pw.dx, y: W2.pw.y, z: W2.pw.z, s: -1}, -1, [[X.pts[3].x, 386 - j*3], [W2.pw.x + j*W2.pw.dx, 386 - j*3]], n + ' -X03 → -W2 RUT951 (via -XW2)', 84 + j*3);
     // A1 SmartLogger (klem onder), via de koppelopening naar linksboven
-    tw(X.pts[14], m, {x: SLG.pw.x - 3 + j*6, y: SLG.pw.y, z: SLG.pw.z, s: -1}, 1, [[X.pts[14].x, 522 + j*3], [SLG.pw.x - 3 + j*6, 522 + j*3]], n + ' -X03 → -A1 SmartLogger', 90 + j*3); }); }
+    tw(X.pts[14], m, {x: SLG.pw.x + j*SLG.pw.dx, y: SLG.pw.y, z: SLG.pw.z, s: -1}, 1, [[X.pts[14].x, 522 + j*3], [SLG.pw.x + j*SLG.pw.dx, 522 + j*3]], n + ' -X03 → -A1 SmartLogger', 90 + j*3); }); }
 // ---- CAT 6A S/FTP patchkabels (groen, voor de apparaten langs) ----
 { const p = W3.poort; const cat = (a, pad, b, naam) => { const o = kabel(KAB, [V(a.x, a.y, a.z + 6), V(a.x, a.y, a.z + 16), ...pad.map(q => V(q[0], q[1], q[2])), V(b.x, b.y, b.z + 16), V(b.x, b.y, b.z + 6)], RCAT, ader.CAT, 10); band(o, [0.5], RCAT); o.userData.info = 'Data: CAT 6A S/FTP (paars) ' + naam; DRAAD.push(o);
     for(const t of [0.1, 0.9]){ const q = o.userData.curve.getPointAt(t); plak(KAB, 22, 6, tekst('cl' + naam, 200, 54, (g, W, H) => { g.fillStyle = '#ffffff'; g.fillRect(0, 0, W, H); g.strokeStyle = '#7a3fbf'; g.lineWidth = 4; g.strokeRect(2, 2, W - 4, H - 4); g.fillStyle = '#111'; g.font = 'bold 26px Arial'; g.textAlign = 'center'; g.fillText(naam, W/2, 37); }), q.x + 13, q.y, q.z + 4); }
@@ -888,7 +891,7 @@ const pt = (p, s, dz) => ({x: p.x, y: p.y, z: p.z + (dz || 0), s});             
   const pU3 = {x: 50, y: 68, z: 40, s: -1}; sch(50, 72, 40.5); box(EMS, 12, 8, 2, M(0xc5cacd, {metalness: 0.9, roughness: 0.25}), 50, 72, 38.5);
   const pW3 = {x: W3.xc + 12, y: 390, z: 60, s: -1}; sch(W3.xc + 12, 391.5, 60, 'y-');
   const pW2 = {x: 262, y: 428, z: 66, s: -1}; sch(262, 429.5, 66, 'y-');
-  const pW1 = {x: 128, y: 691, z: 20, s: 1}; const pSL = {x: -114, y: 546, z: 76, s: -1};
+  const pW1 = {x: W1.dc.x + 2*W1.dc.dx, y: W1.dc.y, z: W1.dc.z, s: -1}; const pSL = {x: -114, y: 546, z: 76, s: -1};
   const pP1 = {x: 176, y: 88, z: 40, s: -1}, pP2 = {x: 256, y: 83, z: 40, s: -1};
   const ab = MOD.map(m => ({x: m.x1 - 34, y: m.y0 + 30, z: 24}));                                              // aardbouten montageplaten
   const pe = (a, b, via, info, z, r) => lijn(a, b, via, ader.PE, r || R6, 2.5, z, info);
@@ -902,7 +905,7 @@ const pt = (p, s, dz) => ({x: p.x, y: p.y, z: p.z + (dz || 0), s});             
   pe(xb[1], rail(10, 1), [[xb[1].x, 412], [290, 412], [290, 290], [302, 290], [302, 78], [AARD[10], 78]], 'PE -X (rechtsboven) → aardrail', 34);
   pe({x: ab[1].x, y: ab[1].y, z: 24, s: -1}, rail(8, 1), [[ab[1].x, 346], [286, 346], [286, 286], [306, 286], [306, 81], [AARD[8], 81]], 'PE aardbout montageplaat rechtsboven → aardrail', 38);
   // apparaten rechtsboven / linksboven → PE-klemmen -X
-  pe(pW1, xt[1], [[pW1.x, 702], [xt[1].x, 702]], 'PE (gnd) -W1 → -X (schema blad 41)', 30, R4);
+  pe(pW1, xt[1], [[pW1.x, 598], [302, 598], [302, 506], [xt[1].x, 506]], 'PE (gnd) -W1 → -X (schema blad 41)', 30, R4);
   pe(pSL, {x: ab[0].x, y: ab[0].y, z: 24, s: 1}, [[pSL.x, 532], [-50, 532], [-50, 372], [ab[0].x, 372]], 'PE SmartLogger -A1 → aardbout linksboven', 36, R4);
 }
 KAB.children.forEach(o => { if(o.geometry && o.geometry.type === 'TubeGeometry' && !o.userData.info && o.material === ader.PE){ o.userData.info = 'PE-doorverbinding montageplaten / aardbout (6 mm²)'; DRAAD.push(o); } });
