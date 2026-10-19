@@ -66,6 +66,16 @@
   <details open><summary>Bekijken</summary>
     <div class="knoprij"><button id="bOverzicht">overzicht</button><button id="bFront">vooraanzicht</button><button id="bOpen">kappen eraf</button><button id="bNet">netwerk / 24 V</button><button id="bVoed">230 V / voeding</button><button id="bOnder">kabelinvoer</button></div>
   </details>
+  <details open><summary>Kleuren bedrading</summary>
+    <div class="info" style="line-height:1.9">
+      <span style="display:inline-block;width:22px;height:6px;border-radius:3px;background:#7a4a22;vertical-align:middle"></span> L 230 V &nbsp;
+      <span style="display:inline-block;width:22px;height:6px;border-radius:3px;background:#1f5fbf;vertical-align:middle"></span> N &nbsp;
+      <span style="display:inline-block;width:22px;height:6px;border-radius:3px;background:repeating-linear-gradient(45deg,#3fa34d 0 4px,#f2d21b 4px 8px);vertical-align:middle"></span> PE<br>
+      <span style="display:inline-block;width:22px;height:6px;border-radius:3px;background:#c8281c;vertical-align:middle"></span> +24 V DC &nbsp;
+      <span style="display:inline-block;width:22px;height:6px;border-radius:3px;background:#161616;vertical-align:middle"></span> 0 V DC<br>
+      <span style="display:inline-block;width:22px;height:8px;border-radius:4px;background:#7a3fbf;vertical-align:middle"></span> <b>Data: CAT 6A S/FTP</b> (paars, afgeschermde RJ45)
+    </div>
+  </details>
   <details open><summary>Weergave</summary>
     <label>Kappen EMS eraf (blauwe schroeven los) <input type="checkbox" id="tDeksel"></label>
     <label>Deur veldkast open <input type="checkbox" id="tDeur"></label>
@@ -153,7 +163,7 @@ const RAL7035 = M(0xd4d7d1, {roughness: 0.55}), RAL7035d = M(0xc3c6c0, {roughnes
 const rook = new THREE.MeshStandardMaterial({color: 0xc9d6da, transparent: true, opacity: 0.12, roughness: 0.03, metalness: 0.1, depthWrite: false});
 const zink = M(0xb9bfc3, {roughness: 0.35, metalness: 0.85}), din = M(0xc8cdd0, {roughness: 0.3, metalness: 0.9}), zwart = M(0x1d1f22, {roughness: 0.6}), wit = M(0xf1f2ee, {roughness: 0.5});
 const abbW = M(0xeeeee9, {roughness: 0.5}), abbG = M(0xc6c9c5, {roughness: 0.55}), mwGrijs = M(0x9aa1a6, {roughness: 0.45, metalness: 0.6}), teltonika = M(0x2b2e33, {roughness: 0.5});
-const ader = {L: M(0x7a4a22), N: M(0x1f5fbf), PE: null, P24: M(0xc8281c), M24: M(0x161616), CAT: M(0x2e9e4f, {roughness: 0.5}), mantel: M(0x202224, {roughness: 0.7}), mantelGr: M(0x9aa0a4, {roughness: 0.6})};
+const ader = {L: M(0x7a4a22), N: M(0x1f5fbf), PE: null, P24: M(0xc8281c), M24: M(0x161616), CAT: M(0x7a3fbf, {roughness: 0.45}), mantel: M(0x202224, {roughness: 0.7}), mantelGr: M(0x9aa0a4, {roughness: 0.6})};
 ['L', 'N', 'P24', 'M24', 'CAT'].forEach(k => ader[k].color.convertSRGBToLinear());
 ader.PE = M(0xffffff, {map: ctex(32, 32, (g, w, h) => { g.fillStyle = '#3fa34d'; g.fillRect(0, 0, w, h); g.fillStyle = '#f2d21b'; for(let k = -2; k < 4; k++){ g.save(); g.translate(k*10, 0); g.rotate(0.6); g.fillRect(0, -10, 5, 80); g.restore(); } }, [1, 6])});
 
@@ -810,9 +820,9 @@ const pt = (p, s, dz) => ({x: p.x, y: p.y, z: p.z + (dz || 0), s});             
     // A1 SmartLogger (klem onder), via de koppelopening naar linksboven
     tw(X.pts[14], m, {x: SLG.pw.x - 3 + j*6, y: SLG.pw.y, z: SLG.pw.z, s: -1}, 1, [[X.pts[14].x, 522 + j*3], [SLG.pw.x - 3 + j*6, 522 + j*3]], n + ' -X03 → -A1 SmartLogger', 90 + j*3); }); }
 // ---- CAT 6A S/FTP patchkabels (groen, voor de apparaten langs) ----
-{ const p = W3.poort; const cat = (a, pad, b, naam) => { const o = kabel(KAB, [V(a.x, a.y, a.z + 6), V(a.x, a.y, a.z + 16), ...pad.map(q => V(q[0], q[1], q[2])), V(b.x, b.y, b.z + 16), V(b.x, b.y, b.z + 6)], RCAT, ader.CAT, 10); band(o, [0.5], RCAT); o.userData.info = 'CAT 6A ' + naam; DRAAD.push(o);
-    for(const t of [0.1, 0.9]){ const q = o.userData.curve.getPointAt(t); plak(KAB, 22, 6, tekst('cl' + naam, 200, 54, (g, W, H) => { g.fillStyle = '#ffffff'; g.fillRect(0, 0, W, H); g.strokeStyle = '#2e9e4f'; g.lineWidth = 4; g.strokeRect(2, 2, W - 4, H - 4); g.fillStyle = '#111'; g.font = 'bold 26px Arial'; g.textAlign = 'center'; g.fillText(naam, W/2, 37); }), q.x + 13, q.y, q.z + 4); }
-    for(const q of [a, b]){ box(KAB, 12, 9, 12, M(0xb7e4c2, {transparent: true, opacity: 0.85}), q.x, q.y, q.z + 4); box(KAB, 13, 6, 6, M(0x2e9e4f), q.x, q.y, q.z + 12); } };
+{ const p = W3.poort; const cat = (a, pad, b, naam) => { const o = kabel(KAB, [V(a.x, a.y, a.z + 6), V(a.x, a.y, a.z + 16), ...pad.map(q => V(q[0], q[1], q[2])), V(b.x, b.y, b.z + 16), V(b.x, b.y, b.z + 6)], RCAT, ader.CAT, 10); band(o, [0.5], RCAT); o.userData.info = 'Data: CAT 6A S/FTP (paars) ' + naam; DRAAD.push(o);
+    for(const t of [0.1, 0.9]){ const q = o.userData.curve.getPointAt(t); plak(KAB, 22, 6, tekst('cl' + naam, 200, 54, (g, W, H) => { g.fillStyle = '#ffffff'; g.fillRect(0, 0, W, H); g.strokeStyle = '#7a3fbf'; g.lineWidth = 4; g.strokeRect(2, 2, W - 4, H - 4); g.fillStyle = '#111'; g.font = 'bold 26px Arial'; g.textAlign = 'center'; g.fillText(naam, W/2, 37); }), q.x + 13, q.y, q.z + 4); }
+    for(const q of [a, b]){ box(KAB, 12, 9, 12, M(0xd9dfe3, {transparent: true, opacity: 0.85}), q.x, q.y, q.z + 4); box(KAB, 12.4, 9.4, 4, M(0xc0c6cb, {metalness: 0.85, roughness: 0.3}), q.x, q.y, q.z + 1.5); box(KAB, 13, 6, 6, M(0x7a3fbf), q.x, q.y, q.z + 12); } };
   cat(p[0], [[p[0].x - 16, 560, 135], [W1.poort[0].x, 590, 110]], W1.poort[0], 'W3.1-W1.ETH1');
   cat(p[1], [[150, 470, 140], [W2.poort[0].x, 460, 130]], W2.poort[0], 'W3.2-W2.LAN1');
   cat(p[2], [[40, 470, 140], [0, 500, 100], [-90, 520, 90], [SLG.poort[0].x, 520, 80]], SLG.poort[0], 'W3.3-A1.WAN');
