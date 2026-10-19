@@ -1031,24 +1031,29 @@ SLOTS.forEach(s => {
   if(!grondR) for(let k = 0; k < 5; k++){ const x = XA(0) - AW/2 + 1.2 + k*((a.klem.L1.x - 2.2 - (XA(0) - AW/2 + 1.2))/4); const tb = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.03, 5, 16), matZwart); tb.position.set(x, PL_H + 0.62, zc); tb.rotation.y = Math.PI/2; tb.scale.set(0.38, 1.45, 1); tb.userData.cat = 'aio'; KAB.add(tb); }
 });
 // EMS-communicatie (master) en 2 inter-kast comm-kabels per paar in baan COM; aardkabel junction box -> kast #1 (fig. 5-35)
-// hulpvoeding junction box: aparte kabel YMvK 5G6 vanaf een SL2-veld in de HVK, door de sleuf (200 mm naast de voeding),
-// onder de plaat door, door een eigen sparing omhoog langs de rechterzijde en via de M32-tule in de VMS43 op -F0 (S203-B10)
+// hulpvoeding junction box: aparte 230 V-kabel YMvK 3G2,5 vanaf een groep in de HVK, door de sleuf (200 mm naast de voeding),
+// onder de plaat door, via een eigen sparing de plint in, langs de rechterzijde omhoog en via een wartel M20 in de ONDERZIJDE van de VMS43
+// en van onderen aangesloten op -F0 (L op pool 1, N op N); PE op de N/PE-hakenrail
 CAT = 'voeding';
 { const {f0, zB, zDin} = F0, zG = zB + 0.65, A = HVK.aux, hz = HVK.hz, xS = Math.min(...SLOTS[2].fase.flat().map(p => p.x), SLOTS[2].x - 0.69) - R240 - 2.0 - 0.08, yD = -3.6;
-  const xR = JX(800), mantel = M(0x1d1e20, {roughness: 0.65}), rK = 0.085;
+  const xR = JX(880), xI = JX(900), mantel = M(0x1d1e20, {roughness: 0.65}), rK = 0.065, yVb = JB(187);
   box(K, 0.5, PL_H + 0.04, 0.5, M(0x0b0c0d, {roughness: 0.9}), xR, PL_H/2, zG, false);                                                  // eigen sparing in de stelconplaat
-  const pad = [V(JX(838), JB(438), zG), V(JX(815), JB(420), zG), V(xR, JB(380), zG), V(xR, KS + 0.4, zG), V(xR, -0.6, zG), V(xR, yD, zG + 0.6), V(xS, yD, 3.2), V(xS, yD, hz - 9.8),
+  // wartel M20 in de onderzijde van de VMS43
+  cyl(K, 0.14, 0.05, matZwart, xI, yVb - 0.03, zG, null, 6); cyl(K, 0.11, 0.12, matZwart, xI, yVb - 0.13, zG, null, 16); cyl(K, 0.12, 0.04, matZwart, xI, yVb + 0.06, zG, null, 6);
+  const pad = [V(xI, yVb + 0.25, zG), V(xI, yVb - 0.2, zG), V(xI, yVb - 0.7, zG), V(xR, yVb - 1.2, zG), V(xR, KS + 0.4, zG), V(xR, -0.6, zG), V(xR, yD, zG + 0.6), V(xS, yD, 3.2), V(xS, yD, hz - 9.8),
     V(A.onder.x, yD, hz - 6.0), V(A.onder.x, -1.2, A.onder.z), V(A.onder.x, HVK.P - 0.3, A.onder.z), A.onder];
   const k = kabel(KAB, pad.map(W), rK, mantel, 0.6, 8); KABELS.push(k);
-  { const t = sprite('hulpvoeding JB: YMvK 5G6 vanaf HVK (SL2) → -F0 S203-B10', W(V(xS, 1.6, hz*0.45)), 0.55, '#c0281f'); scene.add(t); LABELS.push(t); }
-  // aders in de VMS43 naar -F0 (L1 L2 L3 N, bovenzijde) en PE naar de N/PE-hakenrail
-  const y0 = JB(348.5) + 0.42;
-  ['L1', 'L2', 'L3', 'N'].forEach((f, j) => { const x = f0.x0 + 0.09 + j*0.18; kabel(KAB, [V(JX(850), JB(438) + (j - 1.5)*0.05, zG), V(JX(870), JB(440), zG - 0.1 + j*0.04), V(x, y0 + 0.5, zDin + 0.5), V(x, y0, zDin + 0.48)].map(W), 0.035, ader[f], 0.08, 6); });
-  kabel(KAB, [V(JX(850), JB(436), zG), V(JX(880), JB(330), zG - 0.2), V(JX(918), JB(223.5) + 0.2, zB + 0.45), V(JX(918), JB(223.5), zB + 0.45)].map(W), 0.035, ader.PE, 0.08, 6);
-  // aders in de HVK: L1 L2 L3 op het SL2-veld, N en PE op de rails
-  A.fase.forEach((p, j) => kabel(KAB, [A.onder, V(p.x, A.onder.y + 0.3, p.z), p].map(W), 0.045, ader[['L1', 'L2', 'L3'][j]], 0.1, 6));
-  kabel(KAB, [A.onder, V(A.nul.x, A.nul.y - 0.4, A.nul.z), A.nul].map(W), 0.045, ader.N, 0.1, 6);
-  kabel(KAB, [A.onder, V(A.pe.x, A.pe.y - 0.4, A.pe.z), A.pe].map(W), 0.045, ader.PE, 0.1, 6); }
+  { const t = sprite('aparte 230 V voeding JB: YMvK 3G2,5 vanaf HVK → onderzijde -F0 S203-B10', W(V(xS, 1.6, hz*0.45)), 0.55, '#c0281f'); scene.add(t); LABELS.push(t); }
+  // aders van onderen op -F0: L op pool 1 (onder = klem 2), N op de N-pool (onder); PE naar de hakenrail
+  const yO = JB(348.5) - 0.42, yS = yVb + 0.25;
+  [['L1', 0, 'L'], ['N', 3, 'N']].forEach(([f, p, t], j) => { const x = f0.x0 + 0.09 + p*0.18;
+    kabel(KAB, [V(xI + (j - 0.5)*0.05, yS, zG), V(xI + (j - 0.5)*0.05, yS + 0.3, zG), V(x, yO - 0.55, zDin + 0.5), V(x, yO - 0.15, zDin + 0.48), V(x, yO, zDin + 0.48)].map(W), 0.03, ader[f], 0.08, 6);
+    cyl(KAB, 0.04, 0.07, M(0x2f5fbf), x, yO - 0.06, zDin + 0.48, null, 8).position.copy(W(V(x, yO - 0.06, zDin + 0.48))); });
+  kabel(KAB, [V(xI + 0.06, yS, zG), V(xI + 0.06, yS + 0.15, zG), V(JX(918), JB(223.5) - 0.25, zB + 0.45), V(JX(918), JB(223.5), zB + 0.45)].map(W), 0.03, ader.PE, 0.08, 6);
+  // aders in de HVK: L op de groep (pool 1 van het SL2-veld), N en PE op de rails
+  { const p = A.fase[0]; kabel(KAB, [A.onder, V(p.x, A.onder.y + 0.3, p.z), p].map(W), 0.04, ader.L1, 0.1, 6); }
+  kabel(KAB, [A.onder, V(A.nul.x, A.nul.y - 0.4, A.nul.z), A.nul].map(W), 0.04, ader.N, 0.1, 6);
+  kabel(KAB, [A.onder, V(A.pe.x, A.pe.y - 0.4, A.pe.z), A.pe].map(W), 0.04, ader.PE, 0.1, 6); }
 CAT = 'data';
 { const zc = zKan(KAN_DATA), y0 = PL_H + 0.3;
   const ent = i => V(XA(i) - 2.2, SKY + 1.0, AZ + AIO[i].MC.z + 0.2);
