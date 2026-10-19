@@ -258,8 +258,13 @@ MOD.forEach((m, i) => { const w = m.x1 - m.x0, h = m.y1 - m.y0, cx = (m.x0 + m.x
 // koppelstukken tussen de modules (verlijmde dichtring) en doorvoerbussen voor de bedrading
 box(EMS, 6, 760, DB - 12, RAL7035d, 0, 380, (DB - 12)/2); box(EMS, 640, 6, DB - 12, RAL7035d, 0, 323, (DB - 12)/2);
 const BUS = [[0, 270, 'x'], [0, 120, 'x'], [40, 323, 'y'], [-40, 323, 'y'], [150, 323, 'y']];
-BUS.forEach(([x, y, as]) => { const c = new THREE.Mesh(new THREE.CylinderGeometry(13, 13, 14, 20), zwart); if(as === 'x') c.rotation.z = Math.PI/2; c.position.set(x, y, 55); EMS.add(c);
-  const t = new THREE.Mesh(new THREE.TorusGeometry(13, 2, 6, 20), zwart); if(as === 'x') t.rotation.y = Math.PI/2; else t.rotation.x = Math.PI/2; t.position.set(x, y, 55); EMS.add(t); });
+// kabeldoorvoeren tussen de modules: wartel M25 (polyamide, RAL 7035) aan de ene zijde, tegenmoer aan de andere zijde, door de koppelwand
+const wartelM = M(0x9a9e9a, {roughness: 0.5}), wartelD = M(0x7d817d, {roughness: 0.55});
+BUS.forEach(([x, y, as]) => { const g = new THREE.Group(); g.position.set(x, y, 55); if(as === 'x') g.rotation.z = -Math.PI/2; EMS.add(g);   // as van de wartel langs lokaal +y
+  cyl(g, 15, 5, wartelM, 0, 5.5, 0, null, 6); cyl(g, 12, 9, wartelM, 0, 12, 0, null, 6); const kap = new THREE.Mesh(new THREE.SphereGeometry(12, 18, 8, 0, Math.PI*2, 0, Math.PI/2), wartelM); kap.position.y = 16; g.add(kap);
+  for(let k = 0; k < 8; k++){ const l = new THREE.Mesh(new THREE.BoxGeometry(2.2, 6, 1.4), wartelD); const a2 = k*Math.PI/4; l.position.set(Math.cos(a2)*11.6, 19, Math.sin(a2)*11.6); l.rotation.y = -a2; g.add(l); }   // lamellen
+  cyl(g, 5.2, 3, M(0x1b1c1e), 0, 23, 0, null, 16);                                                                                         // dichtring
+  cyl(g, 14, 4, wartelD, 0, -5, 0, null, 6); cyl(g, 11, 6, wartelM, 0, -1, 0, null, 18); });                                             // tegenmoer + schroefdraad
 // wandbevestiging: 4 lippen met sleutelgat + schroef in plug
 for(const [sx, y] of [[-1, 778], [1, 778], [-1, -18], [1, -18]]){ const x = sx*310; rbox(EMS, 34, 40, 6, 6, RAL7035d, x, y, 3); box(EMS, 8, 16, 7, M(0x5b5f63), x, y + 3, 3.5, false); schroef(EMS, x, y + 6, 8, 4.2); }
 
