@@ -70,6 +70,7 @@
     <label>Deuren AIO open <input type="checkbox" id="tDeur"></label>
     <label>Deuren junction box + HVK open <input type="checkbox" id="tKastDeur"></label>
     <label>Technische ruimte HVK doorzichtig <input type="checkbox" id="tTR"></label>
+    <label>Metcom MC301-meters (junction box) <input type="checkbox" id="tMet"></label>
     <label>NH-stroken uitgeklapt <input type="checkbox" id="tStrook"></label>
     <label>Metal bases doorzichtig (kabelbanen) <input type="checkbox" id="tSkid"></label>
     <label>Afdekkap MCCB (AIO) <input type="checkbox" id="tKapM"></label>
@@ -837,7 +838,7 @@ const railLug = (x, y, r, f) => { const z0 = f === 'N' ? JZ(81) : JZ(71); box(K,
 const hexNut3 = (x, y, z) => { const n = cyl(K, 0.1, 0.07, matZink, x, y, z, 'z', 6); n.rotation.y = 0; };
 // rechts: VMS64 (boven, y 507–1150, lege montageplaat) + VMS43 (onder, y 187–510) op x 853,6–1296,6, diepte 31–160, deksels met venster tot 210
 //   VMS43: DIN-rail (y 348,5): -F0 ABB S203-B10NA 3P+N, -F1 DS201 B16 30 mA, 3 × PTV 4 grijs + 3 × PTV 4 blauw met FBS-bruggen, 2 × wcd 230 V; N/PE-hakenrail (16 klemmen)
-const AUXUIT = []; let F0 = null;
+const AUXUIT = []; let F0 = null, METCOM = null;
 { const kunst = M(0xd5d8d4, {roughness: 0.55}), kunstD = M(0xb9bdb9, {roughness: 0.6}), abbW = M(0xeeeeea, {roughness: 0.5}), abbG = M(0xc9ccc9, {roughness: 0.5});
   const rook = new THREE.MeshStandardMaterial({color: 0xbfcfd4, transparent: true, opacity: 0.32, roughness: 0.08, metalness: 0.1, depthWrite: false});
   const zB = KZ0 + 0.02, zDin = JZ(111);
@@ -858,7 +859,22 @@ const AUXUIT = []; let F0 = null;
     if(type === 'wcd'){ box(K, w*0.86, 0.38, 0.04, M(0x2e3134), xc, y, zDin + 0.7); cyl(K, 0.12, 0.05, M(0x1b1c1e), xc, y, zDin + 0.73, 'z', 20); for(const s of [-1, 1]) cyl(K, 0.02, 0.06, matZwart, xc + s*0.05, y, zDin + 0.75, 'z', 8); }
     etiket(tag, xc, y - 0.55, Math.max(0.17, w)); return {x0: x, x1: x + n*0.18, xc}; };
   const b1 = vms(853.6, 1296.6, 507, 1150);                                                                   // VMS64: lege montageplaat 380 × 580 (router/EMS-ruimte)
-  box(K, 3.8, 5.8, 0.03, matZink, JX(1075), JB(828.5), zB + 0.2); plak(K, 1.4, 0.2, lbl('reserve / router', 280, 40, '#c8cdd0', '#5d6b73', 'bold 22px Arial'), JX(1075), JB(828.5), zB + 0.22);
+  box(K, 3.8, 5.8, 0.03, matZink, JX(1075), JB(828.5), zB + 0.2); const lblRes = plak(K, 1.4, 0.2, lbl('reserve / router', 280, 40, '#c8cdd0', '#5d6b73', 'bold 22px Arial'), JX(1075), JB(828.5), zB + 0.22);
+  // Metcom MC301 (3-fase kWh-meter, DIN 4 modules) per AIO op 2 DIN-rails op de lege montageplaat van de VMS64 — aan/uit met een knop
+  { const MG = new THREE.Group(); K.add(MG); MG.visible = false; METCOM = {MG, lblRes};
+    const zP = zB + 0.22, dinM = M(0xc0c4c6, {metalness: 0.8, roughness: 0.3}), huis = M(0xe9eae6, {roughness: 0.45}), kap = new THREE.MeshStandardMaterial({color: 0xdfe8ec, transparent: true, opacity: 0.35, roughness: 0.05, depthWrite: false});
+    const lcd = ctex(256, 128, (g, w, h) => { g.fillStyle = '#9fc7a8'; g.fillRect(0, 0, w, h); g.fillStyle = '#1f3a28'; g.font = 'bold 54px monospace'; g.fillText('012345.6', 6, 72); g.font = 'bold 20px Arial'; g.fillText('kWh  T1  L1 L2 L3', 8, 112); });
+    const front = n => ctex(256, 160, (g, w, h) => { g.fillStyle = '#e9eae6'; g.fillRect(0, 0, w, h); g.fillStyle = '#0a4d8c'; g.font = 'bold 26px Arial'; g.fillText('METCOM', 10, 30); g.fillStyle = '#222'; g.font = 'bold 22px Arial'; g.fillText('MC301', 150, 30);
+      g.font = '15px Arial'; g.fillText('3x230/400V  5(80)A  50Hz', 10, 132); g.fillText('1000 imp/kWh   MID B', 10, 152); g.fillStyle = '#c8281c'; g.beginPath(); g.arc(230, 70, 7, 0, 7); g.fill(); g.fillStyle = '#222'; g.font = 'bold 18px Arial'; g.fillText('AIO #' + n, 160, 108); });
+    const rails = [JB(1000), JB(720)];
+    rails.forEach(y => { box(MG, 3.6, 0.35, 0.08, dinM, JX(1075), y, zP + 0.05); for(const x of [JX(895), JX(1255)]) box(MG, 0.09, 0.45, 0.3, M(0x3a3e43), x, y, zP + 0.2); });
+    for(let i = 0; i < N_AIO; i++){ const y = rails[Math.floor(i/3)], x = JX(920 + (i % 3)*115), w = 0.72;
+      box(MG, w, 0.9, 0.62, huis, x, y, zP + 0.39); box(MG, w, 0.45, 0.22, huis, x, y, zP + 0.81);                                       // getrapt DIN-huis 72 mm
+      plak(MG, w - 0.04, 0.4, front(i + 1), x, y - 0.02, zP + 0.925); plak(MG, 0.36, 0.17, lcd, x - 0.12, y + 0.1, zP + 0.93);
+      box(MG, w - 0.02, 0.44, 0.05, kap, x, y, zP + 0.95, false);                                                                       // verzegelbare kap
+      for(const s of [-1, 1]){ box(MG, w - 0.04, 0.14, 0.28, M(0x2b2e31), x, y + s*0.37, zP + 0.5); for(let k = 0; k < 4; k++) cyl(MG, 0.03, 0.03, M(0x9aa0a5, {metalness: 0.8}), x - 0.27 + k*0.18, y + s*0.37, zP + 0.65, 'z', 8); }
+      box(MG, 0.04, 0.04, 0.02, M(0xff3b2f, {emissive: 0xff2a1f, emissiveIntensity: 0.9}), x + 0.27, y + 0.12, zP + 0.94, false);
+      const d = KABDEEL; ['L1', 'L2', 'L3', 'N'].forEach((f, k) => { const xx = x - 0.27 + k*0.18; const o = kabel(MG, [V(xx, y - 0.45, zP + 0.6), V(xx, y - 0.75, zP + 0.55), V(xx, y - 0.95, zP + 0.4)], 0.025, ader[f], 0.08, 6); }); } }
   const b2 = vms(853.6, 1296.6, 187, 510);                                                                    // VMS43
   din(JX(877.6), JX(1272.6), JB(348.5));
   const f0 = abb(JX(895), 3.9, 'ls', '-F0', 'S203-B10NA 3P+N'), f1 = abb(JX(965), 1.95, 'ls', '-F1', 'DS201 B16 30mA');
@@ -1202,6 +1218,7 @@ $t('tGrond').addEventListener('change', e => { GRONDMAT.forEach(m => { m.transpa
 function zetSkid(a){ SKMAT.forEach(m => { m.transparent = a; m.opacity = a ? 0.18 : 1; m.depthWrite = !a; m.needsUpdate = true; }); }
 $t('tSkid').addEventListener('change', e => zetSkid(e.target.checked));
 $t('tTR').addEventListener('change', e => HVK.zetTR(e.target.checked));
+$t('tMet').addEventListener('change', e => { METCOM.MG.visible = e.target.checked; METCOM.lblRes.visible = !e.target.checked; });
 $t('tKapM').addEventListener('change', e => KAP_MCCB.forEach(k => k.visible = e.target.checked));
 $t('tKapS').addEventListener('change', e => KAP_SL.forEach(k => k.visible = e.target.checked));
 $t('tKabel').addEventListener('change', e => { KAB.visible = KABK.visible = e.target.checked; KABDEEL.forEach(o => o.visible = e.target.checked); });
