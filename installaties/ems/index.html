@@ -137,8 +137,8 @@ function filletPath(Win, R, seg){
     const u1 = V().subVectors(P1, Cc), u2 = V().subVectors(P2, Cc), axis = V().crossVectors(u1, u2).normalize(), tot = u1.angleTo(u2);
     for(let k = 0; k <= seg; k++) out.push(u1.clone().applyAxisAngle(axis, tot*k/seg).add(Cc)); }
   out.push(W[W.length - 1].clone()); return out; }
-function kabel(par, pts, r, m, R){ const c = new THREE.CatmullRomCurve3(filletPath(pts.map(p => p.isVector3 ? p : V(p[0], p[1], p[2])), R === undefined ? 12 : R, 6), false, 'centripetal');
-  const o = new THREE.Mesh(new THREE.TubeGeometry(c, Math.max(40, pts.length*20), r, 8, false), m); o.castShadow = true; par.add(o); KABELS.push(o); return o; }
+function kabel(par, pts, r, m, R){ const c = new THREE.CatmullRomCurve3(filletPath(pts.map(p => p.isVector3 ? p : V(p[0], p[1], p[2])), (R === undefined ? 12 : R)*2.2, 12), false, 'centripetal', 0.5);
+  const L = c.getLength(), o = new THREE.Mesh(new THREE.TubeGeometry(c, Math.max(60, Math.min(600, Math.round(L/2.5))), r, 12, false), m); o.castShadow = true; par.add(o); KABELS.push(o); return o; }
 function sprite(txt, p, s, kleur){ const c = document.createElement('canvas'); const m = c.getContext('2d'); m.font = 'bold 40px system-ui, Arial'; const tw = Math.ceil(m.measureText(txt).width + 40), W = Math.max(256, tw + 20);
   c.width = W; c.height = 96; const g = c.getContext('2d'); g.font = 'bold 40px system-ui, Arial';
   g.fillStyle = 'rgba(255,255,255,0.94)'; rr(g, (W - tw)/2, 10, tw, 76, 14); g.fill(); g.strokeStyle = kleur || '#1b4f8a'; g.lineWidth = 4; g.stroke();
@@ -444,9 +444,9 @@ const hulsM = {2.5: M(0x2f5fbf), 1.5: M(0xc8281c)}, hulsMetaal = M(0xd5d8da, {me
 // draad: lijst punten; begint/eindigt bij een klem {x,y,z,s} (s = +1 bovenzijde, −1 onderzijde) met adereindhuls
 function draad(a, pad, b, m, r, mm){ const pts = [];
   const eind = (k, binnen) => { const yy = k.y - (k.s || 1)*0; if(k.s !== undefined){ pts[binnen ? 'push' : 'push'](V(k.x, k.y, k.z)); } else pts.push(V(k.x, k.y, k.z)); };
-  if(a){ pts.push(V(a.x, a.y, a.z)); if(a.s !== undefined) pts.push(V(a.x, a.y + a.s*14, a.z + 4)); }
+  if(a){ pts.push(V(a.x, a.y, a.z)); if(a.s !== undefined){ pts.push(V(a.x, a.y + a.s*10, a.z + 1)); pts.push(V(a.x, a.y + a.s*22, a.z + 6)); } }
   pad.forEach(p => pts.push(V(p[0], p[1], p[2])));
-  if(b){ if(b.s !== undefined) pts.push(V(b.x, b.y + b.s*14, b.z + 4)); pts.push(V(b.x, b.y, b.z)); }
+  if(b){ if(b.s !== undefined){ pts.push(V(b.x, b.y + b.s*22, b.z + 6)); pts.push(V(b.x, b.y + b.s*10, b.z + 1)); } pts.push(V(b.x, b.y, b.z)); }
   const o = kabel(KAB, pts, r || R25, m, 6);
   for(const k of [a, b]) if(k && k.s !== undefined){ const h = cyl(KAB, (r || R25) + 0.9, 7, hulsM[mm || 2.5], k.x, k.y + k.s*4, k.z, null, 10); const h2 = cyl(KAB, (r || R25)*0.7, 6, hulsMetaal, k.x, k.y - k.s*2, k.z, null, 8); }
   return o; }
