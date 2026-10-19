@@ -874,9 +874,9 @@ const pt = (p, s, dz) => ({x: p.x, y: p.y, z: p.z + (dz || 0), s});             
 { const p = W3.poort; const cat = (a, pad, b, naam) => { const o = kabel(KAB, [V(a.x, a.y, a.z + 6), V(a.x, a.y, a.z + 16), ...pad.map(q => V(q[0], q[1], q[2])), V(b.x, b.y, b.z + 16), V(b.x, b.y, b.z + 6)], RCAT, ader.CAT, 10); band(o, [0.5], RCAT); o.userData.info = 'Data: CAT 6A S/FTP (paars) ' + naam; DRAAD.push(o);
     for(const t of [0.1, 0.9]){ const q = o.userData.curve.getPointAt(t); plak(KAB, 22, 6, tekst('cl' + naam, 200, 54, (g, W, H) => { g.fillStyle = '#ffffff'; g.fillRect(0, 0, W, H); g.strokeStyle = '#7a3fbf'; g.lineWidth = 4; g.strokeRect(2, 2, W - 4, H - 4); g.fillStyle = '#111'; g.font = 'bold 26px Arial'; g.textAlign = 'center'; g.fillText(naam, W/2, 37); }), q.x + 13, q.y, q.z + 4); }
     for(const q of [a, b]){ box(KAB, 12, 9, 12, M(0xd9dfe3, {transparent: true, opacity: 0.85}), q.x, q.y, q.z + 4); box(KAB, 12.4, 9.4, 4, M(0xc0c6cb, {metalness: 0.85, roughness: 0.3}), q.x, q.y, q.z + 1.5); box(KAB, 13, 6, 6, M(0x7a3fbf), q.x, q.y, q.z + 12); } };
-  cat(p[0], [[p[0].x - 16, 560, 135], [W1.poort[0].x, 590, 110]], W1.poort[0], 'W3.1-W1.ETH1');
-  cat(p[1], [[150, 470, 140], [W2.poort[0].x, 460, 130]], W2.poort[0], 'W3.2-W2.LAN1');
-  cat(p[2], [[40, 470, 140], [0, 500, 100], [-90, 520, 90], [SLG.poort[0].x, 520, 80]], SLG.poort[0], 'W3.3-A1.WAN');
+  cat(p[1], [[p[1].x + 16, 560, 135], [W1.poort[0].x, 590, 110]], W1.poort[0], 'W3.2-W1.ETH1');
+  cat(p[0], [[p[0].x - 14, 500, 150], [150, 500, 150], [W2.poort[0].x, 460, 130]], W2.poort[0], 'W3.1-W2.LAN1');
+  cat(p[2], [[40, 470, 140], [0, 500, 100], [-90, 520, 90], [SLG.poort[0].x, 520, 80]], SLG.poort[0], 'W3.3-A1.WAN (foto)');
   cat(p[6], [[p[6].x - 18, 370, 140], [150, 323, 95], [P1.poort[0].x, 260, 110]], P1.poort[0], 'W3.7-P1.1');
   // inkomende datakabel (CAT 6A) via de 2e wartel naar de achterzijde van patchpaneel -P1
   const o = kabel(KAB, [V(BD.x, -14, 60), V(BD.x, 6, 60), V(BD.x, 30, 46), V(170, 30, 46), V(185, 34, 46), V(185, 80, 40), V(185, 92, 34)], RCAT, ader.CAT, 10); o.userData.info = 'CAT 6A inkomend (data AIO / EMS) → -P1 achterzijde'; DRAAD.push(o); band(o, [0.3], RCAT); }
@@ -902,9 +902,7 @@ const pt = (p, s, dz) => ({x: p.x, y: p.y, z: p.z + (dz || 0), s});             
   pe(xb[1], rail(10, 1), [[xb[1].x, 412], [290, 412], [290, 290], [302, 290], [302, 78], [AARD[10], 78]], 'PE -X (rechtsboven) → aardrail', 34);
   pe({x: ab[1].x, y: ab[1].y, z: 24, s: -1}, rail(8, 1), [[ab[1].x, 346], [286, 346], [286, 286], [306, 286], [306, 81], [AARD[8], 81]], 'PE aardbout montageplaat rechtsboven → aardrail', 38);
   // apparaten rechtsboven / linksboven → PE-klemmen -X
-  pe(pW3, xb[0], [[pW3.x, 376], [xb[0].x, 376]], 'PE aardschroef switch -W3 → -X', 50, R4);
-  pe(pW2, xb[1], [[pW2.x, 418], [xb[1].x, 418]], 'PE aardschroef router -W2 → -X', 54, R4);
-  pe(pW1, xt[1], [[pW1.x, 702], [xt[1].x, 702]], 'PE beugel -W1 → -X', 30, R4);
+  pe(pW1, xt[1], [[pW1.x, 702], [xt[1].x, 702]], 'PE (gnd) -W1 → -X (schema blad 41)', 30, R4);
   pe(pSL, {x: ab[0].x, y: ab[0].y, z: 24, s: 1}, [[pSL.x, 532], [-50, 532], [-50, 372], [ab[0].x, 372]], 'PE SmartLogger -A1 → aardbout linksboven', 36, R4);
 }
 KAB.children.forEach(o => { if(o.geometry && o.geometry.type === 'TubeGeometry' && !o.userData.info && o.material === ader.PE){ o.userData.info = 'PE-doorverbinding montageplaten / aardbout (6 mm²)'; DRAAD.push(o); } });
