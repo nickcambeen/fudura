@@ -188,7 +188,7 @@ const KW = 14.0, KD = 3.55, KH = 13.15, KP = 2.2;                               
 const XA = i => i*AW;
 const KXW = XA(0) - AW/2 - 0.05 - KD/2, KZW = AZ;                                       // junction box 90° gedraaid tegen de zijkant van #1, deuren naar buiten (-x)
 const SX0 = KXW - KD/2, SX1 = XA(N_AIO - 1) + AW/2;
-const N_PL = Math.ceil((SX1 - SX0)/PL), PX0 = SX0 - 0.0;                                // plaatrij begint in lijn met de deurzijde van de junction box
+const N_PL = Math.ceil((SX1 + 5.6 - SX0)/PL), PX0 = SX0 - 0.0;                                // plaatrij begint in lijn met de deurzijde van de junction box
 const XP = k => PX0 + PL/2 + k*PL;
 const KABDEEL = [], KLIK = [], doors = [], LABELS = [], MAAT = [], KABELS = [], STROKEN = [], HMI = [], KAPPEN = [], KAP_MCCB = [], KAP_SL = [];
 
@@ -1092,7 +1092,8 @@ const HVK = (function(){
     cyl(TR, 0.75, 2.8, M(0x5f6468, {roughness: 0.6}), sx, yk, S.z1 + 1.25, 'z', 16);
     kabel(TR, [V(sx, PL0 + 1.2, sz), V(sx, yk, sz), V(sx, yk, S.z1 + 4), V(sx, -10, S.z1 + 9)], 0.22, msRood, 0.9, 8); }
   // DGPT2 → uitschakelspoel T1-veld (stuurkabel grijs) langs het plafond door de tussenwand
-  { const d = tfP(5.0, yT + 0.6, -0.4), yc = PL0 + 29; kabel(TR, [d, V(d.x, yc, d.z), V(S.x1 - 2, yc, d.z), V(XR.position.x + 4.5, yc, XR.position.z + 1), V(XR.position.x + 4.5, PL0 + 17, XR.position.z + 1)], 0.08, grijsK, 0.6, 6); }
+  { const d = tfP(5.0, yT + 0.6, -0.4), yc = PL0 + 29; kabel(TR, [d, V(d.x, yc, d.z), V(S.x1 - 2, yc, d.z), V(XR.position.x + 4.5, yc, XR.position.z + 1), V(XR.position.x + 4.5, PL0 + 15.95, XR.position.z + 1)], 0.08, grijsK, 0.6, 6);
+    cyl(TR, 0.16, 0.25, matZwart, XR.position.x + 4.5, PL0 + 15.85, XR.position.z + 1, null, 10); plak(TR, 2.4, 0.3, lbl('DGPT2 → uitschakelspoel T1', 260, 32, '#ffffff', '#111', 'bold 18px Arial'), XR.position.x + 4.5, PL0 + 16.4, XR.position.z + 1.6); }
   // LS-kabels trafo → HVK (2 per fase + 2 N): omhoog in de kabelgoot, door de wand, in de technische ruimte naar de bovenzijde van de HVK
   lsBus.forEach(({k, p: bw}, j) => { const o = -1.3 + j*0.37, xh = -W/2 + 1.0 + (j % 2)*0.5, yr = [yM + 1.85, yM, yM - 1.85, P + 3.4][k], zq = zR + 0.55 + k*0.4;
     kabel(TR, [bw, V(bw.x, yG - 2, bw.z), V(bw.x + 0.6, yG + 0.1, zG + o), V(X0 + 2.5 + o, yG + 0.1, zG + o), V(X0 + 2.5 + o, yG + 0.1, 1.0 - o*0.6), V(xh, yG + 0.1, 1.0 - o*0.6), V(xh, P + H + 1, zq), V(xh, P + H - 1, zq), V(xh, yr + 0.7, zq), V(xh, yr, zR + 0.3)],
@@ -1107,32 +1108,161 @@ const HVK = (function(){
   box(MK, mkW, mkH, 0.12, mk, 0, mkH/2, 0.06); for(const s of [-1, 1]){ box(MK, 0.12, mkH, mkD, mk, s*(mkW/2 - 0.06), mkH/2, mkD/2); box(MK, mkW, 0.12, mkD, mk, 0, mkH/2 + s*(mkH/2 - 0.06), mkD/2); }
   box(MK, mkW - 0.6, mkH - 0.6, 0.06, matZink, 0, mkH/2, 0.25);                                                                         // montageplaat
   const din = (y, x0, x1) => box(MK, x1 - x0, 0.35, 0.08, M(0xc0c4c6, {metalness: 0.85, roughness: 0.3}), (x0 + x1)/2, y, 0.32);
-  // 1. kWh-meter (afrekenmeter) Landis+Gyr E650 ZMD405 met verzegelde klemmenkap
-  { const x = -1.6, y = 8.4; box(MK, 1.77, 2.6, 0.75, M(0x3a3e44, {roughness: 0.5}), x, y, 0.65); box(MK, 1.77, 0.9, 0.85, M(0x2b2e33), x, y - 1.6, 0.7);
-    plak(MK, 1.6, 2.4, ctex(180, 270, (g, w, h) => { g.fillStyle = '#3a3e44'; g.fillRect(0, 0, w, h); g.fillStyle = '#9fc7a8'; g.fillRect(16, 26, 148, 50); g.fillStyle = '#1f3a28'; g.font = 'bold 30px monospace'; g.fillText('1.8.0', 20, 62); g.font = 'bold 26px monospace'; g.fillText('004812.3', 22, 104);
-      g.fillStyle = '#eee'; g.font = 'bold 16px Arial'; g.fillText('Landis+Gyr', 16, 140); g.font = '14px Arial'; g.fillText('E650  ZMD405CT', 16, 160); g.fillText('3x230/400V  5(6)A', 16, 180); g.fillText('kl. 0,5S  MID', 16, 200); g.fillStyle = '#c8281c'; g.beginPath(); g.arc(150, 240, 6, 0, 7); g.fill(); g.fillStyle = '#aaa'; g.fillText('imp', 120, 245); }), x, y + 0.1, 1.03);
-    plak(MK, 1.4, 0.3, lbl('-P1 afrekenmeter', 200, 40, '#ffffff', '#111', 'bold 20px Arial'), x, y - 2.35, 1.13); }
-  // 2. Janitza UMG 604E-PRO (energie- en netanalyser, DIN, 107 mm) met display, RS485 en Ethernet
-  din(5.2, -3.2, 3.2);
-  { const x = 1.6, y = 8.4; box(MK, 1.9, 2.4, 0.9, M(0xd8dbd8, {roughness: 0.5}), x, y, 0.75);
-    plak(MK, 1.8, 2.3, ctex(200, 260, (g, w, h) => { g.fillStyle = '#d8dbd8'; g.fillRect(0, 0, w, h); g.fillStyle = '#e2001a'; g.fillRect(0, 0, w, 26); g.fillStyle = '#fff'; g.font = 'bold 20px Arial'; g.fillText('janitza', 10, 20);
-      g.fillStyle = '#10202c'; g.fillRect(14, 40, 172, 110); g.fillStyle = '#7fd3ff'; g.font = 'bold 18px monospace'; g.fillText('L1 231.4 V', 22, 66); g.fillText('L2 230.9 V', 22, 90); g.fillText('P  412 kW', 22, 114); g.fillText('cos 0.98', 22, 138);
-      g.fillStyle = '#222'; g.font = 'bold 16px Arial'; g.fillText('UMG 604E-PRO', 14, 176); for(let k = 0; k < 6; k++){ g.fillStyle = '#555'; g.fillRect(16 + k*29, 196, 22, 18); } g.fillStyle = '#111'; g.fillRect(140, 222, 46, 30); }), x, y, 1.21);
-    plak(MK, 1.6, 0.3, lbl('-P2 Janitza UMG 604E', 220, 40, '#ffffff', '#111', 'bold 18px Arial'), x, y - 1.55, 1.13); }
-  // 3. meet-/scheidingsklemmen (CT-kringen met kortsluitbruggen, spanningsmeetklemmen) + spanningsmeetautomaten
-  din(3.2, -3.2, 3.2);
-  const KL = []; for(let k = 0; k < 14; k++){ const x = -3.0 + k*0.28, isU = k >= 9; box(MK, 0.26, 0.9, 0.55, isU ? M(0xc8281c, {roughness: 0.5}) : M(0xc9c3b4, {roughness: 0.5}), x, 3.2, 0.6);
-    box(MK, 0.12, 0.2, 0.05, M(0xf28a00), x, 3.2, 0.9); KL.push(V(x, 3.65, 0.6)); }
-  for(const k of [0, 3, 6]) box(MK, 0.82, 0.08, 0.06, M(0xffd400), -3.0 + (k + 1)*0.28, 3.45, 0.92);                                          // kortsluitbruggen CT
-  plak(MK, 3.9, 0.28, lbl('-X1  CT L1 S1/S2 · L2 · L3 · N  |  U L1 L2 L3 N', 520, 40, '#ffffff', '#111', 'bold 18px Arial'), -1.1, 2.55, 0.95);
-  for(let k = 0; k < 3; k++){ box(MK, 0.36, 0.85, 0.65, M(0xf0f0ec), 1.5 + k*0.4, 3.2, 0.65); box(MK, 0.1, 0.2, 0.1, M(0x2b2d30), 1.5 + k*0.4, 3.25, 1.0); }
-  plak(MK, 1.3, 0.25, lbl('-F1..F3 2A spanning', 200, 36, '#ffffff', '#111', 'bold 18px Arial'), 1.9, 2.6, 1.01);
-  // 4. kabelgoot en invoer bovenin
-  box(MK, mkW - 0.8, 0.6, 0.8, M(0x8f969a), 0, 6.0, 0.6); box(MK, mkW - 0.8, 0.6, 0.8, M(0x8f969a), 0, 1.6, 0.6);
-  // bedrading in de kast: CT-kringen (zwart, genummerd) en spanning (rood) van de klemmen naar meters
-  const mw = (pts, m) => kabel(MK, pts.map(p => V(p[0], p[1], p[2])), 0.04, m, 0.15, 6);
-  for(let k = 0; k < 9; k++){ const x = -3.0 + k*0.28; mw([[x, 3.65, 0.6], [x, 6.0, 0.7], [k < 5 ? -1.6 + (k - 2)*0.2 : 1.6 + (k - 7)*0.2, 6.6, 0.9], [k < 5 ? -1.6 + (k - 2)*0.2 : 1.6 + (k - 7)*0.2, 7.0, 0.9]], k % 2 ? M(0x1d1e20) : M(0x5a5f63)); }
-  for(let k = 0; k < 3; k++) mw([[1.5 + k*0.4, 3.65, 0.65], [1.5 + k*0.4, 6.0, 0.75], [1.6 + (k - 1)*0.3, 6.9, 0.9], [1.6 + (k - 1)*0.3, 7.2, 0.9]], M(0xc8281c));
+  {
+  // ======== inhoud meterkast — modellen in mm (groep schaal 0,01), montageplaat-voorzijde z = 0,28 ========
+  const mm = (x, y, z) => { const g = new THREE.Group(); g.scale.setScalar(0.01); g.position.set(x, y, z); MK.add(g); return g; };
+  const zwartK = M(0x1b1c1e, {roughness: 0.55}), messing = M(0xc9a64a, {metalness: 0.85, roughness: 0.3}), tin = M(0xd6d9db, {metalness: 0.9, roughness: 0.25}), sleuf = M(0x2a2b2d);
+  const glas = (op) => new THREE.MeshStandardMaterial({color: 0xe6eef2, transparent: true, opacity: op, roughness: 0.04, metalness: 0.1, depthWrite: false});
+  const schroefMM = (g, x, y, z, r, as, kop) => { const s = cyl(g, r, r*0.5, kop || tin, x, y, z, as || 'z', 16); const l = r*1.5, d = r*0.28;
+    if(!as || as === 'z'){ box(g, l, d, r*0.2, sleuf, x, y, z + r*0.26, false); box(g, d, l, r*0.2, sleuf, x, y, z + r*0.26, false); } else if(as === 'y'){ box(g, l, r*0.2, d, sleuf, x, y + r*0.26, z, false); box(g, d, r*0.2, l, sleuf, x, y + r*0.26, z, false); } return s; };
+  const plombe = (g, x, y, z) => { cyl(g, 2.6, 3.2, M(0x9aa0a4, {metalness: 0.6, roughness: 0.45}), x, y - 7, z, 'z', 12); kabel(g, [V(x, y, z), V(x - 2, y - 4, z + 1), V(x, y - 7, z + 1)], 0.35, M(0xc8281c), 1, 4); };
+
+  // ---- -P1 hoofdmeter MetCom MCS301 (wandmeter, 3-punts bevestiging, 150 × 260,5 × 82,2 mm), CT-aansluiting x/5 A kl. 0,5S, communicatiemodule COM400 (4G) ----
+  { const G = mm(-1.85, 7.55, 0.28), W = 150, H = 260.5, D = 82.2, base = M(0x2e3135, {roughness: 0.55}), body = M(0xdcdfdb, {roughness: 0.45});
+    box(G, W, H, 22, base, 0, 0, 11); box(G, 26, 16, 5, base, 0, H/2 + 7, 3); cyl(G, 4, 6, sleuf, 0, H/2 + 8, 3, 'z', 14);                // sokkel + ophangoog
+    for(const s of [-1, 1]){ cyl(G, 5, 4, base, s*75, -H/2 + 18, 22, 'z', 14); schroefMM(G, s*75, -H/2 + 18, 24.5, 3.5); }                  // onderste bevestigingspunten (150 mm, DIN 43857)
+    // meterhuis met naamplaat en LCD onder de verzegelde glazen kap
+    const yK0 = -38, yK1 = H/2 - 4, hK = yK1 - yK0, cK = (yK0 + yK1)/2;
+    box(G, W - 12, hK - 6, 52, body, 0, cK, 22 + 26);
+    const np = ctex(512, 560, (g, w, h) => { g.fillStyle = '#dcdfdb'; g.fillRect(0, 0, w, h);
+      g.fillStyle = '#0b5f9e'; g.font = 'bold 44px Arial'; g.fillText('MetCom', 24, 60); g.fillStyle = '#5b6770'; g.font = '20px Arial'; g.fillText('SOLUTIONS', 30, 86);
+      g.fillStyle = '#111'; g.font = 'bold 38px Arial'; g.fillText('MCS301', 300, 60);
+      g.fillStyle = '#20272b'; g.fillRect(70, 110, 372, 150);                                                                                   // LCD-venster (raam)
+      g.font = '17px Arial'; g.fillStyle = '#222'; ['3 x 58/100 ... 277/480 V   50 Hz', '1(10) A   CT/VT   x/5 A', 'Cl. 0,5S (IEC 62053-22)   Cl. C (MID)', 'kvarh Cl. 2 (IEC 62053-23)', '10000 imp/kWh   10000 imp/kvarh', '-40 ... +70 °C   IP54   M14 0122'].forEach((t, i) => g.fillText(t, 24, 300 + i*24));
+      g.fillStyle = '#111'; g.fillRect(24, 450, 220, 46); for(let i = 0; i < 60; i++){ g.fillStyle = Math.random() < 0.5 ? '#fff' : '#111'; g.fillRect(26 + i*3.6, 452, 1.8 + Math.random()*1.6, 42); }
+      g.fillStyle = '#111'; g.font = '16px monospace'; g.fillText('SN 3010 2611 0457 88', 24, 520); g.font = 'bold 22px Arial'; g.fillText('CE', 300, 490); g.strokeStyle = '#111'; g.lineWidth = 2; g.strokeRect(350, 466, 70, 34); g.font = 'bold 18px Arial'; g.fillText('M26', 360, 490);
+      g.fillStyle = '#111'; g.font = '16px Arial'; g.fillText('kWh', 40, 160); g.fillText('kvarh', 40, 200); });
+    plak(G, W - 14, hK - 8, np, 0, cK, 74.1);
+    const lcd = ctex(256, 104, (g, w, h) => { g.fillStyle = '#b8c9a4'; g.fillRect(0, 0, w, h); g.fillStyle = 'rgba(30,50,30,0.08)'; for(let i = 0; i < 10; i++) g.fillRect(14 + i*23, 22, 19, 46);
+      g.fillStyle = '#1d2a1c'; g.font = 'bold 44px monospace'; g.fillText('004812.3', 10, 64); g.font = 'bold 15px Arial'; g.fillText('1.8.0', 10, 92); g.fillText('kWh', 196, 92); g.fillText('L1 L2 L3', 90, 92); g.fillText('▶', 236, 20); g.fillText('T1', 10, 18); });
+    box(G, 74, 30, 1.5, M(0x7f8c77), 0, cK + 27, 74.4); plak(G, 72, 28.5, lcd, 0, cK + 27, 75.3);
+    // impuls-LED's kWh / kvarh, knoppen (blauw = bladeren, rood = demand reset onder verzegelbaar klepje), optische poort (IEC 62056-21)
+    const led = M(0x5a0d0a, {emissive: 0xff2a1f, emissiveIntensity: 0.0}); const L1 = cyl(G, 2.2, 2, led, -63, cK + 34, 75.5, 'z', 12); cyl(G, 2.2, 2, M(0x5a0d0a), -63, cK + 23, 75.5, 'z', 12);
+    L1.material.emissiveIntensity = 1.4;
+    // glazen kap (polycarbonaat) met verzegelschroeven
+    box(G, W - 4, hK, 1.4, glas(0.18), 0, cK, D - 0.7, false); for(const s of [-1, 1]){ box(G, 1.4, hK, D - 22, glas(0.14), s*(W/2 - 2.7), cK, (22 + D)/2, false); }
+    box(G, W - 4, 1.4, D - 22, glas(0.14), 0, yK1, (22 + D)/2, false);
+    for(const s of [-1, 1]){ schroefMM(G, s*62, yK1 - 6, D + 0.3, 3); plombe(G, s*62, yK1 - 9, D + 0.6); }
+    cyl(G, 7, 7, M(0x1f6fd0, {roughness: 0.35}), 50, cK - 6, D + 3.5, 'z', 22); cyl(G, 8.5, 1.5, M(0x2b2e31), 50, cK - 6, D + 0.6, 'z', 22);
+    box(G, 20, 18, 3, M(0x2b2e31), 50, cK - 25, D + 1.5); cyl(G, 5.5, 4, M(0xc8281c, {roughness: 0.4}), 50, cK - 25, D + 4, 'z', 18); schroefMM(G, 50, cK - 14, D + 3.2, 1.8);
+    cyl(G, 15, 3, M(0x3a3e43, {metalness: 0.5, roughness: 0.35}), 50, cK - 52, D + 1.5, 'z', 28); cyl(G, 10, 3.4, M(0x111214, {roughness: 0.2}), 50, cK - 52, D + 1.8, 'z', 24); cyl(G, 2.4, 3.6, M(0x441111, {roughness: 0.1}), 46, cK - 52, D + 1.9, 'z', 10); cyl(G, 2.4, 3.6, M(0x111144, {roughness: 0.1}), 54, cK - 52, D + 1.9, 'z', 10);
+    // communicatiemodule COM400 (4G LTE) met SMA-antenneaansluiting en status-LED's
+    const yM0 = -38, yM1 = -66; box(G, W - 10, yM0 - yM1, 50, M(0x3a3e43, {roughness: 0.5}), 0, (yM0 + yM1)/2, 22 + 25);
+    plak(G, 70, 14, lbl('COM400 · 4G LTE · ETH', 280, 56, '#3a3e43', '#e8ecef', 'bold 26px Arial'), -22, (yM0 + yM1)/2 + 3, 72.2);
+    [0x3fd36b, 0xf2c400, 0x3fa0ff].forEach((c, i) => cyl(G, 1.6, 1.5, M(c, {emissive: c, emissiveIntensity: 1.1}), 30 + i*8, (yM0 + yM1)/2 + 3, 72.4, 'z', 10));
+    cyl(G, 4.5, 12, messing, W/2 - 8, (yM0 + yM1)/2 - 4, 66, 'x', 14); cyl(G, 3.2, 6, messing, W/2 + 2, (yM0 + yM1)/2 - 4, 66, 'x', 6);                // SMA
+    // klemmenblok (CT-uitvoering): 1–9 stroom/spanning, 10/11 N, 20–27 hulpcontacten; rookglazen klemmenkap
+    const yT0 = -H/2 + 4, yT1 = yM1, cT = (yT0 + yT1)/2; box(G, W - 6, yT1 - yT0, 28, zwartK, 0, cT, 22 + 14);
+    const MCS = {I: [], U: [], N: null}; const nrs = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11'];
+    nrs.forEach((n, i) => { const x = -62 + i*12.4; box(G, 10.4, 30, 6, M(0x26282b), x, cT + 4, 52); schroefMM(G, x, cT + 12, 55.5, 3.2, 'z', messing); schroefMM(G, x, cT - 2, 55.5, 3.2, 'z', messing);
+      box(G, 8, 7, 8, sleuf, x, yT0 + 3, 44, false); plak(G, 8, 6, lbl(n, 40, 30, '#26282b', '#f0f0f0', 'bold 22px Arial'), x, cT + 22, 55.2);
+      const p = V(x, yT0 + 1, 44); if([0, 3, 6].includes(i)) MCS.I.push({in: p}); if([2, 5, 8].includes(i)) MCS.I[MCS.I.length - 1].uit = p; if([1, 4, 7].includes(i)) MCS.U.push(p); if(i === 9) MCS.N = p; });
+    for(let i = 0; i < 8; i++){ const x = 22 + i*6.2; schroefMM(G, x, cT - 10, 52, 1.8); plak(G, 5, 4, lbl(String(20 + i), 30, 24, '#26282b', '#ddd', 'bold 18px Arial'), x, cT - 15, 52.2); }
+    box(G, 16, 18, 10, M(0x5b6166), W/2 - 12, cT - 6, 58); plak(G, 14, 5, lbl('BATT', 60, 22, '#5b6166', '#fff', 'bold 16px Arial'), W/2 - 12, cT - 6, 63.2);
+    const kk = box(G, W - 2, yT1 - yT0 + 2, 1.6, glas(0.32), 0, cT, 66, false); kk.material.color.set(0x8f9aa2);
+    for(const s of [-1, 1]) box(G, 1.6, yT1 - yT0, 44, glas(0.3), s*(W/2 - 1), cT, 44, false);
+    for(let i = 0; i < 11; i++) box(G, 9, 3, 44, M(0x1e2022), -62 + i*12.4, yT0 - 0.5, 44, false);                                       // kam voor de kabelinvoer
+    for(const s of [-1, 1]){ schroefMM(G, s*55, cT, 67, 3); plombe(G, s*55, cT - 3, 67.5); }
+    plak(G, 60, 9, lbl('-P1  hoofdmeter (afrekenmeter)', 300, 46, '#ffffff', '#111', 'bold 24px Arial'), 0, -H/2 - 10, 0.5);
+    MK.userData.MCS = {G, MCS}; }
+
+  // ---- -P2 Janitza UMG 604E-PRO (6 TE, 107,5 × 90 × 82 mm, DIN-rail), boven: spanning L1–L4/N + voeding Uh, onder: stroom I1–I4 (S1/S2), RS485, DIO; Ethernet RJ45 ----
+  din(7.6, -0.6, 3.4);
+  { const G = mm(1.25, 7.6, 0.36), W = 107.5, H = 90, D = 82, huis = M(0xd8dad6, {roughness: 0.5}), front = M(0x3a3f44, {roughness: 0.45});
+    box(G, W, H, 40, huis, 0, 0, 20); box(G, W, 46, 82 - 40, huis, 0, 0, 40 + (82 - 40)/2);                                             // DIN-profiel: voet + koepel
+    for(const s of [-1, 1]) box(G, W - 2, 22, 18, huis, 0, s*34, 49);                                                                     // klemmenschouders
+    box(G, W - 6, 42, 1.2, front, 0, 0, 82.2);
+    const fp = ctex(512, 200, (g, w, h) => { g.fillStyle = '#3a3f44'; g.fillRect(0, 0, w, h); g.fillStyle = '#e2001a'; g.font = 'bold 34px Arial'; g.fillText('janitza', 16, 42); g.fillStyle = '#d8dde1'; g.font = 'bold 22px Arial'; g.fillText('UMG 604E-PRO', 16, 182);
+      g.fillStyle = '#c9d0d5'; g.font = 'bold 26px Arial'; g.fillText('1', 486, 72); g.fillText('2', 486, 152); g.font = '15px Arial'; g.fillText('◀', 462, 40); g.fillText('▶', 462, 182); });
+    plak(G, W - 6, 42, fp, 0, 0, 83);
+    const disp = ctex(256, 160, (g, w, h) => { g.fillStyle = '#cfe2ee'; g.fillRect(0, 0, w, h); g.fillStyle = '#0d2233'; g.font = 'bold 15px Arial'; g.fillText('L1   L2   L3      kW', 10, 20);
+      g.font = 'bold 30px monospace'; g.fillText('138.4', 10, 58); g.fillText('136.9', 10, 96); g.fillText('137.1', 10, 134); g.font = 'bold 14px Arial'; g.fillText('Σ 412.4 kW', 150, 58); g.fillText('cos φ 0,98', 150, 96); g.fillText('THD-U 1,8%', 150, 134); g.fillText('RxD TxD', 160, 154); });
+    box(G, 48, 32, 2, M(0x1c1f22), 4, 2, 83.5); plak(G, 45, 29, disp, 4, 2, 84.6, 0, {m: {emissive: 0x9ec6dd, emissiveIntensity: 0.35}});
+    for(const y of [11, -9]){ cyl(G, 5.2, 3, M(0x23272b, {roughness: 0.6}), 40, y, 84.5, 'z', 18); cyl(G, 4.2, 1.2, M(0x5b636a), 40, y, 86.2, 'z', 18); }
+    cyl(G, 1.4, 1, sleuf, 22, -16, 83.6, 'z', 8);                                                                                        // service (verborgen)
+    // insteekbare schroefklemmen (zwart), schroeven naar voren, draadinvoer van boven/onder
+    const JZ = {U: {}, I: {}, Uh: null}, pitch = 5.08;
+    const blok = (x0, n, top, labels, key) => { const y = top ? 41 : -41, yb = top ? 46 : -46;
+      box(G, n*pitch + 1.5, 10, 14, zwartK, x0 + (n - 1)*pitch/2, y, 52);
+      labels.forEach((l, i) => { const x = x0 + i*pitch; schroefMM(G, x, y, 59.2, 1.6); box(G, 3.4, 2, 3.4, sleuf, x, yb + (top ? 0 : 0), 50, false);
+        plak(G, 4.6, 3.2, lbl(l, 40, 28, '#d8dad6', '#111', 'bold 18px Arial'), x, top ? 32.5 : -32.5, 58.2); if(key) key(l, V(x, top ? 47 : -47, 50)); }); };
+    blok(-48, 2, true, ['Uh', 'Uh'], (l, p) => { JZ.Uh = JZ.Uh || p; });
+    blok(-30, 5, true, ['L1', 'L2', 'L3', 'L4', 'N'], (l, p) => { JZ.U[l] = p; });
+    blok(-48, 8, false, ['S1', 'S2', 'S1', 'S2', 'S1', 'S2', 'S1', 'S2'], null);
+    for(let i = 0; i < 8; i++){ const x = -48 + i*pitch, f = Math.floor(i/2); JZ.I[(f + 1) + (i % 2 ? 'b' : 'a')] = V(x, -47, 50); }
+    plak(G, 41, 3.2, lbl('I1      I2      I3      I4', 300, 24, '#d8dad6', '#111', 'bold 18px Arial'), -30, -27.5, 58.2);
+    blok(-3, 2, false, ['A', 'B'], null); blok(10, 6, false, ['1', '2', '3', '4', '5', '6'], null); plak(G, 10, 3, lbl('RS485', 70, 22, '#d8dad6', '#111', 'bold 16px Arial'), -0.5, -27.5, 58.2);
+    // RJ45 Ethernet + patchkabel
+    box(G, 16, 13, 18, M(0x9aa0a4, {metalness: 0.7}), 41, -38, 46); box(G, 12, 8, 2, sleuf, 41, -40, 55.2, false); box(G, 2, 2, 1, M(0x3fd36b, {emissive: 0x3fd36b, emissiveIntensity: 1}), 36, -33, 55.3); box(G, 2, 2, 1, M(0xf2c400, {emissive: 0xf2c400, emissiveIntensity: 1}), 46, -33, 55.3);
+    box(G, 11, 7, 16, M(0x7a3fbf), 41, -48, 50); kabel(G, [V(41, -52, 50), V(41, -70, 48), V(55, -120, 40), V(70, -180, 30)], 2.6, M(0x7a3fbf, {roughness: 0.45}), 10, 8);
+    box(G, 30, 6, 10, M(0xf28a00), 0, -H/2 + 2, 3);                                                                                        // DIN-klem
+    plak(G, 60, 9, lbl('-P2 Janitza UMG 604E-PRO', 300, 46, '#ffffff', '#111', 'bold 24px Arial'), 0, -H/2 - 14, 2);
+    MK.userData.JZ = {G, JZ}; }
+  // ---- -F1..F3 spanningsbeveiliging 2 A (B2) + -F4 voeding UMG (Uh) ----
+  const FS = [];
+  for(let k = 0; k < 4; k++){ const G = mm(2.25 + k*0.18, 7.6, 0.36), w = 17.6; box(G, w, 90, 44, M(0xf0f0ec, {roughness: 0.45}), 0, 0, 22); box(G, w, 45, 26, M(0xf0f0ec, {roughness: 0.45}), 0, 0, 57);
+    box(G, 6, 11, 9, M(0x2b2d30), 0, 4, 73); box(G, 5, 4, 2, M(0xc8281c), 0, 8, 77.5); plak(G, 15, 10, lbl(k < 3 ? 'B2' : 'C2', 60, 40, '#f0f0ec', '#111', 'bold 22px Arial'), 0, -13, 70.2);
+    for(const s of [-1, 1]){ schroefMM(G, 0, s*38, 46, 3); box(G, 8, 5, 6, sleuf, 0, s*44, 40, false); }
+    plak(G, 15, 6, lbl('-F' + (k + 1), 60, 24, '#ffffff', '#111', 'bold 18px Arial'), 0, 52, 30); FS.push({G, top: V(0, 46, 40), bot: V(0, -46, 40)}); }
+
+  // ---- -X1 meet-/scheidingsklemmen Phoenix Contact URTK/S (8,2 mm) met schuifscheider, testbussen Ø4, kortsluitbruggen voor de CT-kringen ----
+  din(3.3, -3.35, 3.35);
+  const XK = [], grijsT = M(0x8f9592, {roughness: 0.55}), grijsD = M(0x7c827f, {roughness: 0.6});
+  { const G = mm(-3.0, 3.3, 0.36), pitch = 8.2, Lk = 61.5, Hk = 42;
+    const klemmen = [['1', 'CT L1 S1'], ['2', 'CT L1 S2'], ['3', 'CT L2 S1'], ['4', 'CT L2 S2'], ['5', 'CT L3 S1'], ['6', 'CT L3 S2'], ['7', 'U L1'], ['8', 'U L2'], ['9', 'U L3'], ['10', 'N'], ['PE', 'PE']];
+    let x = 0; const plaat = (xx, groot) => box(G, 1.8, groot ? Lk + 8 : Lk, groot ? Hk + 4 : Hk - 2, groot ? M(0xb9bdbb) : grijsD, xx, 0, (groot ? Hk + 4 : Hk - 2)/2);
+    // eindsteun E/UK (zwart met schroef) + eindplaat
+    box(G, 9.5, 36, 35, zwartK, x - 6, 0, 17.5); schroefMM(G, x - 6, 0, 35.2, 2.6); plaat(x - 1, false);
+    klemmen.forEach(([n, f], i) => {
+      if(i === 6 || i === 10) { x += 1.2; plaat(x, true); x += 1.6; }
+      const xc = x + pitch/2, pe = n === 'PE', bm = pe ? M(0x2f8f3a, {roughness: 0.5}) : (i >= 6 ? M(0x9ca3a8) : grijsT);
+      box(G, pitch - 0.5, Lk, Hk, bm, xc, 0, Hk/2); box(G, 0.5, Lk - 4, Hk - 4, grijsD, x + 0.25, 0, Hk/2 - 2, false);                   // lichaam + scheidingsrib
+      for(const s of [-1, 1]){ schroefMM(G, xc, s*22, Hk + 0.4, 2.5); box(G, 5.4, 4.5, 6.5, sleuf, xc, s*(Lk/2 - 0.5), Hk - 13, false);      // klemschroeven + draadinvoer
+        if(!pe){ cyl(G, 2.0, 2, sleuf, xc, s*11.5, Hk + 0.2, 'z', 12); cyl(G, 2.6, 0.6, tin, xc, s*11.5, Hk + 0.1, 'z', 12); } }               // testbussen Ø4
+      if(!pe){ box(G, 3.2, 12, 1.4, tin, xc, (i === 6 ? 3 : 0), Hk + 0.7); schroefMM(G, xc, (i === 6 ? 3 : 0), Hk + 1.6, 1.5); }            // schuifscheider (U L1 open)
+      box(G, pitch - 1.2, 5.5, 0.6, M(0xf4f4f0), xc, -29, Hk + 0.4); plak(G, pitch - 1.4, 5, lbl(n, 40, 30, '#f4f4f0', '#111', 'bold 22px Arial'), xc, -29, Hk + 0.75);
+      XK.push({n, f, top: V(xc, Lk/2 + 1, Hk - 13), bot: V(xc, -Lk/2 - 1, Hk - 13), x: xc}); x += pitch; });
+    plaat(x + 0.5, false); box(G, 9.5, 36, 35, zwartK, x + 6, 0, 17.5); schroefMM(G, x + 6, 0, 35.2, 2.6);
+    // kortsluitbruggen (geel) S1–S2 per CT, ingestoken in de middelste trechters
+    for(let c = 0; c < 3; c++){ const a = XK[c*2].x, b = XK[c*2 + 1].x; box(G, b - a + 3, 2.4, 2, M(0xf2c400, {roughness: 0.45}), (a + b)/2, -5.5, Hk + 2.2); for(const xx of [a, b]) box(G, 2, 2.4, 4, M(0xf2c400), xx, -5.5, Hk + 0.4); }
+    plak(G, 46, 6, lbl('CT L1   CT L2   CT L3', 300, 40, '#ffffff', '#111', 'bold 22px Arial'), XK[3].x - 4, Lk/2 + 9, 20);
+    plak(G, 34, 6, lbl('U L1 L2 L3 N', 240, 40, '#ffffff', '#111', 'bold 22px Arial'), (XK[6].x + XK[9].x)/2, Lk/2 + 9, 20);
+    plak(G, 70, 7, lbl('-X1  meet- en scheidingsklemmen URTK/S', 420, 42, '#ffffff', '#111', 'bold 22px Arial'), x/2, -Lk/2 - 11, 20);
+    MK.userData.XK = G; }
+
+  // ---- kabelgoten 40 × 60 (grijs, met deksel) ----
+  for(const y of [5.45, 1.6]){ box(MK, mkW - 0.8, 0.6, 0.6, M(0x8f969a), 0, y, 0.6); box(MK, mkW - 0.8, 0.06, 0.66, M(0xa5abaf), 0, y + 0.3, 0.6); for(let x = -3.2; x < 3.2; x += 0.25) box(MK, 0.08, 0.5, 0.62, M(0x7d8387), x, y, 0.6, false); }
+
+  // ---- bedrading 2,5 mm² (H07V-K) met adermarkering: stroomkringen in serie X1 → P1 → P2 → X1, spanning X1 → F → P1/P2 ----
+  const wloc = (g, p) => { g.updateMatrix(); return p.clone().applyMatrix4(g.matrix); };                         // groepen hangen direct onder MK
+  MK.updateMatrixWorld(true);
+  const P1 = MK.userData.MCS, P2 = MK.userData.JZ, XKG = MK.userData.XK;
+  const kl = n => XK.find(k => k.n === n), Lw = (g, p) => wloc(g, p);
+  const draad = (pts, m) => { kabel(MK, pts, 0.022, m, 0.12, 6); const a = pts[0], b = pts[pts.length - 1];
+    for(const [p, q] of [[a, pts[1]], [b, pts[pts.length - 2]]]){ const d = q.clone().sub(p).normalize(); const c = cyl(MK, 0.032, 0.09, M(0xf4f4f0), p.x + d.x*0.1, p.y + d.y*0.1, p.z + d.z*0.1, null, 8); c.lookAt(c.position.clone().add(d)); c.rotateX(Math.PI/2); } };
+  const zgo = 0.62, ylg = 5.45;
+  const viaGoot = (a, b, m, lane) => { const zl = zgo - 0.2 + lane*0.05; draad([a, V(a.x, a.y + (a.y < ylg ? 0.3 : -0.3), a.z), V(a.x, ylg, zl), V(b.x, ylg, zl), V(b.x, b.y + (b.y < ylg ? 0.3 : -0.3), b.z), b], m); };
+  const ctM2 = [M(0x1d1e20), M(0x1d1e20), M(0x1d1e20)];
+  for(let c = 0; c < 3; c++){ const s1 = Lw(XKG, kl(String(c*2 + 1)).top), s2 = Lw(XKG, kl(String(c*2 + 2)).top);
+    const pin = Lw(P1.G, P1.MCS.I[c].in), puit = Lw(P1.G, P1.MCS.I[c].uit), j1 = Lw(P2.G, P2.JZ.I[(c + 1) + 'a']), j2 = Lw(P2.G, P2.JZ.I[(c + 1) + 'b']);
+    viaGoot(s1, pin, ctM2[c], c*2); viaGoot(puit, j1, ctM2[c], c*2 + 1); viaGoot(j2, s2, ctM2[c], c*2 + 6); }
+  const fz = [ader.L1, ader.L2, ader.L3];
+  for(let p = 0; p < 3; p++){ const u = Lw(XKG, kl(String(7 + p)).top), f = FS[p], fb = Lw(f.G, f.bot), ft = Lw(f.G, f.top);
+    viaGoot(u, fb, fz[p], 12 + p);
+    const ju = Lw(P2.G, P2.JZ.U['L' + (p + 1)]); draad([ft, V(ft.x, ft.y + 0.25, ft.z), V(ft.x, 8.35 + p*0.06, 0.95), V(ju.x, 8.35 + p*0.06, 0.95), V(ju.x, ju.y + 0.1, ju.z)], fz[p]);
+    const mu = Lw(P1.G, P1.MCS.U[p]); viaGoot(fb.clone().add(V(0.03, 0, 0)), mu, fz[p], 15 + p); }
+  { const n = Lw(XKG, kl('10').top), jn = Lw(P2.G, P2.JZ.U.N), mn = Lw(P1.G, P1.MCS.N); viaGoot(n, mn, ader.N, 18); { const a = n.clone().add(V(0.02, 0, 0)), zl = zgo - 0.2 + 19*0.05; draad([a, V(a.x, a.y + 0.3, a.z), V(a.x, ylg, zl), V(2.06, ylg, zl), V(2.06, ylg + 0.4, 0.9), V(2.06, 8.55, 0.95), V(jn.x, 8.55, 0.95), V(jn.x, jn.y + 0.1, jn.z)], ader.N); }
+    const f4 = FS[3], f4t = Lw(f4.G, f4.top), uh = Lw(P2.G, P2.JZ.Uh); draad([f4t, V(f4t.x, 8.6, 0.95), V(uh.x, 8.6, 0.95), V(uh.x, uh.y + 0.1, uh.z)], ader.L1);
+    const f4b = Lw(f4.G, f4.bot), f3b = Lw(FS[2].G, FS[2].bot); draad([f3b.clone().add(V(-0.02, 0, 0)), V(f3b.x, 6.9, 0.7), V(f4b.x, 6.9, 0.7), f4b], ader.L3); }
+  // externe meetkabels (van de CT's en de spanningsafname in de HVK): binnen bovenin, langs de linkerwand naar de onderste goot en van onderen op -X1
+  const extIn = []; for(let k = 0; k < 6; k++) extIn.push(V(-1.5 + k*0.25, mkH - 0.8, 1.5));
+  XK.slice(0, 10).forEach((k, i) => { const b = Lw(XKG, k.bot), c = Math.min(5, Math.floor(i/2)), e = extIn[i < 6 ? Math.floor(i/2) : 3 + Math.min(2, i - 6)], xl = -3.4 + i*0.05;
+    draad([e, V(e.x, mkH - 1.1, e.z), V(xl, mkH - 1.3, 1.6), V(xl, 1.6, zgo - 0.15 + i*0.03), V(b.x, 1.6, zgo - 0.15 + i*0.03), V(b.x, b.y - 0.3, b.z), b], i < 6 ? M(0x5a5f63) : (fz[i - 6] || ader.N)); });
+  { const pe = Lw(XKG, kl('PE').bot); draad([pe, V(pe.x, 1.6, 0.5), V(3.3, 1.6, 0.5), V(3.4, 0.6, 0.3)], ader.PE); box(MK, 0.4, 0.4, 0.1, matKoper, 3.4, 0.5, 0.3); }
+  // antenne COM400 op de kast (magneetvoet)
+  { const a = Lw(P1.G, V(85, -56, 66)); kabel(MK, [a, V(a.x + 0.25, a.y, a.z), V(a.x + 0.25, mkH - 0.5, 1.3), V(-3.0, mkH - 0.5, 1.6), V(-3.0, mkH + 0.1, 1.6)], 0.03, M(0x1b1c1e), 0.15, 6);
+    cyl(MK, 0.25, 0.12, zwartK, -3.0, mkH + 0.12, 1.6, null, 16); cyl(MK, 0.05, 1.6, zwartK, -3.0, mkH + 0.95, 1.6, null, 8); }
+  }
   // deur met slot, venster-/documentvak en sticker; scharnier links
   const mPiv = new THREE.Group(); mPiv.position.set(-mkW/2, 0, mkD); MK.add(mPiv);
   const mDeur = box(mPiv, mkW - 0.05, mkH - 0.05, 0.12, mk, mkW/2, mkH/2, 0.06); box(mPiv, 0.25, 1.2, 0.2, matZwart, mkW - 0.6, mkH/2, 0.2);
@@ -1307,21 +1437,21 @@ const GLB = (() => { let ld = null;
 setTimeout(() => GLB('models/xiria.glb', s => { s.scale.setScalar(10); s.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(s); s.position.set(-(b.min.x + b.max.x)/2, -b.min.y, -b.min.z); HVK.XR.add(s); }), 600);
 const EMSV = (function(){
   // EMS-buitenkast (Pegeo KVSP1-413/SVD met EMS Groot) aan de kopse kant voorbij de laatste AIO; model 1-op-1 uit de EMS-pagina (mm → ×0,01)
-  const PWd = 7.85, PDd = 4.72, G = new THREE.Group(); scene.add(G); const ex = XA(N_AIO - 1) + AW/2 + 5.0 + PWd/2, ez = AZ + AD/2 - PDd/2;
-  G.position.set(ex, 0, ez);
+  const PWd = 7.85, PDd = 4.72, G = new THREE.Group(); scene.add(G); const ex = XA(N_AIO - 1) + AW/2 + 0.35 + PDd/2, ez = AZ;                    // met de rug tegen de laatste AIO, op de stelconplaat, deur naar buiten (+x)
+  G.position.set(ex, PL_H, ez); G.rotation.y = Math.PI/2;
   const M3 = new THREE.Group(); M3.scale.setScalar(0.01); G.add(M3);
   const piv = new THREE.Group(); piv.position.set(392.5, 0, 236); M3.add(piv);
   const dr = {m: piv, open: 1.85, dicht: 0, doel: 0, hoek: 0, kast: true, naam: 'EMS-kast'}; doors.push(dr);
   setTimeout(() => { GLB('models/ems.glb', sc => M3.add(sc)); GLB('models/emsdeur.glb', sc => { sc.position.set(-392.5, 0, -236); piv.add(sc); sc.traverse(o => { if(o.isMesh){ o.userData.deur = dr; KLIK.push(o); } }); }); }, 300);
   // kabels
   const K2 = new THREE.Group(); KAB.add(K2);
-  const wO = V(ex - 1.2, -6.5, ez), dO = V(ex - 0.6, -6.5, ez + 0.2), zT = AD/2 + 3.0;                            // kabels van de EMS-pagina eindigen 650 mm onder maaiveld
+  const wO = V(ex, PL_H - 6.5, ez + 1.2), dO = V(ex + 0.2, PL_H - 6.5, ez + 0.6), zT = AD/2 + 3.0;                            // kabels van de EMS-pagina eindigen 650 mm onder maaiveld
   // 230 V vanaf de JB (onderste VMS-kast, -F1) door de plint omlaag, door de grond naar de veldkast
   const jbUit = W(V(JX(1100), KS + 0.3, zF2)), jbG = W(V(JX(1100), -0.6, zF2));
-  kabel(K2, [W(V(JX(1100), JB(187) - 0.2, KZ0 + 0.7)), jbUit, jbG, V(jbG.x, -6.5, jbG.z), V(jbG.x, -6.5, zT), V(wO.x, -6.5, zT), wO], 0.065, M(0x1d1e20, {roughness: 0.65}), 0.6, 8);
+  kabel(K2, [W(V(JX(1100), JB(187) - 0.2, KZ0 + 0.7)), jbUit, jbG, V(jbG.x, -6.5, jbG.z), V(jbG.x, -6.5, zT), V(wO.x, -6.5, zT), V(wO.x, -6.5, wO.z), wO], 0.065, M(0x1d1e20, {roughness: 0.65}), 0.6, 8);
   // CAT 6A S/FTP (paars) naar AIO #1 (master): door de grond, onder de metal base in kanaal DATA naar de controller
   const a0 = AIO[0], tgt = V(XA(0) - 2.2, SKY + 1.0, AZ + a0.MC.z + 0.2), zc = zKan(KAN_DATA);
-  kabel(K2, [dO, V(dO.x, -6.5, zT + 0.4), V(XA(0) - AW/2 + 1.0, -6.5, zT + 0.4), V(XA(0) - AW/2 + 1.0, -5.2, AD/2 + 2.0), V(XA(0) - AW/2 + 1.0, -0.6, zc), V(XA(0) - AW/2 + 1.0, PL_H + 0.45, zc), V(XA(0) - 2.2, PL_H + 0.45, zc), V(tgt.x, SKY + 0.3, tgt.z), tgt], 0.07, M(0x7a3fbf, {roughness: 0.45}), 0.6, 8);
+  kabel(K2, [dO, V(dO.x, -6.5, dO.z), V(dO.x, -6.5, zT + 0.4), V(XA(0) - AW/2 + 1.0, -6.5, zT + 0.4), V(XA(0) - AW/2 + 1.0, -5.2, AD/2 + 2.0), V(XA(0) - AW/2 + 1.0, -0.6, zc), V(XA(0) - AW/2 + 1.0, PL_H + 0.45, zc), V(XA(0) - 2.2, PL_H + 0.45, zc), V(tgt.x, SKY + 0.3, tgt.z), tgt], 0.07, M(0x7a3fbf, {roughness: 0.45}), 0.6, 8);
   { const t = sprite('EMS-buitenkast (Pegeo KVSP1-413, EMS Groot — zelfde model als de EMS-pagina) · 230 V vanaf JB -F1 · CAT 6A S/FTP naar AIO #1', V(ex, 16.5, ez), 0.6, '#7a3fbf'); scene.add(t); LABELS.push(t); }
   return {G, K2, zet: v => { G.visible = v; K2.visible = v; }};
 })();
