@@ -64,10 +64,10 @@
     <div class="info" id="modInfo"></div>
   </details>
   <details open><summary>Bekijken</summary>
-    <div class="knoprij"><button id="bOverzicht">overzicht</button><button id="bFront">vooraanzicht</button><button id="bOpen">deksels open</button><button id="bNet">netwerk / 24 V</button><button id="bVoed">230 V / voeding</button><button id="bOnder">kabelinvoer</button></div>
+    <div class="knoprij"><button id="bOverzicht">overzicht</button><button id="bFront">vooraanzicht</button><button id="bOpen">kappen eraf</button><button id="bNet">netwerk / 24 V</button><button id="bVoed">230 V / voeding</button><button id="bOnder">kabelinvoer</button></div>
   </details>
   <details open><summary>Weergave</summary>
-    <label>Deksels EMS open <input type="checkbox" id="tDeksel"></label>
+    <label>Kappen EMS eraf (blauwe schroeven los) <input type="checkbox" id="tDeksel"></label>
     <label>Deur veldkast open <input type="checkbox" id="tDeur"></label>
     <label>Kabels <input type="checkbox" id="tKabel" checked></label>
     <label>Kabelgootdeksels <input type="checkbox" id="tGoot" checked></label>
@@ -91,7 +91,7 @@
   <details><summary>Bediening</summary>
     <ul>
       <li>Slepen: draaien · rechts slepen / shift: schuiven · scroll: zoomen · pijltjes: verplaatsen</li>
-      <li>Klik op een deksel of de deur van de veldkast: open / dicht (verlichting gaat aan bij open deur)</li>
+      <li>Klik op een kap: blauwe schroeven los en kap eraf / terug; klik op de deur van de veldkast: open / dicht (verlichting gaat aan bij open deur)</li>
       <li>Telefoon: 1 vinger draaien, 2 vingers zoomen/schuiven, pijltjesknoppen</li>
     </ul>
   </details>
@@ -215,8 +215,15 @@ const matBodem = M(0xffffff, {map: texBodem, roughness: 0.6});
 MOD.forEach((m, i) => { const w = m.x1 - m.x0, h = m.y1 - m.y0, cx = (m.x0 + m.x1)/2, cy = (m.y0 + m.y1)/2, R = 14;
   box(EMS, w - 6, h - 6, 4, RAL7035d, cx, cy, 2);                                                                           // bodem
   // wanden met afgeronde hoeken (4 wanden + 4 hoekprofielen)
-  for(const s of [-1, 1]){ box(EMS, 4.5, h - 2*R, DB, RAL7035, cx + s*(w/2 - 2.25), cy, DB/2); box(EMS, w - 2*R, 4.5, DB, RAL7035, cx, cy + s*(h/2 - 2.25), DB/2);
-    box(EMS, 1, h - 60, DB - 30, matWand, cx + s*(w/2 - 11), cy, DB/2, false); box(EMS, w - 60, 1, DB - 30, matWand, cx, cy + s*(h/2 - 11), DB/2, false); }
+  // wanden; de wanden tussen twee gekoppelde modules zijn grotendeels open (uitgezaagd, met koppelflens) zodat de bedrading vrij doorloopt
+  const wandDeel = (vert, s) => { const binnen = vert ? Math.abs(cx + s*w/2) < 10 : Math.abs(cy + s*h/2 - 323) < 10, L = (vert ? h : w) - 2*R;
+    const put = (l0, l1, z0, z1, mat, t, off) => { const ll = l1 - l0, lc = (l0 + l1)/2, zc = (z0 + z1)/2, dz = z1 - z0;
+      if(vert) box(EMS, t, ll, dz, mat, cx + s*(w/2 - off), cy + lc, zc, mat !== matWand); else box(EMS, ll, t, dz, mat, cx + lc, cy + s*(h/2 - off), zc, mat !== matWand); };
+    if(!binnen){ put(-L/2, L/2, 0, DB, RAL7035, 4.5, 2.25); put(-L/2 + 16, L/2 - 16, 15, DB - 15, matWand, 1, 11); return; }
+    const o = L*0.47; put(-L/2, -o, 0, DB, RAL7035, 4.5, 2.25); put(o, L/2, 0, DB, RAL7035, 4.5, 2.25);                         // open middenstuk ±72 %
+    put(-o, o, 0, 8, RAL7035, 4.5, 2.25); put(-o, o, DB - 6, DB, RAL7035, 4.5, 2.25);                                      // smalle stroken achter en voor (koppelflens)
+    };                                     // afgeronde zaagranden
+  for(const s of [-1, 1]){ wandDeel(true, s); wandDeel(false, s); }
   for(const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]){ const c = new THREE.Mesh(new THREE.CylinderGeometry(R, R, DB, 16, 1, true, 0, Math.PI*2), RAL7035); c.rotation.x = Math.PI/2; c.position.set(cx + sx*(w/2 - R), cy + sy*(h/2 - R), DB/2); c.scale.set(1, 1, 1); EMS.add(c); }
   // gietribben aan de binnenzijde en 4 schroefdomes voor het deksel
   for(const s of [-1, 1]) for(let k = 1; k < 4; k++) box(EMS, 2, 2, DB - 10, RAL7035d, cx + s*(w/2 - 6), m.y0 + h*k/4, DB/2, false);
@@ -240,11 +247,11 @@ MOD.forEach((m, i) => { const w = m.x1 - m.x0, h = m.y1 - m.y0, cx = (m.x0 + m.x
   const vw = w - 64, vh = h - 64; box(dk, vw, vh, 3, rook, 0, 0, DL + 0.6, false);                                // venster (polycarbonaat)
   for(const s of [-1, 1]){ box(dk, vw + 6, 3, 2, lidM, 0, s*(vh/2 + 1.5), DL + 1.5, false); box(dk, 3, vh + 6, 2, lidM, s*(vw/2 + 1.5), 0, DL + 1.5, false); }
   for(const s of [-1, 1]){ box(dk, (w - 14 - vw)/2, h - 14, 5, lidM, s*((w - 14)/4 + vw/4), 0, DL - 2.5); box(dk, vw, (h - 14 - vh)/2, 5, lidM, 0, s*((h - 14)/4 + vh/4), DL - 2.5); }
-  for(const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]){ const x = sx*(w/2 - 14), y = sy*(h/2 - 14); cyl(dk, 8, 4, blauwSchroef, x, y, DL + 1.5, 'z', 20); cyl(dk, 3.2, 16, blauwSchroef, x, y, DL - 8, 'z', 10); for(const rz of [0.4, 0.4 + Math.PI/2]){ const sl = box(dk, 10, 1.8, 1.4, M(0x0d3a7a), x, y, DL + 3.6, false); sl.rotation.z = rz; } }
+  for(const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]){ const x = sx*(w/2 - 14), y = sy*(h/2 - 14); const sk = [cyl(dk, 8, 4, blauwSchroef, x, y, DL + 1.5, 'z', 20), cyl(dk, 3.2, 16, blauwSchroef, x, y, DL - 8, 'z', 10)]; for(const rz of [0.4, 0.4 + Math.PI/2]){ const sl = box(dk, 10, 1.8, 1.4, M(0x0d3a7a), x, y, DL + 3.6, false); sl.rotation.z = rz; sk.push(sl); } sk.forEach(o => { o.userData.schroef = true; o.userData.z0 = o.position.z; }); }
   // scharnieren
   // typeplaatje op het deksel
   plak(dk, 70, 13, frontTxt([m.n + ' + VHR + DF'], 280, 52, '#d4d7d1', '#3c4045', 26), 0, h/2 - 22, DL + 0.2);
-  const dr = {m: piv, as: 'y', open: rechts ? 1.62 : -1.62, dicht: 0, doel: 0, hoek: 0, naam: 'deksel ' + ['linksboven', 'rechtsboven', 'linksonder', 'rechtsonder'][i]}; doors.push(dr); DEKSELS.push(dr);
+  const dr = {m: piv, af: true, z0: piv.position.z, x0: piv.position.x, sx: rechts ? 1 : -1, open: 1, dicht: 0, doel: 0, hoek: 0, naam: 'kap ' + ['linksboven', 'rechtsboven', 'linksonder', 'rechtsonder'][i]}; doors.push(dr); DEKSELS.push(dr);
   dk.traverse(o => { if(o.isMesh){ o.userData.deur = dr; KLIK.push(o); } }); });
 // stickers op de deksels: O&K-typeplaat, waarschuwing 230 V, IP65
 { const ok = ctex(420, 230, (g, W, H) => { g.fillStyle = '#f2f3ef'; g.fillRect(0, 0, W, H); g.strokeStyle = '#555'; g.lineWidth = 3; g.strokeRect(4, 4, W - 8, H - 8); g.fillStyle = '#20307a'; g.beginPath(); g.arc(46, 46, 28, 0, 7); g.fill(); g.fillStyle = '#fff'; g.font = 'bold 34px Arial'; g.textAlign = 'center'; g.fillText('K', 46, 58);
@@ -256,7 +263,7 @@ MOD.forEach((m, i) => { const w = m.x1 - m.x0, h = m.y1 - m.y0, cx = (m.x0 + m.x
   const d2 = DEKSELS[2].m.children[0]; plak(d2, 34, 34, dw, -110, 120, DL + 0.7);
   const d3 = DEKSELS[3].m.children[0]; plak(d3, 30, 14, frontTxt(['IP65'], 120, 56, '#ffffff', '#20307a', 36), 110, 128, DL + 0.7); }
 // koppelstukken tussen de modules (verlijmde dichtring) en doorvoerbussen voor de bedrading
-box(EMS, 6, 760, DB - 12, RAL7035d, 0, 380, (DB - 12)/2); box(EMS, 640, 6, DB - 12, RAL7035d, 0, 323, (DB - 12)/2);
+box(EMS, 6, 760, 10, RAL7035d, 0, 380, 5); box(EMS, 640, 6, 10, RAL7035d, 0, 323, 5); box(EMS, 6, 760, 8, RAL7035d, 0, 380, DB - 6); box(EMS, 640, 6, 8, RAL7035d, 0, 323, DB - 6);
 const BUS = [[0, 270, 'x'], [0, 120, 'x'], [40, 323, 'y'], [-40, 323, 'y'], [150, 323, 'y']];
 // kabeldoorvoeren: wartels worden na de bedrading automatisch geplaatst waar kabels door een modulewand gaan (zie onder)
 // wandbevestiging: 4 lippen met sleutelgat + schroef in plug
@@ -633,7 +640,7 @@ smartLogger = function(xc, y){ const g = new THREE.Group(); EMS.add(g); const w 
 rail(-298, -25, 628); rail(-298, -25, 456);
 
 // ---- MC43 rechtsboven ----
-rail(25, 298, 628); rail(25, 298, 456);
+rail(25, 282, 628); rail(25, 282, 456);
 const GUR = goot(25, 286, 529, 555), GURv = goot(286, 302, 342, 742, 34);
 const SLG = smartLogger(-160, 610); const W1 = wtg(92, 650);
 const X03p = pt2x10(36, 456, 0xc8281c, '-X03+'), X03m = pt2x10(52, 456, 0x232528, '-X03−');
@@ -641,7 +648,7 @@ const W3 = tsw212(96, 456);
 const W2 = rut951(244, 485);
 const XPE = rijgklem(281, 456, [ader.PE], '-X');
 // ---- MC33 linksonder ----
-rail(-298, -25, 214); rail(-298, -25, 86);
+rail(-298, -44, 214); rail(-298, -44, 86);
 const GLLb = goot(-300, -170, 260, 290), GLLm = goot(-300, -170, 134, 166), GLLo = goot(-300, -112, 18, 40, 34), GLLv = goot(-38, -22, 30, 300, 34);
 const WCD1 = m1175(-296, 214, '-WCD1'), WCD2 = m1175(WCD1.x1, 214, '-WCD2');
 const U1 = ndr240(-160, 214), U2 = dups20(-94, 214);
@@ -698,7 +705,7 @@ const gZ = 38;                                                       // hoogte v
   draad({x: -122, y: 29, z: gZ + 3}, [[xk[2].x, 31, gZ + 3]], xk[2], ader.PE, R25); }
 // --- -HS (1/3) → -F1 (2/N onderzijde) via de middelste en onderste goot ---
 { const ht = HS.kl.filter(k => k.s > 0), fb = F1.kl.filter(k => k.s < 0);
-  [['L', 0], ['N', 1]].forEach(([f, k]) => draad(ht[k], [[ht[k].x, 150, gZ + k*3], [-170 + k*3, 150, gZ + k*3], [-166 + k*3, 46, gZ + k*3], [fb[k].x, 31 - k*3, gZ]], fb[k], ader[f], R25)); }
+  [['L', 0], ['N', 1]].forEach(([f, k]) => draad(ht[k], [[ht[k].x, 150, gZ + k*3], [-34 + k*4, 150, gZ + k*3], [-34 + k*4, 31 - k*3, gZ + k*3], [fb[k].x, 31 - k*3, gZ]], fb[k], ader[f], R25)); }
 // --- -F1 (1/N bovenzijde) → -Xi L/N, WCD1..3 en -U1 AC (via de middelste en bovenste goot) ---
 { const ft = F1.kl.filter(k => k.s > 0), xt = XI.filter(k => k.s > 0);
   [['L', 0], ['N', 1]].forEach(([f, k]) => {
@@ -739,29 +746,10 @@ const gZ = 38;                                                       // hoogte v
 { const xp = XI.filter(k => k.s > 0)[2]; kabel(KAB, [V(xp.x + 4, xp.y + 4, xp.z), V(-120, 60, gZ + 20), V(MOD[2].x1 - 34, 30, 30), V(MOD[2].x1 - 34, 30, 24)], 2.2, ader.PE, 8);
   kabel(KAB, [V(XPE[0].x, XPE[0].y, XPE[0].z), V(XPE[0].x, 420, 40), V(MOD[1].x1 - 34, 356, 30), V(MOD[1].x1 - 34, 356, 24)], 2.2, ader.PE, 8);
   kabel(KAB, [V(MOD[2].x1 - 34, 30, 26), V(-20, 60, 40), V(0, 120, 55), V(40, 60, 40), V(MOD[3].x1 - 34, 30, 26)], 2.2, ader.PE, 10);
-  kabel(KAB, [V(MOD[3].x1 - 34, 30, 28), V(290, 200, 34), V(150, 323, 55), V(200, 360, 40), V(MOD[1].x1 - 34, 356, 28)], 2.2, ader.PE, 10);
-  kabel(KAB, [V(MOD[1].x1 - 34, 356, 30), V(60, 380, 40), V(-40, 323, 55), V(-120, 360, 40), V(MOD[0].x1 - 34, 356, 26)], 2.2, ader.PE, 10);
-  kabel(KAB, [V(P1.xc + 27, 100, 40), V(290, 70, 36), V(MOD[3].x1 - 34, 30, 30)], 1.6, ader.PE, 8); }
+  kabel(KAB, [V(MOD[3].x1 - 34, 30, 28), V(290, 60, 34), V(290, 300, 40), V(290, 323, 50), V(MOD[1].x1 - 34, 356, 28)], 2.2, ader.PE, 10);
+  kabel(KAB, [V(MOD[1].x1 - 34, 356, 30), V(60, 372, 40), V(0, 378, 50), V(-60, 372, 40), V(MOD[0].x1 - 34, 356, 26)], 2.2, ader.PE, 10);
+  kabel(KAB, [V(P1.xc, 88, 30), V(P1.xc + 10, 76, 42), V(252, 70, 42), V(255, 64, 38)], 1.6, ader.PE, 8); }
 
-// ---- wartels (zwart polyamide, M20/M25 met tegenmoer) op elk punt waar een kabel door een koppelwand tussen twee modules gaat ----
-{ const wM = M(0x1e1f21, {roughness: 0.55}), wD = M(0x2c2e31, {roughness: 0.5}), ring = M(0x0e0f10, {roughness: 0.8});
-  const kruis = [];                                                                                     // {p, as: 'x'|'y', r}
-  KAB.children.forEach(o => { const c = o.userData.curve; if(!c || !o.geometry || !o.geometry.parameters) return; const r = o.geometry.parameters.radius; if(r < 1.4) return;
-    const N = 300; let q = c.getPointAt(0);
-    for(let k = 1; k <= N; k++){ const p = c.getPointAt(k/N);
-      if(q.x*p.x < 0 && Math.abs(p.y - 380) < 380 && p.y > 4 && p.y < 756) kruis.push({p: q.clone().lerp(p, Math.abs(q.x)/(Math.abs(q.x) + Math.abs(p.x))), as: 'x', r});
-      if((q.y - 323)*(p.y - 323) < 0 && Math.abs(p.x) < 318) kruis.push({p: q.clone().lerp(p, Math.abs(q.y - 323)/(Math.abs(q.y - 323) + Math.abs(p.y - 323))), as: 'y', r});
-      q = p; } });
-  const groepen = []; kruis.forEach(k => { const g = groepen.find(g => g.as === k.as && g.p.distanceTo(k.p) < 16); if(g){ g.n++; g.r = Math.max(g.r, k.r); g.som.add(k.p); g.p = g.som.clone().multiplyScalar(1/g.n); } else groepen.push({as: k.as, p: k.p.clone(), som: k.p.clone(), n: 1, r: k.r}); });
-  groepen.forEach(g => { const rw = g.n > 2 || g.r > 3 ? 12.5 : 10, G = new THREE.Group(); G.position.copy(g.p); if(g.as === 'x') G.rotation.z = -Math.PI/2; EMS.add(G);   // as langs lokaal y = door de wand
-    const zes = (r, h, y, m) => { const c = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 6), m); c.position.y = y; G.add(c); };
-    zes(rw + 4, 4, 9, wM); const draad = new THREE.Mesh(new THREE.CylinderGeometry(rw, rw, 5, 20), wD); draad.position.y = 13.5; G.add(draad);
-    const dop = new THREE.Mesh(new THREE.CylinderGeometry(rw - 1.5, rw + 1, 8, 6), wM); dop.position.y = 20; G.add(dop);
-    for(let k = 0; k < 6; k++){ const l = new THREE.Mesh(new THREE.BoxGeometry(2, 6, 1.2), wD); const a = k*Math.PI/3 + Math.PI/6; l.position.set(Math.cos(a)*(rw - 0.2), 20, Math.sin(a)*(rw - 0.2)); l.rotation.y = -a; G.add(l); }
-    const dicht = new THREE.Mesh(new THREE.TorusGeometry(Math.max(2.6, g.r*1.4 + (g.n > 1 ? 3 : 0)), 1.2, 8, 20), ring); dicht.rotation.x = Math.PI/2; dicht.position.y = 24.2; G.add(dicht);
-    zes(rw + 4.5, 4, -9, wM); const d2 = new THREE.Mesh(new THREE.CylinderGeometry(rw, rw, 12, 20), wD); d2.position.y = 0; G.add(d2);             // tegenmoer + draad door beide wanden
-    const lbl = plak(EMS, 12, 5, tekst('wl' + (rw > 11 ? 25 : 20), 64, 26, (c, W, H) => { c.fillStyle = '#1e1f21'; c.fillRect(0, 0, W, H); c.fillStyle = '#ddd'; c.font = 'bold 18px Arial'; c.textAlign = 'center'; c.fillText(rw > 11 ? 'M25' : 'M20', W/2, 19); }), g.p.x + (g.as === 'x' ? 22 : 0), g.p.y + (g.as === 'y' ? 22 : 0) - 14, g.p.z + 14);
-    LABELS.push(lbl); lbl.visible = false; }); }
 // =====================================================================================================
 // PEGEO KVSP1-413/SVD polyester veldkast 785 × 1364 × 472 (IP44, RAL 7035, driepuntsluiting, halve europrofielcilinder)
 // =====================================================================================================
@@ -912,7 +900,11 @@ window.addEventListener('resize', resize); resize();
 zetModus(new URLSearchParams(location.search).get('opstelling') === 'buiten' ? 'buiten' : 'binnen');
 let tPrev = performance.now();
 function animate(){ requestAnimationFrame(animate); const t = performance.now(), dt = Math.min(0.05, (t - tPrev)/1000); tPrev = t;
-  doors.forEach(d => { d.hoek += (d.doel - d.hoek)*Math.min(1, dt*6); d.m.rotation[d.as || 'y'] = d.hoek; });
+  doors.forEach(d => { d.hoek += (d.doel - d.hoek)*Math.min(1, dt*(d.af ? 3 : 6));
+    if(d.af){ // kap losgeschroefd en eraf gehaald: eerst recht naar voren, daarna opzij weg
+      const u = d.hoek, z = Math.min(u, 0.5)*2*180, s = Math.max(0, u - 0.5)*2; d.m.position.z = d.z0 + z; d.m.position.x = d.x0 + d.sx*s*360; d.m.rotation.y = d.sx*s*0.5;
+      d.m.children[0].children.forEach(c => { if(c.userData.schroef) c.position.z = c.userData.z0 + Math.min(1, u*4)*14; }); }
+    else d.m.rotation[d.as || 'y'] = d.hoek; });
   // kastverlichting -H1 brandt als de deur van de veldkast open is (deurschakelaar -DS)
   const aan = MODUS === 'buiten' && Math.abs(PG_DEUR.hoek) > 0.15; binnenLicht.intensity = aan ? 0.9 : 0; binnenLicht.position.copy(V(0, PH - 80, 0).multiplyScalar(0.1));
   LBLOBJ.forEach(l => { l.s.position.copy(emsW(l.p.x, l.p.y, l.p.z)); });
