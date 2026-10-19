@@ -1132,8 +1132,12 @@ const AUXUIT = []; let F0 = null, METCOM = null;
   cyl(K, 0.19, 0.12, matZwart, JX(849.5), JB(438), zB + 0.65, 'x', 16);
   const dw = (pts, k, r) => KABDEEL.push(kabel(K, pts, r || 0.035, k, 0.08, 6));
   F0 = {f0, zB, zDin};
-  dw([[f0.x0 + 0.09, JB(348.5) - 0.42, zDin + 0.48], [f0.x0 + 0.09, JB(290), zDin + 0.5], [f1.x0 + 0.09, JB(290), zDin + 0.5], [f1.x0 + 0.09, JB(348.5) - 0.42, zDin + 0.48]], ader.L1);
-  for(const d of [w1, w2]) for(let k = 0; k < 2; k++) dw([[f1.x0 + 0.09 + k*0.18, JB(348.5) + 0.42, zDin + 0.48], [f1.x0 + 0.09 + k*0.18, JB(420), zDin + 0.5], [d.xc - 0.06 + k*0.12, JB(420), zDin + 0.5], [d.xc - 0.06 + k*0.12, JB(348.5) + 0.42, zDin + 0.48]], k ? ader.N : ader.L1);
+  // -F0 (voeding van onderen) → uitgang bovenkant → -F1 ingang bovenkant (L en N); -F1 uitgang onderkant → WCD1/WCD2 (L, N) van onderen
+  const yR = JB(348.5), zK = zDin + 0.27, kx = (d, k) => d.x0 + 0.089 + k*0.178;
+  dw([[kx(f0, 0), yR + 0.47, zK], [kx(f0, 0), yR + 0.82, zK + 0.05], [kx(f1, 0), yR + 0.82, zK + 0.05], [kx(f1, 0), yR + 0.47, zK]], ader.L1);
+  dw([[kx(f0, 3), yR + 0.47, zK], [kx(f0, 3), yR + 0.68, zK + 0.1], [kx(f1, 1), yR + 0.68, zK + 0.1], [kx(f1, 1), yR + 0.47, zK]], ader.N);
+  [w1, w2].forEach((d, n) => [0, 1].forEach(k => { const y2 = yR - 0.78 - n*0.1 - k*0.05;
+    dw([[kx(f1, k) + n*0.03, yR - 0.47, zK], [kx(f1, k) + n*0.03, y2, zK + 0.05], [d.xc - 0.12 + k*0.12, y2, zK + 0.05], [d.xc - 0.12 + k*0.12, yR - 0.47, zK - 0.03]], k ? ader.N : ader.L1); }));
 }
 { // kastverlichting Finder 6 W (x 961–1272, y 1227–1270) en deurschakelaar met M20-wartel rechtsboven
   box(K, 3.11, 0.43, 0.44, M(0xf1f2ef), JX(1116.5), JB(1248.5), JZ(286)); box(K, 3.0, 0.08, 0.36, M(0xffffff, {emissive: 0xfff6dd, emissiveIntensity: 0.9}), JX(1116.5), JB(1227), JZ(286));
@@ -1457,7 +1461,10 @@ const HVK = (function(){
   const draad = (pts, m) => { kabel(MK, pts, 0.022, m, 0.12, 6); const a = pts[0], b = pts[pts.length - 1];
     for(const [p, q] of [[a, pts[1]], [b, pts[pts.length - 2]]]){ const d = q.clone().sub(p).normalize(); const c = cyl(MK, 0.032, 0.09, M(0xf4f4f0), p.x + d.x*0.1, p.y + d.y*0.1, p.z + d.z*0.1, null, 8); c.lookAt(c.position.clone().add(d)); c.rotateX(Math.PI/2); } };
   const zgo = 0.62, ylg = 5.45;
-  const viaGoot = (a, b, m, lane) => { const zl = zgo - 0.2 + lane*0.05; draad([a, V(a.x, a.y + (a.y < ylg ? 0.3 : -0.3), a.z), V(a.x, ylg, zl), V(b.x, ylg, zl), V(b.x, b.y + (b.y < ylg ? 0.3 : -0.3), b.z), b], m); };
+  // in de kabelgoot (60 × 60, z 0,30–0,90): elke draad recht van de klem naar de goot, in de goot op een eigen baan, recht omhoog/omlaag naar de klem
+  const inGoot = (a, b, m, lane, yg) => { const zl = 0.38 + (lane % 9)*0.05, yl = yg + (Math.floor(lane/9) - 1)*0.13, sa = a.y > yg ? 1 : -1, sb = b.y > yg ? 1 : -1;
+    draad([a, V(a.x, yg + sa*0.48, a.z), V(a.x, yg + sa*0.3, zl), V(a.x, yl, zl), V(b.x, yl, zl), V(b.x, yg + sb*0.3, zl), V(b.x, yg + sb*0.48, b.z), b], m); };
+  const viaGoot = (a, b, m, lane) => inGoot(a, b, m, lane, ylg);
   const ctM2 = [M(0x1d1e20), M(0x1d1e20), M(0x1d1e20)];
   for(let c = 0; c < 3; c++){ const s1 = Lw(XKG, kl(String(c*2 + 1)).top), s2 = Lw(XKG, kl(String(c*2 + 2)).top);
     const pin = Lw(P1.G, P1.MCS.I[c].in), puit = Lw(P1.G, P1.MCS.I[c].uit), j1 = Lw(P2.G, P2.JZ.I[(c + 1) + 'a']), j2 = Lw(P2.G, P2.JZ.I[(c + 1) + 'b']);
@@ -1469,12 +1476,12 @@ const HVK = (function(){
     const mu = Lw(P1.G, P1.MCS.U[p]); viaGoot(fb.clone().add(V(0.03, 0, 0)), mu, fz[p], 15 + p); }
   { const n = Lw(XKG, kl('10').top), jn = Lw(P2.G, P2.JZ.U.N), mn = Lw(P1.G, P1.MCS.N); viaGoot(n, mn, ader.N, 18); viaGoot(n.clone().add(V(0.02, 0, 0)), jn, ader.N, 19);
     const f4 = FS[3], f4t = Lw(f4.G, f4.top), uh = Lw(P2.G, P2.JZ.Uh[0]), uh2 = Lw(P2.G, P2.JZ.Uh[1]); draad([f4t, V(f4t.x, 8.45, 0.95), V(uh.x, 8.45, 0.95), V(uh.x, uh.y + 0.1, uh.z)], ader.L3);
-    draad([uh2, V(uh2.x, 8.55, uh2.z), V(2.08, 8.55, 1.0), V(2.08, ylg + 0.4, 0.9), V(n.x + 0.04, ylg, zgo + 0.8), V(n.x + 0.04, n.y + 0.3, n.z), n.clone().add(V(0.04, 0, 0))], ader.N);
-    const f4b = Lw(f4.G, f4.bot), f3b = Lw(FS[2].G, FS[2].bot); draad([f3b.clone().add(V(-0.02, 0, 0)), V(f3b.x, 6.9, 0.7), V(f4b.x, 6.9, 0.7), f4b], ader.L3); }
+    { const a = V(3.08, ylg + 0.6, 0.6); draad([uh2, V(uh2.x, 8.62, uh2.z), V(3.08, 8.62, 0.6), a], ader.N); inGoot(a, n.clone().add(V(0.04, 0, 0)), ader.N, 25, ylg); }
+    const f4b = Lw(f4.G, f4.bot), f3b = Lw(FS[2].G, FS[2].bot); draad([f3b.clone().add(V(0.03, 0, 0)), V(f3b.x + 0.03, f3b.y - 0.14, f3b.z), V(f4b.x, f4b.y - 0.14, f4b.z), f4b], ader.L3); }
   // externe meetkabels (van de CT's en de spanningsafname in de HVK): binnen bovenin, langs de linkerwand naar de onderste goot en van onderen op -X1
   const extIn = []; for(let k = 0; k < 6; k++) extIn.push(V(-1.5 + (k*0.25 - 0.75) + 1.5 - 1.5, 0.5, 1.5));
   XK.slice(0, 10).forEach((k, i) => { const b = Lw(XKG, k.bot), c = Math.min(5, Math.floor(i/2)), e = extIn[i < 6 ? Math.floor(i/2) : 3 + Math.min(2, i - 6)], xl = -3.4 + i*0.05;
-    draad([e, V(e.x, 1.0, 1.2), V(e.x, 1.6, zgo - 0.15 + i*0.03), V(b.x, 1.6, zgo - 0.15 + i*0.03), V(b.x, b.y - 0.3, b.z), b], i < 6 ? M(0x5a5f63) : (fz[i - 6] || ader.N)); });
+    inGoot(V(e.x + (i % 2)*0.05, 0.15, 1.5), b, i < 6 ? M(0x5a5f63) : (fz[i - 6] || ader.N), i, 1.6); });
   { const pe = Lw(XKG, kl('PE').bot); draad([pe, V(pe.x, 1.6, 0.5), V(3.3, 1.6, 0.5), V(3.4, 0.6, 0.3)], ader.PE); box(MK, 0.4, 0.4, 0.1, matKoper, 3.4, 0.5, 0.3); }
   // antenne COM400 op de kast (magneetvoet)
   { const a = Lw(P1.G, V(85, -56, 66)); kabel(MK, [a, V(a.x + 0.25, a.y, a.z), V(a.x + 0.25, mkH - 0.5, 1.3), V(-3.0, mkH - 0.5, 1.6), V(-3.0, mkH + 0.1, 1.6)], 0.03, M(0x1b1c1e), 0.15, 6);
@@ -1487,17 +1494,17 @@ const HVK = (function(){
   box(mPiv, 3.4, 2.4, 0.1, M(0x2b2e31), mkW/2, 4, -0.05);
   const dMk = {m: mPiv, open: -1.9, dicht: 0, doel: 0, hoek: 0, kast: true, naam: 'meterkast'}; doors.push(dMk); mDeur.userData.deur = dMk; KLIK.push(mDeur);
 
-  // meetkabels (CT 4 × 2,5 mm², spanning 4 × 2,5 mm²): in de HVK onder de rails langs naar de rechterzijwand, via een wartel onderin de zijwand naar buiten,
-  // in een wandgoot laag langs de achterwand en van onderen de meterkast in
-  { const yH = P + 4.2, yW = PL0 + 3.2, zH = zR + 1.2, xW = W/2 + 0.6, zA = Z0 + 0.6, mkB = V(MK.position.x - 1.5, MK.position.y + 0.1, MK.position.z + 1.5);
-    box(TR, mkB.x - xW + 2.2, 1.0, 0.8, M(0x8f969a, {roughness: 0.6}), (xW + mkB.x + 1.6)/2 - 0.5, yW, zA + 0.4);                             // wandgoot 60 × 40
-    box(TR, 0.9, MK.position.y - yW, 0.8, M(0x8f969a, {roughness: 0.6}), mkB.x + 0.5, (MK.position.y + yW)/2, zA + 0.4);                   // stijgende goot naar de meterkast
-    cyl(HG, 0.35, 0.3, matZwart, W/2, yH - 1.2, zH, 'x', 12); cyl(HG, 0.42, 0.12, matZwart, W/2 + 0.12, yH - 1.2, zH, 'x', 6);               // wartel M25 zijwand HVK
-    const route = (c, k, m, r) => kabel(TR, [c, V(c.x, c.y - 0.5, c.z + 0.3), V(c.x, yH, zH - k*0.12), V(W/2 - 0.8, yH, zH - k*0.12), V(W/2 - 0.5, yH - 1.2, zH), V(xW, yH - 1.2, zH), V(xW + 0.3, yW, zA + 0.4 + (k - 3)*0.08),
-      V(mkB.x + 0.5 + (k - 3)*0.06, yW + 0.2, zA + 0.4), V(mkB.x + 0.5 + (k - 3)*0.06, mkB.y - 0.6, zA + 0.5), V(mkB.x + (k*0.25 - 0.75), mkB.y - 0.2, mkB.z), V(mkB.x + (k*0.25 - 0.75), mkB.y + 0.4, mkB.z)], r, m, 0.4, 6);
+  // meetkabels (CT 4 × 2,5 mm², spanning 4 × 2,5 mm²): in de HVK omhoog en bovenlangs de Jean Müller-stroken naar rechts (geen kruisingen),
+  // via een wartel bovenin de rechterzijwand naar buiten, in een verticale wandgoot omlaag en van onderen de meterkast in
+  { const yT = P + H - 0.9, zH = zR + 1.2, xW = W/2 + 0.6, xV = W/2 + 1.3, zA = Z0 + 0.6, mkB = V(MK.position.x - 1.5, MK.position.y + 0.1, MK.position.z + 1.5), yW = MK.position.y - 0.8;
+    box(TR, 0.9, yT - 0.4 - yW + 0.4, 0.8, M(0x8f969a, {roughness: 0.6}), xV + 0.2, (yT - 0.4 + yW)/2, zA + 0.4);                                 // verticale wandgoot 60 × 40
+    box(TR, mkB.x + 0.8 - xV, 0.9, 0.8, M(0x8f969a, {roughness: 0.6}), (xV + mkB.x + 0.8)/2, yW, zA + 0.4);                                     // horizontale goot onder de meterkast
+    cyl(HG, 0.35, 0.3, matZwart, W/2, yT - 0.6, zH, 'x', 12); cyl(HG, 0.42, 0.12, matZwart, W/2 + 0.12, yT - 0.6, zH, 'x', 6);                     // wartel M25 bovenin de zijwand
+    const route = (c, k, m, r) => kabel(TR, [c, V(c.x, c.y + 0.5, c.z + 0.3), V(c.x, yT, zH - k*0.1), V(W/2 - 0.9, yT, zH - k*0.1), V(W/2 - 0.4, yT - 0.6, zH), V(xW, yT - 0.6, zH),
+      V(xV + (k - 3)*0.06, yT - 1.0, zA + 0.4), V(xV + (k - 3)*0.06, yW + 0.1, zA + 0.4), V(mkB.x + (k*0.25 - 0.75), yW + 0.1, zA + 0.5), V(mkB.x + (k*0.25 - 0.75), mkB.y - 0.3, mkB.z), V(mkB.x + (k*0.25 - 0.75), mkB.y + 0.4, mkB.z)], r, m, 0.4, 6);
     CTS.forEach((c, k) => route(c, k, M(0x5a5f63), 0.1));
     [yM + 1.85, yM, yM - 1.85].forEach((y, k) => route(V(-W/2 + 4.6, y, zR + 0.4), k + 3, M(0xc8281c), 0.08));
-    for(let k = 0; k < 6; k++) cyl(TR, 0.14, 0.12, matZwart, mkB.x + (k*0.25 - 0.75), MK.position.y + 0.02, mkB.z, null, 10); }                // wartels in de bodem van de meterkast
+    for(let k = 0; k < 6; k++) cyl(TR, 0.14, 0.12, matZwart, mkB.x + (k*0.25 - 0.75), MK.position.y + 0.02, mkB.z, null, 10); }
   // inrichting: verlichting (techniek TL, trafo TL 1×36 W, MS LED via deurschakelaar), wcd's op 1050+vl, brandblusser, isolatiemat
   const lamp = (x, z, y, l) => { box(TR, l, 0.6, 1.4, M(0xf4f4f2), x, y - 0.5, z); box(TR, l - 0.4, 0.15, 1.1, M(0xffffff, {emissive: 0xfff6dd, emissiveIntensity: 0.9}), x, y - 0.85, z); };
   for(const lz of [Z0 + 9, Z0 + 25]) lamp(0, lz, HT, 12); lamp(midx(F), midz(F) + 6, PL0 + F.h, 12); lamp(midx(S), midz(S) + 4, PL0 + S.h, 10);
@@ -1545,8 +1552,8 @@ function grondRoute(s, a, kn){
 SLOTS.forEach(s => {
   if(s.t === 'SL3'){
     // voeding 3F + N + PE (4 x 240 mm² per fase, 4 x N, PE): recht omlaag door de plint en de sparing in de stelconplaat, kort stuk door de grond naar voren
-    // in de sleuf: 4 ketens (elk L1 L2 L3 N, 4 × 1×240 mm² tegen elkaar) met 125 mm vrije ruimte tussen de ketens, PE naast keten 4, alles op 600 mm diepte
-    const dK = 0.28, pK = 4*dK + 1.25, yT = -6.0, laneX = (c, slot) => s.x + (c - 1.5)*pK + (slot - 1.5)*dK;
+    // in de sleuf: 4 ketens (elk L1 L2 L3 N, 4 × 1×240 mm² tegen elkaar) met 1 × De (≈ 28 mm) vrije ruimte tussen de ketens, PE naast keten 4, alles op 600 mm diepte
+    const dK = 0.28, pK = 4*dK + dK, yT = -6.0, laneX = (c, slot) => s.x + (c - 1.5)*pK + (slot - 1.5)*dK;
     Object.assign(TRENCH, {x0: laneX(0, 0) - dK/2, x1: laneX(3, 4.6) + dK/2, yT, z0: Math.max(KD/2 + 1.2, KXW - PX0 + 0.6), z1: HVK.hz - 34.2});
     const fases = ['L1', 'L2', 'L3'], uit = (x, z, c, slot, t) => { const lx = laneX(c, slot); return [V(x, -0.6, z), V(x, yT + 0.6, z), V(x, yT, z + 0.6), V(lx, yT, z + 2.2), V(lx, yT, HVK.hz - 9), V(t.x, yT, HVK.hz - 5.5), V(t.x, yT + 0.6, t.z), V(t.x, HVK.P - 0.2, t.z), V(t.x, t.y - 0.4, t.z), t]; };
     { const zs0 = zF2 - 0.3, zs1 = zF1 + 0.6, xs0 = s.x - 1.15, xs1 = s.x + 1.15;                                 // sparing 2300 x 1100 in de plaat
@@ -1629,7 +1636,7 @@ CAT = 'data';
   for(const x of [xa - 0.3, xb + 0.3]) box(SG, 0.6, -yb, L, grondM, x, yb/2, zc);                                                     // sleufwanden
   for(const z of [T.z0 - 0.3, T.z1 + 0.3]) box(SG, xb - xa + 1.2, -yb, 0.6, grondM, (xa + xb)/2, yb/2, z);
   for(let z = T.z0 + 6; z < T.z1 - 3; z += 12) for(const x of [xa - 0.62, xb + 0.62]) box(SG, 0.1, 0.4, 3, M(0x7b6a52, {roughness: 1}), x, -0.6 - Math.random()*3, z, false);
-  const t = sprite('kabelsleuf: 4 ketens (L1 L2 L3 N, 4 × 1×240) · 125 mm tussen de ketens · 600 mm diep · rechts: 230 V JB en data (telkens 200 mm)', W(V((xa + xb)/2, 2.5, zc)), 0.6, '#6b5a44'); scene.add(t); LABELS.push(t);
+  const t = sprite('kabelsleuf: 4 ketens (L1 L2 L3 N, 4 × 1×240) · 1 × De tussen de ketens · sleuf ≈ 1,15 m · 600 mm diep · rechts: 230 V JB en data (telkens 200 mm)', W(V((xa + xb)/2, 2.5, zc)), 0.6, '#6b5a44'); scene.add(t); LABELS.push(t);
   // grasvlak met een uitsparing boven de sleuf (wereld: KG is −90° gedraaid → x_w = KXW − z, z_w = KZW + x)
   const S = new THREE.Shape(); S.moveTo(-2000, -2000); S.lineTo(2000, -2000); S.lineTo(2000, 2000); S.lineTo(-2000, 2000); S.closePath();
   const h = new THREE.Path(), wx0 = KXW - T.z1 - 0.3, wx1 = KXW - T.z0 + 0.3, wz0 = KZW + xa - 0.3, wz1 = KZW + xb + 0.3;
