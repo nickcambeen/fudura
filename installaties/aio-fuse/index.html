@@ -58,8 +58,9 @@
 <div id="paneel">
   <div id="pKop"><h3 id="titel"><a href="../../" style="color:#1b4f8a;text-decoration:none" title="Hoofdmenu">‹ menu</a> &nbsp;AIO + FUSE kast</h3><button class="pKnop" id="pDicht" title="Paneel inklappen" aria-label="Paneel inklappen">›</button></div>
   <details open><summary>Bekijken</summary>
-    <div class="knoprij"><button id="bOverzicht">overzicht</button><button id="bKast">junction box</button><button id="bHvk">HVK</button><button id="bMeter">meterkast</button><button id="bGebouw">gebouw</button><button id="bAio">AIO 1</button><button id="bMccb">MCCB</button><button id="bBoven">boven</button><button id="bAchter">achterzijde</button><button id="bSkid">kabelbanen</button></div>
+    <div class="knoprij"><button id="bOverzicht">overzicht</button><button id="bKast">junction box</button><button id="bHvk">HVK</button><button id="bMeter">meterkast</button><button id="bGebouw">gebouw</button><button id="bKelder">kelder</button><button id="bAio">AIO 1</button><button id="bMccb">MCCB</button><button id="bBoven">boven</button><button id="bAchter">achterzijde</button><button id="bSkid">kabelbanen</button></div>
     <label>Rondlopen <small>P</small><input type="checkbox" id="tFP"></label>
+    <label>Elektrische step <small>F</small><input type="checkbox" id="tStep"></label>
   </details>
   <details open><summary>Configuratie</summary>
     <div class="cfgKop">Aantal AIO's (DELTerra C 125 kW)</div>
@@ -69,6 +70,7 @@
   <details open><summary>Weergave</summary>
     <label>Deuren AIO open <input type="checkbox" id="tDeur"></label>
     <label>Deuren junction box + HVK open <input type="checkbox" id="tKastDeur"></label>
+    <label>Kabelkelder gebouw zichtbaar <input type="checkbox" id="tKelder"></label>
     <label>Gebouw HVK doorzichtig <input type="checkbox" id="tTR"></label>
     <label>Metcom MC301-meters (junction box) <input type="checkbox" id="tMet"></label>
     <label>EMS-buitenkast <input type="checkbox" id="tEMS" checked></label>
@@ -97,6 +99,7 @@
       <li>Slepen: draaien · rechts slepen / shift: schuiven · scroll: zoomen</li>
       <li>Klik op een deur of NH-strook: open / dicht</li>
       <li>Rondlopen (P): WASD of pijltjes, muis = kijken, shift = rennen, Q/E = bukken/opstaan</li>
+      <li>Elektrische step (F): W = gas, S = remmen/achteruit, A/D = sturen, shift = turbo (± 50 km/h)</li>
       <li>Telefoon: 1 vinger draaien, 2 vingers zoomen/schuiven, knoppen om te lopen</li>
     </ul>
   </details>
@@ -941,120 +944,158 @@ const HVK = (function(){
     if(s < 0) plak(piv, 2.4, 0.9, lbl('HVK (fictief)', 240, 90, '#f4f4f2', '#1b2a36', 'bold 34px Arial'), -s*w/2, H*0.6, 0.125);
     if(s > 0) box(piv, 0.3, 1.6, 0.25, matZwart, -s*(w - 0.45), H*0.5, 0.18);
     const d2 = {m: piv, open: s*1.95, dicht: 0, doel: 0, hoek: 0, kast: true, naam: 'HVK'}; doors.push(d2); pd.userData.deur = d2; KLIK.push(pd); }
-  // ---- gebouw (metselwerk, plat dak) met van links naar rechts: MS-ruimte · traforuimte · technische ruimte met de HVK en de meterkast ----
-  //      lokaal: +z = voorgevel (naar de junction box), −x = links gezien vanaf de voorzijde
+  // ---- gebouw volgens de Fudura-richtlijnen (tekeningen 3103 transformatorruimte 800–2500 kVA en 3104 MS-schakelruimte absorber) ----
+  //      drie aparte ruimten naast elkaar, elk met eigen wanden, vloer en (voor MS en trafo) een eigen kabelkelder; peil = vloer = maaiveld + 200 mm
+  //      lokaal: +z = voorgevel (naar de junction box), −x = links gezien vanaf de voorzijde. Van links naar rechts: MS-schakelruimte · transformatorruimte · technische ruimte (HVK)
   const TR = new THREE.Group(); HG.add(TR);
   const texBaks = ctex(512, 512, (g, w, h) => { g.fillStyle = '#c7c3b8'; g.fillRect(0, 0, w, h); const bh = 21, bw = 64;
     for(let r = 0; r*bh < h; r++) for(let c = -1; c*bw < w; c++){ const x = c*bw + (r % 2)*bw/2, y = r*bh, v = 0.85 + Math.random()*0.25; g.fillStyle = `rgb(${Math.round(142*v)},${Math.round(72*v)},${Math.round(48*v)})`; g.fillRect(x + 2, y + 2, bw - 4, bh - 4); } }, [5, 4]);
   const texBin = ctex(256, 256, (g, w, h) => ruis(g, w, h, '#e4e2dc', 3000, 0.08), [4, 3]);
-  const wandM = M(0xffffff, {map: texBaks, roughness: 0.9}), binnenM = M(0xffffff, {map: texBin, roughness: 0.9});
-  const X0 = -20.6, X1 = 20.6, XT = -62.0, XM = -103.4, Z0 = -D/2 - 1.8, Z1 = 52, HT = 30, t = 1.2, dw = 18, dh = 23;
-  const L = X1 - XM, XC = (X1 + XM)/2;
-  box(TR, L, 0.25, Z1 - Z0, M(0x9da1a2, {roughness: 0.8}), XC, 0.12, (Z0 + Z1)/2);                                                         // vloer
-  box(TR, L + 1, 7.5, Z1 - Z0 + 1, matBeton, XC, -3.75, (Z0 + Z1)/2);                                                                        // fundering / kabelkelder
-  const W2 = []; const wand = (w, h, d, x, y, z, m) => { const o = box(TR, w, h, d, m || wandM, x, y, z); W2.push(o); return o; };
-  wand(L, HT, t, XC, HT/2, Z0 + t/2); for(const x of [XM + t/2, X1 - t/2]) wand(t, HT, Z1 - Z0, x, HT/2, (Z0 + Z1)/2);
-  for(const x of [X0, XT]) wand(t, HT, Z1 - Z0 - 2*t, x, HT/2, (Z0 + Z1)/2, binnenM);                                                        // binnenwanden
-  // voorgevel met drie deuropeningen
-  const open = [[XM + t, (XM + XT)/2 - 10], [(XM + XT)/2 + 10, (XT + X0)/2 - 13], [(XT + X0)/2 + 13, -dw/2], [dw/2, X1 - t]];
-  open.forEach(([a, b]) => wand(b - a, HT, t, (a + b)/2, HT/2, Z1 - t/2));
-  for(const [c, b2] of [[(XM + XT)/2, 20], [(XT + X0)/2, 26], [0, dw]]) wand(b2, HT - dh, t, c, dh + (HT - dh)/2, Z1 - t/2);
-  // dak met overstek, daktrim, hemelwaterafvoeren, buitenlampen
-  const dak = box(TR, L + 3, 1.6, Z1 - Z0 + 3, matBeton, XC, HT + 0.8, (Z0 + Z1)/2); const trim = M(0xa8adb0, {roughness: 0.35, metalness: 0.7});
-  for(const s2 of [-1, 1]){ box(TR, L + 3.2, 0.9, 0.2, trim, XC, HT + 1.9, (Z0 + Z1)/2 + s2*(Z1 - Z0 + 3)/2); box(TR, 0.2, 0.9, Z1 - Z0 + 3.2, trim, XC + s2*(L + 3)/2, HT + 1.9, (Z0 + Z1)/2); }
-  for(const x of [X1 + 0.9, XM - 0.9]) cyl(TR, 0.4, HT, M(0x8a8f92, {metalness: 0.5}), x, HT/2, Z0 + 1.2, null, 10);
-  for(const c of [(XM + XT)/2, (XT + X0)/2, 0]){ box(TR, 1.6, 1.0, 1.2, M(0x2b2e31), c, dh + 2.2, Z1 + 0.6); box(TR, 1.2, 0.2, 0.9, M(0xfff3cf, {emissive: 0xfff3cf, emissiveIntensity: 0.6}), c, dh + 1.65, Z1 + 0.7); }
-  // ventilatieroosters traforuimte (boven en onder in de achtergevel)
-  for(const y of [3, HT - 5]) for(let k = 0; k < 10; k++) box(TR, 14, 0.3, 0.3, M(0x55595c, {metalness: 0.5}), (XT + X0)/2, y + k*0.45 - 2, Z0 - 0.05);
-  // ---- deuren: technische ruimte (dubbel, staal), trafo (dubbel, louvre), MS (dubbel, staal) ----
-  const deurM = M(0x7f8a8d, {roughness: 0.45, metalness: 0.45});
-  const dubbel = (cx, bw, naam, louvre, tekst) => { for(const sx of [-1, 1]){ const piv = new THREE.Group(); piv.position.set(cx + sx*bw/2, 0.25, Z1); HG.add(piv);
-      const dp = box(piv, bw/2 - 0.1, dh - 0.3, 0.5, deurM, -sx*bw/4, (dh - 0.3)/2, 0.25);
-      for(let k = 0; k < (louvre ? 30 : 6); k++) box(piv, bw/2 - 2, 0.25, 0.2, M(0x3a3e41), -sx*bw/4, 1.2 + k*(louvre ? 0.7 : 0.6), 0.55, false);
-      if(sx > 0){ box(piv, 0.3, 1.8, 0.4, matZwart, -sx*(bw/2 - 1.0), dh*0.45, 0.65); cyl(piv, 0.18, 0.3, matZink, -sx*(bw/2 - 1.0), dh*0.45 - 1.4, 0.6, 'z', 12); }
-      else { plak(piv, 3.6, 1.4, lbl(tekst, 300, 110, '#ffffff', '#1b2a36', 'bold 30px Arial'), -sx*bw/4, dh*0.78, 0.52); plak(piv, 2.0, 1.75, texWaarsch, -sx*bw/4, dh*0.62, 0.52, 0, {t: true}); }
-      for(const yy of [2, dh - 3]) cyl(piv, 0.15, 1.2, matZink, sx*0.05, yy, 0.3, null, 8);
-      const d3 = {m: piv, open: sx*1.7, dicht: 0, doel: 0, hoek: 0, kast: true, naam}; doors.push(d3); dp.userData.deur = d3; KLIK.push(dp); }
-    box(TR, bw + 1.2, 0.4, 2.4, matBeton, cx, 0.2, Z1 + 1.2); };
-  dubbel(0, dw, 'technische ruimte', false, 'TECHNISCHE RUIMTE'); dubbel((XT + X0)/2, 26, 'traforuimte', true, 'TRAFORUIMTE'); dubbel((XM + XT)/2, 20, 'MS-ruimte', false, 'MS-RUIMTE');
-  plak(TR, 6, 1.2, lbl('LS-hoofdverdeling · meterkast', 420, 84, '#f4f4f2', '#1b2a36', 'bold 28px Arial'), 0, dh + 4.2, Z1 + 0.02);
-  // ---- traforuimte: hermetische olietransformator 1000 kVA 10/0,42 kV Dyn5 (ONAN, gegolfde ketel) op rijwielen boven een olieopvangbak ----
-  const TF = new THREE.Group(); TF.position.set((XT + X0)/2, 0.25, Z0 + 15); TR.add(TF);
+  const wandM = M(0xffffff, {map: texBaks, roughness: 0.9}), binnenM = M(0xffffff, {map: texBin, roughness: 0.9}), vloerM = M(0x9da1a2, {roughness: 0.8}), kelM = M(0xb7b5ad, {roughness: 0.95});
+  const PL0 = 2.0, t = 2.0, ZB = 17, Z1 = 52, Z0 = -D/2 - 0.8;                                   // peil, wanddikte 200, achterwand MS/trafo (binnen), voorgevel (binnen), achterwand technische ruimte (binnen)
+  const RU = {tech: {x0: -20, x1: 20, z0: Z0, z1: Z1, h: 30}, trafo: {x0: -50, x1: -22, z0: ZB, z1: Z1, h: 32}, ms: {x0: -79, x1: -52, z0: ZB, z1: Z1, h: 30}};
+  const X0 = RU.tech.x0, X1 = RU.tech.x1, HT = PL0 + RU.tech.h, dw = 18, dh = 23;
+  const midx = r => (r.x0 + r.x1)/2, midz = r => (r.z0 + r.z1)/2;
+  const blk = (x0, x1, y0, y1, z0, z1, m, sch) => box(TR, x1 - x0, y1 - y0, z1 - z0, m, (x0 + x1)/2, (y0 + y1)/2, (z0 + z1)/2, sch);
+  // vloeren (200 mm) en funderingen; kelders onder MS- en traforuimte: vrije hoogte 1200, bodemplaat 300, kelderwanden 250
+  for(const r of Object.values(RU)) blk(r.x0 - t, r.x1 + t, 0, PL0, r.z0 - t, r.z1 + t, vloerM);
+  blk(RU.tech.x0 - t, RU.tech.x1 + t, -8, 0, RU.tech.z0 - t, RU.tech.z0, kelM); blk(RU.tech.x0 - t, RU.tech.x1 + t, -8, 0, RU.tech.z1, RU.tech.z1 + t, kelM); blk(RU.tech.x1, RU.tech.x1 + t, -8, 0, RU.tech.z0, RU.tech.z1, kelM);
+  const KEL = {}; for(const k of ['trafo', 'ms']){ const r = RU[k], kt = 2.5; blk(r.x0 - kt, r.x1 + kt, -15, -12, r.z0 - kt, r.z1 + kt, kelM);
+    blk(r.x0 - kt, r.x1 + kt, -12, 0, r.z0 - kt, r.z0, kelM); blk(r.x0 - kt, r.x1 + kt, -12, 0, r.z1, r.z1 + kt, kelM);
+    if(k === 'ms') blk(r.x0 - kt, r.x0, -12, 0, r.z0, r.z1, kelM); blk(r.x1, r.x1 + (k === 'ms' ? 2 : kt), -12, 0, r.z0, r.z1, kelM);
+    box(TR, 3, 0.1, 3, M(0x2b2d30, {roughness: 1}), midx(r), -11.95, midz(r) + 3, false); KEL[k] = r; }                                    // pompput 300 × 300 (100 diep)
+  const sparing = (x, z, w, d) => box(TR, w, PL0 + 0.04, d, M(0x1a1b1c, {roughness: 1}), x, PL0/2, z, false);
+  // wanden (KZS/metselwerk 200), elke ruimte afzonderlijk; tussenwanden alleen eenmaal
+  const W2 = []; const wand = (x0, x1, z0, z1, h, m) => { const o = blk(x0, x1, PL0, h, z0, z1, m || wandM); W2.push(o); return o; };
+  const T = RU.tech, F = RU.trafo, S = RU.ms;
+  wand(T.x0 - t, T.x1 + t, T.z0 - t, T.z0, HT + 2); wand(T.x1, T.x1 + t, T.z0, T.z1 + t, HT + 2); wand(T.x0 - t, T.x0, T.z0, F.z0 - t, HT + 2);
+  wand(F.x1, F.x1 + t, F.z0 - t, F.z1 + t, PL0 + F.h + 2, binnenM);                                                                         // trafo | techniek
+  wand(F.x0, F.x1, F.z0 - t, F.z0, PL0 + F.h + 2); wand(S.x1, S.x1 + t, S.z0 - t, S.z1 + t, PL0 + F.h + 2, binnenM);                     // trafo | MS
+  wand(S.x0 - t, S.x1, S.z0 - t, S.z0, PL0 + S.h + 2); wand(S.x0 - t, S.x0, S.z0, S.z1 + t, PL0 + S.h + 2);
+  // voorgevel met deuropeningen: techniek dubbel 1800, trafo volrooster dubbel 2400 × 2600, MS enkel 1210 × 2500 met overdrukrooster 0,25 m² erboven
+  const DO = {tech: {c: 0, b: dw, h: dh}, trafo: {c: midx(F), b: 24, h: 26}, ms: {c: S.x0 + 15.4, b: 12.1, h: 25}};
+  for(const [k, r] of Object.entries(RU)){ const d = DO[k], top = PL0 + r.h + 2;
+    wand(r.x0, d.c - d.b/2, r.z1, r.z1 + t, top); wand(d.c + d.b/2, r.x1, r.z1, r.z1 + t, top); W2.push(blk(d.c - d.b/2, d.c + d.b/2, PL0 + d.h, top, r.z1, r.z1 + t, wandM));
+    blk(d.c - d.b/2 - 1, d.c + d.b/2 + 1, 0, PL0 - 0.02, r.z1 + t, r.z1 + t + 3, M(0xa9a7a0, {roughness: 0.9}));                         // opstap / straatwerk (peil 200 boven maaiveld)
+    box(TR, 1.6, 1.0, 1.2, M(0x2b2e31), d.c, PL0 + d.h + 2.2, r.z1 + t + 0.6); box(TR, 1.2, 0.2, 0.9, M(0xfff3cf, {emissive: 0xfff3cf, emissiveIntensity: 0.6}), d.c, PL0 + d.h + 1.65, r.z1 + t + 0.7); }
+  { const vr = box(TR, 7.0, 3.6, 0.3, M(0x6c7175, {metalness: 0.5}), DO.ms.c, PL0 + DO.ms.h + 2.6, S.z1 + t + 0.1); for(let k = 0; k < 8; k++) box(TR, 6.6, 0.12, 0.25, M(0x3a3e41), DO.ms.c, PL0 + DO.ms.h + 1.1 + k*0.42, S.z1 + t + 0.3, false); }
+  // daken (beton 200, plafond zonder openingen) per ruimte met daktrim
+  const DAK = [], trim = M(0xa8adb0, {roughness: 0.35, metalness: 0.7});
+  for(const r of Object.values(RU)){ const top = PL0 + r.h + 2, w = r.x1 - r.x0 + 2*t + 1.5, d = r.z1 - r.z0 + 2*t + 1.5; const dk = box(TR, w, 1.6, d, matBeton, midx(r), top + 0.8, midz(r)); DAK.push(dk);
+    for(const s2 of [-1, 1]){ DAK.push(box(TR, w + 0.2, 0.9, 0.2, trim, midx(r), top + 1.9, midz(r) + s2*d/2)); DAK.push(box(TR, 0.2, 0.9, d + 0.2, trim, midx(r) + s2*w/2, top + 1.9, midz(r))); } }
+  // aardingsstrip Cu 30 × 5 rondom op afstandhouders (trafo op 540, MS op 625 boven peil)
+  const aardStrip = (r, y) => { const m = matKoper, o = 0.25; box(TR, r.x1 - r.x0 - 2*o, 0.3, 0.05, m, midx(r), y, r.z0 + o); for(const x of [r.x0 + o, r.x1 - o]) box(TR, 0.05, 0.3, r.z1 - r.z0 - 2*o, m, x, y, midz(r));
+    for(let x = r.x0 + 2; x < r.x1 - 1; x += 6) box(TR, 0.3, 0.3, 0.25, M(0x2b2d30), x, y, r.z0 + 0.12); for(const x of [r.x0 + 0.12, r.x1 - 0.12]) for(let z = r.z0 + 2; z < r.z1; z += 6) box(TR, 0.25, 0.3, 0.3, M(0x2b2d30), x, y, z); };
+  aardStrip(F, PL0 + 5.4); aardStrip(S, PL0 + 6.25);
+  // vloerluik 800 × 800 (verzonken luikring, verdiept opgelegd) met klimbeugels in de kelder en handbeugel aan de wand, links voor in de ruimte
+  const luik = r => { const x = r.x0 + 4.6, z = r.z1 - 4.6; box(TR, 8.4, 0.1, 8.4, M(0x8d9296, {metalness: 0.7, roughness: 0.4}), x, PL0 + 0.02, z); box(TR, 7.8, 0.12, 7.8, M(0x7d8387, {metalness: 0.6, roughness: 0.5}), x, PL0 + 0.04, z);
+    for(const s of [-1, 1]) box(TR, 1.2, 0.05, 0.3, M(0x2a2c2e), x + s*2.5, PL0 + 0.11, z);
+    for(let y = -10.5; y < -0.5; y += 2.6){ cyl(TR, 0.12, 4, M(0xf2c400), x, y, r.z1 - 0.9, 'x', 8); for(const s of [-1, 1]) cyl(TR, 0.12, 0.9, M(0xf2c400), x + s*2, y, r.z1 - 0.45, 'z', 8); }
+    cyl(TR, 0.15, 6, M(0xf2c400), r.x0 + 0.5, PL0 + 6, z, null, 8); for(const y of [PL0 + 3.2, PL0 + 8.8]) cyl(TR, 0.12, 0.5, M(0xf2c400), r.x0 + 0.25, y, z, 'x', 8); };
+  luik(F); luik(S);
+  // ---- deuren: technische ruimte (dubbel, staal), transformatorruimte (dubbel, volrooster), MS-schakelruimte (enkel, alu, 1500 Pa) ----
+  const deurM = M(0x9aa2a6, {roughness: 0.4, metalness: 0.5});
+  const deurBlad = (piv, w, h, sx, louvre, tekst, greep) => { const dp = box(piv, w - 0.1, h - 0.3, 0.5, deurM, -sx*w/2, (h - 0.3)/2, 0.25);
+    if(louvre) for(let k = 0; k < Math.floor((h - 2)/0.55); k++) box(piv, w - 1.4, 0.22, 0.25, M(0x5b6266, {metalness: 0.5}), -sx*w/2, 1.0 + k*0.55, 0.6, false);
+    else for(let k = 0; k < 3; k++) box(piv, w - 2, 0.2, 0.1, M(0x8a9296), -sx*w/2, 1.5 + k*0.45, 0.55, false);
+    if(greep){ box(piv, 0.3, 1.8, 0.4, matZwart, -sx*(w - 1.0), h*0.45, 0.65); cyl(piv, 0.18, 0.3, matZink, -sx*(w - 1.0), h*0.45 - 1.4, 0.6, 'z', 12); }
+    if(tekst){ plak(piv, 3.6, 1.4, lbl(tekst, 300, 110, '#ffffff', '#1b2a36', 'bold 30px Arial'), -sx*w/2, h*0.8, 0.82); plak(piv, 2.0, 1.75, texWaarsch, -sx*w/2, h*0.65, 0.82, 0, {t: true}); }
+    for(const yy of [2, h - 3]) cyl(piv, 0.15, 1.2, matZink, sx*0.05, yy, 0.3, null, 8); return dp; };
+  const maakDeur = (k, louvre, tekst, naam) => { const d = DO[k], r = RU[k], zz = r.z1 + t; const bladen = d.b > 14 ? [-1, 1] : [1];
+    for(const sx of bladen){ const w = bladen.length > 1 ? d.b/2 : d.b, piv = new THREE.Group(); piv.position.set(bladen.length > 1 ? d.c + sx*d.b/2 : d.c + d.b/2, PL0, zz); HG.add(piv);
+      const dp = deurBlad(piv, w, d.h, sx, louvre, sx > 0 || bladen.length === 1 ? null : tekst, sx > 0); if(bladen.length === 1) plak(piv, 3.6, 1.4, lbl(tekst, 300, 110, '#ffffff', '#1b2a36', 'bold 30px Arial'), -w/2, d.h*0.8, 0.52);
+      if(bladen.length === 1) plak(piv, 2.0, 1.75, texWaarsch, -w/2, d.h*0.65, 0.52, 0, {t: true});
+      const d3 = {m: piv, open: sx*1.7, dicht: 0, doel: 0, hoek: 0, kast: true, naam}; doors.push(d3); dp.userData.deur = d3; KLIK.push(dp); } };
+  maakDeur('tech', false, 'TECHNISCHE RUIMTE', 'technische ruimte'); maakDeur('trafo', true, 'TRANSFORMATOR', 'transformatorruimte'); maakDeur('ms', false, 'MS-RUIMTE', 'MS-schakelruimte');
+  plak(TR, 6, 1.2, lbl('LS-hoofdverdeling · meterkast', 420, 84, '#f4f4f2', '#1b2a36', 'bold 28px Arial'), 0, PL0 + dh + 4.2, Z1 + t + 0.02);
+  // ---- transformatorruimte (3103): hermetische olietransformator 1000 kVA 10/0,42 kV Dyn5 (ONAN, gegolfde ketel) op rijwielen op de betonvloer,
+  //      lange as in de diepte, 200 mm van de achterwand, 850 mm vrij links en rechts; MS-zijde naar links (MS-ruimte), LS-zijde naar rechts (technische ruimte)
+  const kL = 13.5, kD = 7.0, fD = 1.6, yK0 = 2.65, kH = 10.5, yT = yK0 + kH + 0.45;
+  const TF = new THREE.Group(); TF.position.set(midx(F), PL0, F.z0 + 2 + kL/2 + fD); TF.rotation.y = Math.PI/2; TR.add(TF); TF.updateMatrix();
+  const tfP = (x, y, z) => V(x, y, z).applyMatrix4(TF.matrix);
   const tankM = M(0x7b847e, {roughness: 0.42, metalness: 0.35}), staalM = M(0x575c60, {metalness: 0.6, roughness: 0.4}), epoxM = M(0x4b4239, {roughness: 0.3}),
         rubber = M(0x151617, {roughness: 0.75}), porW = M(0xe7e4da, {roughness: 0.25}), msRood = M(0xc0281f, {roughness: 0.5}), grijsK = M(0x8d9499, {roughness: 0.6});
-  const texRooster = ctex(128, 128, (g, w, h) => { g.clearRect(0, 0, w, h); g.fillStyle = '#4a4e51'; for(let k = 0; k < w; k += 16){ g.fillRect(k, 0, 4, h); g.fillRect(0, k, w, 4); } }, [14, 10]);
-  box(TF, 22, 0.35, 16, M(0x26282a, {roughness: 0.95}), 0, -0.12, 0);                                                                      // olieopvangbak (verdiept)
-  box(TF, 21.6, 0.06, 15.6, M(0xffffff, {map: texRooster, transparent: true, metalness: 0.5, roughness: 0.5}), 0, 0.1, 0, false);           // vloerrooster
-  for(const z of [-3, 3]) box(TF, 20, 0.35, 0.6, staalM, 0, 0.3, z);                                                                       // vloerrails
-  for(const x of [-5.2, 5.2]) for(const z of [-3, 3]){ cyl(TF, 0.72, 0.45, staalM, x, 1.2, z, 'z', 22); cyl(TF, 0.22, 0.75, matZink, x, 1.2, z, 'z', 10); box(TF, 1.1, 0.9, 0.9, staalM, x, 2.1, z); }
-  for(const z of [-3, 3]) box(TF, 13.6, 0.8, 0.9, staalM, 0, 2.75, z);                                                                     // onderstel (U-profielen)
-  // ketel met gegolfde koelwanden rondom (één InstancedMesh)
-  const yK0 = 3.15, kH = 10.5, kL = 12, kD = 5.2, fD = 1.9, yT = yK0 + kH + 0.45;
+  for(const x of [-5.2, 5.2]) for(const z of [-2.6, 2.6]){ cyl(TF, 0.7, 0.45, staalM, x, 0.7, z, 'z', 22); cyl(TF, 0.22, 0.75, matZink, x, 0.7, z, 'z', 10); box(TF, 1.1, 0.8, 0.9, staalM, x, 1.5, z); }
+  for(const z of [-2.6, 2.6]) box(TF, kL + 0.2, 0.75, 0.9, staalM, 0, 2.2, z);                                                             // onderstel (U-profielen)
   box(TF, kL, kH, kD, tankM, 0, yK0 + kH/2, 0); box(TF, kL + 2*fD + 0.4, 0.35, kD + 2*fD + 0.4, tankM, 0, yK0 + 0.17, 0);
   const fins = []; for(let x = -kL/2 + 0.35; x <= kL/2 - 0.3; x += 0.4) for(const s of [-1, 1]) fins.push([x, s*(kD/2 + fD/2), 0]);
   for(let z = -kD/2 + 0.35; z <= kD/2 - 0.3; z += 0.4) for(const s of [-1, 1]) fins.push([s*(kL/2 + fD/2), z, Math.PI/2]);
   { const IM = new THREE.InstancedMesh(new THREE.BoxGeometry(0.06, kH - 1.0, fD), tankM, fins.length), mm = new THREE.Matrix4(), q = new THREE.Quaternion();
     fins.forEach(([x, z, r], i) => { q.setFromEuler(new THREE.Euler(0, r, 0)); mm.compose(V(x, yK0 + kH/2, z), q, V(1, 1, 1)); IM.setMatrixAt(i, mm); }); IM.castShadow = IM.receiveShadow = true; TF.add(IM); }
   for(const s of [-1, 1]) for(const y of [yK0 + 0.65, yK0 + kH - 0.45]){ box(TF, kL + 2*fD, 0.22, 0.1, tankM, 0, y, s*(kD/2 + fD)); box(TF, 0.1, 0.22, kD + 2*fD, tankM, s*(kL/2 + fD), y, 0); }
-  // deksel met boutenkrans en hijsogen
   box(TF, kL + 0.8, 0.45, kD + 0.8, tankM, 0, yK0 + kH + 0.22, 0);
   { const pts = []; for(let x = -kL/2; x <= kL/2 + 0.01; x += 0.6) for(const s of [-1, 1]) pts.push([x, s*(kD/2 + 0.2)]); for(let z = -kD/2 + 0.6; z < kD/2; z += 0.6) for(const s of [-1, 1]) pts.push([s*(kL/2 + 0.2), z]);
     const IB = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.11, 0.11, 0.22, 6), matZink, pts.length), mm = new THREE.Matrix4();
     pts.forEach(([x, z], i) => { mm.makeTranslation(x, yT + 0.1, z); IB.setMatrixAt(i, mm); }); TF.add(IB); }
   for(const sx of [-1, 1]) for(const sz of [-1, 1]){ box(TF, 0.25, 1.3, 1.1, tankM, sx*(kL/2 - 0.2), yT + 0.6, sz*(kD/2 - 0.7)); cyl(TF, 0.3, 0.27, matZwart, sx*(kL/2 - 0.2), yT + 0.75, sz*(kD/2 - 0.7), 'x', 14); }
-  // MS-doorvoeren (buitenconus type C) met haakse Elastimold-steekkabelschoenen (achterzijde, naar de MS-ruimte)
-  const zMS = -1.55, mse = [];
+  // MS-doorvoeren (buitenconus type C) met haakse steekkabelschoenen, kabelbeen naar links
+  const zMS = -1.6, mse = [];
   ['1U', '1V', '1W'].forEach((f, i) => { const x = -3.2 + i*3.2;
     cyl(TF, 0.7, 0.22, staalM, x, yT + 0.11, zMS, null, 20); const c = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.55, 1.3, 20), epoxM); c.position.set(x, yT + 0.87, zMS); c.castShadow = true; TF.add(c);
-    cyl(TF, 0.47, 2.5, rubber, x, yT + 2.0, zMS, null, 20); cyl(TF, 0.36, 0.45, M(0x8c9196, {roughness: 0.5}), x, yT + 3.45, zMS, null, 18);           // T-lichaam + isolerende stop met testpunt
-    cyl(TF, 0.43, 1.8, rubber, x, yT + 1.75, zMS - 1.0, 'z', 20); cyl(TF, 0.3, 1.1, rubber, x, yT + 1.75, zMS - 2.4, 'z', 16);                         // kabelbeen + spanningskegel
-    box(TF, 0.1, 0.1, 0.9, matZink, x + 0.45, yT + 1.2, zMS - 1.0);                                                                                  // aardsnoer scherm
+    cyl(TF, 0.47, 2.5, rubber, x, yT + 2.0, zMS, null, 20); cyl(TF, 0.36, 0.45, M(0x8c9196, {roughness: 0.5}), x, yT + 3.45, zMS, null, 18);
+    cyl(TF, 0.43, 1.8, rubber, x, yT + 1.75, zMS - 1.0, 'z', 20); cyl(TF, 0.3, 1.1, rubber, x, yT + 1.75, zMS - 2.4, 'z', 16);
+    box(TF, 0.1, 0.1, 0.9, matZink, x + 0.45, yT + 1.2, zMS - 1.0);
     plak(TF, 0.9, 0.4, lbl(f, 90, 40, '#f2c400', '#111', 'bold 28px Arial'), x, yT + 2.6, zMS + 0.48);
-    mse.push(V(x, yT + 1.75, zMS - 2.9).add(TF.position)); });
-  // LS-doorvoeren (porselein met schermen) met koperen aansluitvlaggen; 2 kabels per fase (voorzijde)
+    mse.push(tfP(x, yT + 1.75, zMS - 2.95)); });
+  // LS-doorvoeren (porselein met schermen) met koperen aansluitvlaggen; 2 kabels per fase, naar rechts
   const lsBus = [];
-  ['2U', '2V', '2W', '2N'].forEach((f, k) => { const x = -4.5 + k*3.0, z = 1.6;
+  ['2U', '2V', '2W', '2N'].forEach((f, k) => { const x = -4.5 + k*3.0, z = 1.7;
     cyl(TF, 0.62, 0.2, staalM, x, yT + 0.1, z, null, 18); cyl(TF, 0.34, 1.9, porW, x, yT + 1.15, z, null, 16);
     for(let r = 0; r < 4; r++) cyl(TF, 0.56 - r*0.03, 0.12, porW, x, yT + 0.45 + r*0.42, z, null, 18);
     cyl(TF, 0.14, 0.7, matKoper, x, yT + 2.35, z, null, 10); box(TF, 0.16, 1.7, 1.3, matKoper, x, yT + 3.3, z);
     for(const dy of [-0.4, 0.4]) for(const dz of [-0.35, 0.35]) cyl(TF, 0.1, 0.4, matZink, x, yT + 3.3 + dy, z + dz, 'x', 8);
-    for(const s of [-1, 1]){ box(TF, 0.18, 0.9, 0.5, M(0xc9cdd0, {metalness: 0.8, roughness: 0.3}), x + s*0.17, yT + 3.6, z + s*0.35); lsBus.push({k, p: V(x + s*0.17, yT + 4.1, z + s*0.35).add(TF.position)}); }
+    for(const s of [-1, 1]){ box(TF, 0.18, 0.9, 0.5, M(0xc9cdd0, {metalness: 0.8, roughness: 0.3}), x + s*0.17, yT + 3.6, z + s*0.35); lsBus.push({k, p: tfP(x + s*0.17, yT + 4.1, z + s*0.35)}); }
     plak(TF, 0.9, 0.4, lbl(f, 90, 40, k === 3 ? '#1f5fbf' : '#f2c400', k === 3 ? '#fff' : '#111', 'bold 28px Arial'), x, yT + 1.4, z + 0.58); });
-  // aftakschakelaar (5 standen), DGPT2-beveiliging, thermometer, vulpijp, aftapkraan, aarding en typeplaat
+  // aftakschakelaar, DGPT2, thermometer, vulpijp, aftapkraan, typeplaat (aan de deurzijde = lokaal −x)
   cyl(TF, 0.55, 0.35, staalM, -5.2, yT + 0.18, 0.2, null, 20); box(TF, 1.3, 0.16, 0.22, matZwart, -5.2, yT + 0.45, 0.2);
-  plak(TF, 1.6, 0.5, lbl('AFTAKKING  1 2 [3] 4 5', 260, 70, '#e9e9e4', '#111', 'bold 22px Arial'), -5.2, yT + 0.02, 1.3, 0); 
-  { const d = box(TF, 0.95, 1.1, 0.95, M(0xdfe1dc, {roughness: 0.4}), 5.0, yT + 0.55, -0.4); cyl(TF, 0.35, 0.3, new THREE.MeshStandardMaterial({color: 0xcfe4ff, transparent: true, opacity: 0.45, roughness: 0.05}), 5.0, yT + 1.25, -0.4, null, 20);
+  plak(TF, 1.6, 0.5, lbl('AFTAKKING  1 2 [3] 4 5', 260, 70, '#e9e9e4', '#111', 'bold 22px Arial'), -kL/2 - 0.42, yT - 0.1, 0.2, -Math.PI/2);
+  { box(TF, 0.95, 1.1, 0.95, M(0xdfe1dc, {roughness: 0.4}), 5.0, yT + 0.55, -0.4); cyl(TF, 0.35, 0.3, new THREE.MeshStandardMaterial({color: 0xcfe4ff, transparent: true, opacity: 0.45, roughness: 0.05}), 5.0, yT + 1.25, -0.4, null, 20);
     plak(TF, 0.85, 0.3, lbl('DGPT2', 120, 40, '#dfe1dc', '#111', 'bold 26px Arial'), 5.0, yT + 0.75, 0.08); }
-  cyl(TF, 0.14, 1.4, staalM, 3.0, yT + 0.7, 2.6, null, 8);
   { const fT = ctex(128, 128, (g, w, h) => { g.fillStyle = '#f4f4f0'; g.beginPath(); g.arc(64, 64, 62, 0, 7); g.fill(); g.strokeStyle = '#222'; g.lineWidth = 3; for(let a = 0; a <= 10; a++){ const r = -Math.PI*1.25 + a*Math.PI*1.5/10; g.beginPath(); g.moveTo(64 + 50*Math.cos(r), 64 + 50*Math.sin(r)); g.lineTo(64 + 58*Math.cos(r), 64 + 58*Math.sin(r)); g.stroke(); }
       g.strokeStyle = '#111'; g.lineWidth = 4; g.beginPath(); g.moveTo(64, 64); g.lineTo(64 + 44*Math.cos(-2.2), 64 + 44*Math.sin(-2.2)); g.stroke(); g.strokeStyle = '#c0281f'; g.beginPath(); g.moveTo(64, 64); g.lineTo(64 + 44*Math.cos(-0.6), 64 + 44*Math.sin(-0.6)); g.stroke(); g.fillStyle = '#111'; g.font = 'bold 13px Arial'; g.textAlign = 'center'; g.fillText('°C olie', 64, 100); });
-    cyl(TF, 0.75, 0.3, staalM, 3.0, yT + 1.6, 2.75, 'z', 24); plak(TF, 1.35, 1.35, fT, 3.0, yT + 1.6, 2.91); }
-  cyl(TF, 0.2, 0.9, staalM, -1.5, yT + 0.45, -0.2, null, 10); cyl(TF, 0.3, 0.15, M(0xc0281f), -1.5, yT + 0.95, -0.2, null, 12);           // vulpijp met dop
-  cyl(TF, 0.22, 1.1, staalM, -kL/2 - fD - 0.5, yK0 + 0.75, 1.5, 'x', 10); cyl(TF, 0.4, 0.1, M(0xc0281f), -kL/2 - fD - 1.05, yK0 + 0.75, 1.5, 'x', 16);     // aftapkraan
-  for(const sx of [-1, 1]){ cyl(TF, 0.16, 0.5, matKoper, sx*6.6, 2.75, 3.5, 'z', 8); }
-  kabel(TR, [V(TF.position.x + 6.6, TF.position.y + 2.75, TF.position.z + 3.7), V(TF.position.x + 6.6, 0.6, TF.position.z + 4.2), V(X0 - 1.5, 0.6, TF.position.z + 4.2), V(X0 - 0.7, 1.4, TF.position.z + 4.2)], 0.1, ader.PE, 0.5, 6);
-  box(TR, 0.2, 0.6, 5, matKoper, X0 - 0.65, 1.4, TF.position.z + 4.2);                                                                       // aardrail traforuimte
+    cyl(TF, 0.14, 1.4, staalM, -kL/2 + 0.6, yT + 0.7, 1.0, null, 8); cyl(TF, 0.75, 0.3, staalM, -kL/2 + 0.6, yT + 1.6, 1.0, 'x', 24); plak(TF, 1.35, 1.35, fT, -kL/2 + 0.44, yT + 1.6, 1.0, -Math.PI/2); }
+  cyl(TF, 0.2, 0.9, staalM, -1.5, yT + 0.45, -0.2, null, 10); cyl(TF, 0.3, 0.15, M(0xc0281f), -1.5, yT + 0.95, -0.2, null, 12);
+  cyl(TF, 0.22, 1.1, staalM, -kL/2 - fD - 0.5, yK0 + 0.75, 1.5, 'x', 10); cyl(TF, 0.4, 0.1, M(0xc0281f), -kL/2 - fD - 1.05, yK0 + 0.75, 1.5, 'x', 16);
   { const tp = ctex(320, 220, (g, w, h) => { g.fillStyle = '#d8dbd6'; g.fillRect(0, 0, w, h); g.strokeStyle = '#333'; g.lineWidth = 3; g.strokeRect(4, 4, w - 8, h - 8); g.fillStyle = '#111'; g.font = 'bold 20px Arial'; g.fillText('OLIETRANSFORMATOR', 14, 32);
-      g.font = '16px Arial'; ['Sn 1000 kVA   ONAN   hermetisch', 'U 10 000 ± 2×2,5 % / 420 V', 'Dyn5   uk 6,0 %   50 Hz', 'I 57,7 / 1375 A', 'Olie 640 kg   Totaal 3150 kg', 'NEN-EN-IEC 60076 / Ecodesign Tier 2'].forEach((t, i) => g.fillText(t, 14, 62 + i*25)); });
-    box(TF, 3.4, 2.4, 0.1, staalM, -3.0, yK0 + 7.5, kD/2 + fD + 0.25); plak(TF, 3.2, 2.2, tp, -3.0, yK0 + 7.5, kD/2 + fD + 0.31); plak(TF, 1.3, 1.15, texWaarsch, 1.0, yK0 + 7.5, kD/2 + fD + 0.31, 0, {t: true}); }
-  plak(TR, 6, 1.0, lbl('T1 · 1000 kVA', 300, 50, '#ffffff', '#1b2a36', 'bold 30px Arial'), (XT + X0)/2, 24.5, Z0 + t + 0.05);
-  // ---- MS-ruimte: gedetailleerde Xiria (3 velden K1 · K2 · T1) uit de Xiria-pagina, wordt los geladen ----
-  const XR = new THREE.Group(); XR.position.set((XM + XT)/2, 0.25, Z0 + t + 0.8); TR.add(XR);
-  plak(TR, 6, 1.0, lbl('MS-installatie 10 kV · Xiria', 340, 50, '#ffffff', '#1b2a36', 'bold 28px Arial'), (XM + XT)/2, 24.5, Z0 + t + 0.05);
-  // MS-kabels: T1-veld → kelder → achter de trafo omhoog naar de steekkabelschoenen; K1/K2 de grond in (ring)
-  for(let p = 0; p < 3; p++){ const sx = XR.position.x + 4 + (p - 1)*0.9, sz = XR.position.z + 3.5 + p*0.4, m = mse[p];
-    kabel(TR, [V(sx, 2.0, sz), V(sx, -2.6, sz), V(sx, -2.6, m.z - 0.6*p), V(m.x, -2.6, m.z - 0.6*p), V(m.x, -2.6, m.z), V(m.x, m.y - 1.2, m.z), V(m.x, m.y, m.z + 0.3)], 0.3, msRood, 1.0, 8); }
-  for(const fx of [-4, 0]) for(let p = 0; p < 3; p++){ const sx = XR.position.x + fx + (p - 1)*0.9, sz = XR.position.z + 3.5;
-    kabel(TR, [V(sx, 2.0, sz), V(sx, -3.0, sz), V(sx, -3.4, Z0 - 2), V(sx, -6.5, Z0 - 6)], 0.3, msRood, 1.0, 8); }
-  // DGPT2 → uitschakelspoel T1-veld (stuurkabel grijs) over de wand
-  { const d = V(5.0, yT + 0.6, -0.4).add(TF.position); kabel(TR, [d, V(d.x, HT - 4, d.z), V(d.x, HT - 4, Z0 + t + 1.2), V(XR.position.x + 4.5, HT - 4, Z0 + t + 1.2), V(XR.position.x + 4.5, 17, Z0 + t + 1.2)], 0.08, grijsK, 0.6, 6); }
-  // ---- LS-kabels trafo → HVK (2 per fase + 2 N) over een kabelladder door de wand naar de bovenzijde van de HVK ----
-  const ladder = M(0xb9bfc3, {metalness: 0.8, roughness: 0.35}), yLd = 26.5, zLd = Z0 + t + 2.2;
-  for(const s of [-1, 1]) box(TR, X0 - TF.position.x + 16, 0.4, 0.15, ladder, (TF.position.x + X0)/2 + 5, yLd, zLd + s*1.6);
-  for(let x = TF.position.x - 6; x < X0 + 14; x += 1.2) box(TR, 0.15, 0.15, 3.2, ladder, x, yLd - 0.1, zLd);
-  for(let x = TF.position.x - 4; x < X0; x += 6){ box(TR, 0.2, HT - yLd, 0.2, ladder, x, (HT + yLd)/2, zLd + 1.6); }
-  lsBus.forEach(({k, p: bw}, j) => { const xh = -W/2 + 1.0 + (j % 2)*0.5, yr = [yM + 1.85, yM, yM - 1.85, P + 3.4][k], zc = zLd - 1.3 + j*0.33, zq = zR + 0.55 + k*0.4;
-    kabel(TR, [bw, V(bw.x, yLd - 3, bw.z), V(bw.x, yLd + 0.45, bw.z - 1.5), V(bw.x, yLd + 0.45, zc), V(-W/2 - 1.5, yLd + 0.45, zc), V(xh, P + H + 1, zq), V(xh, P + H - 1, zq), V(xh, yr + 0.7, zq), V(xh, yr, zR + 0.3)],
+      g.font = '16px Arial'; ['Sn 1000 kVA   ONAN   hermetisch', 'U 10 000 ± 2×2,5 % / 420 V', 'Dyn5   uk 6,0 %   50 Hz', 'I 57,7 / 1375 A', 'Olie 640 kg   Totaal ca. 3450 kg', 'NEN-EN-IEC 60076 / Ecodesign Tier 2'].forEach((tt, i) => g.fillText(tt, 14, 62 + i*25)); });
+    box(TF, 0.1, 2.4, 3.4, staalM, -kL/2 - fD - 0.25, yK0 + 7.5, 0); plak(TF, 3.2, 2.2, tp, -kL/2 - fD - 0.31, yK0 + 7.5, 0, -Math.PI/2); plak(TF, 1.3, 1.15, texWaarsch, -kL/2 - fD - 0.31, yK0 + 4.8, 0, -Math.PI/2, {t: true}); }
+  // aarding: ketel → aardingsstrip; olieafvoersparing 300 × 500 onder de trafo (vloer op afloop), sparingen 300 × 150 voor MS (links) en LS (rechts)
+  { const a = tfP(-kL/2 + 1, 1.2, kD/2 + 0.6); kabel(TR, [a, V(a.x, PL0 + 0.5, a.z), V(F.x1 - 0.6, PL0 + 0.5, a.z), V(F.x1 - 0.35, PL0 + 5.4, a.z)], 0.1, ader.PE, 0.5, 6); }
+  sparing(TF.position.x, TF.position.z, 3, 5);
+  const xKL = F.x0 + 0.5, zKL = TF.position.z; sparing(F.x0 + 1.6, zKL, 1.5, 3); sparing(F.x1 - 1.6, zKL - 4, 1.5, 3);
+  // verticale kabelladder KL 300 × 60 tegen de linkerwand (MS-kabels) en kabelgoot 300 × 60 op 2700 boven peil (LS-kabels naar rechts)
+  const ladder = M(0xb9bfc3, {metalness: 0.8, roughness: 0.35});
+  for(const s of [-1, 1]) box(TR, 0.6, 26, 0.15, ladder, xKL + 0.3, PL0 + 13, zKL + s*1.6); for(let y = PL0 + 0.8; y < PL0 + 26; y += 1.2) box(TR, 0.15, 0.15, 3.2, ladder, xKL + 0.5, y, zKL);
+  const yG = PL0 + 27, zG = zKL;
+  box(TR, (X0 + 2) - (TF.position.x - 2), 0.15, 3.0, ladder, ((X0 + 2) + (TF.position.x - 2))/2, yG - 0.3, zG); for(const s of [-1, 1]) box(TR, (X0 + 2) - (TF.position.x - 2), 0.6, 0.1, ladder, ((X0 + 2) + (TF.position.x - 2))/2, yG, zG + s*1.5);
+  box(TR, t + 0.04, 2, 4, M(0x1a1b1c), F.x1 + t/2, yG, zG, false);                                                                          // wandsparing (brandwerend afgedicht)
+  box(TR, 3.0, 0.15, zG - 0.5, ladder, X0 + 2.5, yG - 0.3, zG/2 + 0.25); box(TR, 6 - X0 - 2.5 + 1.5, 0.15, 3.0, ladder, (X0 + 2.5 + 6)/2, yG - 0.3, 1.0);
+  plak(TR, 6, 1.0, lbl('T1 · 1000 kVA', 300, 50, '#ffffff', '#1b2a36', 'bold 30px Arial'), midx(F), PL0 + 24.5, F.z0 + 0.05);
+  // ---- MS-schakelruimte (3104): Xiria (los geladen uit de Xiria-pagina) 300 mm van de achterwand, thermal absorbers in de kelder eronder ----
+  const XR = new THREE.Group(); XR.position.set(midx(S), PL0, S.z0 + 3); TR.add(XR);
+  sparing(XR.position.x, XR.position.z + 3, 12, 4.5);
+  for(const dz of [1.6, 4.4]){ box(TR, 11, 3.2, 2.4, M(0x8fae8a, {roughness: 0.5, metalness: 0.3}), XR.position.x, -2.0, XR.position.z + dz); }
+  plak(TR, 4.0, 0.8, lbl('THERMAL ABSORBER', 260, 50, '#8fae8a', '#111', 'bold 26px Arial'), XR.position.x, -2.0, XR.position.z + 5.62);
+  plak(TR, 7, 1.0, lbl('MS-installatie 10 kV · Xiria', 340, 50, '#ffffff', '#1b2a36', 'bold 28px Arial'), midx(S), PL0 + 24.5, S.z0 + 0.05);
+  // LS-verdeler 500 × 500 (verwarming, verlichting, wcd's, wcd meetwagen 1f/25 A), elektrische radiator en LED-armatuur
+  box(TR, 1.6, 5, 5, matRal7035, S.x1 - 0.8, PL0 + 17.5, midz(S) + 6); plak(TR, 3.6, 0.6, lbl('LS-verdeler MS-ruimte', 220, 36, '#ffffff', '#111', 'bold 20px Arial'), S.x1 - 1.62, PL0 + 19.4, midz(S) + 6, -Math.PI/2);
+  box(TR, 1.0, 4, 10, M(0xf2f2ef), S.x1 - 0.5, PL0 + 8, midz(S) - 4); for(let k = 0; k < 12; k++) box(TR, 0.12, 3.6, 0.1, M(0xdcdcd8), S.x1 - 1.05, PL0 + 8, midz(S) - 8.8 + k*0.8, false);
+  // MS-kabels T1 → trafo: 3 × 1×50 mm² 10 kV XLPE (rood) door de vloer de MS-kelder in, door 3 sparingen Ø150 in de kelderwand naar de trafokelder,
+  // door de vloersparing 300 × 150 omhoog langs de verticale ladder en van bovenaf op de MS-pitten
+  const r50 = 0.15;
+  for(let i = 0; i < 3; i++){ const sx = XR.position.x + 4 + (i - 1)*0.8, sz = XR.position.z + 4.8, m = mse[i], zp = zKL + (1 - i)*0.8, yk = -7 - i*0.6, yTop = m.y + 0.0;
+    cyl(TR, 0.75, 2.3, M(0x5f6468, {roughness: 0.6}), S.x1 + t/2, yk, zp, 'x', 16);
+    kabel(TR, [V(sx, PL0 + 1.2, sz), V(sx, yk, sz), V(sx, yk, zp), V(xKL + 1.1, yk, zp), V(xKL + 1.1, PL0 + 2, zp), V(xKL + 0.9, yTop - 1.2, zp), V(xKL + 1.6, yTop, zp), V(m.x - 1.0, yTop, m.z), V(m.x + 0.3, yTop, m.z)], r50, msRood, 0.9, 10); }
+  { const t1 = sprite('3 × 1×50 mm² 10 kV XLPE · T1 (Xiria) → MS-kelder → trafokelder → ladder → MS-pitten 1U/1V/1W', V(S.x1, -4, zKL), 0.45, '#c0281f'); TR.add(t1); LABELS.push(t1); }
+  // K1/K2 (ring, 3 × 1×240 mm² Al) door de sparingen Ø150 in de voorwand van de kelder naar buiten
+  for(const fx of [-4, 0]) for(let p = 0; p < 3; p++){ const sx = XR.position.x + fx + (p - 1)*0.8, sz = XR.position.z + 4.8, yk = -8.5 - p*0.7;
+    cyl(TR, 0.75, 2.8, M(0x5f6468, {roughness: 0.6}), sx, yk, S.z1 + 1.25, 'z', 16);
+    kabel(TR, [V(sx, PL0 + 1.2, sz), V(sx, yk, sz), V(sx, yk, S.z1 + 4), V(sx, -10, S.z1 + 9)], 0.22, msRood, 0.9, 8); }
+  // DGPT2 → uitschakelspoel T1-veld (stuurkabel grijs) langs het plafond door de tussenwand
+  { const d = tfP(5.0, yT + 0.6, -0.4), yc = PL0 + 29; kabel(TR, [d, V(d.x, yc, d.z), V(S.x1 - 2, yc, d.z), V(XR.position.x + 4.5, yc, XR.position.z + 1), V(XR.position.x + 4.5, PL0 + 17, XR.position.z + 1)], 0.08, grijsK, 0.6, 6); }
+  // LS-kabels trafo → HVK (2 per fase + 2 N): omhoog in de kabelgoot, door de wand, in de technische ruimte naar de bovenzijde van de HVK
+  lsBus.forEach(({k, p: bw}, j) => { const o = -1.3 + j*0.37, xh = -W/2 + 1.0 + (j % 2)*0.5, yr = [yM + 1.85, yM, yM - 1.85, P + 3.4][k], zq = zR + 0.55 + k*0.4;
+    kabel(TR, [bw, V(bw.x, yG - 2, bw.z), V(bw.x + 0.6, yG + 0.1, zG + o), V(X0 + 2.5 + o, yG + 0.1, zG + o), V(X0 + 2.5 + o, yG + 0.1, 1.0 - o*0.6), V(xh, yG + 0.1, 1.0 - o*0.6), V(xh, P + H + 1, zq), V(xh, P + H - 1, zq), V(xh, yr + 0.7, zq), V(xh, yr, zR + 0.3)],
       0.3, k === 3 ? M(0x1f5fbf) : M(0x1d1e20, {roughness: 0.6}), 1.2, 8); });
   // ---- stroomtransformatoren (meet-CT's 2500/5 A kl. 0,5S) op de fase-rails in de HVK, links ----
   const ctM = M(0x2b2e31, {roughness: 0.5}), CTS = [];
@@ -1062,7 +1103,7 @@ const HVK = (function(){
     box(HG, 0.6, 0.35, 0.2, M(0xf1f2ee), x, y + 0.45, zR + 0.6); plak(HG, 0.9, 0.35, lbl('CT L' + (k + 1) + ' 2500/5A', 160, 60, '#2b2e31', '#fff', 'bold 22px Arial'), x, y - 0.35, zR + 0.56);
     CTS.push(V(x, y + 0.65, zR + 0.6)); });
   // ---- meterkast (staal, RAL 7035, 750 × 1100 × 300) op de achterwand rechts van de HVK, deur scharnier links ----
-  const MK = new THREE.Group(); MK.position.set(14.6, 8, Z0 + t); TR.add(MK); const mkW = 7.5, mkH = 11, mkD = 3.0, mk = matRal7035;
+  const MK = new THREE.Group(); MK.position.set(14.6, PL0 + 8, Z0); TR.add(MK); const mkW = 7.5, mkH = 11, mkD = 3.0, mk = matRal7035;
   box(MK, mkW, mkH, 0.12, mk, 0, mkH/2, 0.06); for(const s of [-1, 1]){ box(MK, 0.12, mkH, mkD, mk, s*(mkW/2 - 0.06), mkH/2, mkD/2); box(MK, mkW, 0.12, mkD, mk, 0, mkH/2 + s*(mkH/2 - 0.06), mkD/2); }
   box(MK, mkW - 0.6, mkH - 0.6, 0.06, matZink, 0, mkH/2, 0.25);                                                                         // montageplaat
   const din = (y, x0, x1) => box(MK, x1 - x0, 0.35, 0.08, M(0xc0c4c6, {metalness: 0.85, roughness: 0.3}), (x0 + x1)/2, y, 0.32);
@@ -1098,18 +1139,23 @@ const HVK = (function(){
   plak(mPiv, 2.6, 0.7, lbl('METERKAST', 260, 70, '#ffffff', '#1b2a36', 'bold 34px Arial'), mkW/2, mkH - 1.4, 0.125); plak(mPiv, 1.2, 1.05, texWaarsch, mkW/2, mkH - 3, 0.125, 0, {t: true});
   box(mPiv, 3.4, 2.4, 0.1, M(0x2b2e31), mkW/2, 4, -0.05);
   const dMk = {m: mPiv, open: -1.9, dicht: 0, doel: 0, hoek: 0, kast: true, naam: 'meterkast'}; doors.push(dMk); mDeur.userData.deur = dMk; KLIK.push(mDeur);
-  // meetkabels van de CT's en spanningsafname in de HVK (over de ladder) naar de meterkast
-  const mkTop = V(MK.position.x - 1.5, MK.position.y + mkH, MK.position.z + 1.5);
+
+  // meetkabels van de CT's en spanningsafname in de HVK via een kabelgoot langs de achterwand naar de meterkast
+  const yLd = PL0 + 25, zLd = Z0 + 2.0, mkTop = V(MK.position.x - 1.5, MK.position.y + mkH, MK.position.z + 1.5);
+  box(TR, MK.position.x + 1 - 4, 0.15, 2.0, ladder, (MK.position.x + 1 + 4)/2, yLd - 2.8, zLd);
   CTS.forEach((c, k) => kabel(TR, [c, V(c.x, c.y + 0.6, c.z + 0.4), V(c.x + 1 + k*0.2, P + H - 1, zR + 1.6), V(c.x + 1 + k*0.2, P + H + 1.2, zR + 1.6), V(8, yLd - 2.5, zLd), V(mkTop.x + k*0.25, yLd - 2.5, zLd), V(mkTop.x + k*0.25, mkTop.y + 0.4, mkTop.z), V(mkTop.x + k*0.25, mkTop.y - 0.8, mkTop.z)], 0.1, M(0x5a5f63), 0.6, 6));
   [yM + 1.85, yM, yM - 1.85].forEach((y, k) => kabel(TR, [V(-W/2 + 4.6, y, zR + 0.4), V(-W/2 + 4.6 + k*0.3, P + H - 1, zR + 1.8), V(-W/2 + 4.6 + k*0.3, P + H + 1.2, zR + 1.8), V(9, yLd - 2.0, zLd), V(mkTop.x + 1 + k*0.25, yLd - 2.0, zLd), V(mkTop.x + 1 + k*0.25, mkTop.y - 0.8, mkTop.z)], 0.08, M(0xc8281c), 0.6, 6));
-  // inrichting technische ruimte: verlichting, wcd, brandblusser, isolatiemat
-  for(const lx of [0, (XT + X0)/2, (XM + XT)/2]) for(const lz of [8, 24, 40]){ box(TR, 12, 0.6, 1.4, M(0xf4f4f2), lx, HT - 0.5, lz); box(TR, 11.6, 0.15, 1.1, M(0xffffff, {emissive: 0xfff6dd, emissiveIntensity: 0.9}), lx, HT - 0.85, lz); }
-  box(TR, 0.8, 0.8, 0.4, M(0xe6e7e4), dw/2 + 1.5, 11, Z1 - t - 0.2); box(TR, 0.8, 0.8, 0.4, M(0xe6e7e4), dw/2 + 1.5, 9.8, Z1 - t - 0.2);
-  cyl(TR, 0.75, 4.8, M(0xc8281c, {roughness: 0.4}), X0 + 2.2, 4.0, Z1 - 3, null, 16); cyl(TR, 0.3, 0.9, matZwart, X0 + 2.2, 6.8, Z1 - 3, null, 10);
-  box(TR, 14, 0.06, 9, M(0x1a1b1c, {roughness: 0.9}), 0, 0.28, D/2 + 5);
-  const tTR = sprite('Gebouw: MS-ruimte · traforuimte · technische ruimte (HVK + meterkast) — fictief, 30 m vanaf de junction box', V(XC, HT + 5, (Z0 + Z1)/2), 1.0); HG.add(tTR); LABELS.push(tTR);
+  // inrichting: verlichting (techniek TL, trafo TL 1×36 W, MS LED via deurschakelaar), wcd's op 1050+vl, brandblusser, isolatiemat
+  const lamp = (x, z, y, l) => { box(TR, l, 0.6, 1.4, M(0xf4f4f2), x, y - 0.5, z); box(TR, l - 0.4, 0.15, 1.1, M(0xffffff, {emissive: 0xfff6dd, emissiveIntensity: 0.9}), x, y - 0.85, z); };
+  for(const lz of [8, 24, 40]) lamp(0, lz, HT, 12); lamp(midx(F), midz(F) + 6, PL0 + F.h, 12); lamp(midx(S), midz(S) + 4, PL0 + S.h, 10);
+  for(const [x, z, ry] of [[dw/2 + 1.5, Z1 - 0.2, 0], [DO.trafo.c + DO.trafo.b/2 + 1.5, Z1 - 0.2, 0], [DO.ms.c + DO.ms.b/2 + 1.5, Z1 - 0.2, 0]]){ box(TR, 0.8, 0.8, 0.4, M(0xe6e7e4), x, PL0 + 10.5, z); box(TR, 0.8, 0.8, 0.4, M(0xe6e7e4), x, PL0 + 12, z); }
+  cyl(TR, 0.75, 4.8, M(0xc8281c, {roughness: 0.4}), X0 + 2.2, PL0 + 2.6, Z1 - 3, null, 16); cyl(TR, 0.3, 0.9, matZwart, X0 + 2.2, PL0 + 5.4, Z1 - 3, null, 10);
+  box(TR, 14, 0.06, 9, M(0x1a1b1c, {roughness: 0.9}), 0, PL0 + 0.03, D/2 + 5);
+  const tTR = sprite('MS-schakelruimte (3104) · transformatorruimte 800–2500 kVA (3103) · technische ruimte (HVK + meterkast) — volgens Fudura-richtlijnen, fictief', V(-30, HT + 8, midz(F)), 1.0); HG.add(tTR); LABELS.push(tTR);
   const tMK = sprite('meterkast: afrekenmeter + Janitza UMG 604E, CT 2500/5 A op de HVK-rails', V(MK.position.x, MK.position.y + mkH + 2, MK.position.z + 3), 0.55, '#e2001a'); HG.add(tMK); LABELS.push(tMK);
-  const zetTR = v => { [wandM, binnenM].forEach(m => { m.transparent = v; m.opacity = v ? 0.2 : 1; m.depthWrite = !v; m.needsUpdate = true; }); dak.visible = !v; };
+  const zetTR = v => { [wandM, binnenM].forEach(m => { m.transparent = v; m.opacity = v ? 0.2 : 1; m.depthWrite = !v; m.needsUpdate = true; }); DAK.forEach(d => d.visible = !v); };
+  const zetKelder = v => { [vloerM, kelM].forEach(m => { m.transparent = v; m.opacity = v ? (m === vloerM ? 0.22 : 0.45) : 1; m.depthWrite = !v; m.needsUpdate = true; });
+    GRONDMAT.forEach(m => { m.transparent = v; m.opacity = v ? 0.35 : 1; m.depthWrite = !v; m.needsUpdate = true; }); };
   const mkLocal = V(MK.position.x, MK.position.y + 6, MK.position.z + 1);
   HG.updateMatrixWorld(true);
   // aansluitpunten in KG-coördinaten
@@ -1121,7 +1167,7 @@ const HVK = (function(){
   const sleuf = new THREE.Mesh(new THREE.PlaneGeometry(4.0, hz - KD/2 - 4), M(0xc9b48a, {roughness: 1})); sleuf.rotation.x = -Math.PI/2; sleuf.position.set(hx, 0.03, (KD/2 + hz - 4)/2 + 1); sleuf.receiveShadow = true; KG.add(sleuf);
   // aansluitpunten van het SL2-veld (eerste NH2) voor de hulpvoeding van de junction box
   const s21 = HS2[0], ylS = yM + (s21.s2.yBolt - 58)/100, aux = {fase: s21.s2.phX.map(px => toKG(s21.x + px/100, ylS, zL)), nul: toKG(s21.x, yN - 0.45, zR + 0.25), pe: toKG(s21.x + 0.3, yPE - 0.45, zR + 0.25), onder: toKG(s21.x, ylS - 1.0, zL - 0.1)};
-  return {HG, hz, fase, nul, pe, P, RR, aux, zetTR, mkLocal, XR};
+  return {HG, hz, fase, nul, pe, P, RR, aux, zetTR, mkLocal, XR, zetKelder, kelderP: V(-50, -6, midz(F) - 2)};
 })();
 
 // ---------- kabels ----------
@@ -1342,7 +1388,8 @@ function updateCam(){ camera.position.set(target.x + radius*Math.sin(phi)*Math.s
 const VIEWS = {
   bOverzicht: () => { target.set((SX0 + SX1)/2 - 3, 9, 0); theta = 0.6; phi = 1.18; radius = 72 + 6.6*N_AIO; },
   bMeter: () => { const p = HVK.HG.localToWorld(HVK.mkLocal.clone()); target.copy(p); const q = HVK.HG.localToWorld(HVK.mkLocal.clone().add(V(0, 0, 10))); theta = Math.atan2(q.x - p.x, q.z - p.z); phi = 1.5; radius = 16; $t('tTR').checked = true; HVK.zetTR(true); doors.forEach(d => { if(d.naam === 'meterkast') d.doel = d.open; }); },
-  bGebouw: () => { const p = HVK.HG.localToWorld(V(-41, 12, 6)); target.copy(p); const q = HVK.HG.localToWorld(V(-41, 12, 60)); theta = Math.atan2(q.x - p.x, q.z - p.z); phi = 1.2; radius = 150; $t('tTR').checked = false; HVK.zetTR(false); },
+  bKelder: () => { const p = HVK.HG.localToWorld(HVK.kelderP.clone()); target.copy(p); const q = HVK.HG.localToWorld(HVK.kelderP.clone().add(V(0, 0, 40))); theta = Math.atan2(q.x - p.x, q.z - p.z) + 0.25; phi = 0.95; radius = 95; doors.forEach(d => { if(d.kast) d.doel = d.dicht; }); $t('tTR').checked = true; HVK.zetTR(true); $t('tKelder').checked = true; HVK.zetKelder(true); },
+  bGebouw: () => { const p = HVK.HG.localToWorld(V(-30, 14, 30)); target.copy(p); const q = HVK.HG.localToWorld(V(-30, 14, 90)); theta = Math.atan2(q.x - p.x, q.z - p.z); phi = 1.2; radius = 150; $t('tTR').checked = false; HVK.zetTR(false); },
   bHvk: () => { const p = W(V(SLOTS[2].x, 12, HVK.hz)); target.set(p.x, 10, p.z); theta = Math.PI/2; phi = 1.25; radius = 60; $t('tTR').checked = true; HVK.zetTR(true); },
   bKast: () => { target.set(KXW, KS + 7, KZW); theta = -Math.PI/2 - 0.1; phi = 1.47; radius = 22; },
   bMccb: () => { const a = AIO[0], p = a.klem.L2; target.set(p.x + 0.6, p.y + 0.2, p.z + 0.2); theta = 0.15; phi = 1.32; radius = 7.5; doors.forEach(d => { if(!d.strook && !d.kast && d.naam === 'kast #1') d.doel = d.open; }); },
@@ -1388,6 +1435,7 @@ $t('tGrond').addEventListener('change', e => { GRONDMAT.forEach(m => { m.transpa
 function zetSkid(a){ SKMAT.forEach(m => { m.transparent = a; m.opacity = a ? 0.18 : 1; m.depthWrite = !a; m.needsUpdate = true; }); }
 $t('tSkid').addEventListener('change', e => zetSkid(e.target.checked));
 $t('tTR').addEventListener('change', e => HVK.zetTR(e.target.checked));
+$t('tKelder').addEventListener('change', e => HVK.zetKelder(e.target.checked));
 $t('tEMS').addEventListener('change', e => EMSV.zet(e.target.checked));
 $t('tMet').addEventListener('change', e => { METCOM.MG.visible = e.target.checked; METCOM.lblRes.visible = !e.target.checked; });
 $t('tKapM').addEventListener('change', e => KAP_MCCB.forEach(k => k.visible = e.target.checked));
@@ -1396,9 +1444,9 @@ $t('tKabel').addEventListener('change', e => { KAB.visible = KABK.visible = e.ta
 $t('tLabel').addEventListener('change', e => LABELS.forEach(l => l.visible = e.target.checked));
 $t('tMaat').addEventListener('change', e => MAAT.forEach(g => g.visible = e.target.checked));
 // ---- rondlopen ----
-const FP = {aan: false, pos: new THREE.Vector3(), yaw: 0, pitch: 0, oog: 17, keys: {}};
+const FP = {aan: false, pos: new THREE.Vector3(), yaw: 0, pitch: 0, oog: 17, keys: {}, step: false, v: 0};
 function zetFP(aan){
-  if(aan === FP.aan) return; FP.aan = aan; $t('tFP').checked = aan; $t('fpHud').style.display = aan ? 'block' : 'none';
+  if(aan === FP.aan) return; FP.aan = aan; $t('tFP').checked = aan; if(!aan && FP.step){ FP.step = false; FP.v = 0; $t('tStep').checked = false; STEP.g.visible = false; camera.fov = 42; camera.updateProjectionMatrix(); } $t('fpHud').style.display = aan ? 'block' : 'none';
   if(aan){ const h = new THREE.Vector3(camera.position.x - target.x, 0, camera.position.z - target.z); const L = h.length() || 1; h.multiplyScalar(Math.min(L, 40)/L); FP.pos.set(target.x + h.x, 0, target.z + h.z); FP.yaw = Math.atan2(h.x, h.z); FP.pitch = -0.05; FP.oog = 17; camera.near = 0.3; }
   else { target.set(FP.pos.x - Math.sin(FP.yaw)*30, 8, FP.pos.z - Math.cos(FP.yaw)*30); radius = 60; theta = FP.yaw; phi = 1.25; camera.near = 1.0; }
   camera.updateProjectionMatrix(); }
@@ -1409,18 +1457,48 @@ window.addEventListener('keydown', e => {
   if(e.target.tagName === 'INPUT' && e.target.type !== 'checkbox' && e.target.type !== 'range') return;
   FP.keys[e.key.toLowerCase()] = true; if(e.key === 'Shift') FP.keys.shift = true;
   if(e.key === 'p' || e.key === 'P'){ zetFP(!FP.aan); return; }
+  if(e.key === 'f' || e.key === 'F'){ zetStep(!FP.step); return; }
   if(FP.aan && ['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(e.key.toLowerCase())) e.preventDefault();
   if(!FP.aan && (e.key === '+' || e.key === '=')) radius = Math.max(4, radius*0.85);
   if(!FP.aan && e.key === '-') radius = Math.min(900, radius*1.18);
   if(e.key === '0'){ if(FP.aan) zetFP(false); VIEWS.bOverzicht(); } });
+// ---- elektrische step: W gas, S rem/achteruit, A/D sturen, shift turbo; met traagheid, overhellen in de bocht en draaiende wielen ----
+const STEP = (() => { const g = new THREE.Group(); g.visible = false; scene.add(g);
+  const frame = M(0x1b1d20, {roughness: 0.45, metalness: 0.5}), accent = M(0x1f8fd6, {roughness: 0.35, metalness: 0.3}), rub = M(0x111213, {roughness: 0.8}), alu = M(0xb9bfc4, {metalness: 0.8, roughness: 0.3});
+  box(g, 1.5, 0.35, 5.2, frame, 0, 0.95, 0.3); box(g, 1.3, 0.04, 4.6, M(0x2a2c2f, {roughness: 0.95}), 0, 1.14, 0.4, false); box(g, 1.52, 0.08, 5.0, accent, 0, 0.8, 0.3, false);
+  const wiel = z => { const w = new THREE.Group(); w.position.set(0, 1.0, z); g.add(w); cyl(w, 1.0, 0.55, rub, 0, 0, 0, 'x', 24); cyl(w, 0.6, 0.6, alu, 0, 0, 0, 'x', 6); return w; };
+  const wv = wiel(-3.0), wa = wiel(3.2);
+  box(g, 0.25, 0.25, 1.2, frame, 0, 1.4, 3.3); box(g, 0.1, 0.1, 1.6, accent, 0.3, 1.45, 3.1, false);                                     // spatbord + achterrem
+  const st = new THREE.Group(); st.position.set(0, 1.0, -3.0); st.rotation.x = 0.08; g.add(st);
+  cyl(st, 0.22, 10.0, frame, 0, 5.1, 0, null, 12); box(st, 0.5, 0.9, 0.3, accent, 0, 1.0, 0.2);                                           // stuurpen + vork
+  cyl(st, 0.14, 5.0, frame, 0, 10.0, 0, 'x', 10); for(const s of [-1, 1]){ cyl(st, 0.2, 1.1, rub, s*2.2, 10.0, 0, 'x', 10); box(st, 0.5, 0.12, 0.35, alu, s*1.45, 10.0, -0.25); }
+  const disp = ctex(128, 64, (c, w, h) => { c.fillStyle = '#05080a'; c.fillRect(0, 0, w, h); c.fillStyle = '#6fe3ff'; c.font = 'bold 30px monospace'; c.fillText('0', 12, 40); c.font = '12px Arial'; c.fillText('km/h', 70, 40); c.fillStyle = '#3fd36b'; c.fillRect(12, 50, 90, 6); });
+  box(st, 1.1, 0.12, 0.7, frame, 0, 10.15, 0); const dm = plak(st, 0.95, 0.5, disp, 0, 10.22, 0); dm.rotation.x = -Math.PI/2 + 0.35;
+  cyl(st, 0.22, 0.25, M(0xfff3cf, {emissive: 0xfff3cf, emissiveIntensity: 0.8}), 0, 8.6, -0.25, 'z', 14);                                // koplamp
+  let kmh = -1; const zetKmh = v => { const n = Math.round(Math.abs(v)*0.36); if(n === kmh) return; kmh = n; const c = disp.image.getContext('2d'); c.fillStyle = '#05080a'; c.fillRect(0, 0, 128, 64);
+    c.fillStyle = '#6fe3ff'; c.font = 'bold 30px monospace'; c.fillText(String(n), 12, 40); c.font = '12px Arial'; c.fillText('km/h', 70, 40); c.fillStyle = '#3fd36b'; c.fillRect(12, 50, 90, 6); disp.needsUpdate = true; };
+  return {g, wv, wa, zetKmh}; })();
+function zetStep(v){ FP.step = !!v; FP.v = 0; $t('tStep').checked = FP.step; if(FP.step && !FP.aan) zetFP(true); STEP.g.visible = FP.step && FP.aan;
+  camera.fov = FP.step ? 62 : 42; camera.updateProjectionMatrix(); if(FP.step) FP.pitch = -0.45;
+  if(FP.step) meld('Elektrische step: W = gas · S = remmen/achteruit · A/D = sturen · shift = turbo · F = afstappen'); }
+$t('tStep').addEventListener('change', e => zetStep(e.target.checked));
 function stapFP(dt){
   const k = FP.keys, v = (k.shift ? 45 : 18)*dt, f = new THREE.Vector3(-Math.sin(FP.yaw), 0, -Math.cos(FP.yaw)), rt = new THREE.Vector3(-f.z, 0, f.x);
+  let stuur = 0;
+  if(FP.step){ const gas = (k.w || k.arrowup) ? 1 : 0, rem = (k.s || k.arrowdown) ? 1 : 0, vmax = k.shift ? 140 : 70;
+    if(rem && FP.v > 0.5) FP.v = Math.max(0, FP.v - 90*dt); else if(rem) FP.v += (-12 - FP.v)*Math.min(1, dt*1.5);
+    else if(gas) FP.v += (vmax - FP.v)*Math.min(1, dt*(k.shift ? 0.9 : 1.3)); else FP.v *= Math.max(0, 1 - dt*0.6);
+    stuur = ((k.a || k.arrowleft) ? 1 : 0) - ((k.d || k.arrowright) ? 1 : 0); FP.yaw += stuur*dt*(1.6 - 0.7*Math.min(1, Math.abs(FP.v)/100));
+    FP.pos.addScaledVector(f, FP.v*dt); }
+  else {
   if(k.w || k.arrowup) FP.pos.addScaledVector(f, v); if(k.s || k.arrowdown) FP.pos.addScaledVector(f, -v);
-  if(k.d || k.arrowright) FP.pos.addScaledVector(rt, v); if(k.a || k.arrowleft) FP.pos.addScaledVector(rt, -v);
+  if(k.d || k.arrowright) FP.pos.addScaledVector(rt, v); if(k.a || k.arrowleft) FP.pos.addScaledVector(rt, -v); }
   if(k.q) FP.oog = Math.max(6, FP.oog - 20*dt); if(k.e) FP.oog = Math.min(17, FP.oog + 20*dt);
   const yv = Math.abs(FP.pos.z) < PL/2 + 0.3 && FP.pos.x > XP(0) - PL/2 && FP.pos.x < XP(N_PL - 1) + PL/2 ? PL_H : 0;      // op de stelconplaten 14 cm hoger
-  camera.position.set(FP.pos.x, FP.oog + yv, FP.pos.z);
-  camera.lookAt(FP.pos.x - Math.sin(FP.yaw)*Math.cos(FP.pitch), FP.oog + yv + Math.sin(FP.pitch), FP.pos.z - Math.cos(FP.yaw)*Math.cos(FP.pitch)); }
+  const oog = FP.oog + yv + (FP.step ? 1.2 : 0); STEP.g.visible = !!FP.step;
+  if(FP.step){ STEP.g.position.set(FP.pos.x - Math.sin(FP.yaw)*3.0, yv, FP.pos.z - Math.cos(FP.yaw)*3.0); STEP.g.rotation.set(0, FP.yaw, 0); STEP.g.rotateZ(stuur*0.14*Math.min(1, Math.abs(FP.v)/50)); const rw = FP.v*dt/1.0; STEP.wv.rotation.x -= rw; STEP.wa.rotation.x -= rw; STEP.zetKmh(FP.v); }
+  camera.position.set(FP.pos.x, oog, FP.pos.z);
+  camera.lookAt(FP.pos.x - Math.sin(FP.yaw)*Math.cos(FP.pitch), oog + Math.sin(FP.pitch), FP.pos.z - Math.cos(FP.yaw)*Math.cos(FP.pitch)); }
 function resize(){ const w = wrap.clientWidth, h = wrap.clientHeight; renderer.setSize(w, h); renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5)); camera.aspect = w/h; camera.updateProjectionMatrix(); }
 window.addEventListener('resize', resize); resize();
 let tPrev = performance.now();
@@ -1480,7 +1558,7 @@ animate();
       <button data-k="arrowleft" aria-label="links">&#9664;</button><button data-k="arrowdown" aria-label="achteruit">&#9660;</button><button data-k="arrowright" aria-label="rechts">&#9654;</button>
       <button class="leeg"></button><button class="leeg"></button><button class="leeg"></button></div>
     <div id="mobRe"><button class="fpOnly" data-k="e" aria-label="opstaan">&#8679;</button><button class="fpOnly" data-k="q" aria-label="bukken">&#8681;</button>
-      <button class="fpOnly" id="mobRen" aria-label="rennen">&#187;</button><button id="mobFP">&#128694; Lopen</button></div>`;
+      <button class="fpOnly" id="mobRen" aria-label="rennen">&#187;</button><button id="mobStep" aria-label="elektrische step">&#128756;</button><button id="mobFP">&#128694; Lopen</button></div>`;
   document.body.appendChild(M);
   const hint = M.querySelector('#mobHint'); let hintT = 0;
   const toonHint = t => { hint.textContent = t; hint.classList.add('toon'); clearTimeout(hintT); hintT = setTimeout(() => hint.classList.remove('toon'), 3200); };
@@ -1492,6 +1570,8 @@ animate();
     b.addEventListener('contextmenu', e => e.preventDefault()); });
   const ren = M.querySelector('#mobRen');
   ren.addEventListener('click', e => { e.stopPropagation(); FP.keys.shift = !FP.keys.shift; ren.classList.toggle('aan', !!FP.keys.shift); });
+  const stepK = M.querySelector('#mobStep'); stepK.addEventListener('click', e => { e.stopPropagation(); zetStep(!FP.step); if(FP.step) toonHint('Step: ▲ gas · ▼ rem · ◀ ▶ sturen · » turbo'); });
+  setInterval(() => stepK.classList.toggle('aan', !!FP.step), 250);
   const fpKnop = M.querySelector('#mobFP');
   fpKnop.addEventListener('click', e => { e.stopPropagation(); zetFP(!FP.aan); if(FP.aan) toonHint('Pijltjes = lopen · 1 vinger slepen = rondkijken · knijpen = stappen'); });
   // status volgen (ook als loopmodus via toets P of het paneel wordt gezet)
