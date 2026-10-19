@@ -538,14 +538,21 @@ m1175 = function(x, y, tag){ const n = 2.5, w = n*17.8 - 0.4, xc = x + n*8.9, g 
   for(const s of [-1, 1]){ const sch = box(g, w, 12, 3, grijs, xc, y + s*34, ZF + 31); sch.rotation.x = s*0.5; }
   for(let k = 0; k < 5; k++) box(g, 0.8, 28, 10, donker, x - 0.1, y - 12 + k*6, ZF + 20, false);
   // contactdoosfront: vierkant opzetstuk met ronde kom (Ø 39), 2 contactgaten met shutters, 2 randaardebeugels
-  rbox(g, w - 2, 48, 14, 4, wit, xc, y, ZF + 52);
+  rbox(g, w - 2, 48, 4, 4, wit, xc, y, ZF + 47);                                                            // achterplaat opzetstuk (achter de kom)
+  { const fs = new THREE.Shape(), hw = (w - 2)/2, r4 = 4; fs.moveTo(-hw + r4, -24); fs.lineTo(hw - r4, -24); fs.quadraticCurveTo(hw, -24, hw, -24 + r4); fs.lineTo(hw, 24 - r4); fs.quadraticCurveTo(hw, 24, hw - r4, 24); fs.lineTo(-hw + r4, 24); fs.quadraticCurveTo(-hw, 24, -hw, 24 - r4); fs.lineTo(-hw, -24 + r4); fs.quadraticCurveTo(-hw, -24, -hw + r4, -24);
+    const gat = new THREE.Path(); gat.absarc(0, 0, 19.5, 0, Math.PI*2, true); fs.holes.push(gat);
+    const fg = new THREE.ExtrudeGeometry(fs, {depth: 11, bevelEnabled: true, bevelThickness: 0.8, bevelSize: 0.8, bevelSegments: 2, curveSegments: 40}); const fm = new THREE.Mesh(fg, wit); fm.position.set(xc, y, ZF + 48.2); fm.castShadow = true; g.add(fm); }
   const kom = new THREE.Mesh(new THREE.CylinderGeometry(19.5, 18.5, 12, 40, 1, true), M(0xe2e2dd, {side: THREE.DoubleSide, roughness: 0.4})); kom.rotation.x = Math.PI/2; kom.position.set(xc, y, ZF + 54); g.add(kom);
   cyl(g, 19, 1, M(0xd8d8d2, {roughness: 0.5}), xc, y, ZF + 48.5, 'z', 40); const rand = new THREE.Mesh(new THREE.TorusGeometry(20, 1.2, 8, 40), wit); rand.position.set(xc, y, ZF + 59.4); g.add(rand);
-  for(const s of [-1, 1]){ cyl(g, 2.6, 2, D2.donker, xc + s*9.5, y, ZF + 49.4, 'z', 16); box(g, 4.4, 1.4, 0.8, M(0xb5b5b0), xc + s*9.5 - s*0.6, y, ZF + 50.1, false);       // contactgat + shutter
+  plak(g, 37, 37, tekst('schuko', 256, 256, (c, W, H) => { c.fillStyle = '#d4d4ce'; c.beginPath(); c.arc(128, 128, 126, 0, 7); c.fill(); c.strokeStyle = '#bdbdb7'; c.lineWidth = 6; c.beginPath(); c.arc(128, 128, 110, 0, 7); c.stroke();
+    for(const dx of [-66, 66]){ c.fillStyle = '#b9b9b3'; c.beginPath(); c.arc(128 + dx, 128, 26, 0, 7); c.fill(); c.fillStyle = '#060606'; c.beginPath(); c.arc(128 + dx, 128, 17, 0, 7); c.fill(); c.fillStyle = '#5b5b58'; c.fillRect(128 + dx - 17, 125, 34, 6); }
+    c.fillStyle = '#9e9e98'; c.font = 'bold 20px Arial'; c.textAlign = 'center'; c.fillText('16A 250V~', 128, 200); }), xc, y, ZF + 49.2);
+  for(const s of [-1, 1]){ const gat = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.4, 6, 18, 1, true), M(0x050505, {side: THREE.BackSide})); gat.rotation.x = Math.PI/2; gat.position.set(xc + s*9.5, y, ZF + 46.4); g.add(gat);
+    cyl(g, 2.3, 0.4, M(0x020202), xc + s*9.5, y, ZF + 43.6, 'z', 18); const lip = new THREE.Mesh(new THREE.CylinderGeometry(4, 4, 1.2, 24, 1, true), M(0xb0b0aa, {side: THREE.DoubleSide})); lip.rotation.x = Math.PI/2; lip.position.set(xc + s*9.5, y, ZF + 49.6); g.add(lip);
     const beugel = box(g, 8, 2.4, 9, D2.staal, xc, y + s*17.6, ZF + 53, false); box(g, 6, 1, 4, D2.staal, xc, y + s*16.6, ZF + 57, false); }                              // randaarde
-  plak(g, 12, 3.2, tekst('m1175t', 96, 26, (c, W, H) => { c.fillStyle = '#eeeeea'; c.fillRect(0, 0, W, H); c.fillStyle = '#e2001a'; c.font = 'bold 20px Arial'; c.fillText('ABB', 4, 20); c.fillStyle = '#666'; c.font = '14px Arial'; c.fillText('M1175', 50, 19); }), xc - 8, y + 22, ZF + 59.1);
-  plak(g, 14, 3, tekst('m1175b', 112, 24, (c, W, H) => { c.fillStyle = '#eeeeea'; c.fillRect(0, 0, W, H); c.fillStyle = '#666'; c.font = '15px Arial'; c.fillText('16A  250V~', 6, 17); }), xc + 6, y - 22, ZF + 59.1);
-  for(const [dx, dy] of [[-1, 1], [1, -1]]) schroef(g, xc + dx*(w/2 - 4), y + dy*21, ZF + 59.2, 1.6);                                   // bevestigingsschroefjes opzetstuk
+  plak(g, 12, 3.2, tekst('m1175t', 96, 26, (c, W, H) => { c.fillStyle = '#eeeeea'; c.fillRect(0, 0, W, H); c.fillStyle = '#e2001a'; c.font = 'bold 20px Arial'; c.fillText('ABB', 4, 20); c.fillStyle = '#666'; c.font = '14px Arial'; c.fillText('M1175', 50, 19); }), xc - 8, y + 21.5, ZF + 60.15);
+  plak(g, 14, 3, tekst('m1175b', 112, 24, (c, W, H) => { c.fillStyle = '#eeeeea'; c.fillRect(0, 0, W, H); c.fillStyle = '#666'; c.font = '15px Arial'; c.fillText('16A  250V~', 6, 17); }), xc + 6, y - 22, ZF + 60.15);
+  for(const [dx, dy] of [[-1, 1], [1, -1]]) schroef(g, xc + dx*(w/2 - 4), y + dy*21, ZF + 60.2, 1.6);                                   // bevestigingsschroefjes opzetstuk
   // klemmen L N ⏚ (boven en onder doorverbonden) met schroef en draadinvoer
   const kl = []; ['L', 'N', '⏚'].forEach((t, k) => { const kx = xc - 12 + k*12; for(const s of [-1, 1]){
       box(g, 9.5, 8, 4, M(0xbdbeb9), kx, y + s*37.5, ZF + 31); box(g, 7, 3.5, 8, D2.donker, kx, y + s*41.5, ZF + 24, false); box(g, 5.6, 2.6, 6, D2.staal, kx, y + s*40.6, ZF + 24.5, false);
@@ -555,6 +562,50 @@ m1175 = function(x, y, tag){ const n = 2.5, w = n*17.8 - 0.4, xc = x + n*8.9, g 
   box(g, 12, 6, 4, M(0x9fa19d), xc, y - 44, ZF + 3); box(g, 4, 3, 1.5, D2.donker, xc, y - 46.5, ZF + 5.4, false);
   etiket(tag, xc, y - 55, w, ZF + 47);
   const out = []; for(let k = 0; k < 3; k++) for(const s of [-1, 1]) out.push(kl.find(q => q.s === s && Math.abs(q.x - (xc - 12 + k*12)) < 0.1));
+  return {x0: x, x1: x + n*17.8, xc, w, kl: out}; };
+// ---------- ABB SystemPro M profiel (zijaanzicht getrapt: voet 85 hoog / 44 diep, front 45 hoog tot 68 diep, afgeschuinde schouders) ----------
+const PROF = {}; function profiel(w, m){ const k = w.toFixed(2); if(!PROF[k]){ const s = new THREE.Shape(), P = [[0, -42.5], [43, -42.5], [44.5, -41], [44.5, -31], [49, -23.5], [66.5, -22.5], [68, -21], [68, 21], [66.5, 22.5], [49, 23.5], [44.5, 31], [44.5, 41], [43, 42.5], [0, 42.5]];
+    s.moveTo(P[0][0], P[0][1]); P.slice(1).forEach(p => s.lineTo(p[0], p[1])); s.closePath(); const g = new THREE.ExtrudeGeometry(s, {depth: w, bevelEnabled: true, bevelThickness: 0.5, bevelSize: 0.5, bevelSegments: 1}); g.rotateY(-Math.PI/2); g.translate(w/2, 0, 0); PROF[k] = g; }
+  return new THREE.Mesh(PROF[k], m); }
+// kooiklem SystemPro M: draadinvoer in de bovenkant (vierkant gat met zichtbare kooi), schroef PZ2 in de schouder (z 44,5) met kraag
+function abbKlem(g, kx, y, s, br){ const b = br || 10;
+  box(g, b, 1.2, 15, D2.donker, kx, y + s*42.2, ZF + 27, false);                                                      // invoeropening bovenvlak
+  box(g, b - 2.4, 1.4, 11, M(0x8f8c84, {metalness: 0.85, roughness: 0.35}), kx, y + s*41.6, ZF + 27, false);         // kooiklem (vertind)
+  box(g, b - 4, 1.6, 4, D2.donker, kx, y + s*41.4, ZF + 27, false);
+  cyl(g, 4.2, 1.6, D2.donker, kx, y + s*36, ZF + 44.9, 'z', 20); cyl(g, 3.4, 1.2, M(0xb6bbbe, {metalness: 0.85, roughness: 0.3}), kx, y + s*36, ZF + 45.6, 'z', 20);
+  for(const rz of [0.3, 0.3 + Math.PI/2]){ const sl = box(g, 4.6, 0.8, 0.8, M(0x3a3d40), kx, y + s*36, ZF + 46.2, false); sl.rotation.z = rz; }
+  return {x: kx, y: y + s*47, z: ZF + 27, s}; }
+// ---------- ABB DS201 B10 A30 aardlekautomaat 1P+N (2 modules) — extreem gedetailleerd ----------
+ds201 = function(x, y, tag){ const n = 2, w = n*17.8 - 0.4, xc = x + n*8.9, g = new THREE.Group(); EMS.add(g);
+  const wit = M(0xf3f3ef, {roughness: 0.42}), grijs = M(0xd8d9d4, {roughness: 0.5});
+  const body = profiel(w, wit); body.position.set(xc, y, ZF); body.castShadow = true; g.add(body);
+  for(let k = 1; k < n; k++) box(g, 0.5, 84, 44, M(0xdedfda), x + k*17.8, y, ZF + 22, false);                                    // naad tussen de modules
+  for(const sx of [-1, 1]) for(let k = 0; k < 7; k++) box(g, 0.6, 2, 18, M(0xc9cac5), xc + sx*(w/2 + 0.05), y - 18 + k*6, ZF + 12, false);   // ribbels zijkant
+  // front: bovenste lichtgrijze kenplaat-strook, tuimelschakelaar in nis, contactstandvenster, testknop, aardlekvlag
+  box(g, w - 2, 9, 0.6, grijs, xc, y + 15.5, ZF + 68.4, false);                                                                  // etiketstrook (beschrijfbaar)
+  plak(g, w - 4, 7, tekst('ds201lbl', 160, 28, (c, W, H) => { c.fillStyle = '#e1e2dd'; c.fillRect(0, 0, W, H); c.strokeStyle = '#b8b9b4'; c.lineWidth = 2; c.strokeRect(1, 1, W - 2, H - 2); c.fillStyle = '#333'; c.font = 'bold 18px Arial'; c.fillText('-F1  WCD/U1', 8, 20); }), xc, y + 15.5, ZF + 68.8);
+  box(g, 14, 22, 3, M(0x2a2c2f), xc - 8, y + 1, ZF + 67, false);                                                                 // nis tuimelschakelaar
+  const tg = new THREE.Group(); tg.position.set(xc - 8, y - 6, ZF + 66); g.add(tg); rbox(tg, 11.5, 20, 9, 2.5, M(0x1c1d20, {roughness: 0.35}), 0, 8, 4);
+  for(let k = 0; k < 4; k++) box(tg, 11, 0.8, 0.8, M(0x0e0f10), 0, 12 + k*1.8, 8.7, false); box(tg, 11.8, 2.6, 1, M(0xe2001a), 0, 17.2, 8.3, false);   // ribbels + rode kop (aan)
+  plak(tg, 6, 3, tekst('io', 32, 16, (c, W, H) => { c.fillStyle = '#1c1d20'; c.fillRect(0, 0, W, H); c.fillStyle = '#fff'; c.font = 'bold 13px Arial'; c.textAlign = 'center'; c.fillText('I-ON', W/2, 12); }), 0, 4, 8.6); tg.rotation.x = -0.32;
+  box(g, 6, 5, 1, M(0xe2001a, {emissive: 0x7a0000, emissiveIntensity: 0.3}), xc + 8, y + 9.5, ZF + 68.6, false);                   // contactstand rood = I
+  plak(g, 6, 2.6, tekst('ion', 40, 16, (c, W, H) => { c.fillStyle = '#f3f3ef'; c.fillRect(0, 0, W, H); c.fillStyle = '#333'; c.font = '12px Arial'; c.fillText('I-ON', 4, 12); }), xc + 8, y + 5, ZF + 68.5);
+  rbox(g, 7.5, 6.5, 3.5, 1.6, M(0x8d939a), xc + 8, y - 1, ZF + 69.4); plak(g, 3.6, 3.6, tekst('Tk', 16, 16, (c, W, H) => { c.fillStyle = '#8d939a'; c.fillRect(0, 0, W, H); c.fillStyle = '#fff'; c.font = 'bold 13px Arial'; c.textAlign = 'center'; c.fillText('T', 8, 13); }), xc + 8, y - 1, ZF + 71.3);   // testknop
+  box(g, 5, 3, 0.8, M(0x2bb04a, {emissive: 0x0f5a20, emissiveIntensity: 0.4}), xc + 8, y - 7, ZF + 68.6, false);                    // aardlekvlag (groen = niet gesprongen)
+  // bedrukking: ABB, type, karakteristiek, In, IΔn, Icn-blok, schema
+  plak(g, w - 2, 17, tekst('ds201p', 256, 124, (c, W, H) => { c.fillStyle = '#f3f3ef'; c.fillRect(0, 0, W, H); c.fillStyle = '#e2001a'; c.font = 'bold 30px Arial'; c.fillText('ABB', 6, 28); c.fillStyle = '#111'; c.font = 'bold 22px Arial'; c.fillText('DS201', 80, 28);
+    c.font = 'bold 24px Arial'; c.fillText('B10', 6, 60); c.font = '19px Arial'; c.fillText('A  0,03A', 66, 60); c.fillText('230V~', 6, 88); c.strokeStyle = '#111'; c.lineWidth = 2; c.strokeRect(150, 70, 60, 40); c.font = 'bold 16px Arial'; c.fillText('6000', 158, 90); c.fillText('3', 175, 106);
+    c.beginPath(); c.moveTo(218, 74); c.lineTo(218, 112); c.moveTo(232, 74); c.lineTo(232, 112); c.moveTo(212, 92); c.lineTo(238, 92); c.stroke(); c.font = '13px Arial'; c.fillText('IEC/EN 61009-1', 6, 116); }), xc, y - 14.5, ZF + 68.5);
+  plak(g, 11, 4, ceTex, xc - 10, y - 21, ZF + 68.5);
+  // schouders: klemmen 1 / N boven, 2 / N onder, nummering op de schuine schouder
+  const kl = []; for(let k = 0; k < n; k++){ const kx = x + 8.9 + k*17.8; for(const s of [-1, 1]){ kl.push(abbKlem(g, kx, y, s, 11));
+      plak(g, 4, 3.2, tekst('dsn' + k + s, 32, 24, (c, W, H) => { c.fillStyle = '#f3f3ef'; c.fillRect(0, 0, W, H); c.fillStyle = '#222'; c.font = 'bold 18px Arial'; c.textAlign = 'center'; c.fillText(k ? 'N' : (s > 0 ? '1' : '2'), W/2, 18); }), kx + 6, y + s*36, ZF + 44.9); } }
+  // DIN-bevestiging: klemschuif met schroevendraaiersleuf, veerlip
+  box(g, 11, 7, 4, M(0x26282b), xc, y - 44, ZF + 3); box(g, 5, 2.4, 1.4, D2.donker, xc, y - 46.5, ZF + 5.4, false); box(g, w - 6, 2, 3, M(0xdedfda), xc, y + 37, ZF + 2);
+  plak(g, 6, 6, qrTex(201), xc + w/2 + 0.6, y + 10, ZF + 22, Math.PI/2);
+  plak(g, 26, 9, tekst('ds201side', 200, 70, (c, W, H) => { c.fillStyle = '#f3f3ef'; c.fillRect(0, 0, W, H); c.fillStyle = '#333'; c.font = '16px Arial'; c.fillText('2CSR275180R1105', 6, 22); c.fillText('DS201 B10 A30', 6, 44); c.fillText('Made in Italy', 6, 64); }), xc - w/2 - 0.6, y - 10, ZF + 24, -Math.PI/2);
+  etiket(tag, xc, y - 55, w, ZF + 47);
+  const out = []; for(let k = 0; k < n; k++) for(const s of [-1, 1]) out.push(kl.find(q => q.s === s && Math.abs(q.x - (x + 8.9 + k*17.8)) < 0.1));
   return {x0: x, x1: x + n*17.8, xc, w, kl: out}; };
 // ---------- Mean Well NDR-240-24 ----------
 ndr240 = function(x, y){ const w = 63, H = 125.2, D = 113.5, xc = x + w/2, g = new THREE.Group(); EMS.add(g);
