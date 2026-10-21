@@ -263,13 +263,13 @@ const TEMPLATE={
      ["Projecttekening maken","Tekenaar"],["Eendraadschema (SLD) opstellen","Tekenaar","s"],["Kabelberekening NEN 1010","Detailengineer"],["Review ontwerp (IV'er)","Detailengineer"],["Ontwerp vrijgeven","Projectleider"]],
   2:[["Materiaal met lange levertijd bestellen","Inkoop"],["Aannemer contracteren","Werkvoorbereider"],["V&G-plan en TRA","Werkvoorbereider"],["Uitvoeringsplanning vastleggen","Planner"],["Kick-off met aannemer","Projectleider"]],
   3:[["Start uitvoering op locatie","Aannemer"],["Montage installatie","Aannemer"],["Kabels leggen en aansluiten","Aannemer"],["Voortgangscontrole","Werkvoorbereider"],["Meerwerk registreren","Projectleider"]],
-  4:[["Eerste inspectie NEN 1010 / NEN 3140","Detailengineer"],["Inbedrijfname en schakelen","Werkvoorbereider"],["SAT uitvoeren","Detailengineer"],["Revisietekeningen en opleverdossier","Tekenaar"],["Overdracht aan klant","Projectleider"]],
+  4:[["Eerste inspectie NEN 1010 / NEN 3140","Detailengineer"],["Inbedrijfname en schakelen","Werkvoorbereider"],["SAT uitvoeren","Detailengineer"],["Revisie uit de uitvoering verwerken in tekeningen en SLD","Tekenaar","s"],["Opleverdossier samenstellen","Projectleider","s"],["Overdracht aan klant","Projectleider"]],
   5:[["Nacalculatie","Projectleider"],["Evaluatie / lessons learned","Projectleider"],["Project administratief sluiten","Projectleider"]]
 };
 const newActId=()=>"a"+Math.random().toString(36).slice(2,10);
 const flagsOf=f=>({seq:(f||"").includes("s"),gate:(f||"").includes("g")});
 function templateActs(){const out=[];for(const ph in TEMPLATE)TEMPLATE[ph].forEach(([t,r,f])=>out.push({id:newActId(),phase:+ph,title:t,role:r,owner:"",status:"open",doneAt:"",...flagsOf(f)}));return out}
-const ALIASES={"uitgangspunten en uitsluitingen uit projectplan controleren":"uitgangspunten en programma van eisen vastleggen"};
+const ALIASES={"revisietekeningen en opleverdossier":"revisie uit de uitvoering verwerken in tekeningen en sld","uitgangspunten en uitsluitingen uit projectplan controleren":"uitgangspunten en programma van eisen vastleggen"};
 /* oude standaardstappen die niet meer in de werkwijze zitten: weg bij bijwerken zolang ze onaangeroerd zijn */
 const RETIRED=["projectteam en fasering vastleggen","contact opnemen met klant","netaanvraag / aansluiting bij netbeheerder","beveiliging en selectiviteit","schakelafspraken netbeheerder"];
 const normT=t=>{t=(t||"").toLowerCase();return ALIASES[t]||t};
