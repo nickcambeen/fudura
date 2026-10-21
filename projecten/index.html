@@ -222,6 +222,75 @@ aside.log{position:sticky;top:10px;max-height:calc(100vh - 20px);overflow-y:auto
 #delZone .btn{font-size:12px;padding:3px 8px}
 @media (max-width:1000px){aside.log{position:static;max-height:none}}
 .wait{font-size:11px;color:var(--warn);font-weight:500}
+
+/* Fudura-huisstijl: donkerblauw als basis, lichtblauw als accent */
+:root{--navy:#0b2a4a;--navy-2:#123a63;--sky:#36b0e2;--sky-soft:#e4f4fb;
+  --bg:#f3f7fa;--surface:#ffffff;--sunk:#eaf1f6;--line:#d8e3eb;--fg:#0f2233;--muted:#5b6e7d;
+  --accent:#1590c9;--accent-fg:#ffffff;--accent-soft:#e4f4fb;--radius:10px;
+  --shadow:0 1px 2px rgba(11,42,74,.06),0 4px 14px rgba(11,42,74,.06)}
+body{background:var(--bg)}
+h1,h2,h3{color:var(--navy)}
+.btn{border-radius:7px;border-color:var(--line);transition:border-color .12s,background .12s}
+.btn:hover:not([disabled]){border-color:var(--sky);background:var(--sky-soft)}
+.btn.primary{background:var(--navy);border-color:var(--navy);color:#fff}
+.btn.primary:hover:not([disabled]){background:var(--navy-2);border-color:var(--navy-2)}
+.btn.danger:hover:not([disabled]){border-color:var(--bad);background:var(--bad-soft)}
+:focus-visible{outline-color:var(--sky)}
+
+/* kopbalk */
+header.top{background:var(--navy);color:#fff;border-radius:var(--radius);padding:14px 18px;align-items:center;box-shadow:var(--shadow);border-bottom:3px solid var(--sky)}
+header.top h1{color:#fff;font-size:24px}
+header.top .sub,header.top .small{color:#a9cfe6}
+.brand{font:600 12px var(--f-display);letter-spacing:.14em;text-transform:uppercase;color:var(--sky);margin-bottom:2px}
+header.top .btn{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.25);color:#fff}
+header.top .btn:hover:not([disabled]){background:rgba(255,255,255,.16);border-color:#fff}
+header.top .btn.primary{background:var(--sky);border-color:var(--sky);color:var(--navy);font-weight:600}
+header.top .btn.primary:hover:not([disabled]){background:#5cc1ea;border-color:#5cc1ea}
+
+/* fasetellers als stappenbalk */
+.phasebar{background:transparent;border:0;gap:6px;overflow:visible}
+.phasebar button{background:var(--surface);border:1px solid var(--line);border-radius:8px;border-top:3px solid var(--line);box-shadow:var(--shadow)}
+.phasebar button:hover{border-top-color:var(--sky)}
+.phasebar button[aria-pressed="true"]{background:var(--sky-soft);border-color:var(--sky);border-top-color:var(--sky)}
+.phasebar .n{color:var(--navy)}
+
+/* filters */
+.tools input[type=search],.tools select{border-radius:7px;background:var(--surface)}
+.seg{border-radius:7px;background:var(--surface)}
+.seg button[aria-pressed="true"]{background:var(--navy);color:#fff}
+
+/* bord en kaarten */
+.col{background:var(--sunk);border-radius:var(--radius)}
+.col h3{color:var(--navy-2)}
+.card{border-radius:8px;border-color:var(--line);transition:box-shadow .12s,border-color .12s}
+.card:hover{border-color:var(--sky);box-shadow:0 2px 6px rgba(11,42,74,.08),0 8px 22px rgba(11,42,74,.08)}
+.prog{background:#dde8ef}
+.prog i{background:var(--sky)}
+.tag{border-color:#bfe3f3;background:var(--sky-soft);color:var(--navy-2)}
+
+/* tabellen */
+.tablewrap{border-radius:var(--radius);box-shadow:var(--shadow);border-color:var(--line)}
+th{background:#eef4f8;color:var(--muted)}
+tbody tr.click:hover{background:var(--sky-soft)}
+.phasedots i.on{background:var(--sky)}
+
+/* projectscherm */
+.panelbox{border-radius:var(--radius);border-color:var(--line);box-shadow:var(--shadow)}
+.panelbox > header{border-bottom:1px solid var(--line);padding-bottom:6px}
+.phase-track button{border-radius:7px;background:var(--surface)}
+.phase-track button.done{background:var(--sky-soft);border-color:#bfe3f3}
+.phase-track button.cur{border-color:var(--sky);box-shadow:inset 0 0 0 1px var(--sky)}
+.phase-track button.sel{background:var(--navy);border-color:var(--navy);color:#fff}
+.phase-track button.sel .c{color:#a9cfe6}
+.gate{background:var(--sky-soft);border:1px solid #bfe3f3;border-radius:8px}
+.log-tabs button[aria-pressed="true"]{border-bottom-color:var(--sky);color:var(--navy)}
+.entry{background:#f8fbfd;border-color:var(--line)}
+.entry.contact{border-left-color:var(--sky)}
+
+/* inloggen */
+.login-box{border-top:4px solid var(--sky);border-radius:var(--radius)}
+.login-box .brand{color:var(--accent)}
+.toast{background:var(--navy)}
 </style>
 </head>
 <body>
@@ -312,6 +381,7 @@ function norm(x){return{...x,phase:Math.min(5,Math.max(0,+x.phase||0)),status:ST
 /* ---------- inloggen ---------- */
 function loginHTML(msg){
   return `<div class="login"><div class="login-box">
+    <div class="brand">Fudura</div>
     <h1>Projectmanagement systeem</h1>
     <p class="small">Voer de toegangscode in om de projecten van team PER te openen.</p>
     <form id="loginForm" autocomplete="off">
@@ -377,7 +447,7 @@ function overviewHTML(){
   const pb=PHASES.map(ph=>{const l=S.projects.filter(p=>p.phase===ph.id);const bad=l.filter(p=>p.status==="bad"||isLate(p)).length;
     return `<button type="button" data-phasef="${ph.id}" aria-pressed="${S.phaseFilter===ph.id}"><span class="n">${l.length}</span><span class="l">${esc(ph.label)}</span><span class="alert">${ph.id<5&&bad?bad+" vertraagd":""}</span></button>`}).join("");
   return `
-  <header class="top"><div><h1>Projectmanagement systeem</h1><div class="sub">Batterijsystemen op LS · team Project Engineering &amp; Realisatie</div></div>
+  <header class="top"><div><div class="brand">Fudura</div><h1>Projectmanagement systeem</h1><div class="sub">Batterijsystemen op LS · team Project Engineering &amp; Realisatie</div></div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="small">${S.me?"Ingelogd als "+esc(S.me):""}</span><button class="btn" type="button" data-act="logout">Afmelden</button><button class="btn primary" type="button" data-act="new">+ Nieuw project</button></div></header>
   ${banner()}
   <nav class="phasebar" aria-label="Fases">${pb}</nav>
