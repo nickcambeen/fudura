@@ -250,7 +250,7 @@ const PHASES=[
 ];
 const STATUSES={ok:{label:"Op schema",cls:"s-ok"},warn:{label:"Aandacht",cls:"s-warn"},bad:{label:"Vertraagd",cls:"s-bad"},hold:{label:"On hold",cls:"s-hold"}};
 const ACT_ST={open:"Open",bezig:"Bezig",geblokkeerd:"Geblokkeerd",afgerond:"Afgerond",nvt:"N.v.t."};
-const TYPES=["BESS","Laadinfra","MS-installatie","LS-installatie","PV","Data / IT","Overig"];
+const TYPES=["BESS op LS"];
 const ROLES=["Projectleider","Sales engineer","Detailengineer","Tekenaar","Accountmanager","Werkvoorbereider","Planner","Inkoop","Aannemer","Klant","Netbeheerder"];
 const TEMPLATE={
   0:[["Aanvraag registreren","Sales engineer"],["Schouw op locatie","Sales engineer"],
@@ -260,7 +260,7 @@ const TEMPLATE={
   1:[["Eerste contact met klant: kennismaking en verwachtingen afstemmen","Projectleider"],["Uitgangspunten en programma van eisen vastleggen","Projectleider","s"],["Projectteam samenstellen","Projectleider","s"],
      ["Overdrachtsmoment inplannen (sales engineer, projectleider, tekenaar, detailengineer)","Projectleider","s"],
      ["Eendraadschema (SLD) opstellen","Tekenaar"],["Kabelberekening NEN 1010","Detailengineer"],["Beveiliging en selectiviteit","Detailengineer"],["Review ontwerp (IV'er)","Detailengineer"],["Ontwerp vrijgeven","Projectleider"]],
-  2:[["Materiaal met lange levertijd bestellen","Inkoop"],["Aannemer contracteren","Werkvoorbereider"],["V&G-plan en TRA","Werkvoorbereider"],["Schakelafspraken netbeheerder","Werkvoorbereider"],["Uitvoeringsplanning vastleggen","Planner"],["Kick-off met aannemer","Projectleider"]],
+  2:[["Materiaal met lange levertijd bestellen","Inkoop"],["Aannemer contracteren","Werkvoorbereider"],["V&G-plan en TRA","Werkvoorbereider"],["Uitvoeringsplanning vastleggen","Planner"],["Kick-off met aannemer","Projectleider"]],
   3:[["Start uitvoering op locatie","Aannemer"],["Montage installatie","Aannemer"],["Kabels leggen en aansluiten","Aannemer"],["Voortgangscontrole","Werkvoorbereider"],["Meerwerk registreren","Projectleider"]],
   4:[["Eerste inspectie NEN 1010 / NEN 3140","Detailengineer"],["Inbedrijfname en schakelen","Werkvoorbereider"],["SAT uitvoeren","Detailengineer"],["Revisietekeningen en opleverdossier","Tekenaar"],["Overdracht aan klant","Projectleider"]],
   5:[["Nacalculatie","Projectleider"],["Evaluatie / lessons learned","Projectleider"],["Project administratief sluiten","Projectleider"]]
@@ -376,13 +376,12 @@ function overviewHTML(){
   const pb=PHASES.map(ph=>{const l=S.projects.filter(p=>p.phase===ph.id);const bad=l.filter(p=>p.status==="bad"||isLate(p)).length;
     return `<button type="button" data-phasef="${ph.id}" aria-pressed="${S.phaseFilter===ph.id}"><span class="n">${l.length}</span><span class="l">${esc(ph.label)}</span><span class="alert">${ph.id<5&&bad?bad+" vertraagd":""}</span></button>`}).join("");
   return `
-  <header class="top"><div><h1>Projectmanagement systeem</h1><div class="sub">Projecten van team Project Engineering &amp; Realisatie, per fase</div></div>
+  <header class="top"><div><h1>Projectmanagement systeem</h1><div class="sub">Batterijsystemen op LS · team Project Engineering &amp; Realisatie</div></div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="small">${S.me?"Ingelogd als "+esc(S.me):""}</span><button class="btn" type="button" data-act="logout">Afmelden</button><button class="btn primary" type="button" data-act="new">+ Nieuw project</button></div></header>
   ${banner()}
   <nav class="phasebar" aria-label="Fases">${pb}</nav>
   <div class="tools">
     <input type="search" id="q" value="${esc(S.q)}" placeholder="Zoek op projectnummer, naam, klant, locatie of persoon" aria-label="Zoeken">
-    <select id="fType" aria-label="Type"><option value="">Alle types</option>${TYPES.map(t=>`<option ${S.fType===t?"selected":""}>${esc(t)}</option>`).join("")}</select>
     <select id="fStatus" aria-label="Status"><option value="">Alle statussen</option>${Object.entries(STATUSES).map(([k,v])=>`<option value="${k}" ${S.fStatus===k?"selected":""}>${v.label}</option>`).join("")}</select>
     <select id="fOwner" aria-label="Persoon"><option value="">Iedereen</option>${ppl.map(o=>`<option ${S.fOwner===o?"selected":""}>${esc(o)}</option>`).join("")}</select>
     <label class="check"><input type="checkbox" id="fDone" ${S.showDone?"checked":""}> Toon afgerond</label>
@@ -408,7 +407,7 @@ function cardHTML(p){
     <div class="row"><span class="nr mono">${esc(p.nr||"—")}</span><span class="pill ${st.cls}">${st.label}</span></div>
     <div class="name">${esc(p.name)}</div>
     <div class="meta">${p.client?`<span>${esc(p.client)}</span>`:""}${p.loc?`<span>${esc(p.loc)}</span>`:""}</div>
-    <div class="meta">${p.type?`<span class="tag">${esc(p.type)}</span>`:""}${p.owner?`<span>${esc(p.owner)}</span>`:""}${p.due?`<span class="${isLate(p)?"late":""}">Oplevering ${fmtDate(p.due)}</span>`:""}</div>
+    <div class="meta">${p.power?`<span class="tag">${esc(p.power)}</span>`:""}${p.owner?`<span>${esc(p.owner)}</span>`:""}${p.due?`<span class="${isLate(p)?"late":""}">Oplevering ${fmtDate(p.due)}</span>`:""}</div>
     ${pr.total?`<div class="row small"><span>${pr.done}/${pr.total} activiteiten</span><span>${d!==null?d+" dgn in fase":""}</span></div><div class="prog"><i style="width:${Math.round(pr.done/pr.total*100)}%"></i></div>`:""}
     ${na?`<div class="next"><span class="small">Volgende:</span> ${esc(na.title)}${na.owner||na.role?` <span class="small">· ${esc(na.owner||na.role)}</span>`:""}</div>`:""}
   </div>`;
@@ -423,9 +422,9 @@ function listHTML(list){
   const k=S.sortKey,dir=S.sortDir;
   const val=p=>k==="phase"?p.phase:k==="status"?Object.keys(STATUSES).indexOf(p.status):(p[k]||"￿").toString().toLowerCase();
   list=[...list].sort((a,b)=>{const x=val(a),y=val(b);return(x<y?-1:x>y?1:0)*dir});
-  const cols=[["nr","Nr."],["name","Project"],["client","Klant"],["type","Type"],["owner","Projectleider"],["phase","Fase"],["status","Status"],["due","Oplevering"]];
+  const cols=[["nr","Nr."],["name","Project"],["client","Klant"],["power","Batterij"],["owner","Projectleider"],["phase","Fase"],["status","Status"],["due","Oplevering"]];
   return `<div class="tablewrap"><table><thead><tr>${cols.map(([c,l])=>`<th><button type="button" data-sort="${c}">${l}${k===c?(dir>0?" ↑":" ↓"):""}</button></th>`).join("")}</tr></thead><tbody>${list.map(p=>{const st=STATUSES[p.status],pr=phaseProg(p,p.phase);return `<tr class="click" data-open="${esc(p.id)}" tabindex="0">
-    <td class="mono">${esc(p.nr||"—")}</td><td><strong>${esc(p.name)}</strong>${p.loc?`<div class="small">${esc(p.loc)}</div>`:""}</td><td>${esc(p.client)}</td><td>${esc(p.type)}</td><td>${esc(p.owner)}</td>
+    <td class="mono">${esc(p.nr||"—")}</td><td><strong>${esc(p.name)}</strong>${p.loc?`<div class="small">${esc(p.loc)}</div>`:""}</td><td>${esc(p.client)}</td><td>${esc(p.power)}</td><td>${esc(p.owner)}</td>
     <td><div class="phasedots">${PHASES.map(ph=>`<i class="${ph.id<=p.phase?"on":""}"></i>`).join("")}</div><div class="small">${esc(PHASES[p.phase].label)}${pr.total?` · ${pr.done}/${pr.total}`:""}</div></td>
     <td><span class="pill ${st.cls}">${st.label}</span></td><td class="num ${isLate(p)?"late":""}">${fmtDate(p.due)}</td></tr>`}).join("")}</tbody></table></div>`;
 }
@@ -440,9 +439,9 @@ function actsHTML(list){
 
 /* ---------- project dashboard ---------- */
 const HEAD=[
-  ["nr","Projectnummer","text"],["name","Projectnaam","text"],["type","Type werkzaamheden","type"],["status","Projectstatus","status"],
-  ["owner","Projectleider","person"],["engineer","Sales engineer","person"],["detail","Detailengineer","person"],["drafter","Tekenaar","person"],["contractor","Aannemer","text"],["netop","Netbeheerder","text"],
-  ["loc","Locatie / adres","text"],["ean","EAN-code","text"],["power","Vermogen / aansluitwaarde","text"],["link","Gekoppeld project","text"],
+  ["nr","Projectnummer","text"],["name","Projectnaam","text"],["status","Projectstatus","status"],
+  ["owner","Projectleider","person"],["engineer","Sales engineer","person"],["detail","Detailengineer","person"],["drafter","Tekenaar","person"],["contractor","Aannemer","text"],
+  ["loc","Locatie / adres","text"],["ean","EAN-code","text"],["power","Batterij (kW / kWh)","text"],["units","Aantal AIO's","text"],["link","Gekoppeld project","text"],
   ["survey","Schouw plandatum","date"],["delivery","Bevestigde leverdatum","date"],["due","Gewenste opleverdatum","date"]
 ];
 const CLIENT=[["client","Klant","text"],["contact","Contactpersoon","text"],["email","E-mailadres","text"],["phone","Telefoonnummer","text"]];
@@ -614,7 +613,7 @@ function openNew(){
     <h2 id="nTitle">Nieuw project</h2>
     <div class="fields">
       <label class="field" for="n_nr"><span class="lbl">Projectnummer</span><input id="n_nr" class="mono" placeholder="bv. P-26-0412"></label>
-      <label class="field" for="n_type"><span class="lbl">Type werkzaamheden</span><select id="n_type">${TYPES.map(t=>`<option>${t}</option>`).join("")}</select></label>
+      <label class="field" for="n_power"><span class="lbl">Batterij (kW / kWh)</span><input id="n_power" placeholder="bv. 250 kW / 522 kWh"></label>
       <label class="field" for="n_name" style="grid-column:1/-1"><span class="lbl">Projectnaam</span><input id="n_name" placeholder="bv. BESS 2 MW met nieuw MS-veld"></label>
       <label class="field" for="n_client"><span class="lbl">Klant</span><input id="n_client"></label>
       <label class="field" for="n_loc"><span class="lbl">Locatie</span><input id="n_loc"></label>
@@ -630,7 +629,7 @@ function openNew(){
 function closeNew(){S.newOpen=false;$("#newWrap")?.remove()}
 async function createNew(){
   const name=$("#n_name").value.trim();if(!name){$("#n_name").focus();toast("Vul een projectnaam in");return}
-  const now=nowISO(),data={nr:$("#n_nr").value.trim(),name,type:$("#n_type").value,client:$("#n_client").value.trim(),loc:$("#n_loc").value.trim(),owner:$("#n_owner").value.trim(),due:$("#n_due").value,
+  const now=nowISO(),data={nr:$("#n_nr").value.trim(),name,type:TYPES[0],power:$("#n_power").value.trim(),client:$("#n_client").value.trim(),loc:$("#n_loc").value.trim(),owner:$("#n_owner").value.trim(),due:$("#n_due").value,
     status:"ok",phase:0,phaseSince:now,acts:$("#n_tpl").checked?templateActs():[],createdAt:now};
   $("#n_go").disabled=true;
   const p=await save(null,data,"Project aangemaakt");
