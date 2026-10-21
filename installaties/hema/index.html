@@ -389,7 +389,11 @@ function wandN(poly){ const O = V(GA[0], 0, GA[1]); let best = null;
     const sa = pa.dot(U), sb = pb.dot(U), na = pa.dot(N), nb = pb.dot(N); if(Math.abs(nb - na) > 0.15*Math.abs(sb - sa)) continue;
     if(Math.min(sa, sb) > 14 || Math.max(sa, sb) < 4) continue; const n = (na + nb)/2; if(best === null || n > best) best = n; }
   return best === null ? 0 : THREE.MathUtils.clamp(best, -5, 3); }
-function bouwPvDak(poly, h){ WN = wandN(poly); (ASSET.pv.userData.wand || []).forEach(ig => ig.position.z = WN + 0.30);                                                          // poly = pand-ring in lokale coördinaten [[x, z], ...]
+// gevel per plek opzoeken met een straal vanaf het terrein naar de BAG-gebouwen (−N richting): inverters en ladder komen exact tegen de muur
+function wandOp(sx){ BAG.updateMatrixWorld(true); const rc = new THREE.Raycaster(wp(sx, 8).add(V(0, 1.4, 0)), N.clone().negate(), 0, 20);
+  const hit = rc.intersectObjects(BAG.children, false)[0]; return hit ? 8 - hit.distance : null; }
+function bouwPvDak(poly, h){ WN = wandN(poly); const wl = wandOp(8.7); if(wl !== null) WN = wl;
+  (ASSET.pv.userData.wand || []).forEach(ig => { const w = wandOp(ig.position.x); ig.position.z = (w !== null ? w : WN) + 0.25; });                                                          // poly = pand-ring in lokale coördinaten [[x, z], ...]
   const inP = (x, z) => { let ok = false; for(let i = 0, j = poly.length - 1; i < poly.length; j = i++){ const [xi, zi] = poly[i], [xj, zj] = poly[j]; if(((zi > z) !== (zj > z)) && (x < (xj - xi)*(z - zi)/(zj - zi) + xi)) ok = !ok; } return ok; };
   const B0 = V(GB[0], 0, GB[1]), W = N.clone().negate();                               // W = de dakrichting (van de gevel het pand in)
   const tilt = 13*Math.PI/180, pl = 1.134, pdx = pl*Math.cos(tilt), lang = 1.99, nodig = 1388, pos = [];
