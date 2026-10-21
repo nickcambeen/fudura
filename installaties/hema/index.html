@@ -390,7 +390,8 @@ function bouwPvDak(poly, h){                                                    
 
 // ---------- hekwerk langs de Nucleonenweg (schets/luchtfoto: langs de rand van de verharding) + haag ----------
 const HEK = new THREE.Group(); scene.add(HEK);
-{ const fs = n => 17.21 - 0.07*n, fp = n => wp(fs(n), n), N0 = 0.8, N1 = 96, NS = 32;                 // n 0,8–32: dubbelstaafmat (groen), 32–96: spijlenhek (verzinkt)
+{ const fs = n => 16.6 + 0.012*n,                                            // Nicks lijn op de luchtfoto: vrijwel haaks op de gevel
+        fp = n => wp(fs(n), n), N0 = 0.8, N1 = 96, NS = 32;                 // n 0,8–32: dubbelstaafmat (groen), 32–96: spijlenhek (verzinkt)
   const D = fp(1).sub(fp(0)).normalize(), L = fp(N1).distanceTo(fp(N0)), LS = fp(NS).distanceTo(fp(N0));
   const g = new THREE.Group(); g.position.copy(fp(N0)); g.rotation.y = Math.atan2(-D.z, D.x); HEK.add(g);                       // lokaal x langs het hek, −z naar de weg
   const groen = M(0x1f4a35, {roughness: 0.5, metalness: 0.3}), H = 2.0;
