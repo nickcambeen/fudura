@@ -353,6 +353,14 @@ tr.waiting td{color:var(--muted)}
 .pl-step.bad{border-top-color:var(--bad)}
 .pl-step.bad .v{color:var(--bad)}
 @media (max-width:760px){.plan{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* activiteitentabel: omschrijving zo breed mogelijk */
+.acts-wrap table{min-width:720px;table-layout:fixed}
+.acts .desc{white-space:normal;overflow-wrap:break-word;word-break:normal;hyphens:manual}
+.acts select.ownersel{width:100%}
+.acts select.st-sel{width:100%}
+.acts input[type=date]{width:100%}
+.dash{grid-template-columns:minmax(0,1fr) 270px}
 </style>
 </head>
 <body>
@@ -755,7 +763,7 @@ function dashHTML(p){
   let acts=actsOf(p,sel);if(S.actFilter)acts=acts.filter(a=>a.status===S.actFilter);
   const actRows=acts.map(a=>`<tr data-aid="${a.id}" class="${a.status==="afgerond"?"is-done":""} ${a.status==="nvt"?"is-nvt":""}">
     <td><select class="st-sel st-${a.status}" data-af="status" aria-label="Status" ${canDo(p,a)?"":`disabled title="Alleen ${esc(effOwner(p,a)||"de "+a.role.toLowerCase())} kan deze taak afronden"`}>${Object.entries(ACT_ST).map(([k,v])=>`<option value="${k}" ${a.status===k?"selected":""}>${v}</option>`).join("")}</select></td>
-    <td class="desc">${esc(a.title)}${(()=>{const w=waitsOn(p,a);return w?`<div class="wait">⊘ wacht op: ${esc(w.title)}</div>`:""})()}${a.gate?`<div class="small">Voorwaarde voor de volgende fase</div>`:""}</td>
+    <td class="desc">${esc(a.title)}${(()=>{const w=waitsOn(p,a);return w?`<div class="wait" title="Wacht op: ${esc(w.title)}">⊘ wacht op vorige stap</div>`:""})()}${a.gate?`<div class="small">Voorwaarde voor de volgende fase</div>`:""}</td>
     <td>${canEditHead()?`<select data-af="owner" aria-label="Behandelaar" class="ownersel">${personOptions(a.role,a.owner||"",teamDefault(p,a)?"Standaard: "+teamDefault(p,a):"Iedere "+(a.role||"collega").toLowerCase())}</select>`:`<span>${esc(effOwner(p,a)||"Iedere "+(a.role||"collega").toLowerCase())}</span>`}</td>
     <td>${(()=>{const ed=effDue(p,a),late=ed&&ed<todayStr()&&!isClosed(a);return `<input type="date" data-af="due" value="${esc(a.due||"")}" aria-label="Deadline" class="${late&&a.due?"late":""}" ${canEditHead()?"":"disabled"}>${!a.due&&ed?`<div class="small ${late?"late":""}">standaard ${fmtDate(ed)}</div>`:""}`})()}</td>
     <td class="num">${a.doneAt?fmtDate(a.doneAt):""}</td>
@@ -778,7 +786,7 @@ function dashHTML(p){
           <select id="actFilter" aria-label="Filter op status"><option value="">Alle statussen</option>${Object.entries(ACT_ST).map(([k,v])=>`<option value="${k}" ${S.actFilter===k?"selected":""}>${v}</option>`).join("")}</select></header>
         <div class="phase-track">${track}</div>
         ${gate}
-        <div class="acts-wrap"><table class="acts"><thead><tr><th style="width:130px">Status</th><th>Omschrijving</th><th style="width:170px">Behandelaar</th><th style="width:130px">Deadline</th><th style="width:100px">Afgerond op</th><th style="width:36px"></th></tr></thead>
+        <div class="acts-wrap"><table class="acts"><colgroup><col style="width:104px"><col><col style="width:178px"><col style="width:132px"><col style="width:84px"><col style="width:30px"></colgroup><thead><tr><th>Status</th><th>Omschrijving</th><th>Behandelaar</th><th>Deadline</th><th>Afgerond</th><th></th></tr></thead>
           <tbody>${actRows||`<tr><td colspan="6" class="small">Geen activiteiten${S.actFilter?" met deze status":" in deze fase"}.</td></tr>`}</tbody></table></div>
         ${missingStd(p,sel)?`<div class="gate"><span>Deze fase wijkt af van de standaardwerkwijze.</span><button class="btn" type="button" data-act="syncStd">Standaardstappen bijwerken</button></div>`:""}
         <form class="addact" id="addAct" ${canEditHead()?"":"hidden"}><input class="grow" id="naTitle" placeholder="Activiteit toevoegen aan ${esc(PHASES[sel].label)}" aria-label="Nieuwe activiteit"><select id="naRole" aria-label="Rol">${ROLES.map(r=>`<option>${r}</option>`).join("")}</select><button class="btn" type="submit">Toevoegen</button></form>
