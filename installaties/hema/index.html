@@ -87,7 +87,7 @@
   <details><summary>Componenten</summary>
     <ul>
       <li><b>EOS</b>: 5 × Delta DELTerra C AIO 125 kW / 261 kWh met junction box (model uit de AIO-pagina) op stelconplaten — projectplan: 375 kW / 1290 kWh</li>
-      <li><b>PV</b> (ELIX ZN25-1423): 1.388 × Longi Hi-MO X10 535 Wp = 742,58 kWp, Van der Valk Pro+ oost/west op het dak; 5 × Huawei SUN2000-100KTL-M2 op een skid 5050 × 1800 × 2273 mm met zadeldak (3 voor, 2 achter, rug-aan-rug); DC via afgedekte kabelladder langs de gevel</li>
+      <li><b>PV</b> (ELIX ZN25-1423): 1.388 × Longi Hi-MO X10 535 Wp = 742,58 kWp, Van der Valk Pro+ oost/west op het dak; 5 × Huawei SUN2000-100KTL-M2 op een skid 5050 × 1800 × 2273 mm met zadeldak (2 per zijde + 1 op de kopse kant); DC via afgedekte kabelladder langs de gevel</li>
       <li><b>EV</b>: Sungrow IDC480E power unit 480 kW (900 × 2200 × 1380 mm, 1100 kg) + 2 × IDC480E luchtgekoelde dispenser 240 kW (430 × 1800 × 450 mm), elk 2 × CCS2 7 m</li>
       <li><b>ZVK</b> (klant, Kromwijk, bestaand): ZVK01 PV (5 × 200 A) en ZVK02 EV + EOS (800 / 630 / 80 / 16 A), gevoed uit 2 × 630 kVA</li>
       <li><b>EMS-veldkast</b>: Pegeo met EMS Groot (model uit de EMS-pagina) naast de ZVK</li>
@@ -325,10 +325,10 @@ function dispenser(naam, pos, nr){ const g = asset(naam, pos, `<b>Dispenser ${nr
   klikbaar(g, g.userData.info); sprite('dispenser ' + nr + ' · 240 kW', V(pos.x, 2.7, pos.z), 0.6, '#1f7cc4'); return g; }
 dispenser('d1', wp(11.05, 47.5), 1); dispenser('d2', wp(10.8, 57.1), 2);   // 9,6 m h.o.h.; per laadkabel een truck (4 vakken), vrije rijstrook langs de poort   // direct na het NP-vlak van de poort          // schets: in de trailervakken, 7 m h.o.h.
 
-// ---------- 3. PV-omvormerskid (dia 'PV opstelling'): frame 5050 × 1800 × 2273 mm, zadeldak, omvormers rug-aan-rug: 3 voor + 2 achter; dwars op de gevel ----------
+// ---------- 3. PV-omvormerskid (dia 'PV opstelling'): frame 5050 × 1800 × 2273 mm, zadeldak, 2 omvormers per zijde + 1 op de kopse kant; dwars op de gevel ----------
 // lokaal x = van de gevel af (5050), z = langs de gevel (1800); DC komt via de kabelladder langs de gevel binnen, AC ondergronds in een sleuf naar de OVK/ZVK
 const PVS = {s: 0.95 + 1.6, n: 2.0 + 3.225};                             // dia 46: PV-ruimte 6450 × 3200 tegen het bestaande hek bij het rokershok (s 1,9), 2 m looproute langs de gevel
-{ const g = asset('pv', wp(PVS.s, PVS.n), '<b>PV-omvormerskid — 5 × Huawei SUN2000-100KTL-M2</b> (dia "PV opstelling")<br>verzinkt frame 5050 × 1800 × 2273 mm met zadeldak, omvormers rug-aan-rug: 3 aan de voorzijde, 2 aan de achterzijde · 700 mm vrij rondom<br>1035 × 700 × 365 mm, ± 90 kg, 100 kW per omvormer · 742,58 kWp (1.388 × Longi 535 Wp, ELIX)<br>DC via de afgedekte kabelladder langs de gevel; AC ondergronds in een sleuf naar de OVK/ZVK (5 × 200 A gG)', YAW - Math.PI/2);
+{ const g = asset('pv', wp(PVS.s, PVS.n), '<b>PV-omvormerskid — 5 × Huawei SUN2000-100KTL-M2</b> (dia "PV opstelling")<br>verzinkt frame 5050 × 1800 × 2273 mm met zadeldak, omvormers: 2 aan elke zijde (rug-aan-rug) en 1 op de kopse kant · 700 mm vrij rondom<br>1035 × 700 × 365 mm, ± 90 kg, 100 kW per omvormer · 742,58 kWp (1.388 × Longi 535 Wp, ELIX)<br>DC via de afgedekte kabelladder langs de gevel; AC ondergronds in een sleuf naar de OVK/ZVK (5 × 200 A gG)', YAW - Math.PI/2);
   const wit = M(0xeef0ef, {roughness: 0.35}), grijs = M(0xc9ced2, {roughness: 0.45}), staal = M(0xa9b0b4, {roughness: 0.4, metalness: 0.8}), dak = M(0x6e767b, {roughness: 0.5, metalness: 0.6});
   const L = 5.05, B = 1.8, H = 2.273;
   // fundatie: 3 dwarsliggers op betonpoeren + 2 langsliggers
@@ -344,7 +344,7 @@ const PVS = {s: 0.95 + 1.6, n: 2.0 + 3.225};                             // dia 
   box(g, L + 0.25, 0.05, 0.06, dak, 0, H - 0.02, 0);
   // omvormers
   const ledT = ctex(256, 64, (c, W, Hh) => { c.fillStyle = '#121418'; c.beginPath(); c.ellipse(W/2, Hh/2, W/2 - 4, Hh/2 - 6, 0, 0, 7); c.fill(); c.fillStyle = '#3fe07a'; for(let k = 0; k < 4; k++){ c.beginPath(); c.arc(78 + k*34, Hh/2, 6, 0, 7); c.fill(); } });
-  const omv = (nr, x, kant) => { const ig = new THREE.Group(); ig.position.set(x, 1.42, kant*0.26); ig.rotation.y = kant > 0 ? 0 : Math.PI; g.add(ig);
+  const omv = (nr, x, kant) => { const ig = new THREE.Group(); if(kant === 0){ ig.position.set(x, 1.42, 0); ig.rotation.y = Math.PI/2; } else { ig.position.set(x, 1.42, kant*0.26); ig.rotation.y = kant > 0 ? 0 : Math.PI; } g.add(ig);
     rbox(ig, 0.98, 0.70, 0.30, 0.07, wit, 0, 0, 0.0); box(ig, 0.95, 0.62, 0.07, grijs, 0, 0, -0.18);
     for(let k = 0; k < 14; k++) box(ig, 0.012, 0.55, 0.06, M(0xa9aeb2, {metalness: 0.5}), -0.42 + k*0.065, 0, -0.19, false);
     plak(ig, 0.30, 0.075, ledT, 0, 0.04, 0.151, 0, true);
@@ -353,8 +353,8 @@ const PVS = {s: 0.95 + 1.6, n: 2.0 + 3.225};                             // dia 
     plak(ig, 0.22, 0.04, lbl('SUN2000-100KTL', 220, 40, '#eef0ef', '#555', '20px Arial'), 0.3, 0.27, 0.151);
     plak(ig, 0.16, 0.16, lbl(String(nr), 64, 64, '#f2b400', '#1b2a36', 'bold 44px Arial'), -0.36, 0.22, 0.152);
     for(const y of [-0.25, 0.25]) box(ig, 0.9, 0.05, 0.05, staal, 0, y, -0.22); };                                           // montagebeugels op het frame
-  omv(1, -1.75, 1); omv(2, -0.05, 1); omv(3, 1.65, 1); omv(4, -0.9, -1); omv(5, 0.8, -1);
-  box(g, 0.4, 0.55, 0.22, M(0xd9dcd8, {roughness: 0.5}), L/2 - 0.3, 1.35, 0.25);                                              // AC-werkschakelaar / aansluitkast aan de kopse kant
+  omv(1, -1.2, 1); omv(2, 0.6, 1); omv(3, -1.2, -1); omv(4, 0.6, -1); omv(5, L/2 + 0.12, 0);                                 // 2 per zijde + 1 op de kopse kant
+  box(g, 0.4, 0.55, 0.22, M(0xd9dcd8, {roughness: 0.5}), 1.75, 1.35, 0.25);                                                  // AC-werkschakelaar / aansluitkast
   const vrij = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(L + 1.4, 0.01, B + 1.4)), new THREE.LineBasicMaterial({color: 0xd4a017})); vrij.position.y = 0.03; g.add(vrij);
   klikbaar(g, g.userData.info); sprite('PV · 5 × Huawei SUN2000-100KTL-M2', g.position.clone().add(V(0, 3.2, 0)), 0.8, '#d4a017'); }
 
