@@ -73,7 +73,7 @@
     <label>Gebouwen doorzichtig <input type="checkbox" id="tBagT"></label>
     <label>Hekwerk + haag <input type="checkbox" id="tHek" checked></label>
     <div class="grp">Assets</div>
-    <label>Labels <input type="checkbox" id="tLabel" checked></label>
+    <label>Labels <input type="checkbox" id="tLabel"></label>
     <label>Maatvoering EOS-ruimte <input type="checkbox" id="tVrij"></label>
     <label>PV-panelen op het dak <input type="checkbox" id="tPvDak" checked></label>
     <label>Vrachtwagen bij dispenser 1 <input type="checkbox" id="tTruck" checked></label>
@@ -132,7 +132,7 @@ function sprite(txt, pos, s, kleur){ const c = document.createElement('canvas');
   c.width = W; c.height = 96; const g = c.getContext('2d'); g.font = 'bold 40px system-ui, Arial'; g.fillStyle = 'rgba(255,255,255,0.94)'; g.beginPath(); g.roundRect ? g.roundRect((W - tw)/2, 10, tw, 76, 14) : g.rect((W - tw)/2, 10, tw, 76); g.fill();
   g.strokeStyle = kleur || '#1b4f8a'; g.lineWidth = 4; g.stroke(); g.fillStyle = '#17212a'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(txt, W/2, 49);
   const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; const sp = new THREE.Sprite(new THREE.SpriteMaterial({map: t, depthTest: false, transparent: true, sizeAttenuation: false}));
-  const k = (s || 1)*0.75; sp.scale.set(0.045*k*W/96, 0.045*k, 1); sp.position.copy(pos); sp.renderOrder = 10; scene.add(sp); LABELS.push(sp); return sp; }
+  const k = (s || 1)*0.75; sp.scale.set(0.045*k*W/96, 0.045*k, 1); sp.position.copy(pos); sp.renderOrder = 10; sp.visible = $t('tLabel').checked; scene.add(sp); LABELS.push(sp); return sp; }
 const meld = (() => { const el = document.getElementById('melding'); let t = 0; return h => { el.innerHTML = h; el.classList.add('toon'); clearTimeout(t); t = setTimeout(() => el.classList.remove('toon'), 6000); }; })();
 const $t = id => document.getElementById(id);
 
@@ -432,9 +432,9 @@ const HEK = new THREE.Group(); scene.add(HEK);
       const ns = Math.floor(L/0.125), sp = new THREE.InstancedMesh(new THREE.BoxGeometry(0.025, H, 0.025), zink, ns);
       for(let i = 0; i < ns; i++){ mm.makeTranslation(0.06 + i*0.125, H/2 + 0.05, 0); sp.setMatrixAt(i, mm); } sp.castShadow = true; g.add(sp); }
     return g; };
-  const N0 = -40, A = wp(fs(N0), N0), B = wp(fs(25), 25), G1 = wp(fs(35), 35), C = wp(fs(NC), NC);                                       // loopt door langs de kopgevel (Cyclomedia)
+  const N0 = -40, A = wp(fs(N0), N0), B = wp(fs(26.7), 26.7), G1 = wp(fs(34.7), 34.7), C = wp(fs(NC), NC);                                       // loopt door langs de kopgevel (Cyclomedia)
   gaas2 = true; const g1 = seg(A, B, 'gaas'); gaas2 = false; seg(G1, C, 'spijl');
-  // vrijdragende schuifpoort ± 10 m bij de NP-zone (Cyclomedia), gesloten; staart schuift binnen langs het hek
+  // vrijdragende schuifpoort ± 8 m (luchtfoto 2024: n 26,7–34,7), gesloten; staart schuift binnen langs het hek
   { const D = G1.clone().sub(B), L = D.length(); D.normalize(); const g = new THREE.Group(); g.position.copy(B); g.rotation.y = Math.atan2(-D.z, D.x); HEK.add(g);
     for(const x of [0, L]) box(g, 0.14, H + 0.2, 0.14, zink, x, (H + 0.2)/2, 0);
     for(const x of [-0.3, -2.8]) { box(g, 0.12, 1.0, 0.12, zink, x, 0.5, 0.32); box(g, 0.3, 0.12, 0.25, matZwart, x, 0.28, 0.32); }          // geleidepalen met rolblokken
@@ -443,12 +443,15 @@ const HEK = new THREE.Group(); scene.add(HEK);
     for(let i = 0; i < ns; i++){ mm.makeTranslation(0.06 + i*0.125, 0.41 + (H - 0.4)/2, 0.2); sp.setMatrixAt(i, mm); } sp.castShadow = true; g.add(sp);
     for(let x = -3.4; x < 0; x += 0.6) box(g, 0.04, 0.04, 0.04, zink, x, 0.33, 0.2);                                                          // staart (contragewicht)
     box(g, 0.3, 0.4, 0.25, M(0x3b3f45), L + 0.4, 0.2, 0.3); cyl(g, 0.05, 0.08, M(0xf2a000, {emissive: 0xf2a000, emissiveIntensity: 0.5}), L, H + 0.25, 0, null, 12);   // aandrijving + oranje lamp
-    // NP-arcering op de verharding voor de poort
+    // NP-arcering zoals ingemeten op de luchtfoto 2024 (gedraaid vlak ± 5 × 8 m, ± 2 m binnen het hek)
     const np = ctex(256, 256, (c, W, Hh) => { c.clearRect(0, 0, W, Hh); c.strokeStyle = 'rgba(255,255,255,0.9)'; c.lineWidth = 6; c.strokeRect(4, 4, W - 8, Hh - 8); c.beginPath(); c.moveTo(4, 4); c.lineTo(W - 4, Hh - 4); c.moveTo(W - 4, 4); c.lineTo(4, Hh - 4); c.stroke(); c.fillStyle = 'rgba(255,255,255,0.9)'; c.font = 'bold 60px Arial'; c.textAlign = 'center'; c.fillText('NP', W/2, Hh/2 + 70); });
-    const pm = new THREE.Mesh(new THREE.PlaneGeometry(L, 8), new THREE.MeshBasicMaterial({map: np, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -6})); pm.rotation.x = -Math.PI/2; pm.position.set(L/2, 0.04, 4.3); g.add(pm);
+    const q = [[10.72, 26.5], [15.67, 25.15], [15.34, 32.74], [10.3, 34.48]].map(([a, b]) => wp(a, b)), qg = new THREE.BufferGeometry();
+    qg.setAttribute('position', new THREE.Float32BufferAttribute([q[0], q[1], q[2], q[0], q[2], q[3]].flatMap(p => [p.x, 0.04, p.z]), 3));
+    qg.setAttribute('uv', new THREE.Float32BufferAttribute([0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0], 2));
+    const pm = new THREE.Mesh(qg, new THREE.MeshBasicMaterial({map: np, transparent: true, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -6})); HEK.add(pm);
     g.traverse(o => { if(o.isMesh) o.userData.info = '<b>Schuifpoort</b> (bestaand, Cyclomedia) ± 10 m vrijdragend met NP-zone ervoor'; }); }
-  // bij de kruising met een ronde hoek (r ± 4 m) mee met de weg langs het fietspad: ± 20° van de gevelrichting af (Nicks lijn), ± 90 m
-  { const h1 = C.clone().sub(B).normalize(), h2 = U.clone().negate().multiplyScalar(Math.cos(0.35)).addScaledVector(N, Math.sin(0.35)).normalize(), r = 4, nk = 5;
+  // bij de kruising met een ronde hoek (r ± 4 m) mee met de weg langs het fietspad: ± 12,5° van de gevelrichting af (bovenaanzicht Nick), ± 90 m
+  { const h1 = C.clone().sub(B).normalize(), h2 = U.clone().negate().multiplyScalar(Math.cos(0.22)).addScaledVector(N, Math.sin(0.22)).normalize(), r = 4, nk = 5;
     let p = C.clone(); const hoek = Math.acos(THREE.MathUtils.clamp(h1.dot(h2), -1, 1));
     for(let k = 0; k < nk; k++){ const d = h1.clone().lerp(h2, (k + 0.5)/nk).normalize(), q = p.clone().addScaledVector(d, r*hoek/nk); seg(p, q, 'spijl'); p = q; }
     seg(p, p.clone().addScaledVector(h2, 90), 'spijl'); }
@@ -477,7 +480,7 @@ const HEK = new THREE.Group(); scene.add(HEK);
   // haag tussen hek en weg (Street View / Cyclomedia) en bomen bij de hoek
   let sd = 7; const rnd = () => (sd = (sd*16807) % 2147483647)/2147483647;
   const bm = [0x3d6528, 0x47722e, 0x557f36, 0x6a7a38].map(c => M(c, {roughness: 0.95})), bgeo = new THREE.IcosahedronGeometry(1, 1);
-  for(let k = 0; k < 4; k++){ const im = new THREE.InstancedMesh(bgeo, bm[k], 45); for(let i = 0; i < 45; i++){ let x = -N0 + 4 + rnd()*56; if(x + N0 > 23 && x + N0 < 37) x += 15; const r = 0.45 + rnd()*0.45;   // vrij voor de poort
+  for(let k = 0; k < 4; k++){ const im = new THREE.InstancedMesh(bgeo, bm[k], 45); for(let i = 0; i < 45; i++){ let x = -N0 + 4 + rnd()*56; if(x + N0 > 25.5 && x + N0 < 36) x += 15; const r = 0.45 + rnd()*0.45;   // vrij voor de poort
       mm.compose(V(x, r*0.8, -(0.7 + rnd()*1.3)), new THREE.Quaternion(), V(r, r*(0.9 + rnd()*0.6), r)); im.setMatrixAt(i, mm); } im.castShadow = true; g1.add(im); }
   const stam = M(0x5a4632, {roughness: 0.9});
   for(const [ds, dn] of [[3.5, -2], [5, 3], [2.5, 7.5], [-8, 6.5], [-16, 9.5]]){ const p = C.clone().addScaledVector(U, ds).addScaledVector(N, dn); const t = new THREE.Group(); t.position.copy(p); HEK.add(t);
