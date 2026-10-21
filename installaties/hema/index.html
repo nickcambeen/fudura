@@ -238,10 +238,10 @@ function noodPand(){ const r = PVNOOD(), h = 11; const sh = new THREE.Shape(r.ma
 // mega-rookworst op de gevel (op verzoek): gebogen worst met touwtje, plat tegen de wand aan de terreinzijde
 let MEGA = null;
 function megaWorst(h){ if(MEGA){ scene.remove(MEGA); MEGA = null; } let wn = WN; try{ const w = wandOp(-14); if(w !== null) wn = w; }catch(e){}
-  const g = new THREE.Group(); MEGA = g; g.position.copy(wp(-14, wn + 1.15)); g.position.y = h*0.52; g.rotation.y = YAW; scene.add(g);
-  const R = Math.min(13, h*0.95), r = Math.min(1.3, h*0.11), arc = Math.PI*1.18;
-  const worst = new THREE.Mesh(new THREE.TorusGeometry(R, r, 20, 90, arc), M(0x8a3418, {roughness: 0.35, metalness: 0.05})); worst.rotation.z = Math.PI/2 - arc/2 + Math.PI; worst.position.y = R*0.55; g.add(worst);
-  for(const a of [0, arc]){ const k = new THREE.Mesh(new THREE.SphereGeometry(r*0.98, 16, 12), M(0xc9b48a, {roughness: 0.6})); const t = a + worst.rotation.z; k.position.set(Math.cos(t)*R, R*0.55 + Math.sin(t)*R, 0); k.scale.set(1, 1, 0.9); g.add(k);
+  const g = new THREE.Group(); MEGA = g; g.position.copy(wp(-14, wn + 1.15)); g.position.y = 0; g.rotation.y = YAW; scene.add(g);
+  const R = h*0.55, r = Math.min(1.2, h*0.09), arc = Math.PI*1.18, yc = h - 0.4*R - r - 0.4;
+  const worst = new THREE.Mesh(new THREE.TorusGeometry(R, r, 20, 90, arc), M(0x8a3418, {roughness: 0.35, metalness: 0.05})); worst.rotation.z = Math.PI/2 - arc/2 + Math.PI; worst.position.y = yc; g.add(worst);
+  for(const a of [0, arc]){ const k = new THREE.Mesh(new THREE.SphereGeometry(r*0.98, 16, 12), M(0xc9b48a, {roughness: 0.6})); const t = a + worst.rotation.z; k.position.set(Math.cos(t)*R, yc + Math.sin(t)*R, 0); k.scale.set(1, 1, 0.9); g.add(k);
     if(a === 0){ const tw = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 2.2, 6), M(0xe8e2d0)); tw.position.copy(k.position).add(V(0.6, -1.2, 0)); tw.rotation.z = 0.5; g.add(tw); } }
   g.traverse(o => { if(o.isMesh){ o.castShadow = true; o.userData.rookworst = true; KLIK.push(o); } }); renderer.shadowMap.needsUpdate = true; vuil(4); }
 let LETTERS = null;
