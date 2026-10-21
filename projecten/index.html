@@ -355,12 +355,18 @@ tr.waiting td{color:var(--muted)}
 @media (max-width:760px){.plan{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 /* activiteitentabel: omschrijving zo breed mogelijk */
-.acts-wrap table{min-width:720px;table-layout:fixed}
+.acts-wrap table{min-width:560px;table-layout:fixed;width:100%}
 .acts .desc{white-space:normal;overflow-wrap:break-word;word-break:normal;hyphens:manual}
 .acts select.ownersel{width:100%}
 .acts select.st-sel{width:100%}
 .acts input[type=date]{width:100%}
 .dash{grid-template-columns:minmax(0,1fr) 270px}
+
+.acts td{padding:4px 6px}
+.acts th{padding:5px 6px}
+.acts select,.acts input[type=date]{font-size:12px;padding:3px 4px}
+.acts .stddue{white-space:nowrap;font-size:11px}
+.acts td:last-child{text-align:center;padding-inline:0}
 </style>
 </head>
 <body>
@@ -762,11 +768,10 @@ function dashHTML(p){
   const track=PHASES.map(ph=>{const pr=phaseProg(p,ph.id);return `<button type="button" data-selphase="${ph.id}" class="${ph.id<p.phase?"done":""} ${ph.id===p.phase?"cur":""} ${ph.id===sel?"sel":""}"><span class="t">${esc(ph.label)}</span><span class="c">${ph.id===p.phase?"Huidige fase · ":""}${pr.done}/${pr.total}</span></button>`}).join("");
   let acts=actsOf(p,sel);if(S.actFilter)acts=acts.filter(a=>a.status===S.actFilter);
   const actRows=acts.map(a=>`<tr data-aid="${a.id}" class="${a.status==="afgerond"?"is-done":""} ${a.status==="nvt"?"is-nvt":""}">
-    <td><select class="st-sel st-${a.status}" data-af="status" aria-label="Status" ${canDo(p,a)?"":`disabled title="Alleen ${esc(effOwner(p,a)||"de "+a.role.toLowerCase())} kan deze taak afronden"`}>${Object.entries(ACT_ST).map(([k,v])=>`<option value="${k}" ${a.status===k?"selected":""}>${v}</option>`).join("")}</select></td>
+    <td><select class="st-sel st-${a.status}" data-af="status" aria-label="Status" ${canDo(p,a)?"":`disabled title="Alleen ${esc(effOwner(p,a)||"de "+a.role.toLowerCase())} kan deze taak afronden"`}>${Object.entries(ACT_ST).map(([k,v])=>`<option value="${k}" ${a.status===k?"selected":""}>${v}</option>`).join("")}</select>${a.doneAt?`<div class="small">afgerond ${fmtDate(a.doneAt)}</div>`:""}</td>
     <td class="desc">${esc(a.title)}${(()=>{const w=waitsOn(p,a);return w?`<div class="wait" title="Wacht op: ${esc(w.title)}">⊘ wacht op vorige stap</div>`:""})()}${a.gate?`<div class="small">Voorwaarde voor de volgende fase</div>`:""}</td>
     <td>${canEditHead()?`<select data-af="owner" aria-label="Behandelaar" class="ownersel">${personOptions(a.role,a.owner||"",teamDefault(p,a)?"Standaard: "+teamDefault(p,a):"Iedere "+(a.role||"collega").toLowerCase())}</select>`:`<span>${esc(effOwner(p,a)||"Iedere "+(a.role||"collega").toLowerCase())}</span>`}</td>
-    <td>${(()=>{const ed=effDue(p,a),late=ed&&ed<todayStr()&&!isClosed(a);return `<input type="date" data-af="due" value="${esc(a.due||"")}" aria-label="Deadline" class="${late&&a.due?"late":""}" ${canEditHead()?"":"disabled"}>${!a.due&&ed?`<div class="small ${late?"late":""}">standaard ${fmtDate(ed)}</div>`:""}`})()}</td>
-    <td class="num">${a.doneAt?fmtDate(a.doneAt):""}</td>
+    <td>${(()=>{const ed=effDue(p,a),late=ed&&ed<todayStr()&&!isClosed(a);return `<input type="date" data-af="due" value="${esc(a.due||"")}" aria-label="Deadline" class="${late&&a.due?"late":""}" ${canEditHead()?"":"disabled"}>${!a.due&&ed?`<div class="small stddue ${late?"late":""}" title="Standaarddeadline">std. ${fmtDate(ed)}</div>`:""}`})()}</td>
     <td>${canEditHead()?`<button class="rowbtn" type="button" data-delact title="Activiteit verwijderen" aria-label="Activiteit verwijderen">✕</button>`:""}</td></tr>`).join("");
   const openHere=actsOf(p,p.phase).filter(a=>!isClosed(a)).length,blk=gateOpen(p);
   const gate=sel===p.phase&&canEditHead()?`<div class="gate"><span>${blk?`<b class="late">Project gaat pas door na: ${esc(blk.title)}.</b> `:""}${p.phase<5?(openHere?`<b>${openHere}</b> activiteit${openHere>1?"en":""} nog open in deze fase.`:"Alle activiteiten in deze fase zijn afgerond."):"Project staat in de laatste fase."}</span>
@@ -786,8 +791,8 @@ function dashHTML(p){
           <select id="actFilter" aria-label="Filter op status"><option value="">Alle statussen</option>${Object.entries(ACT_ST).map(([k,v])=>`<option value="${k}" ${S.actFilter===k?"selected":""}>${v}</option>`).join("")}</select></header>
         <div class="phase-track">${track}</div>
         ${gate}
-        <div class="acts-wrap"><table class="acts"><colgroup><col style="width:104px"><col><col style="width:178px"><col style="width:132px"><col style="width:84px"><col style="width:30px"></colgroup><thead><tr><th>Status</th><th>Omschrijving</th><th>Behandelaar</th><th>Deadline</th><th>Afgerond</th><th></th></tr></thead>
-          <tbody>${actRows||`<tr><td colspan="6" class="small">Geen activiteiten${S.actFilter?" met deze status":" in deze fase"}.</td></tr>`}</tbody></table></div>
+        <div class="acts-wrap"><table class="acts"><colgroup><col style="width:112px"><col><col style="width:184px"><col style="width:124px"><col style="width:30px"></colgroup><thead><tr><th>Status</th><th>Omschrijving</th><th>Behandelaar</th><th>Deadline</th><th></th></tr></thead>
+          <tbody>${actRows||`<tr><td colspan="5" class="small">Geen activiteiten${S.actFilter?" met deze status":" in deze fase"}.</td></tr>`}</tbody></table></div>
         ${missingStd(p,sel)?`<div class="gate"><span>Deze fase wijkt af van de standaardwerkwijze.</span><button class="btn" type="button" data-act="syncStd">Standaardstappen bijwerken</button></div>`:""}
         <form class="addact" id="addAct" ${canEditHead()?"":"hidden"}><input class="grow" id="naTitle" placeholder="Activiteit toevoegen aan ${esc(PHASES[sel].label)}" aria-label="Nieuwe activiteit"><select id="naRole" aria-label="Rol">${ROLES.map(r=>`<option>${r}</option>`).join("")}</select><button class="btn" type="submit">Toevoegen</button></form>
       </section>
