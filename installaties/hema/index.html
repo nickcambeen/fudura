@@ -192,7 +192,7 @@ const hemaGevelTex = ctex(256, 512, (c, W, H) => { const gr = c.createLinearGrad
   c.fillStyle = '#5d6466'; c.fillRect(0, H - 14, W, 14); });                                                                              // plint
 const hemaWandM = (() => { const t = hemaGevelTex; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1/2.2, -1); t.offset.set(0, 1); const m = M(0xffffff, {map: t, roughness: 0.55, metalness: 0.2}); bagMats.push(m); return m; })();
 let PVRING = null; const PVNOOD = () => { const B0 = V(GB[0], 0, GB[1]), W = N.clone().negate(); return [[0.5, 0], [-75, 0], [-75, 60], [0.5, 60]].map(([a, b]) => { const p = B0.clone().addScaledVector(U, a).addScaledVector(W, b); return [p.x, p.z]; }); };
-const HEMA_PT = [[132734.7, 458066.4], [132690, 457850]]; const BAGR = []; const VR = {img: null, bb: null, bag: false, klaar: false, probeer(){}};                          // adres Atoomweg 60 en de aanbouw bij het energieplein
+const HEMA_PT = [[132734.7, 458066.4], [132690, 457850]]; const MASTEN = []; const BAGR = []; const VR = {img: null, bb: null, bag: false, klaar: false, probeer(){}};                          // adres Atoomweg 60 en de aanbouw bij het energieplein
 function inPoly(x, y, r){ let ok = false; for(let i = 0, j = r.length - 1; i < r.length; j = i++){ const [xi, yi] = r[i], [xj, yj] = r[j]; if(((yi > y) !== (yj > y)) && (x < (xj - xi)*(y - yi)/(yj - yi) + xi)) ok = !ok; } return ok; }
 // gebouwen staan direct (WFS, standaardhoogte) en groeien daarna naar de 3DBAG-hoogte; 3DBAG alleen rond het terrein (sneller)
 (async function laadBag(){
@@ -474,7 +474,7 @@ const HEK = new THREE.Group(); scene.add(HEK);
       box(k, 0.002, 0.9, 0.7, M(0x8a8c87), 0.502, 0.87, 0, false); box(k, 0.03, 0.12, 0.04, matZwart, 0.52, 0.95, 0.25);
       k.traverse(o => { if(o.isMesh){ o.userData.info = '<b>Bestaande kast naast de poort</b> (Cyclomedia) — functie nog onbekend (poortbesturing / aansluitkast?) · ± 1,0 × 0,75 × 1,4 m op betonsokkel'; KLIK.push(o); } }); }
     // lantaarnpalen (Cyclomedia): 2 terreinmasten met schijnwerpers bij het hek / de poort
-    const mast = (p, hgt, arm, info) => { const L = new THREE.Group(); L.position.copy(p); L.rotation.y = YAW; HEK.add(L);
+    const mast = (p, hgt, arm, info) => { MASTEN.push(p.clone()); const L = new THREE.Group(); L.position.copy(p); L.rotation.y = YAW; HEK.add(L);
       cyl(L, 0.09, hgt, zink, 0, hgt/2, 0, null, 10); cyl(L, 0.16, 0.5, zink, 0, 0.25, 0, null, 10);
       if(arm){ box(L, 1.6, 0.07, 0.07, zink, -0.8, hgt - 0.1, 0); box(L, 0.6, 0.1, 0.28, M(0x50555a, {roughness: 0.4}), -1.55, hgt - 0.18, 0); box(L, 0.5, 0.02, 0.2, M(0xfff6d8, {emissive: 0xfff2c0, emissiveIntensity: 0.35}), -1.55, hgt - 0.24, 0, false); }
       else for(const z of [-0.3, 0.3]){ const sw = new THREE.Group(); sw.position.set(0.15, hgt - 0.1, z); sw.rotation.z = -0.5; L.add(sw); box(sw, 0.45, 0.12, 0.4, M(0x3a3f44, {roughness: 0.4}), 0.15, 0, 0); box(sw, 0.02, 0.1, 0.36, M(0xfff6d8, {emissive: 0xfff2c0, emissiveIntensity: 0.35}), 0.38, 0, 0, false); }
@@ -564,7 +564,8 @@ function bootTrailers(img, bb){
   cand.sort((p, q2) => q2.score - p.score); const acc = [];
   for(const c of cand){ if(acc.some(a2 => { const dx = (c.x - a2.x)/PPM, dy = (c.y - a2.y)/PPM, al = Math.abs(dx*a2.ux + dy*a2.uy), dw = Math.abs(-dx*a2.uy + dy*a2.ux); return (al < a2.L/2 + 0.3 && dw < 2.2) || Math.hypot(dx, dy) < 2; })) continue; acc.push(c); }
   const vond = [];
-  for(const c of acc){ const P = toSN(c.x, c.y); if(vrij(P.s, P.n, P.X, P.Y, P.q)) vond.push({p: P.q, dir: V(c.ux, 0, c.uy).normalize(), L: c.L}); }
+  const raaktMast = (q, ux, uy, L) => MASTEN.some(m => { const dx = m.x - q.x, dz = m.z - q.z, al = Math.abs(dx*ux + dz*uy), dw = Math.abs(-dx*uy + dz*ux); return al < L/2 + 0.8 && dw < 1.28 + 0.8; });   // niets door een lantaarnpaal
+  for(const c of acc){ const P = toSN(c.x, c.y); if(vrij(P.s, P.n, P.X, P.Y, P.q) && !raaktMast(P.q, c.ux, c.uy, c.L)) vond.push({p: P.q, dir: V(c.ux, 0, c.uy).normalize(), L: c.L}); }
   // bouwen (instanced): wissellaadbak 7,45 m op poten, oplegger 13,6 m (+ trekker als het geheel > 15,5 m), bakwagen 9,5–12 m
   const zijT = ctex(1024, 256, (c, Wc, Hc) => { c.fillStyle = '#f3f3f0'; c.fillRect(0, 0, Wc, Hc); c.fillStyle = '#e1e1dc'; for(let x = 0; x < Wc; x += 64) c.fillRect(x, 0, 3, Hc);
     c.fillStyle = '#d2141b'; c.fillRect(Wc - 230, 40, 190, 150); c.fillStyle = '#fff'; c.font = 'bold 64px Arial'; c.textAlign = 'center'; c.fillText('HEMA', Wc - 135, 138);
