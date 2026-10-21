@@ -480,7 +480,7 @@ function bouwPvDak(poly, h){ while(PVDAK.children.length) PVDAK.remove(PVDAK.chi
   PVDAK.add(IM); KLIK.push(IM);
   // DC-kabelladder: langs de dakrand en verticaal langs de gevel tussen omvormer 3 en 4 (afgedekt)
   let wLad = WN; try{ const w = wandOp(PVS.s); if(w !== null) wLad = w; }catch(e){}
-  PVS.n = wLad + 1.7 + 2.65; { const p = wp(PVS.s, PVS.n); ASSET.pv.position.x = p.x; ASSET.pv.position.z = p.z; }          // skid (incl. voet) op 1,7 m van de gevel (Nick)
+  PVS.n = wLad + 1.8 + 0.7 + 2.65; { const p = wp(PVS.s, PVS.n); ASSET.pv.position.x = p.x; ASSET.pv.position.z = p.z; }          // skid begint 0,7 m na de vluchtdeur van 1,8 m (Nick): 2,5 m van de gevel
   { // bestaand trottoir langs de hele gevel (± 1,5 m breed, grijze tegels)
     const tg = ctex(128, 128, (c, W, Hh) => { c.fillStyle = '#a9aaa6'; c.fillRect(0, 0, W, Hh); c.strokeStyle = '#8f908c'; c.lineWidth = 3; for(let x = 0; x <= W; x += 42.7){ c.beginPath(); c.moveTo(x, 0); c.lineTo(x, Hh); c.stroke(); } for(let y = 0; y <= Hh; y += 42.7){ c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); } });
     tg.wrapS = tg.wrapT = THREE.RepeatWrapping; const sa = -70, sb = 19, bw = 1.5; tg.repeat.set((sb - sa)/0.9, bw/0.9);
@@ -564,7 +564,7 @@ const HEK = new THREE.Group(); scene.add(HEK);
   { const s0 = 0.95, n1 = 10.3,                                        // hek rokershokzijde op Nicks lijn (± 1,15 m verder dan eerst)
                                             // kopse kant = bestaand hek aan de kant van het rokershok blijft staan
     sE = fs(n1), gm0 = 9.19 - 1.5, gm1 = 9.19 + 1.5, vd = 11.95;                                    // vluchtdeur 2 direct naast de poort gaas2 = true;
-    seg(wp(s0, 0.0), wp(s0, 8.75), 'gaas');                                   // vluchtdeur 1 direct tegen de gevel (gevel BAG op n ± −1,2) seg(wp(s0, 9.95), wp(s0, n1), 'gaas');          // vluchtdeur 1 in de looproute langs de gevel                                   // kopse kant (vluchtdeur 1 bij n 8,5)
+    seg(wp(s0, 0.6), wp(s0, 8.75), 'gaas');                                   // vluchtdeur 1 direct tegen de gevel (gevel BAG op n ± −1,2) seg(wp(s0, 9.95), wp(s0, n1), 'gaas');          // vluchtdeur 1 in de looproute langs de gevel                                   // kopse kant (vluchtdeur 1 bij n 8,5)
     seg(wp(s0, n1), wp(gm0, n1), 'gaas'); seg(wp(gm1, n1), wp(vd - 0.6, n1), 'gaas'); seg(wp(vd + 0.6, n1), wp(sE, n1), 'gaas'); gaas2 = false;
     const pg = new THREE.Group(); pg.position.copy(wp(9.19, n1)); pg.rotation.y = YAW; HEK.add(pg); dxL(DXS, wp(gm0, n1), wp(gm1, n1), 'POORT'); dxT(DXS, wp(9.19 - 1.2, n1 + 0.35), 'POORT 2x1500', 0.2, 'TEKST');
     for(const x of [-1.5, 1.5]) box(pg, 0.1, 2.2, 0.1, zink, x, 1.1, 0);
@@ -574,7 +574,7 @@ const HEK = new THREE.Group(); scene.add(HEK);
     box(pg, 0.03, 0.25, 0.06, matZwart, 0, 1.05, 0.04);
     plak(pg, 0.9, 0.3, lbl('⚡ Verboden toegang voor onbevoegden', 512, 170, '#ffd500', '#111', 'bold 40px Arial'), -2.6, 1.4, 0.03);
     const bord = lbl('NOODUITGANG', 384, 96, '#169b48', '#ffffff', 'bold 52px Arial');
-    const vluchtdeur = (p, rot) => { { const dd = V(Math.cos(rot), 0, -Math.sin(rot)); dxL(DXS, p.clone().addScaledVector(dd, -0.55), p.clone().addScaledVector(dd, 0.55), 'VLUCHTDEUR'); dxT(DXS, p.clone().addScaledVector(dd, -0.5).add(V(0.3, 0, 0.3)), 'VLUCHTDEUR', 0.2, 'TEKST'); } const d = new THREE.Group(); d.position.copy(p); d.rotation.y = rot; HEK.add(d);             // lokaal +z = buitenkant
+    const vluchtdeur = (p, rot, bd) => { bd = bd || 1.1; { const dd = V(Math.cos(rot), 0, -Math.sin(rot)); dxL(DXS, p.clone().addScaledVector(dd, -bd/2), p.clone().addScaledVector(dd, bd/2), 'VLUCHTDEUR'); dxT(DXS, p.clone().addScaledVector(dd, -0.5).add(V(0.3, 0, 0.3)), 'VLUCHTDEUR', 0.2, 'TEKST'); } const d = new THREE.Group(); d.scale.x = bd/1.1; d.position.copy(p); d.rotation.y = rot; HEK.add(d);             // lokaal +z = buitenkant
       for(const x of [-0.6, 0.6]) box(d, 0.1, 2.3, 0.1, zink, x, 1.15, 0); box(d, 1.3, 0.08, 0.1, zink, 0, 2.3, 0);
       const t = gaasG.clone(); t.needsUpdate = true; t.wrapS = THREE.RepeatWrapping; t.repeat.set(0.4, 1);
       const lf = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 1.9), new THREE.MeshStandardMaterial({map: t, transparent: true, alphaTest: 0.35, side: THREE.DoubleSide, roughness: 0.5, metalness: 0.3})); lf.position.set(0, 1.03, 0); d.add(lf);
@@ -582,7 +582,7 @@ const HEK = new THREE.Group(); scene.add(HEK);
       box(d, 0.85, 0.04, 0.04, M(0xc8102e, {roughness: 0.4}), 0, 1.0, -0.09); for(const x of [-0.42, 0.42]) box(d, 0.04, 0.04, 0.08, M(0xc8102e), x, 1.0, -0.05);   // panieksluiting binnenzijde
       plak(d, 0.6, 0.15, bord, 0, 2.48, 0.03); plak(d, 0.6, 0.15, bord, 0, 2.48, -0.03, Math.PI);
       d.traverse(o => { if(o.isMesh) o.userData.info = '<b>Vluchtdeur</b> 1 m, draait naar buiten, panieksluiting aan de binnenzijde (vrij uitgang zonder sleutel) · bord NOODUITGANG'; }); };
-    vluchtdeur(wp(s0, -0.6), YAW - Math.PI/2); vluchtdeur(wp(s0, 9.35), YAW - Math.PI/2); vluchtdeur(wp(vd, n1), YAW);
+    vluchtdeur(wp(s0, -0.3), YAW - Math.PI/2, 1.8);                   // 1,8 m breed, tegen de gevel vluchtdeur(wp(s0, 9.35), YAW - Math.PI/2); vluchtdeur(wp(vd, n1), YAW);
     // looppaden (dia 46, rood): langs het hek aan de rokershokzijde en de trailerzijde, plus 2 m looproute tussen de PV-ruimte en de gevel
     const kl = ctex(128, 128, (c, W, Hh) => { c.fillStyle = '#9a5a4a'; c.fillRect(0, 0, W, Hh); c.strokeStyle = '#7d4538'; c.lineWidth = 3; for(let y = 0; y <= Hh; y += 16){ c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); for(let x = (y/16 % 2) ? 0 : 16; x <= W; x += 32){ c.beginPath(); c.moveTo(x, y); c.lineTo(x, y + 16); c.stroke(); } } });
     kl.wrapS = kl.wrapT = THREE.RepeatWrapping;
@@ -729,6 +729,7 @@ function bouwMaat(){
     const l = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), lijnM(kleur)); l.renderOrder = 9; VRIJ.add(l); for(let i = 0; i < pts.length; i += 2) dxL(DXM, pts[i], pts[i + 1], 'MAAT');
     lab(Math.round(L*1000) + '', (a0 + a1)/2, (b0 + b1)/2, kleur, 0.36, 'MAAT'); return L; };
   const zone = (cs, cn, ls, ln) => ({s0: cs - ls/2, s1: cs + ls/2, n0: cn - ln/2, n1: cn + ln/2});
+  if(omhul(ASSET.eos, 0.5).s0 > 1e8){ const el = $t('maatInfo'); setTimeout(() => { if(VRIJ.visible || $t('tVrij').checked) bouwMaat(); }, 1500); return; }   // modellen nog aan het laden
   const eosB = omhul(ASSET.eos, 0.5), evB = omhul(ASSET.ev, 0.3), pvB = omhul(ASSET.pv, 0.35), nsaB = omhul(ASSET.nsa, 0.3), zvkB = omhul(ASSET.zvk, 0.5);
   const zE = {s0: (eosB.s0 + eosB.s1)/2 - 7.575/2, s1: (eosB.s0 + eosB.s1)/2 + 7.575/2, n0: eosB.n0 - 1.0, n1: Math.max(eosB.n0 - 1.0 + 4.07, eosB.n1 + 1.65)};   // dia 35: 1000 achter, 1650 voor (deurzwaai)
   const zD = zone((evB.s0 + evB.s1)/2 + 0.5, (evB.n0 + evB.n1)/2, 3.9, 2.98);
@@ -756,7 +757,7 @@ function bouwMaat(){
   ok(`EOS-zone binnen het hek (${mm(hN1 - zE.n1)} tot hek)`, zE.n1 <= hN1 + 0.01 && zE.s0 >= hS0);
   ok(`DC-unit-zone binnen het hek (${mm(hSE(zD.n1) - zD.s1)} wegzijde, ${mm(hN1 - zD.n1)} trailerzijde)`, zD.s1 <= hSE(zD.n1) + 0.01 && zD.n1 <= hN1 + 0.01);
   ok(`PV-zone binnen het hek (${mm(zP.s0 - hS0)} tot hek)`, zP.s0 >= hS0 - 0.01);
-  ok(`PV-skid ↔ gevel ${mm(pvB.n0 - gevel)} (eis 1700)`, Math.abs(pvB.n0 - gevel - 1.7) < 0.06);
+  ok(`PV-skid ↔ gevel ${mm(pvB.n0 - gevel)} (vluchtdeur 1800 + 700 = 2500)`, pvB.n0 - gevel > 2.4);
   ok(`EOS-zone ↔ DC-unit-zone overlap ${mm(Math.max(0, zE.s1 - zD.s0))} (dia 43: max ± 1000 gecombineerd)`, zE.s1 - zD.s0 < 1.05);
   // afstanden tussen alle componenten binnen het hek: per component naar de dichtstbijzijnde buur / hek / gevel in 4 richtingen
   const kleur = '#c0281f', gedaan = new Set();
