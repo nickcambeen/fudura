@@ -337,6 +337,12 @@ tr.waiting td{color:var(--muted)}
 .ib-body .btn{margin-top:2px}
 @media (max-width:640px){.ib-head{display:none}.ib-row{grid-template-columns:18px minmax(0,1fr) auto}.ib-row .mono,.ib-row > span:last-child{display:none}.ib-body{padding-left:12px}}
 @media (prefers-reduced-motion:reduce){.chev{transition:none}}
+
+.asWho{display:flex;align-items:center;gap:6px;font-size:12px;color:#a9cfe6}
+.asWho select{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:7px;padding:5px 8px;max-width:240px}
+.asWho select option,.asWho select optgroup{color:var(--fg);background:#fff}
+.asbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#fff6e0;border:1px solid #f0d58c;color:#6b4d00;border-radius:8px;padding:7px 12px;font-size:13px}
+.asbar .btn{margin-left:auto;background:#fff}
 </style>
 </head>
 <body>
@@ -345,6 +351,7 @@ tr.waiting td{color:var(--muted)}
 <script>
 /* ---------- backend (Supabase RPC, code wordt server-side gecontroleerd) ---------- */
 const SB_URL="https://mamiqenxpnjfwfcpuixv.supabase.co";
+const ADMIN_ONLY=true;
 const SB_KEY="sb_publishable_GLADcv4OMUnr0rkODpa7cw_R-GGcr4g";
 async function rpc(fn,args){
   const r=await fetch(SB_URL+"/rest/v1/rpc/"+fn,{method:"POST",headers:{"apikey":SB_KEY,"Content-Type":"application/json"},body:JSON.stringify(args)});
@@ -402,7 +409,7 @@ function waitsOn(p,a){if(!a.seq||isClosed(a))return null;const l=actsOf(p,a.phas
 const gateOpen=p=>actsOf(p,p.phase).find(a=>a.gate&&a.status!=="afgerond");
 
 /* ---------- state ---------- */
-const S={inboxOpen:new Set(),code:null,role:"",section:"inbox",taskProj:null,me:"",projects:[],loaded:false,view:"board",phaseFilter:null,sortKey:"due",sortDir:1,
+const S={inboxOpen:new Set(),code:null,role:"",realRole:"",realMe:"",section:"inbox",taskProj:null,me:"",projects:[],loaded:false,view:"board",phaseFilter:null,sortKey:"due",sortDir:1,
   q:"",fType:"",fStatus:"",fOwner:"",showDone:false,openId:null,selPhase:null,actFilter:"",editHead:false,logTab:"notitie",log:[],logLoading:false,newOpen:false,banner:""};
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -429,7 +436,7 @@ function loginHTML(msg){
   return `<div class="login"><div class="login-box">
     <div class="brand">Fudura</div>
     <h1>Projectmanagement systeem</h1>
-    <p class="small">Voer de toegangscode in om de projecten van team PER te openen.</p>
+    <p class="small">Voer de toegangscode in. Als beheerder kun je daarna als elke functie meekijken.</p>
     <form id="loginForm" autocomplete="off">
       <label class="field" for="lgCode"><span class="lbl">Toegangscode</span><input id="lgCode" class="mono codein" inputmode="numeric" maxlength="12" autocomplete="one-time-code" aria-describedby="lgMsg"></label>
       <label class="field" for="lgName"><span class="lbl">Je naam</span><input id="lgName" value="${esc(S.me)}" placeholder="Zo zien collega's wie iets schreef"></label>
@@ -442,7 +449,7 @@ async function tryLogin(code,quiet){
   try{const j=await rpc("pb_check",{p_code:code});return j.role||"Beheerder"}
   catch(e){if(!quiet){const m=e.code==="bad"?"Onjuiste code. Probeer het opnieuw.":e.code==="locked"?"Te veel foute pogingen. Probeer het over 15 minuten opnieuw.":"De server is niet bereikbaar. Probeer het later opnieuw.";$("#lgMsg").textContent=m}return false}
 }
-function logout(){S.code=null;S.role="";S.taskProj=null;$("#taskWrap")?.remove();put(sessionStorage,"pb-code",null);put(localStorage,"pb-code",null);clearInterval(S.poll);$("#app").innerHTML=loginHTML();$("#lgCode").focus()}
+function logout(){S.code=null;S.role="";S.realRole="";if(S.realMe)S.me=S.realMe;put(sessionStorage,"pb-as",null);S.taskProj=null;$("#taskWrap")?.remove();put(sessionStorage,"pb-code",null);put(localStorage,"pb-code",null);clearInterval(S.poll);$("#app").innerHTML=loginHTML();$("#lgCode").focus()}
 
 /* ---------- data ---------- */
 async function loadAll(silent){
@@ -492,9 +499,38 @@ const people=()=>[...new Set(S.projects.flatMap(p=>[p.owner,p.engineer,p.detail,
 function banner(){return S.banner?`<div class="banner">${esc(S.banner)}</div>`:""}
 const isAdmin=()=>S.role==="Beheerder";
 const canEditHead=()=>isAdmin()||S.role==="Projectleider";
+/* fictieve personen per functie, aangevuld met de namen uit de projecten */
+const PERSONAS=[["Mark Jansen","Projectleider"],["Lotte Verbeek","Projectleider"],["Ruben de Wit","Sales engineer"],["Iris Bakker","Sales engineer"],
+  ["Daan Koster","Accountmanager"],["Thomas van Dijk","Detailengineer"],["Sophie Meijer","Detailengineer"],["Bram Visser","Tekenaar"],["Eva Smits","Tekenaar"],
+  ["Nina Willems","Werkvoorbereider"],["Joost Smit","Planner"],["Sanne Hoekstra","Inkoop"],["Elektro Brabant BV","Aannemer"],["Installatietechniek Zuid BV","Aannemer"]];
+function personas(){
+  const list=PERSONAS.map(x=>x.slice()),has=(n,r)=>list.some(([a,b])=>a.toLowerCase()===n.toLowerCase()&&b===r);
+  S.projects.forEach(p=>[["owner","Projectleider"],["engineer","Sales engineer"],["detail","Detailengineer"],["drafter","Tekenaar"],["contractor","Aannemer"]]
+    .forEach(([k,r])=>{if(p[k]&&!has(p[k],r))list.push([p[k],r])}));
+  const order=ROLES.concat(["Aannemer"]);
+  return list.sort((a,b)=>order.indexOf(a[1])-order.indexOf(b[1])||a[0].localeCompare(b[0],"nl"));
+}
+const realAdmin=()=>S.realRole==="Beheerder";
+const viewingAs=()=>realAdmin()&&S.role!=="Beheerder";
+function setPersona(val){
+  if(!val){S.role=S.realRole;S.me=S.realMe}else{const [n,r]=val.split("|");S.role=r;S.me=n}
+  put(sessionStorage,"pb-as",val||null);
+  S.section=S.role==="Beheerder"?"all":"inbox";S.inboxOpen.clear();S.taskProj=null;$("#taskWrap")?.remove();
+  S.editHead=false;openProject(null);
+}
+function restorePersona(){const v=get(sessionStorage,"pb-as");if(v&&realAdmin()){const [n,r]=v.split("|");S.role=r;S.me=n}}
+function personaSelect(){
+  if(!realAdmin())return "";
+  const cur=viewingAs()?S.me+"|"+S.role:"";
+  let last="",opts=`<option value="" ${cur?"":"selected"}>${esc(S.realMe||"Beheerder")} (beheerder)</option>`;
+  personas().forEach(([n,r])=>{if(r!==last){opts+=(last?"</optgroup>":"")+`<optgroup label="${esc(r)}">`;last=r}
+    const v=n+"|"+r;opts+=`<option value="${esc(v)}" ${v===cur?"selected":""}>${esc(n)}</option>`});
+  opts+="</optgroup>";
+  return `<label class="asWho" for="asWho"><span>Inloggen als</span><select id="asWho">${opts}</select></label>`;
+}
 function headerHTML(){
   return `<header class="top"><div><div class="brand">Fudura</div><h1>Projectmanagement systeem</h1><div class="sub">Batterijsystemen op LS · team Project Engineering &amp; Realisatie</div></div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="small">${esc(S.me)} · ${esc(S.role)}</span><button class="btn" type="button" data-act="logout">Afmelden</button>${isAdmin()?`<button class="btn primary" type="button" data-act="new">+ Nieuw project</button>`:""}</div></header>`;
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${personaSelect()}${realAdmin()?"":`<span class="small">${esc(S.me)} · ${esc(S.role)}</span>`}<button class="btn" type="button" data-act="logout">Afmelden</button>${isAdmin()?`<button class="btn primary" type="button" data-act="new">+ Nieuw project</button>`:""}</div></header>`;
 }
 /* ---------- wie doet wat ---------- */
 /* klanttaken (bv. offerte getekend) volgt de accountmanager op */
@@ -697,7 +733,7 @@ function render(){
   if(!S.code)return;
   const app=$("#app"),ae=document.activeElement,focusId=ae?.id,selStart=ae?.selectionStart;
   const main=S.openId?dashHTML(proj(S.openId)):S.section==="inbox"?inboxHTML():overviewHTML();
-  app.innerHTML=`${headerHTML()}${banner()}<div class="layout">${navHTML()}<main class="main">${main}</main></div>`;
+  app.innerHTML=`${headerHTML()}${viewingAs()?`<div class="asbar">Je bekijkt het systeem als <b>${esc(S.me)}</b> (${esc(S.role)}). Wat je afvinkt of wijzigt wordt echt opgeslagen. <button class="btn" type="button" data-act="backToAdmin">Terug naar beheerder</button></div>`:""}${banner()}<div class="layout">${navHTML()}<main class="main">${main}</main></div>`;
   const tm=$("#taskWrap");if(S.taskProj){const tp=proj(S.taskProj);if(tp){if(tm)tm.innerHTML=taskModalHTML(tp);else{const m=document.createElement("div");m.id="taskWrap";m.innerHTML=taskModalHTML(tp);document.body.appendChild(m)}}}
   if(focusId){const el=document.getElementById(focusId);if(el&&el.tagName!=="BUTTON"){el.focus();try{if(selStart!=null)el.setSelectionRange(selStart,selStart)}catch(e){}}}
 }
@@ -733,6 +769,7 @@ document.addEventListener("click",async e=>{
     case "back":openProject(null);break;
     case "expandAll":inboxRows().forEach(r=>S.inboxOpen.add(r.p.id));render();break;
     case "collapseAll":S.inboxOpen.clear();render();break;
+    case "backToAdmin":setPersona("");break;
     case "closeTask":S.taskProj=null;$("#taskWrap")?.remove();render();break;
     case "openFromTask":{const id=S.taskProj;S.taskProj=null;$("#taskWrap")?.remove();openProject(id);break}
     case "logout":logout();break;
@@ -759,6 +796,7 @@ document.addEventListener("keydown",e=>{
 document.addEventListener("input",e=>{if(e.target.id==="q"){S.q=e.target.value;renderOvBody()}});
 document.addEventListener("change",async e=>{
   const t=e.target,id=t.id;
+  if(id==="asWho"){setPersona(t.value);return}
   if(id==="fType"){S.fType=t.value;render();return}
   if(id==="fStatus"){S.fStatus=t.value;render();return}
   if(id==="fOwner"){S.fOwner=t.value;render();return}
@@ -782,7 +820,10 @@ document.addEventListener("submit",async e=>{
     if(!code){$("#lgCode").focus();return}
     if(!name){$("#lgMsg").textContent="Vul je naam in.";$("#lgName").focus();return}
     $("#lgGo").disabled=true;
-    const role=await tryLogin(code);if(role){S.code=code;S.role=role;S.section=role==="Beheerder"?"all":"inbox";S.me=name;put(localStorage,"pb-naam",name);put(sessionStorage,"pb-code",code);if($("#lgRemember").checked)put(localStorage,"pb-code",code);start()}
+    let role=await tryLogin(code);
+    /* testfase: alleen de beheerderscode geeft toegang; functies bekijk je via "Inloggen als" */
+    if(role&&ADMIN_ONLY&&role!=="Beheerder"){$("#lgMsg").textContent="Gebruik de beheerderscode. Daarna kun je als elke functie meekijken.";role=null}
+    if(role){S.code=code;S.role=role;S.realRole=role;S.realMe=name;S.section=role==="Beheerder"?"all":"inbox";S.me=name;put(localStorage,"pb-naam",name);put(sessionStorage,"pb-code",code);if($("#lgRemember").checked)put(localStorage,"pb-code",code);start()}
     else $("#lgGo").disabled=false;
     return}
   const p=proj(S.openId);if(!p)return;
@@ -836,8 +877,8 @@ async function start(){
 }
 (async()=>{
   const saved=get(sessionStorage,"pb-code")||get(localStorage,"pb-code");
-  const role=saved&&S.me?await tryLogin(saved,true):null;
-  if(role){S.code=saved;S.role=role;S.section=get(sessionStorage,"pb-section")||(role==="Beheerder"?"all":"inbox");put(sessionStorage,"pb-code",saved);start();return}
+  let role=saved&&S.me?await tryLogin(saved,true):null;if(role&&ADMIN_ONLY&&role!=="Beheerder")role=null;
+  if(role){S.code=saved;S.role=role;S.realRole=role;S.realMe=S.me;S.section=get(sessionStorage,"pb-section")||(role==="Beheerder"?"all":"inbox");restorePersona();put(sessionStorage,"pb-code",saved);start();return}
   $("#app").innerHTML=loginHTML();$("#lgCode").focus();
 })();
 
