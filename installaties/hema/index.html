@@ -383,7 +383,7 @@ const PVS = {s: 0.95 + 1.6, n: 2.0 + 3.225};                             // dia 
   box(g, L + 0.25, 0.05, 0.06, dak, 0, H - 0.02, 0);
   // omvormers
   const ledT = ctex(256, 64, (c, W, Hh) => { c.fillStyle = '#121418'; c.beginPath(); c.ellipse(W/2, Hh/2, W/2 - 4, Hh/2 - 6, 0, 0, 7); c.fill(); c.fillStyle = '#3fe07a'; for(let k = 0; k < 4; k++){ c.beginPath(); c.arc(78 + k*34, Hh/2, 6, 0, 7); c.fill(); } });
-  const omv = (nr, x, kant) => { const ig = new THREE.Group(); if(kant === 0){ ig.position.set(x, 1.42, 0); ig.rotation.y = Math.PI/2; } else { ig.position.set(x, 1.42, kant*0.26); ig.rotation.y = kant > 0 ? 0 : Math.PI; } g.add(ig);
+  const omv = (nr, x, kant) => { const ig = new THREE.Group(); (g.userData.omv = g.userData.omv || []).push(ig); if(kant === 0){ ig.position.set(x, 1.42, 0); ig.rotation.y = Math.PI/2; } else { ig.position.set(x, 1.42, kant*0.26); ig.rotation.y = kant > 0 ? 0 : Math.PI; } g.add(ig);
     rbox(ig, 0.98, 0.70, 0.30, 0.07, wit, 0, 0, 0.0); box(ig, 0.95, 0.62, 0.07, grijs, 0, 0, -0.18);
     for(let k = 0; k < 14; k++) box(ig, 0.012, 0.55, 0.06, M(0xa9aeb2, {metalness: 0.5}), -0.42 + k*0.065, 0, -0.19, false);
     plak(ig, 0.30, 0.075, ledT, 0, 0.04, 0.151, 0, true);
@@ -492,15 +492,22 @@ function bouwPvDak(poly, h){ while(PVDAK.children.length) PVDAK.remove(PVDAK.chi
   const sk = wp(PVS.s, 0), sAl = sk.clone().sub(B0).dot(U), top = B0.clone().addScaledVector(U, sAl).addScaledVector(N, wLad - 0.02);
   const lad = M(0xb9bfc3, {metalness: 0.8, roughness: 0.35}); const LG = new THREE.Group(); LG.position.copy(top); LG.rotation.y = YAW; PVDAK.add(LG);
   // route (Nick): van de dakrand ± 6 m naast de skid verticaal omlaag, op halve hoogte horizontaal langs de gevel, dan verticaal omlaag naar de skid
-  const yv = 0.35, ym = Math.max(3.5, h*0.45), xo = -6.0, dek = M(0x9aa3a8, {metalness: 0.6});
-  const vert = (x, y0, y1) => { const hh = y1 - y0; box(LG, 0.5, hh, 0.12, lad, x, y0 + hh/2, 0.1); box(LG, 0.55, hh, 0.03, dek, x, y0 + hh/2, 0.18); };
+  const yv = 0.35, ym = Math.max(3.5, h*0.45), xo = -6.0, dek = M(0x9aa3a8, {metalness: 0.6, transparent: true, opacity: 0.3, depthWrite: false});   // deksel doorzichtig: kabels zichtbaar
+  const vert = (x, y0, y1) => { const hh = y1 - y0; box(LG, 0.5, hh, 0.01, lad, x, y0 + hh/2, 0.04); for(const sx of [-0.25, 0.25]) box(LG, 0.015, hh, 0.12, lad, x + sx, y0 + hh/2, 0.1); box(LG, 0.55, hh, 0.01, dek, x, y0 + hh/2, 0.17, false); };
   vert(xo, ym - 0.25, h + 0.3); vert(0, yv, ym + 0.25);
-  box(LG, Math.abs(xo) + 0.5, 0.5, 0.12, lad, xo/2, ym, 0.1); box(LG, Math.abs(xo) + 0.55, 0.55, 0.03, dek, xo/2, ym, 0.18);                      // horizontaal langs de gevel
+  box(LG, Math.abs(xo) + 0.5, 0.5, 0.01, lad, xo/2, ym, 0.04); for(const sy of [-0.25, 0.25]) box(LG, Math.abs(xo) + 0.5, 0.015, 0.12, lad, xo/2, ym + sy, 0.1); box(LG, Math.abs(xo) + 0.55, 0.55, 0.01, dek, xo/2, ym, 0.17, false);                      // horizontaal langs de gevel
   box(LG, 0.5, 0.12, 2.2, lad, xo, h + 0.35, -1.0); { // langs de gevel tot net boven maaiveld, dan ondergronds (mantelbuizen in een sleuf, 0,6 m diep) onder de looproute door en onder de skid omhoog
     const lz = Math.max(0.4, (PVS.n - 2.525) - wLad + 0.5), buis = M(0xd25a1e, {roughness: 0.6}), zand = M(0xb89a6a, {roughness: 1});
     box(LG, 0.5, 0.95, 0.12, lad, 0, 0.35 - 0.95/2 + 0.475 - 0.475, 0.1);                                                               // gootje tot in de grond
     for(const x of [-0.15, 0, 0.15]){ cyl(LG, 0.055, 0.85, buis, x, -0.25, 0.2, null, 10); cyl(LG, 0.055, lz, buis, x, -0.62, 0.2 + lz/2, 'z', 10); cyl(LG, 0.055, 1.25, buis, x, -0.05, 0.2 + lz, null, 10); }   // bocht omlaag, sleuf, omhoog de skid in
     box(LG, 0.6, 0.12, lz, zand, 0, -0.72, 0.2 + lz/2);
+    // DC-strengkabels (zwart/rood) door de goot: dakrand → omlaag → langs de gevel → omlaag → door de mantelbuizen → per omvormer omhoog naar de DC-ingangen
+    LG.updateMatrixWorld(true); ASSET.pv.updateMatrixWorld(true); const W = (x, y, z) => LG.localToWorld(V(x, y, z));
+    const mz = [M(0x161718, {roughness: 0.6}), M(0xb3221c, {roughness: 0.6})], inv = ASSET.pv.userData.omv || [];
+    inv.forEach((ig, k) => { const dx = -0.16 + k*0.08, top = h + 0.3, pin = ig.localToWorld(V(-0.2 + (k % 2)*0.1, -0.42, -0.02)), mid = pin.clone(); mid.y = 0.55;
+      const goot = [W(xo + dx, top + 0.4, -0.9), W(xo + dx, top, 0.1), W(xo + dx, ym + 0.05, 0.1), W(dx, ym - 0.05, 0.1), W(dx, 0.4, 0.1), W(dx*0.5, -0.25, 0.2), W(dx*0.5, -0.6, 0.2 + lz*0.3), W(dx*0.5, -0.6, 0.2 + lz - 0.1), W(dx*0.5, 0.3, 0.2 + lz)];
+      for(const j of [0, 1]){ const o = j*0.035; const pts = goot.map(p => p.clone().addScaledVector(U, o)); pts.push(pts[pts.length - 1].clone().lerp(mid, 0.5).setY(0.45), mid, pin);
+        const cp = new THREE.CurvePath(); for(let q = 0; q < pts.length - 1; q++) cp.add(new THREE.LineCurve3(pts[q], pts[q + 1])); const kb = new THREE.Mesh(new THREE.TubeGeometry(cp, pts.length*16, 0.012, 6, false), mz[j]); PVDAK.add(kb); kb.userData.info = `<b>DC-strengkabels</b> naar omvormer ${k + 1} (solarkabel 6 mm², ± en −) via de kabelgoot langs de gevel en ondergronds naar de skid`; KLIK.push(kb); } });
     const sl = new THREE.Mesh(new THREE.PlaneGeometry(0.6, lz), new THREE.MeshBasicMaterial({color: 0x8a5a2b, transparent: true, opacity: 0.55, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -7})); sl.rotation.x = -Math.PI/2; sl.position.set(0, 0.05, 0.2 + lz/2); LG.add(sl);   // sleuf-markering op maaiveld
     sl.userData.info = '<b>DC-kabels ondergronds</b>: 3 mantelbuizen in een sleuf (± 0,6 m diep) onder de looproute door, onder de skid omhoog'; KLIK.push(sl); }
   PVSPR = sprite('PV op dak · ' + pos.length + ' × 535 Wp', B0.clone().addScaledVector(U, -25).addScaledVector(W, 20).add(V(0, h + 3, 0)), 0.8, '#d4a017');
@@ -584,7 +591,7 @@ const HEK = new THREE.Group(); scene.add(HEK);
       box(d, 0.85, 0.04, 0.04, M(0xc8102e, {roughness: 0.4}), 0, 1.0, -0.09); for(const x of [-0.42, 0.42]) box(d, 0.04, 0.04, 0.08, M(0xc8102e), x, 1.0, -0.05);   // panieksluiting binnenzijde
       plak(d, 0.6, 0.15, bord, 0, 2.48, 0.03); plak(d, 0.6, 0.15, bord, 0, 2.48, -0.03, Math.PI);
       d.traverse(o => { if(o.isMesh) o.userData.info = '<b>Vluchtdeur</b> 1 m, draait naar buiten, panieksluiting aan de binnenzijde (vrij uitgang zonder sleutel) · bord NOODUITGANG'; }); };
-    vluchtdeur(wp(s0, -0.3), YAW - Math.PI/2, 1.8);                   // 1,8 m breed, tegen de gevel vluchtdeur(wp(s0, 9.35), YAW - Math.PI/2); vluchtdeur(wp(vd, n1), YAW);
+    vluchtdeur(wp(s0, -0.3), YAW - Math.PI/2, 1.8); vluchtdeur(wp(s0, 9.35), YAW - Math.PI/2); vluchtdeur(wp(vd, n1), YAW);   // 1e: 1,8 m breed tegen de gevel
     // looppaden (dia 46, rood): langs het hek aan de rokershokzijde en de trailerzijde, plus 2 m looproute tussen de PV-ruimte en de gevel
     const kl = ctex(128, 128, (c, W, Hh) => { c.fillStyle = '#9a5a4a'; c.fillRect(0, 0, W, Hh); c.strokeStyle = '#7d4538'; c.lineWidth = 3; for(let y = 0; y <= Hh; y += 16){ c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); for(let x = (y/16 % 2) ? 0 : 16; x <= W; x += 32){ c.beginPath(); c.moveTo(x, y); c.lineTo(x, y + 16); c.stroke(); } } });
     kl.wrapS = kl.wrapT = THREE.RepeatWrapping;
