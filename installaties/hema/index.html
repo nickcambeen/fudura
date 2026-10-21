@@ -330,18 +330,19 @@ const GLB = (() => { let ld = null; return (url, cb) => { try{ if(!ld){ ld = new
 
 // ---------- 2. EV: Sungrow IDC480E power unit, los voorbij het plein richting erfgrens (schets), deur naar het westen ----------
 const wit2 = M(0xf4f5f3, {roughness: 0.35, metalness: 0.15}), donker = M(0x3b3f45, {roughness: 0.45}), voet = M(0x55595d, {roughness: 0.6});
-{ const g = asset('ev', wp(5.4 + 7.575 + 1.49 - 0.35, 8.2 - 0.5), '<b>Sungrow IDC480E power unit — 480 kW</b> (DC-unit 1380 × 900, zone 3900 × 2980 mm)<br>900 × 2200 × 1380 mm, 1100 kg, IP65, C5, luchtgekoeld<br>3F+N+PE 400 V, 770 A · 2 × YMvKas 4×300+150 naar 800 A gG · DC langs het hek naar 2 dispensers (± 35 m)', YAW);
-  { const z = new THREE.Mesh(new THREE.PlaneGeometry(2.98, 3.9), new THREE.MeshStandardMaterial({color: 0xa7a59e, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -3})); z.rotation.x = -Math.PI/2; z.position.set(0, 0.02, 0.5); z.receiveShadow = true; g.add(z);
-    const r = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(2.98, 0.01, 3.9)), new THREE.LineBasicMaterial({color: 0x1f7cc4})); r.position.set(0, 0.04, 0.5); g.add(r); }
+{ const g = asset('ev', wp(18.35 - 0.025*7.7 - 2.5 - 0.45, 8.2 - 0.5),   /* 2,5 m van de erfgrens (hek wegzijde) */ '<b>Sungrow IDC480E power unit — 480 kW</b> (DC-unit 1380 × 900, zone 3900 × 2980 mm)<br>900 × 2200 × 1380 mm, 1100 kg, IP65, C5, luchtgekoeld<br>3F+N+PE 400 V, 770 A · 2 × YMvKas 4×300+150 naar 800 A gG · DC langs het hek naar 2 dispensers (± 35 m)', YAW);
+  { const z = new THREE.Mesh(new THREE.PlaneGeometry(3.9, 2.98), new THREE.MeshStandardMaterial({color: 0xa7a59e, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -3})); z.rotation.x = -Math.PI/2; z.position.set(0.5, 0.02, 0); z.receiveShadow = true; g.add(z);
+    const r = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(3.9, 0.01, 2.98)), new THREE.LineBasicMaterial({color: 0x1f7cc4})); r.position.set(0.5, 0.04, 0); g.add(r); }
   const y0 = 0.0;
   box(g, 0.92, 0.12, 1.4, voet, 0, y0 + 0.06, 0); box(g, 0.9, 2.08, 1.38, wit2, 0, y0 + 0.12 + 1.04, 0);
-  // voorzijde (+z): twee deuren, rechterdeur met ventilatieroosters; zijkant met logo-vlak, status en noodstop
+  // deuren op de brede zijde (+x, richting erfgrens), bedienpaneel met logo, status en noodstop op de smalle zijde (+z, trailerzijde)
   const kant = 0.9/2 + 0.002, front = 1.38/2 + 0.002;
-  box(g, 0.002, 2.0, 0.003, M(0xb8bcbe), 0.12, y0 + 1.16, front, false);
+  const dr = new THREE.Group(); dr.position.set(kant, 0, 0); dr.rotation.y = Math.PI/2; g.add(dr);
+  box(dr, 0.003, 2.0, 0.003, M(0xb8bcbe), 0.0, y0 + 1.16, 0.001, false);
   const grill = ctex(128, 256, (c, W, H) => { c.fillStyle = '#c7cbcd'; c.fillRect(0, 0, W, H); c.fillStyle = '#8c9296'; for(let y = 4; y < H; y += 6) for(let x = 4; x < W; x += 6) c.fillRect(x, y, 3, 3); });
-  for(const y of [0.55, 1.2, 1.85]) plak(g, 0.3, 0.58, grill, 0.28, y0 + y, front + 0.001);
-  for(const x of [0.06, 0.16]) box(g, 0.03, 0.14, 0.03, M(0xb0b4b6, {metalness: 0.6}), x, y0 + 1.12, front + 0.015);
-  const zij = new THREE.Group(); zij.position.set(-kant, y0 + 1.2, 0); zij.rotation.y = -Math.PI/2; g.add(zij);
+  for(const x of [-0.35, 0.35]) for(const y of [0.55, 1.2, 1.85]) plak(dr, 0.4, 0.58, grill, x, y0 + y, 0.002);
+  for(const x of [-0.06, 0.06]) box(dr, 0.03, 0.14, 0.03, M(0xb0b4b6, {metalness: 0.6}), x, y0 + 1.12, 0.016);
+  const zij = new THREE.Group(); zij.position.set(0, y0 + 1.2, front); g.add(zij);
   plak(zij, 0.4, 0.08, lbl('IDC480E', 300, 60, '#f4f5f3', '#4a5258', 'bold 34px Arial'), 0, 0.45, 0.001);
   rbox(zij, 0.11, 0.36, 0.02, 0.05, M(0x15171a), 0, 0.05, 0.01); cyl(zij, 0.03, 0.02, M(0x2f7fe0, {emissive: 0x2f7fe0, emissiveIntensity: 0.8}), 0, 0.15, 0.025, 'z', 18);
   cyl(zij, 0.035, 0.04, M(0xd82020), 0, -0.05, 0.03, 'z', 18); cyl(zij, 0.045, 0.01, M(0xf2c400), 0, -0.05, 0.022, 'z', 18);
@@ -479,6 +480,13 @@ function bouwPvDak(poly, h){ while(PVDAK.children.length) PVDAK.remove(PVDAK.chi
   PVDAK.add(IM); KLIK.push(IM);
   // DC-kabelladder: langs de dakrand en verticaal langs de gevel tussen omvormer 3 en 4 (afgedekt)
   let wLad = WN; try{ const w = wandOp(PVS.s); if(w !== null) wLad = w; }catch(e){}
+  PVS.n = wLad + 1.7 + 2.65; { const p = wp(PVS.s, PVS.n); ASSET.pv.position.x = p.x; ASSET.pv.position.z = p.z; }          // skid (incl. voet) op 1,7 m van de gevel (Nick)
+  { // bestaand trottoir langs de hele gevel (± 1,5 m breed, grijze tegels)
+    const tg = ctex(128, 128, (c, W, Hh) => { c.fillStyle = '#a9aaa6'; c.fillRect(0, 0, W, Hh); c.strokeStyle = '#8f908c'; c.lineWidth = 3; for(let x = 0; x <= W; x += 42.7){ c.beginPath(); c.moveTo(x, 0); c.lineTo(x, Hh); c.stroke(); } for(let y = 0; y <= Hh; y += 42.7){ c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); } });
+    tg.wrapS = tg.wrapT = THREE.RepeatWrapping; const sa = -70, sb = 19, bw = 1.5; tg.repeat.set((sb - sa)/0.9, bw/0.9);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(sb - sa, bw), new THREE.MeshStandardMaterial({map: tg, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -4})); m.rotation.x = -Math.PI/2; m.receiveShadow = true;
+    const g2 = new THREE.Group(); g2.position.copy(wp((sa + sb)/2, wLad + bw/2)); g2.position.y = 0.03; g2.rotation.y = YAW; g2.add(m); PVDAK.add(g2); m.userData.info = '<b>Trottoir</b> langs de gevel (bestaand)'; KLIK.push(m);
+    dxP(DXS, [wp(sa, wLad + bw), wp(sb, wLad + bw)], 'LOOPPAD', false); }
   const sk = wp(PVS.s, 0), sAl = sk.clone().sub(B0).dot(U), top = B0.clone().addScaledVector(U, sAl).addScaledVector(N, wLad - 0.02);
   const lad = M(0xb9bfc3, {metalness: 0.8, roughness: 0.35}); const LG = new THREE.Group(); LG.position.copy(top); LG.rotation.y = YAW; PVDAK.add(LG);
   // route (Nick): van de dakrand ± 6 m naast de skid verticaal omlaag, op halve hoogte horizontaal langs de gevel, dan verticaal omlaag naar de skid
@@ -589,7 +597,7 @@ const HEK = new THREE.Group(); scene.add(HEK);
       qg.setAttribute('position', new THREE.Float32BufferAttribute([q[0], q[1], q[2], q[0], q[2], q[3]].flatMap(p => [p.x, 0.045, p.z]), 3));
       qg.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0], 2));
       const bm = new THREE.Mesh(qg, new THREE.MeshBasicMaterial({map: bw, transparent: true, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -6})); bm.userData.info = '<b>Brandweer-opstelstrook</b> — vrij houden (± 4,3 m breed langs het hek, van het technische terrein tot de poort)'; KLIK.push(bm); HEK.add(bm); dxP(DXS, q, 'BRANDWEER', true); dxT(DXS, q[0].clone().lerp(q[2], 0.5), 'BRANDWEERSTROOK VRIJ', 0.3, 'TEKST'); }
-    pad(s0, s0 + 0.8, 0, n1); pad(s0, 7.3, n1 - 0.8, n1); pad(s0 + 0.8, PVS.s + 1.6, 0, 2.0); }
+    pad(s0, s0 + 0.8, 0, n1); pad(s0, 7.3, n1 - 0.8, n1);  }
   // haag tussen hek en weg (Street View / Cyclomedia) en bomen bij de hoek
   let sd = 7; const rnd = () => (sd = (sd*16807) % 2147483647)/2147483647;
   const bm = [0x3d6528, 0x47722e, 0x557f36, 0x6a7a38].map(c => M(c, {roughness: 0.95})), bgeo = new THREE.IcosahedronGeometry(1, 1);
@@ -723,7 +731,7 @@ function bouwMaat(){
   const zone = (cs, cn, ls, ln) => ({s0: cs - ls/2, s1: cs + ls/2, n0: cn - ln/2, n1: cn + ln/2});
   const eosB = omhul(ASSET.eos, 0.5), evB = omhul(ASSET.ev, 0.3), pvB = omhul(ASSET.pv, 0.35), nsaB = omhul(ASSET.nsa, 0.3), zvkB = omhul(ASSET.zvk, 0.5);
   const zE = {s0: (eosB.s0 + eosB.s1)/2 - 7.575/2, s1: (eosB.s0 + eosB.s1)/2 + 7.575/2, n0: eosB.n0 - 1.0, n1: Math.max(eosB.n0 - 1.0 + 4.07, eosB.n1 + 1.65)};   // dia 35: 1000 achter, 1650 voor (deurzwaai)
-  const zD = zone((evB.s0 + evB.s1)/2, (evB.n0 + evB.n1)/2 + 0.6, 2.98, 3.9);
+  const zD = zone((evB.s0 + evB.s1)/2 + 0.5, (evB.n0 + evB.n1)/2, 3.9, 2.98);
   const zP = zone((pvB.s0 + pvB.s1)/2, (pvB.n0 + pvB.n1)/2, 3.2, 6.45);
   const rectD = (r, kleur, laag) => { dxP(DXM, [[r.s0, r.n0], [r.s1, r.n0], [r.s1, r.n1], [r.s0, r.n1]].map(([a, b]) => wp(a, b)), laag || 'ZONE', true); const pts = []; const hoek = [[r.s0, r.n0], [r.s1, r.n0], [r.s1, r.n1], [r.s0, r.n1]]; for(let i = 0; i < 4; i++){ const [a0, b0] = hoek[i], [a1, b1] = hoek[(i + 1) % 4]; const L = Math.hypot(a1 - a0, b1 - b0), n = Math.floor(L/0.3);
       for(let k = 0; k < n; k += 2){ pts.push(wp(a0 + (a1 - a0)*k/n, b0 + (b1 - b0)*k/n).setY(0.07), wp(a0 + (a1 - a0)*(k + 1)/n, b0 + (b1 - b0)*(k + 1)/n).setY(0.07)); } }
@@ -748,7 +756,7 @@ function bouwMaat(){
   ok(`EOS-zone binnen het hek (${mm(hN1 - zE.n1)} tot hek)`, zE.n1 <= hN1 + 0.01 && zE.s0 >= hS0);
   ok(`DC-unit-zone binnen het hek (${mm(hSE(zD.n1) - zD.s1)} wegzijde, ${mm(hN1 - zD.n1)} trailerzijde)`, zD.s1 <= hSE(zD.n1) + 0.01 && zD.n1 <= hN1 + 0.01);
   ok(`PV-zone binnen het hek (${mm(zP.s0 - hS0)} tot hek)`, zP.s0 >= hS0 - 0.01);
-  ok(`looproute PV-zone ↔ gevel ${mm(zP.n0 - gevel)} (dia 46: ≥ 2000)`, zP.n0 - gevel > 1.95);
+  ok(`PV-skid ↔ gevel ${mm(pvB.n0 - gevel)} (eis 1700)`, Math.abs(pvB.n0 - gevel - 1.7) < 0.06);
   ok(`EOS-zone ↔ DC-unit-zone overlap ${mm(Math.max(0, zE.s1 - zD.s0))} (dia 43: max ± 1000 gecombineerd)`, zE.s1 - zD.s0 < 1.05);
   // afstanden tussen alle componenten binnen het hek: per component naar de dichtstbijzijnde buur / hek / gevel in 4 richtingen
   const kleur = '#c0281f', gedaan = new Set();
