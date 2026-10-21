@@ -479,6 +479,53 @@ header.top .asWho select{border-color:rgba(255,255,255,.3)}
 .acts .st-nvt{background-color:var(--hold-soft)!important;color:var(--hold)!important}
 .acts .st-open{background-color:#eef3f7!important;color:var(--muted)!important}
 .acts select.st-sel option{background:#fff;color:var(--fg);font-weight:400}
+
+/* taakdetails */
+.actname{border:0;background:none;padding:0;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.actname .chev{display:inline-block;color:var(--accent);font-size:10px;transition:transform .12s}
+.actname[aria-expanded="true"] .chev{transform:rotate(90deg)}
+.actname:hover{color:var(--accent)}
+.abadges{display:inline-flex;gap:4px;margin-left:6px;vertical-align:middle}
+.abadge{font-size:10.5px;color:var(--muted);background:#eef3f7;border-radius:999px;padding:1px 6px;white-space:nowrap}
+.abadge.ok{background:#e1f2e8;color:var(--ok)}
+tr.actdetail > td{background:#f8fbfd;padding:10px 12px}
+.ad{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media (max-width:900px){.ad{grid-template-columns:minmax(0,1fr)}}
+.ad h3{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 6px}
+.ad-col{display:flex;flex-direction:column;gap:5px;min-width:0}
+.chk{display:flex;align-items:center;gap:8px;font-size:13px}
+.chk input{accent-color:var(--navy);width:15px;height:15px;flex:none}
+.chk span{flex:1;min-width:0}
+.lnk{display:flex;gap:8px;align-items:baseline;font-size:13px;min-width:0}
+.lnk a{color:var(--accent);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.cmt{background:#fff;border:1px solid var(--line);border-radius:7px;padding:6px 8px;font-size:13px;overflow-wrap:anywhere}
+.cmt .h{display:flex;justify-content:space-between;gap:6px}
+.mention{color:var(--accent)}
+.adform{display:flex;gap:6px;margin-top:2px}
+.adform.col{flex-direction:column;align-items:stretch}
+.adform input,.adform textarea{border:1px solid var(--line);background:#fff;border-radius:6px;padding:4px 7px;font-size:13px;min-width:0;flex:1}
+.adform .btn{padding:3px 10px}
+/* vermeldingen */
+.mentions{border-left:3px solid var(--sky)}
+.mentions header{border:0!important;padding:0!important}
+.mrow{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;border-top:1px solid var(--line);padding-top:8px}
+.mtext{font-size:13px;margin:2px 0}
+.mact{display:flex;gap:6px;flex:none}
+/* dashboard */
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media (max-width:760px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:10px 14px;display:flex;flex-direction:column;box-shadow:var(--shadow);border-top:3px solid var(--sky)}
+.kpi .n{font:700 26px var(--f-display);color:var(--navy);font-variant-numeric:tabular-nums}
+.kpi .l{font-size:12px;color:var(--muted)}
+.kpi.bad{border-top-color:var(--bad)}.kpi.bad .n{color:var(--bad)}
+.dgrid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:10px;align-items:start}
+@media (max-width:1000px){.dgrid{grid-template-columns:minmax(0,1fr)}}
+table.wl{width:100%;font-size:13px}
+table.wl td,table.wl th{padding:5px 6px}
+table.wl td.num{text-align:right}
+.bar{height:8px;background:#e7eef3;border-radius:4px;position:relative;overflow:hidden}
+.bar i{position:absolute;left:0;top:0;bottom:0;background:var(--sky);border-radius:4px}
+.bar i.late{background:var(--bad)}
 </style>
 </head>
 <body>
@@ -509,7 +556,7 @@ const PHASES=[
 const STATUSES={ok:{label:"Op schema",cls:"s-ok"},warn:{label:"Aandacht",cls:"s-warn"},bad:{label:"Vertraagd",cls:"s-bad"},hold:{label:"On hold",cls:"s-hold"}};
 const ACT_ST={open:"Open",bezig:"Bezig",geblokkeerd:"Geblokkeerd",afgerond:"Afgerond",nvt:"N.v.t."};
 const TYPES=["BESS op LS"];
-const ROLES=["Projectleider","Sales engineer","Detailengineer","Tekenaar","Accountmanager","Werkvoorbereider","Uitvoerder","Inkoop","Aannemer","Klant","Netbeheerder"];
+const ROLES=["Projectleider","Sales engineer","Detailengineer","Tekenaar","Accountmanager","Werkvoorbereider","Uitvoerder","Aannemer","Klant","Netbeheerder"];
 const TEMPLATE={
   0:[["Aanvraag registreren","Sales engineer"],["Schouw op locatie","Sales engineer"],
      ["Projectplan opstellen","Sales engineer","s"],["Calculatie opstellen","Sales engineer","s"],
@@ -628,6 +675,8 @@ async function loadAll(silent){
 }
 const isTyping=()=>{const a=document.activeElement;return a&&(a.tagName==="TEXTAREA"||(a.tagName==="INPUT"&&a.type!=="checkbox")||a.tagName==="SELECT")&&a.id!=="q"};
 async function save(id,data,msg){
+  const old=id?proj(id):null;
+  if(old&&data.phase!=null&&data.phase!==old.phase)data={...data,phaseHistory:[...(old.phaseHistory||[]),{from:old.phase,to:data.phase,at:nowISO(),by:S.me||""}]};
   try{const j=await rpc("pb_save",{p_code:S.code,p_id:id,p_data:{...data,updatedBy:S.me||""}});
     const p=norm(j.project);const i=S.projects.findIndex(x=>x.id===p.id);if(i>=0)S.projects[i]=p;else S.projects.push(p);
     if(msg)toast(msg);return p}
@@ -671,7 +720,7 @@ const canEditHead=()=>isAdmin()||S.role==="Projectleider";
 /* fictieve personen per functie, aangevuld met de namen uit de projecten */
 const PERSONAS=[["Mark Jansen","Projectleider"],["Lotte Verbeek","Projectleider"],["Ruben de Wit","Sales engineer"],["Iris Bakker","Sales engineer"],
   ["Daan Koster","Accountmanager"],["Thomas van Dijk","Detailengineer"],["Sophie Meijer","Detailengineer"],["Bram Visser","Tekenaar"],["Eva Smits","Tekenaar"],
-  ["Nina Willems","Werkvoorbereider"],["Sanne Hoekstra","Inkoop"],["Elektro Brabant BV","Aannemer"],["Installatietechniek Zuid BV","Aannemer"]];
+  ["Nina Willems","Werkvoorbereider"],["Elektro Brabant BV","Aannemer"],["Installatietechniek Zuid BV","Aannemer"]];
 function personas(){
   let list=[];
   if(S.team&&Array.isArray(S.team.members)){
@@ -736,9 +785,9 @@ function inboxRows(){
   return rows;
 }
 function navHTML(){
-  const n=inboxRows().filter(r=>!r.w).length;
+  const n=inboxRows().filter(r=>!r.w).length+myMentions().length;
   const item=(k,l,c)=>`<button type="button" data-section="${k}" aria-current="${S.section===k&&!S.openId?"page":"false"}"><span>${l}</span>${c!=null?`<span class="badge">${c}</span>`:""}</button>`;
-  return `<nav class="side" aria-label="Menu">${item("inbox","Activiteitenbak",n)}${item("mine","Projectenoverzicht",S.projects.filter(involved).length)}${item("all","Alle projecten",S.projects.length)}</nav>`;
+  return `<nav class="side" aria-label="Menu">${item("inbox","Activiteitenbak",n)}${item("mine","Projectenoverzicht",S.projects.filter(involved).length)}${item("all","Alle projecten",S.projects.length)}${canSeeDash()?item("dash","Dashboard",null):""}</nav>`;
 }
 function inboxHTML(){
   if(!S.loaded)return `<div class="notice"><strong>Taken laden…</strong></div>`;
@@ -748,8 +797,12 @@ function inboxHTML(){
   groups.sort((a,b)=>(!a.ready-!b.ready)||(a.next||"9999").localeCompare(b.next||"9999"));
   const head=`<div class="sectionhead"><h2>Activiteitenbak</h2><span class="small">${isAdmin()?"Alle open taken in de huidige fase van elk project":"Taken voor "+esc(S.role)+" en taken op jouw naam"}</span>
     ${groups.length?`<span class="spacer"></span><button class="btn ghost" type="button" data-act="${S.inboxOpen.size?"collapseAll":"expandAll"}">${S.inboxOpen.size?"Alles inklappen":"Alles uitklappen"}</button>`:""}</div>`;
-  if(!groups.length)return head+`<div class="notice"><strong>Geen taken</strong><span>Er staat op dit moment niets voor je klaar.</span></div>`;
-  return head+`<div class="ibox">
+  const ms=myMentions();
+  const mhtml=ms.length?`<section class="panelbox mentions"><header><h2>Vermeldingen</h2><span class="badge">${ms.length}</span></header>${ms.map(({p,a,c})=>`<div class="mrow">
+      <div><span class="mono small">${esc(p.nr||"")}</span> <b>${esc(p.name)}</b> · ${esc(a.title)}<div class="mtext"><b>${esc(c.author||"Collega")}:</b> ${fmtComment(c.text)}</div><span class="small">${fmtDT(c.at)}</span></div>
+      <div class="mact"><button class="btn" type="button" data-gotoact="${esc(p.id)}|${a.id}|${c.id}">Bekijken</button><button class="btn ghost" type="button" data-seen="${esc(p.id)}|${a.id}|${c.id}">Gezien</button></div></div>`).join("")}</section>`:"";
+  if(!groups.length)return head+mhtml+`<div class="notice"><strong>Geen taken</strong><span>Er staat op dit moment niets voor je klaar.</span></div>`;
+  return head+mhtml+`<div class="ibox">
     <div class="ib-head"><span></span><span>Projectnr.</span><span>Projectnaam</span><span>Deadline</span><span>Taken</span></div>
     ${groups.map(g=>{const p=g.p,open=S.inboxOpen.has(p.id),late=g.next&&g.next<todayStr(),dl=g.next?Math.round((new Date(g.next+"T12:00:00")-new Date(todayStr()+"T12:00:00"))/864e5):null,urg=dl==null?"":dl<=1?"urg-red":dl<=4?"urg-orange":"";
       return `<div class="ib-group ${open?"open":""} ${urg}">
@@ -791,6 +844,7 @@ function overviewHTML(onlyMine){
     <select id="fOwner" aria-label="Persoon"><option value="">Iedereen</option>${ppl.map(o=>`<option ${S.fOwner===o?"selected":""}>${esc(o)}</option>`).join("")}</select>
     <label class="check"><input type="checkbox" id="fDone" ${S.showDone?"checked":""}> Toon afgerond</label>
     <span class="spacer"></span>
+    <button class="btn" type="button" data-act="expProjects" title="Download als Excel-bestand">Exporteer</button>
     <div class="seg" role="group" aria-label="Weergave">
       <button type="button" data-view="board" aria-pressed="${S.view==="board"}">Bord</button>
       <button type="button" data-view="list" aria-pressed="${S.view==="list"}">Lijst</button>
@@ -885,8 +939,30 @@ function phaseDate(p,ph){
   if(ph===1)return {d:workday(addDays(akkoordDate(p),35)),lbl:"gereed"};
   if(ph===2)return {d:prepEnd(p),lbl:"gereed"};
   if(ph===3)return {d:prepEnd(p),lbl:"start ≥"};
-  if(ph===4)return {d:p.due||"",lbl:"gewenst"};
+  if(ph===4)return {d:expectedEnd(p)||p.due||"",lbl:"verwacht"};
   return {d:"",lbl:""};
+}
+function actBadges(a){const c=effChk(a),b=[];
+  if(c.length)b.push(`<span class="abadge ${c.every(x=>x.done)?"ok":""}" title="Checklist">☑ ${c.filter(x=>x.done).length}/${c.length}</span>`);
+  if((a.links||[]).length)b.push(`<span class="abadge" title="Documenten">⧉ ${a.links.length}</span>`);
+  if((a.comments||[]).length)b.push(`<span class="abadge" title="Opmerkingen">✎ ${a.comments.length}</span>`);
+  return b.length?`<span class="abadges">${b.join("")}</span>`:"";}
+function actDetailHTML(p,a){
+  const chk=effChk(a),can=canDo(p,a)||canEditHead();
+  return `<div class="ad">
+    <div class="ad-col"><h3>Checklist</h3>
+      ${chk.length?chk.map(c=>`<label class="chk"><input type="checkbox" data-chk="${a.id}|${c.id}" ${c.done?"checked":""} ${can?"":"disabled"}><span>${esc(c.text)}</span>${canEditHead()?`<button type="button" class="rowbtn" data-delchk="${a.id}|${c.id}" aria-label="Verwijderen">✕</button>`:""}</label>`).join(""):`<div class="small">Geen checklist.</div>`}
+      ${chk.length?`<div class="small">${chkOpen(a)?`Afronden kan als alles is afgevinkt (${chkOpen(a)} open).`:"Checklist compleet."}</div>`:""}
+      ${can?`<form class="adform" data-form="chk" data-aid="${a.id}"><input name="t" placeholder="Punt toevoegen" aria-label="Checklistpunt"><button class="btn" type="submit">+</button></form>`:""}
+    </div>
+    <div class="ad-col"><h3>Documenten</h3>
+      ${(a.links||[]).length?a.links.map(l=>`<div class="lnk"><a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label||l.url)}</a><span class="small">${esc(l.by||"")}</span>${can?`<button type="button" class="rowbtn" data-dellink="${a.id}|${l.id}" aria-label="Verwijderen">✕</button>`:""}</div>`).join(""):`<div class="small">Nog geen documenten. Plak een link naar SharePoint, Teams of OneDrive.</div>`}
+      ${can?`<form class="adform" data-form="link" data-aid="${a.id}"><input name="l" placeholder="Naam, bv. SLD rev. B" aria-label="Naam document"><input name="u" placeholder="https://…" aria-label="Link"><button class="btn" type="submit">+</button></form>`:""}
+    </div>
+    <div class="ad-col"><h3>Opmerkingen</h3>
+      ${(a.comments||[]).length?a.comments.map(c=>`<div class="cmt"><div class="h"><b>${esc(c.author||"Collega")}</b><span class="small">${fmtDT(c.at)}</span></div><div>${fmtComment(c.text)}</div></div>`).join(""):`<div class="small">Nog geen opmerkingen.</div>`}
+      <form class="adform col" data-form="cmt" data-aid="${a.id}"><textarea name="c" rows="2" placeholder="Opmerking of vraag. Gebruik @Naam om iemand te vermelden." aria-label="Opmerking"></textarea><button class="btn primary" type="submit">Plaatsen</button></form>
+    </div></div>`;
 }
 function dashHTML(p){
   if(!p)return `<div class="crumb"><button class="btn" type="button" data-act="back">← Overzicht</button></div><div class="notice"><strong>Project niet gevonden</strong><span>Het is mogelijk verwijderd.</span></div>`;
@@ -899,17 +975,17 @@ function dashHTML(p){
       <span class="c">${ph.id<p.phase?"✓ klaar":pr.total?pr.done+"/"+pr.total:""}</span>
       <span class="d ${late||bad?"late":""}">${pd.d?esc(pd.lbl)+" "+fmtDate(pd.d).slice(0,5):"&nbsp;"}</span></button>`}).join("");
   const team=[["PL","owner"],["SE","engineer"],["DE","detail"],["TK","drafter"],["WVB","wvb"],["AN","contractor"]].filter(([,k])=>p[k]).map(([a,k])=>`<span title="${esc(HEAD.find(h=>h[0]===k)[1])}"><b>${a}</b> ${esc(p[k])}</span>`).join("");
-  const warn=[intakeLate?`Intake loopt langer dan ${INTAKE_WEKEN} weken`:"",tooEarly?`Gewenste oplevering ${fmtDate(p.due)} ligt vóór de vroegste start van de uitvoering (${fmtDate(pe)})`:""].filter(Boolean);
+  const warn=[intakeLate?`Intake loopt langer dan ${INTAKE_WEKEN} weken`:"",expLate(p)&&!tooEarly?`Verwachte oplevering ${fmtDate(expectedEnd(p))} ligt na de gewenste oplevering ${fmtDate(p.due)}`:"",tooEarly?`Gewenste oplevering ${fmtDate(p.due)} ligt vóór de vroegste start van de uitvoering (${fmtDate(pe)})`:""].filter(Boolean);
   let acts=actsOf(p,sel);if(S.actFilter)acts=acts.filter(a=>a.status===S.actFilter);
   const actRows=acts.map(a=>{const w=waitsOn(p,a),edd=effDue(p,a),late=edd&&edd<t&&!isClosed(a),std=!a.due;return `<tr data-aid="${a.id}" class="${a.status==="afgerond"?"is-done":""} ${a.status==="nvt"?"is-nvt":""}">
     <td>${canDo(p,a)?`<select class="st-sel st-${a.status}" data-af="status" aria-label="Status" ${a.doneAt?`title="Afgerond op ${fmtDate(a.doneAt)}"`:""}>${Object.entries(ACT_ST).map(([k,v])=>`<option value="${k}" ${a.status===k?"selected":""}>${v}</option>`).join("")}</select>`
       :`<span class="stpill st-${a.status}" title="${a.doneAt?"Afgerond op "+fmtDate(a.doneAt):"Alleen "+esc(effOwner(p,a)||"de "+a.role.toLowerCase())+" kan deze taak afronden"}">${ACT_ST[a.status]}</span>`}</td>
-    <td class="desc">${esc(a.title)}${w?` <span class="wait" title="Wacht op: ${esc(w.title)}">⊘ wacht</span>`:""}</td>
+    <td class="desc"><button type="button" class="actname" data-openact="${a.id}" aria-expanded="${S.openAct===a.id}"><span class="chev">▸</span> ${esc(a.title)}</button>${w?` <span class="wait" title="Wacht op: ${esc(w.title)}">⊘ wacht</span>`:""}${actBadges(a)}</td>
     <td>${canEditHead()?`<select data-af="owner" aria-label="Behandelaar" class="ownersel">${personOptions(a.role,a.owner||"",teamDefault(p,a)?teamDefault(p,a):"Iedere "+(a.role||"collega").toLowerCase())}</select>`:`<span>${esc(effOwner(p,a)||"Iedere "+(a.role||"collega").toLowerCase())}</span>`}</td>
     <td>${S.editDue===a.id?`<input type="date" data-af="due" id="dueEdit" value="${esc(a.due||edd||"")}" aria-label="Deadline">`
       :canEditHead()?`<button type="button" class="duebtn ${late?"late":""} ${std?"std":""}" data-editdue="${a.id}" title="${std?"Standaarddeadline · klik om aan te passen":"Klik om aan te passen"}">${edd?fmtDate(edd):"—"}</button>`
       :`<span class="duetxt ${late?"late":""} ${std?"std":""}" title="${std?"Standaarddeadline":""}">${edd?fmtDate(edd):"—"}</span>`}</td>
-    <td>${canEditHead()?`<button class="rowbtn" type="button" data-delact title="Activiteit verwijderen" aria-label="Activiteit verwijderen">✕</button>`:""}</td></tr>`}).join("");
+    <td>${canEditHead()?`<button class="rowbtn" type="button" data-delact title="Activiteit verwijderen" aria-label="Activiteit verwijderen">✕</button>`:""}</td></tr>${S.openAct===a.id?`<tr class="actdetail" data-aid="${a.id}"><td colspan="5">${actDetailHTML(p,a)}</td></tr>`:""}`}).join("");
   const openHere=actsOf(p,p.phase).filter(a=>!isClosed(a)&&!a.trans).length,blk=gateOpen(p);
   const gate=sel===p.phase&&canEditHead()&&p.phase<5?`<div class="gate"><span>${blk?`<b class="late">Gaat pas door na: ${esc(blk.title)}.</b> `:openHere?`<b>${openHere}</b> open in deze fase`:"Alles in deze fase is afgerond."}</span>
      <span style="display:flex;gap:6px;flex-wrap:wrap">${p.phase>0?`<button class="btn ghost" type="button" data-move="-1">← ${esc(PHASES[p.phase-1].label)}</button>`:""}<button class="btn ${openHere?"":"primary"}" type="button" data-move="1" ${blk?"disabled":""}>Toewijzen fase ${esc(PHASES[p.phase+1].label)} →</button></span></div>`:"";
@@ -964,7 +1040,7 @@ function logListHTML(){
 function render(){
   if(!S.code)return;
   const app=$("#app"),ae=document.activeElement,focusId=ae?.id,selStart=ae?.selectionStart;
-  const main=S.openId?dashHTML(proj(S.openId)):S.section==="inbox"?inboxHTML():overviewHTML();
+  const main=S.openId?dashHTML(proj(S.openId)):S.section==="inbox"?inboxHTML():S.section==="dash"&&canSeeDash()?dashboardHTML():overviewHTML();
   app.innerHTML=`${headerHTML()}${banner()}<div class="layout">${navHTML()}<main class="main">${main}</main></div>`;
   const tm=$("#taskWrap");if(S.taskProj){const tp=proj(S.taskProj);if(tp){if(tm)tm.innerHTML=taskModalHTML(tp);else{const m=document.createElement("div");m.id="taskWrap";m.innerHTML=taskModalHTML(tp);document.body.appendChild(m)}}}
   if(focusId){const el=document.getElementById(focusId);if(el&&el.tagName!=="BUTTON"){el.focus();try{if(selStart!=null)el.setSelectionRange(selStart,selStart)}catch(e){}}}
@@ -979,6 +1055,8 @@ function openProject(id){
 
 /* acties wijzigen; wordt een doorzet-taak afgerond, dan gaat het project meteen naar de volgende fase */
 async function saveActs(pp,acts,msg){
+  const blocked=acts.find(a=>a.status==="afgerond"&&!(pp.acts||[]).find(o=>o.id===a.id&&o.status==="afgerond")&&chkOpen(a)>0);
+  if(blocked){toast(`Eerst de checklist afvinken (${chkOpen(blocked)} open)`);render();return false}
   const tr=acts.find(a=>a.trans&&a.phase===pp.phase&&a.status==="afgerond"&&!(pp.acts||[]).find(o=>o.id===a.id&&o.status==="afgerond"));
   if(tr&&pp.phase<5){
     const np=pp.phase+1;
@@ -988,9 +1066,93 @@ async function saveActs(pp,acts,msg){
   }
   return save(pp.id,{acts},msg);
 }
+/* standaard checklists per taak */
+const DEFAULT_CHK={
+  "opleverdossier aannemer aanleveren (inmeetgegevens en meetrapporten)":["Meetrapporten (NEN 1010 / NEN 3140)","Inmeetgegevens kabeltracé","Revisie-aantekeningen","Foto's van de installatie","Verklaringen en certificaten"],
+  "opleverdossier samenstellen":["Revisietekeningen en SLD","Meetrapporten","Inspectierapport","SAT-rapport","Handleidingen en datasheets"],
+  "v&g-plan en tra":["V&G-plan opgesteld","TRA opgesteld","Besproken met aannemer"],
+  "sat uitvoeren":["SAT-protocol opgesteld","SAT uitgevoerd","SAT-rapport getekend"],
+  "eerste inspectie nen 1010 / nen 3140":["Visuele inspectie","Metingen uitgevoerd","Inspectierapport aangeleverd"]
+};
+function effChk(a){return Array.isArray(a.checklist)?a.checklist:(DEFAULT_CHK[(a.title||"").toLowerCase()]||[]).map((t,i)=>({id:"d"+i,text:t,done:false}))}
+const chkOpen=a=>effChk(a).filter(c=>!c.done).length;
+const newId=()=>Math.random().toString(36).slice(2,9);
+async function updAct(pp,aid,fn,msg){return save(pp.id,{acts:(pp.acts||[]).map(a=>a.id===aid?fn({...a}):a)},msg)}
+/* @vermeldingen: volledige namen uit de personenlijst */
+function mentionsIn(text){const t=(text||"").toLowerCase();return [...new Set(personas().map(x=>x[0]))].filter(n=>t.includes("@"+n.toLowerCase()))}
+function fmtComment(text){let h=esc(text);[...new Set(personas().map(x=>x[0]))].sort((a,b)=>b.length-a.length).forEach(n=>{const e=esc("@"+n);h=h.split(e).join(`<b class="mention">${e}</b>`)});return h}
+function myMentions(){
+  const me=(S.me||"").toLowerCase(),out=[];
+  S.projects.forEach(p=>(p.acts||[]).forEach(a=>(a.comments||[]).forEach(c=>{
+    if((c.mentions||[]).some(m=>m.toLowerCase()===me)&&(c.author||"").toLowerCase()!==me&&!(c.seen||[]).some(x=>x.toLowerCase()===me))out.push({p,a,c})})));
+  return out.sort((x,y)=>(y.c.at||"").localeCompare(x.c.at||""));
+}
+/* verwachte oplevering: na de voorbereiding standaard 2 weken realisatie en 1 week oplevering */
+const REALISATIE_WEKEN=2,OPLEVERING_WEKEN=1;
+function expectedEnd(p){
+  if(p.phase>=5)return"";
+  if(p.phase===4)return workday(addDays((p.phaseSince||nowISO()).slice(0,10),OPLEVERING_WEKEN*7));
+  if(p.phase===3)return workday(addDays((p.phaseSince||nowISO()).slice(0,10),(REALISATIE_WEKEN+OPLEVERING_WEKEN)*7));
+  return workday(addDays(prepEnd(p),(REALISATIE_WEKEN+OPLEVERING_WEKEN)*7));
+}
+const expLate=p=>p.due&&expectedEnd(p)&&expectedEnd(p)>p.due;
+/* export naar Excel (CSV met puntkomma, opent direct in Excel) */
+function downloadCSV(name,rows){
+  const csv="\ufeff"+rows.map(r=>r.map(v=>{v=v==null?"":String(v);return /[;"\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}).join(";")).join("\r\n");
+  const b=new Blob([csv],{type:"text/csv;charset=utf-8"}),u=URL.createObjectURL(b),l=document.createElement("a");
+  l.href=u;l.download=name;document.body.appendChild(l);l.click();setTimeout(()=>{URL.revokeObjectURL(u);l.remove()},500);
+}
+function exportProjects(list){
+  const rows=[["Projectnr","Projectnaam","Klant","Locatie","Fase","Status","Projectleider","Sales engineer","Detailengineer","Tekenaar","Werkvoorbereider","Aannemer","Akkoord klant","Vroegste start uitvoering","Verwachte oplevering","Gewenste oplevering","Open taken","Te late taken"]];
+  list.forEach(p=>{const open=actsOf(p,p.phase).filter(a=>!isClosed(a)&&!a.trans),late=open.filter(a=>{const d=effDue(p,a);return d&&d<todayStr()});
+    rows.push([p.nr,p.name,p.client,p.loc,PHASES[p.phase].label,STATUSES[p.status].label,p.owner,p.engineer,p.detail,p.drafter,p.wvb,p.contractor,fmtDate(p.akkoord),p.phase<3?fmtDate(prepEnd(p)):"",fmtDate(expectedEnd(p)),fmtDate(p.due),open.length,late.length])});
+  downloadCSV("projecten-"+todayStr()+".csv",rows);
+}
+function exportTasks(list){
+  const rows=[["Projectnr","Projectnaam","Fase","Taak","Functie","Behandelaar","Status","Deadline","Standaarddeadline","Afgerond op"]];
+  list.forEach(p=>(p.acts||[]).forEach(a=>rows.push([p.nr,p.name,PHASES[a.phase].label,a.title,a.role,effOwner(p,a),ACT_ST[a.status],fmtDate(effDue(p,a)),a.due?"nee":"ja",fmtDate(a.doneAt)])));
+  downloadCSV("taken-"+todayStr()+".csv",rows);
+}
+/* ---------- dashboard ---------- */
+const canSeeDash=()=>isAdmin()||S.role==="Projectleider";
+function dashboardHTML(){
+  if(!S.loaded)return `<div class="notice"><strong>Laden…</strong></div>`;
+  const t=todayStr(),wk=addDays(t,7),act=S.projects.filter(p=>p.phase<5);
+  const open=[];act.forEach(p=>actsOf(p,p.phase).forEach(a=>{if(!isClosed(a)&&!a.trans)open.push({p,a,d:effDue(p,a),w:waitsOn(p,a)})}));
+  const lateT=open.filter(x=>x.d&&x.d<t);
+  const delayed=act.filter(p=>p.status==="bad"||isLate(p)||expLate(p)||actsOf(p,p.phase).some(a=>!isClosed(a)&&effDue(p,a)&&effDue(p,a)<t));
+  const tile=(n,l,cls)=>`<div class="kpi ${cls||""}"><span class="n">${n}</span><span class="l">${l}</span></div>`;
+  /* werkdruk per persoon (of per functie zolang niemand is toegewezen) */
+  const per={};open.forEach(x=>{const o=effOwner(x.p,x.a),k=o||("Iedere "+x.a.role.toLowerCase());(per[k]=per[k]||{name:k,role:x.a.role,named:!!o,open:0,late:0,week:0,ready:0});const r=per[k];r.open++;if(!x.w)r.ready++;if(x.d&&x.d<t)r.late++;else if(x.d&&x.d<=wk)r.week++});
+  const ppl=Object.values(per).sort((a,b)=>b.late-a.late||b.open-a.open),max=Math.max(1,...ppl.map(r=>r.open));
+  /* doorlooptijd per fase uit de fasehistorie */
+  const durs={};S.projects.forEach(p=>{const h=p.phaseHistory||[];h.forEach((e,i)=>{const prev=h.slice(0,i).reverse().find(x=>x.to===e.from);const start=prev?prev.at:(e.from===0?(p.intakeStart||p.createdAt):null);if(start&&e.to===e.from+1){(durs[e.from]=durs[e.from]||[]).push((new Date(e.at)-new Date(start))/864e5)}})});
+  const avg=a=>a&&a.length?Math.round(a.reduce((x,y)=>x+y,0)/a.length):null;
+  const norm={0:INTAKE_WEKEN*7,1:35,2:21,3:REALISATIE_WEKEN*7,4:OPLEVERING_WEKEN*7};
+  return `<div class="sectionhead"><h2>Dashboard</h2><span class="small">Werkdruk, vertraging en doorlooptijden van alle lopende projecten</span><span class="spacer"></span>
+      <button class="btn" type="button" data-act="expProjects">Exporteer projecten</button><button class="btn" type="button" data-act="expTasks">Exporteer taken</button></div>
+    <div class="kpis">${tile(act.length,"lopende projecten")}${tile(delayed.length,"met vertraging",delayed.length?"bad":"")}${tile(open.length,"open taken in huidige fase")}${tile(lateT.length,"taken te laat",lateT.length?"bad":"")}</div>
+    <div class="dgrid">
+      <section class="panelbox"><header><h2>Werkdruk per persoon</h2></header>
+        ${ppl.length?`<table class="wl"><thead><tr><th>Persoon</th><th>Open</th><th>Nu op te pakken</th><th>Te laat</th><th>Deze week</th><th></th></tr></thead><tbody>${ppl.map(r=>`<tr>
+          <td><b>${esc(r.name)}</b><div class="small">${esc(r.role)}</div></td><td class="num">${r.open}</td><td class="num">${r.ready}</td><td class="num ${r.late?"late":""}">${r.late||"–"}</td><td class="num">${r.week||"–"}</td>
+          <td style="width:30%"><div class="bar"><i style="width:${Math.round(r.open/max*100)}%"></i>${r.late?`<i class="late" style="width:${Math.round(r.late/max*100)}%"></i>`:""}</div></td></tr>`).join("")}</tbody></table>`:`<div class="small">Geen open taken.</div>`}
+      </section>
+      <section class="panelbox"><header><h2>Fases</h2></header>
+        <table class="wl"><thead><tr><th>Fase</th><th>Projecten</th><th>Gem. dagen in fase nu</th><th>Gem. doorlooptijd</th><th>Norm</th></tr></thead><tbody>${PHASES.slice(0,5).map(ph=>{const l=act.filter(p=>p.phase===ph.id),now=avg(l.map(p=>daysSince(p.phaseSince)).filter(x=>x!=null)),d=avg(durs[ph.id]);
+          return `<tr><td><b>${esc(ph.label)}</b></td><td class="num">${l.length}</td><td class="num ${now!=null&&now>norm[ph.id]?"late":""}">${now??"–"}</td><td class="num ${d!=null&&d>norm[ph.id]?"late":""}">${d!=null?d+" dg":"–"}</td><td class="num small">${norm[ph.id]} dg</td></tr>`}).join("")}</tbody></table>
+        <div class="small">Doorlooptijden worden gemeten vanaf nu; projecten die eerder van fase wisselden tellen nog niet mee.</div>
+      </section>
+    </div>
+    <section class="panelbox"><header><h2>Aandacht nodig</h2></header>
+      ${delayed.length?`<table class="wl"><thead><tr><th>Project</th><th>Fase</th><th>Projectleider</th><th>Wat speelt er</th></tr></thead><tbody>${delayed.map(p=>{const why=[];const lt=actsOf(p,p.phase).filter(a=>!isClosed(a)&&effDue(p,a)&&effDue(p,a)<t).length;
+        if(lt)why.push(lt+" taak"+(lt>1?"en":"")+" te laat");if(expLate(p))why.push("verwachte oplevering "+fmtDate(expectedEnd(p))+" na gewenst "+fmtDate(p.due));if(p.status==="bad")why.push("status vertraagd");
+        return `<tr class="click" data-open="${esc(p.id)}" tabindex="0"><td><span class="mono small">${esc(p.nr||"")}</span> <b>${esc(p.name)}</b></td><td>${esc(PHASES[p.phase].label)}</td><td>${esc(p.owner||"—")}</td><td class="late">${esc(why.join(" · "))}</td></tr>`}).join("")}</tbody></table>`:`<div class="small">Alles loopt op schema.</div>`}
+    </section>`;
+}
 /* ---------- events ---------- */
 document.addEventListener("click",async e=>{
-  const t=e.target.closest("button,[data-open],[data-task],[data-act],[data-toggle]");if(!t||!S.code)return;
+  const t=e.target.closest("button,[data-open],[data-task],[data-act],[data-toggle]");if(t&&t.tagName==="A")return;if(!t||!S.code)return;
   if(t.dataset.phasef!==undefined){const v=+t.dataset.phasef;S.phaseFilter=S.phaseFilter===v?null:v;render();return}
   if(t.dataset.view){S.view=t.dataset.view;put(localStorage,"pb-view",S.view);render();return}
   if(t.dataset.sort){const k=t.dataset.sort;S.sortDir=S.sortKey===k?-S.sortDir:1;S.sortKey=k;renderOvBody();return}
@@ -998,6 +1160,14 @@ document.addEventListener("click",async e=>{
   if(t.dataset.section){S.section=t.dataset.section;put(sessionStorage,"pb-section",S.section);S.phaseFilter=null;openProject(null);return}
   if(t.dataset.task){S.taskProj=t.dataset.task;render();return}
   if(t.dataset.toggle){const id=t.dataset.toggle;S.inboxOpen.has(id)?S.inboxOpen.delete(id):S.inboxOpen.add(id);render();return}
+  if(t.dataset.openact){S.openAct=S.openAct===t.dataset.openact?null:t.dataset.openact;render();return}
+  if(t.dataset.dellink||t.dataset.delchk){const [aid,xid]=(t.dataset.dellink||t.dataset.delchk).split("|"),pp=proj(S.openId);if(!pp)return;
+    if(t.dataset.dellink)await updAct(pp,aid,a=>({...a,links:(a.links||[]).filter(l=>l.id!==xid)}),"Document verwijderd");
+    else await updAct(pp,aid,a=>({...a,checklist:effChk(a).filter(c=>c.id!==xid)}),"Punt verwijderd");
+    render();return}
+  if(t.dataset.gotoact||t.dataset.seen){const [pid,aid,cid]=(t.dataset.gotoact||t.dataset.seen).split("|"),pp=proj(pid);if(!pp)return;
+    await updAct(pp,aid,a=>({...a,comments:(a.comments||[]).map(c=>c.id===cid?{...c,seen:[...(c.seen||[]),S.me]}:c)}));
+    if(t.dataset.gotoact){const ac=(pp.acts||[]).find(x=>x.id===aid);openProject(pid);S.selPhase=ac?ac.phase:null;S.openAct=aid;render()}else render();return}
   if(t.dataset.editdue){S.editDue=t.dataset.editdue;render();setTimeout(()=>{const i=$("#dueEdit");if(i){i.focus();try{i.showPicker&&i.showPicker()}catch(e){}}},20);return}
   if(t.dataset.selphase!==undefined){S.selPhase=+t.dataset.selphase;render();return}
   if(t.dataset.logtab){S.logTab=t.dataset.logtab;render();return}
@@ -1015,6 +1185,8 @@ document.addEventListener("click",async e=>{
   if(t.hasAttribute("data-delact")&&p){const aid=t.closest("tr").dataset.aid;if(await save(p.id,{acts:(p.acts||[]).filter(a=>a.id!==aid)},"Activiteit verwijderd"))render();return}
   switch(t.dataset.act){
     case "back":openProject(null);break;
+    case "expProjects":exportProjects(S.section==="dash"?S.projects:filtered());toast("Export gedownload");break;
+    case "expTasks":exportTasks(S.section==="dash"?S.projects:filtered());toast("Export gedownload");break;
     case "expandAll":inboxRows().forEach(r=>S.inboxOpen.add(r.p.id));render();break;
     case "collapseAll":S.inboxOpen.clear();render();break;
     case "backToAdmin":setPersona("");break;
@@ -1056,6 +1228,8 @@ document.addEventListener("change",async e=>{
     const st=t.checked?"afgerond":"open";
     if(await saveActs(tp,(tp.acts||[]).map(a=>a.id===t.dataset.done?{...a,status:st,doneAt:st==="afgerond"?todayStr():""}:a),t.checked?"Taak afgerond":"Taak heropend")){S.selPhase=null;render()}else t.disabled=false;
     return}
+  if(t.dataset.chk){const [aid,cid]=t.dataset.chk.split("|"),pp=proj(S.openId);if(!pp)return;
+    await updAct(pp,aid,a=>({...a,checklist:effChk(a).map(c=>c.id===cid?{...c,done:t.checked,by:S.me,at:nowISO()}:c)}));render();return}
   const p=proj(S.openId);
   if(t.dataset.af&&p){
     const aid=t.closest("tr").dataset.aid;
@@ -1078,6 +1252,13 @@ document.addEventListener("submit",async e=>{
     else $("#lgGo").disabled=false;
     return}
   const p=proj(S.openId);if(!p)return;
+  if(e.target.dataset.form){const fm=e.target,f={t:fm.elements.namedItem("t"),l:fm.elements.namedItem("l"),u:fm.elements.namedItem("u"),c:fm.elements.namedItem("c")},aid=fm.dataset.aid,kind=fm.dataset.form;
+    if(kind==="chk"){const v=f.t.value.trim();if(!v)return;await updAct(p,aid,a=>({...a,checklist:[...effChk(a),{id:newId(),text:v,done:false}]}),"Punt toegevoegd")}
+    if(kind==="link"){let u=f.u.value.trim();const l=f.l.value.trim();if(!u){f.u.focus();return}if(!/^https?:\/\//i.test(u))u="https://"+u;
+      await updAct(p,aid,a=>({...a,links:[...(a.links||[]),{id:newId(),label:l||u,url:u,by:S.me,at:nowISO()}]}),"Document toegevoegd")}
+    if(kind==="cmt"){const v=f.c.value.trim();if(!v)return;const m=mentionsIn(v);
+      await updAct(p,aid,a=>({...a,comments:[...(a.comments||[]),{id:newId(),author:S.me,text:v,at:nowISO(),mentions:m,seen:[]}]}),m.length?"Geplaatst, "+m.join(", ")+" krijgt een melding":"Opmerking geplaatst")}
+    render();return}
   if(e.target.id==="addAct"){const title=$("#naTitle").value.trim();if(!title){$("#naTitle").focus();return}
     const sel=S.selPhase??p.phase;
     if(await save(p.id,{acts:[...(p.acts||[]),{id:newActId(),phase:sel,title,role:$("#naRole").value,owner:"",status:"open",doneAt:""}]},"Activiteit toegevoegd")){render();setTimeout(()=>$("#naTitle")?.focus(),30)}
