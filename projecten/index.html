@@ -258,7 +258,7 @@ const TEMPLATE={
      ["Projectplan en calculatie in Salesforce doorzetten naar accountmanager","Engineer","s"],
      ["Offerte opstellen","Accountmanager","s"],["Offerte getekend door klant","Klant","sg"],
      ["Projectteam en fasering vastleggen","Planner","s"]],
-  1:[["Uitgangspunten en programma van eisen vastleggen","Engineer"],["Netaanvraag / aansluiting bij netbeheerder","Engineer"],["Eendraadschema (SLD) opstellen","Engineer"],["Kabelberekening NEN 1010","Engineer"],["Beveiliging en selectiviteit","Engineer"],["Review ontwerp (IV'er)","Engineer"],["Ontwerp vrijgeven","Projectleider"]],
+  1:[["Uitgangspunten en uitsluitingen uit projectplan controleren","Engineer"],["Netaanvraag / aansluiting bij netbeheerder","Engineer"],["Eendraadschema (SLD) opstellen","Engineer"],["Kabelberekening NEN 1010","Engineer"],["Beveiliging en selectiviteit","Engineer"],["Review ontwerp (IV'er)","Engineer"],["Ontwerp vrijgeven","Projectleider"]],
   2:[["Materiaal met lange levertijd bestellen","Inkoop"],["Aannemer contracteren","Werkvoorbereider"],["V&G-plan en TRA","Werkvoorbereider"],["Schakelafspraken netbeheerder","Werkvoorbereider"],["Uitvoeringsplanning vastleggen","Planner"],["Kick-off met aannemer","Projectleider"]],
   3:[["Start uitvoering op locatie","Aannemer"],["Montage installatie","Aannemer"],["Kabels leggen en aansluiten","Aannemer"],["Voortgangscontrole","Werkvoorbereider"],["Meerwerk registreren","Projectleider"]],
   4:[["Eerste inspectie NEN 1010 / NEN 3140","Engineer"],["Inbedrijfname en schakelen","Werkvoorbereider"],["SAT uitvoeren","Engineer"],["Revisietekeningen en opleverdossier","Engineer"],["Overdracht aan klant","Projectleider"]],
@@ -267,15 +267,17 @@ const TEMPLATE={
 const newActId=()=>"a"+Math.random().toString(36).slice(2,10);
 const flagsOf=f=>({seq:(f||"").includes("s"),gate:(f||"").includes("g")});
 function templateActs(){const out=[];for(const ph in TEMPLATE)TEMPLATE[ph].forEach(([t,r,f])=>out.push({id:newActId(),phase:+ph,title:t,role:r,owner:"",status:"open",doneAt:"",...flagsOf(f)}));return out}
+const ALIASES={"uitgangspunten en programma van eisen vastleggen":"uitgangspunten en uitsluitingen uit projectplan controleren"};
+const normT=t=>{t=(t||"").toLowerCase();return ALIASES[t]||t};
 /* zet de activiteiten van één fase in de standaardvolgorde; bestaande (zelfde titel) blijven met hun status, eigen extra's komen erachter */
 function syncPhase(p,ph){
   const cur=actsOf(p,ph),used=new Set(),list=[];
-  TEMPLATE[ph].forEach(([t,r,f])=>{const ex=cur.find(a=>a.title.toLowerCase()===t.toLowerCase());
-    if(ex){used.add(ex.id);list.push({...ex,role:r,...flagsOf(f)})}else list.push({id:newActId(),phase:ph,title:t,role:r,owner:"",status:"open",doneAt:"",...flagsOf(f)})});
+  TEMPLATE[ph].forEach(([t,r,f])=>{const ex=cur.find(a=>normT(a.title)===t.toLowerCase());
+    if(ex){used.add(ex.id);list.push({...ex,title:t,role:r,...flagsOf(f)})}else list.push({id:newActId(),phase:ph,title:t,role:r,owner:"",status:"open",doneAt:"",...flagsOf(f)})});
   cur.forEach(a=>{if(!used.has(a.id))list.push(a)});
   return (p.acts||[]).filter(a=>a.phase!==ph).concat(list);
 }
-const missingStd=(p,ph)=>TEMPLATE[ph].some(([t,,f])=>{const a=actsOf(p,ph).find(x=>x.title.toLowerCase()===t.toLowerCase());return !a||(f&&!a.seq)});
+const missingStd=(p,ph)=>TEMPLATE[ph].some(([t,,f])=>{const a=actsOf(p,ph).find(x=>x.title.toLowerCase()===t.toLowerCase());return !a||(!!f&&!a.seq)});
 /* wacht deze stap op de vorige? */
 function waitsOn(p,a){if(!a.seq||isClosed(a))return null;const l=actsOf(p,a.phase),i=l.findIndex(x=>x.id===a.id),prev=i>0?l[i-1]:null;return prev&&!isClosed(prev)?prev:null}
 const gateOpen=p=>actsOf(p,p.phase).find(a=>a.gate&&a.status!=="afgerond");
