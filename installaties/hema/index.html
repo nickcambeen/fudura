@@ -82,6 +82,7 @@
     <label>PV-panelen op het dak <input type="checkbox" id="tPvDak" checked></label>
     <label>Vrachtwagens bij de dispensers <input type="checkbox" id="tTruck" checked></label>
     <label>Trailers / wissellaadbakken (luchtfoto) <input type="checkbox" id="tVracht" checked></label>
+    <label>Mega-rookworst op de gevel <input type="checkbox" id="tWorst"></label>
     <div id="bagInfo" class="cfgInfo">gebouwen laden…</div>
   </details>
   <details><summary>Componenten</summary>
@@ -238,7 +239,7 @@ function noodPand(){ const r = PVNOOD(), h = 11; const sh = new THREE.Shape(r.ma
 // mega-rookworst op de gevel (op verzoek): gebogen worst met touwtje, plat tegen de wand aan de terreinzijde
 let MEGA = null;
 function megaWorst(h){ if(MEGA){ scene.remove(MEGA); MEGA = null; } let wn = WN; try{ const w = wandOp(-14); if(w !== null) wn = w; }catch(e){}
-  const g = new THREE.Group(); MEGA = g; g.position.copy(wp(-14, wn + 1.15)); g.position.y = 0; g.rotation.y = YAW; scene.add(g);
+  const g = new THREE.Group(); MEGA = g; g.visible = $t('tWorst').checked; g.position.copy(wp(-14, wn + 1.15)); g.position.y = 0; g.rotation.y = YAW; scene.add(g);
   const R = h*0.55, r = Math.min(1.2, h*0.09), arc = Math.PI*1.18, yc = h - 0.4*R - r - 0.4;
   const worst = new THREE.Mesh(new THREE.TorusGeometry(R, r, 20, 90, arc), M(0x8a3418, {roughness: 0.35, metalness: 0.05})); worst.rotation.z = Math.PI/2 - arc/2 + Math.PI; worst.position.y = yc; g.add(worst);
   for(const a of [0, arc]){ const k = new THREE.Mesh(new THREE.SphereGeometry(r*0.98, 16, 12), M(0xc9b48a, {roughness: 0.6})); const t = a + worst.rotation.z; k.position.set(Math.cos(t)*R, yc + Math.sin(t)*R, 0); k.scale.set(1, 1, 0.9); g.add(k);
@@ -686,7 +687,7 @@ window.addEventListener('blur', () => { for(const k in KO) KO[k] = false; });
 $t('pDicht').addEventListener('click', () => { $t('paneel').classList.add('dicht'); $t('pOpen').classList.add('toon'); });
 $t('pOpen').addEventListener('click', () => { $t('paneel').classList.remove('dicht'); $t('pOpen').classList.remove('toon'); });
 $t('tFoto').addEventListener('change', zetOnder); $t('rEsri').addEventListener('input', zetOnder); $t('tHek').addEventListener('change', e => { HEK.visible = e.target.checked; renderer.shadowMap.needsUpdate = true; vuil(3); });
-$t('tEsri').addEventListener('change', zetOnder); zetOnder(); $t('tVracht').addEventListener('change', e => { VRACHT.visible = e.target.checked; renderer.shadowMap.needsUpdate = true; vuil(3); });
+$t('tEsri').addEventListener('change', zetOnder); zetOnder(); $t('tWorst').addEventListener('change', e => { if(MEGA) MEGA.visible = e.target.checked; renderer.shadowMap.needsUpdate = true; vuil(3); }); $t('tVracht').addEventListener('change', e => { VRACHT.visible = e.target.checked; renderer.shadowMap.needsUpdate = true; vuil(3); });
 $t('tPvDak').addEventListener('change', e => { PVDAK.visible = e.target.checked; renderer.shadowMap.needsUpdate = true; vuil(3); });
 $t('tBag').addEventListener('change', e => { BAG.visible = e.target.checked; renderer.shadowMap.needsUpdate = true; vuil(3); });
 $t('tBagT').addEventListener('change', zetBagT);
