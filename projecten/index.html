@@ -444,14 +444,15 @@ const TEMPLATE={
   1:[["Eerste contact met klant: kennismaking en verwachtingen afstemmen","Projectleider"],["Uitgangspunten en programma van eisen vastleggen","Projectleider","s"],["Projectteam samenstellen","Projectleider","s"],
      ["Overdrachtsmoment inplannen (sales engineer, projectleider, tekenaar, detailengineer)","Projectleider","s"],
      ["Contact opnemen met onderaannemer: afspraken maken","Projectleider","s"],
-     ["Projecttekening maken","Tekenaar"],["Eendraadschema (SLD) opstellen","Tekenaar","s"],["Kabelberekening NEN 1010","Detailengineer"],["Review ontwerp (IV'er)","Detailengineer"],["Ontwerp vrijgeven","Projectleider"]],
+     ["Projecttekening maken","Tekenaar"],["Eendraadschema (SLD) opstellen","Tekenaar","s"],["Kabelberekening NEN 1010","Detailengineer"],["Review ontwerp (IV'er)","Detailengineer"],["Ontwerp vrijgeven","Projectleider","a"]],
   2:[["Materiaal met lange levertijd bestellen","Inkoop"],["Aannemer contracteren","Werkvoorbereider"],["V&G-plan en TRA","Werkvoorbereider"],["Uitvoeringsplanning vastleggen","Werkvoorbereider"],["Kick-off met aannemer","Projectleider"]],
   3:[["Start uitvoering op locatie","Aannemer"],["Montage installatie","Aannemer"],["Kabels leggen en aansluiten","Aannemer"],["Voortgangscontrole","Uitvoerder"],["Meerwerk registreren","Projectleider"]],
   4:[["Eerste inspectie NEN 1010 / NEN 3140","Aannemer"],["Inbedrijfname en schakelen","Werkvoorbereider"],["SAT uitvoeren","Detailengineer"],["Opleverdossier aannemer aanleveren (inmeetgegevens en meetrapporten)","Aannemer"],["Revisie uit de uitvoering verwerken in tekeningen en SLD","Tekenaar","s"],["Opleverdossier samenstellen","Projectleider","s"],["Overdracht aan klant","Projectleider"]],
   5:[["Nacalculatie","Projectleider"],["Evaluatie / lessons learned","Projectleider"],["Project administratief sluiten","Projectleider"]]
 };
 const newActId=()=>"a"+Math.random().toString(36).slice(2,10);
-const flagsOf=f=>({seq:(f||"").includes("s"),gate:(f||"").includes("g")});
+/* s = wacht op vorige stap, g = voorwaarde voor volgende fase, a = wacht op alle vorige stappen van de fase */
+const flagsOf=f=>({seq:(f||"").includes("s"),gate:(f||"").includes("g"),all:(f||"").includes("a")});
 function templateActs(){const out=[];for(const ph in TEMPLATE)TEMPLATE[ph].forEach(([t,r,f])=>out.push({id:newActId(),phase:+ph,title:t,role:r,owner:"",status:"open",doneAt:"",...flagsOf(f)}));return out}
 const ALIASES={"opleverdossier aannemer aanleveren":"opleverdossier aannemer aanleveren (inmeetgegevens en meetrapporten)","revisietekeningen en opleverdossier":"revisie uit de uitvoering verwerken in tekeningen en sld","uitgangspunten en uitsluitingen uit projectplan controleren":"uitgangspunten en programma van eisen vastleggen"};
 /* oude standaardstappen die niet meer in de werkwijze zitten: weg bij bijwerken zolang ze onaangeroerd zijn */
@@ -465,9 +466,11 @@ function syncPhase(p,ph){
   cur.forEach(a=>{if(used.has(a.id))return;if(RETIRED.includes(a.title.toLowerCase())&&a.status==="open"&&!a.owner)return;list.push(a)});
   return (p.acts||[]).filter(a=>a.phase!==ph).concat(list);
 }
-const missingStd=(p,ph)=>TEMPLATE[ph].some(([t,r,f])=>{const a=actsOf(p,ph).find(x=>x.title.toLowerCase()===t.toLowerCase());return !a||(!!f&&!a.seq)||a.role!==r})||actsOf(p,ph).some(a=>RETIRED.includes(a.title.toLowerCase())&&a.status==="open"&&!a.owner);
+const missingStd=(p,ph)=>TEMPLATE[ph].some(([t,r,f])=>{const a=actsOf(p,ph).find(x=>x.title.toLowerCase()===t.toLowerCase());const fl=flagsOf(f);return !a||fl.seq!==!!a.seq||fl.gate!==!!a.gate||fl.all!==!!a.all||a.role!==r})||actsOf(p,ph).some(a=>RETIRED.includes(a.title.toLowerCase())&&a.status==="open"&&!a.owner);
 /* wacht deze stap op de vorige? */
-function waitsOn(p,a){if(!a.seq||isClosed(a))return null;const l=actsOf(p,a.phase),i=l.findIndex(x=>x.id===a.id),prev=i>0?l[i-1]:null;return prev&&!isClosed(prev)?prev:null}
+function waitsOn(p,a){if(isClosed(a))return null;
+  if(a.all){const l=actsOf(p,a.phase),i=l.findIndex(x=>x.id===a.id);return l.slice(0,i).find(x=>!isClosed(x))||null}
+  if(!a.seq)return null;const l=actsOf(p,a.phase),i=l.findIndex(x=>x.id===a.id),prev=i>0?l[i-1]:null;return prev&&!isClosed(prev)?prev:null}
 const gateOpen=p=>actsOf(p,p.phase).find(a=>a.gate&&a.status!=="afgerond");
 
 /* ---------- state ---------- */
@@ -647,7 +650,8 @@ function teamDefault(p,a){const f=TEAM_FIELD[a.role];return f&&p?(p[f]||""):""}
 function effOwner(p,a){return a.owner||teamDefault(p,a)}
 /* van wie is deze taak: van de behandelaar, of zolang niemand is toegewezen van iedereen met die functie */
 function isMine(a,p){if(isAdmin())return true;const o=effOwner(p,a);if(o)return o.toLowerCase()===S.me.toLowerCase();return roleMatch(a)}
-const canDo=(p,a)=>isMine(a,p);
+/* een stap die op alle vorige stappen wacht, kan pas worden afgerond als die klaar zijn (de beheerder kan altijd) */
+const canDo=(p,a)=>isMine(a,p)&&(isAdmin()||!(a.all&&waitsOn(p,a)));
 function myTasks(p){return actsOf(p,p.phase).filter(a=>!isClosed(a)&&isMine(a,p))}
 function involved(p){if(isAdmin())return true;const me=S.me.toLowerCase();
   return [p.owner,p.engineer,p.detail,p.drafter,p.contractor,p.am,p.wvb,p.uitv].some(x=>x&&x.toLowerCase()===me)||(p.acts||[]).some(a=>isMine(a,p))}
@@ -682,7 +686,7 @@ function inboxHTML(){
         <span>${g.ready?`<span class="badge">${g.ready}</span> te doen`:""}${g.rows.length>g.ready?`<span class="small">${g.ready?" · ":""}${g.rows.length-g.ready} wacht</span>`:""}</span>
       </button>
       ${open?`<div class="ib-body">${actsOf(p,p.phase).filter(a=>isMine(a,p)).map(a=>{const w=waitsOn(p,a),done=isClosed(a),ed=effDue(p,a),late2=ed&&ed<todayStr()&&!done;return `<label class="taskrow ${done?"done":""} ${w&&!done?"waiting":""}">
-        <input type="checkbox" data-done="${a.id}" data-proj="${esc(p.id)}" ${a.status==="afgerond"?"checked":""} ${a.status==="nvt"?"disabled":""}>
+        <input type="checkbox" data-done="${a.id}" data-proj="${esc(p.id)}" ${a.status==="afgerond"?"checked":""} ${a.status==="nvt"||!canDo(p,a)?"disabled":""}>
         <span class="tr-title">${esc(a.title)}${w&&!done?` <span class="wait" title="Wacht op: ${esc(w.title)}">⊘ wacht op vorige stap</span>`:""}</span>
         <span class="tr-due ${late2?"late":""}" title="${isStdDue(a)?"Standaarddeadline":"Deadline"}">${done&&a.doneAt?"✓ "+fmtDate(a.doneAt):ed?fmtDate(ed):"—"}</span></label>`}).join("")}
         <div><button class="btn" type="button" data-open="${esc(p.id)}">Project openen →</button></div></div>`:""}
