@@ -459,7 +459,7 @@ const HEK = new THREE.Group(); scene.add(HEK);
       box(k, 1.15, 0.35, 0.9, matBeton, 0, 0.175, 0); box(k, 1.0, 1.05, 0.75, M(0xffffff, {map: vuilT, roughness: 0.85}), 0, 0.35 + 0.525, 0); box(k, 1.06, 0.05, 0.81, M(0x8d8f8a), 0, 1.42, 0);
       box(k, 0.002, 0.9, 0.7, M(0x8a8c87), 0.502, 0.87, 0, false); box(k, 0.03, 0.12, 0.04, matZwart, 0.52, 0.95, 0.25);
       k.traverse(o => { if(o.isMesh){ o.userData.info = '<b>Bestaande kast naast de poort</b> (Cyclomedia) — functie nog onbekend (poortbesturing / aansluitkast?) · ± 1,0 × 0,75 × 1,4 m op betonsokkel'; KLIK.push(o); } }); }
-    // lantaarnpalen (Cyclomedia): 2 terreinmasten met schijnwerpers bij de poort, straatverlichting aan de overkant van de Nucleonenweg
+    // lantaarnpalen (Cyclomedia): 2 terreinmasten met schijnwerpers bij het hek / de poort
     const mast = (p, hgt, arm, info) => { const L = new THREE.Group(); L.position.copy(p); L.rotation.y = YAW; HEK.add(L);
       cyl(L, 0.09, hgt, zink, 0, hgt/2, 0, null, 10); cyl(L, 0.16, 0.5, zink, 0, 0.25, 0, null, 10);
       if(arm){ box(L, 1.6, 0.07, 0.07, zink, -0.8, hgt - 0.1, 0); box(L, 0.6, 0.1, 0.28, M(0x50555a, {roughness: 0.4}), -1.55, hgt - 0.18, 0); box(L, 0.5, 0.02, 0.2, M(0xfff6d8, {emissive: 0xfff2c0, emissiveIntensity: 0.35}), -1.55, hgt - 0.24, 0, false); }
@@ -467,7 +467,6 @@ const HEK = new THREE.Group(); scene.add(HEK);
       L.traverse(o => { if(o.isMesh){ o.userData.info = info; KLIK.push(o); } }); };
     mast(wp(fs(39.8) - 0.6, 39.8), 10, false, '<b>Terreinverlichting</b> — mast ± 10 m met 2 schijnwerpers, naast de kast bij de poort (Cyclomedia)');
     mast(wp(fs(25) - 1.0, 25), 10, false, '<b>Terreinverlichting</b> — mast ± 10 m met 2 schijnwerpers bij de haag (Cyclomedia)');
-    for(let n = -17.5; n < 92; n += 21.5) mast(wp(27.2 - 0.025*n, n), 8, true, '<b>Straatverlichting Nucleonenweg</b> — mast ± 8 m met uithouder (Cyclomedia / luchtfoto)');
     g.traverse(o => { if(o.isMesh) o.userData.info = '<b>Schuifpoort</b> (bestaand, Cyclomedia) ± 10 m vrijdragend met NP-zone ervoor'; }); }
   // bij de kruising met een ronde hoek (r ± 4 m) mee met de weg langs het fietspad: ± 12,5° van de gevelrichting af (bovenaanzicht Nick), ± 90 m
   { const h1 = C.clone().sub(B).normalize(), h2 = U.clone().negate().multiplyScalar(Math.cos(0.22)).addScaledVector(N, Math.sin(0.22)).normalize(), r = 4, nk = 5;
