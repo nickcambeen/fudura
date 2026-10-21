@@ -330,12 +330,12 @@ const GLB = (() => { let ld = null; return (url, cb) => { try{ if(!ld){ ld = new
 
 // ---------- 2. EV: Sungrow IDC480E power unit, los voorbij het plein richting erfgrens (schets), deur naar het westen ----------
 const wit2 = M(0xf4f5f3, {roughness: 0.35, metalness: 0.15}), donker = M(0x3b3f45, {roughness: 0.45}), voet = M(0x55595d, {roughness: 0.6});
-{ const g = asset('ev', wp(18.35 - 0.025*7.7 - 2.5 - 0.45, 8.2 - 0.5),   /* 2,5 m van de erfgrens (hek wegzijde) */ '<b>Sungrow IDC480E power unit — 480 kW</b> (DC-unit 1380 × 900, zone 3900 × 2980 mm)<br>900 × 2200 × 1380 mm, 1100 kg, IP65, C5, luchtgekoeld<br>3F+N+PE 400 V, 770 A · 2 × YMvKas 4×300+150 naar 800 A gG · DC langs het hek naar 2 dispensers (± 35 m)', YAW);
+{ const g = asset('ev', wp(18.35 - 0.025*7.7 - 2.5 - 0.69, 8.2 - 0.5),   /* 2,5 m van de erfgrens (hek wegzijde); bedienzijde naar de EMS-kast */ '<b>Sungrow IDC480E power unit — 480 kW</b> (DC-unit 1380 × 900, zone 3900 × 2980 mm)<br>900 × 2200 × 1380 mm, 1100 kg, IP65, C5, luchtgekoeld<br>3F+N+PE 400 V, 770 A · 2 × YMvKas 4×300+150 naar 800 A gG · DC langs het hek naar 2 dispensers (± 35 m)', YAW - Math.PI/2);
   { const z = new THREE.Mesh(new THREE.PlaneGeometry(3.9, 2.98), new THREE.MeshStandardMaterial({color: 0xa7a59e, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -3})); z.rotation.x = -Math.PI/2; z.position.set(0.5, 0.02, 0); z.receiveShadow = true; g.add(z);
     const r = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(3.9, 0.01, 2.98)), new THREE.LineBasicMaterial({color: 0x1f7cc4})); r.position.set(0.5, 0.04, 0); g.add(r); }
   const y0 = 0.0;
   box(g, 0.92, 0.12, 1.4, voet, 0, y0 + 0.06, 0); box(g, 0.9, 2.08, 1.38, wit2, 0, y0 + 0.12 + 1.04, 0);
-  // deuren op de brede zijde (+x, richting erfgrens), bedienpaneel met logo, status en noodstop op de smalle zijde (+z, trailerzijde)
+  // deuren op de brede zijde (+x = trailerzijde), bedienpaneel met logo, status en noodstop op de smalle zijde (+z = naar de EMS-kast)
   const kant = 0.9/2 + 0.002, front = 1.38/2 + 0.002;
   const dr = new THREE.Group(); dr.position.set(kant, 0, 0); dr.rotation.y = Math.PI/2; g.add(dr);
   box(dr, 0.003, 2.0, 0.003, M(0xb8bcbe), 0.0, y0 + 1.16, 0.001, false);
@@ -732,7 +732,7 @@ function bouwMaat(){
   if(omhul(ASSET.eos, 0.5).s0 > 1e8){ const el = $t('maatInfo'); setTimeout(() => { if(VRIJ.visible || $t('tVrij').checked) bouwMaat(); }, 1500); return; }   // modellen nog aan het laden
   const eosB = omhul(ASSET.eos, 0.5), evB = omhul(ASSET.ev, 0.3), pvB = omhul(ASSET.pv, 0.35), nsaB = omhul(ASSET.nsa, 0.3), zvkB = omhul(ASSET.zvk, 0.5);
   const zE = {s0: (eosB.s0 + eosB.s1)/2 - 7.575/2, s1: (eosB.s0 + eosB.s1)/2 + 7.575/2, n0: eosB.n0 - 1.0, n1: Math.max(eosB.n0 - 1.0 + 4.07, eosB.n1 + 1.65)};   // dia 35: 1000 achter, 1650 voor (deurzwaai)
-  const zD = zone((evB.s0 + evB.s1)/2 + 0.5, (evB.n0 + evB.n1)/2, 3.9, 2.98);
+  const zD = zone((evB.s0 + evB.s1)/2, (evB.n0 + evB.n1)/2 + 0.5, 2.98, 3.9);
   const zP = zone((pvB.s0 + pvB.s1)/2, (pvB.n0 + pvB.n1)/2, 3.2, 6.45);
   const rectD = (r, kleur, laag) => { dxP(DXM, [[r.s0, r.n0], [r.s1, r.n0], [r.s1, r.n1], [r.s0, r.n1]].map(([a, b]) => wp(a, b)), laag || 'ZONE', true); const pts = []; const hoek = [[r.s0, r.n0], [r.s1, r.n0], [r.s1, r.n1], [r.s0, r.n1]]; for(let i = 0; i < 4; i++){ const [a0, b0] = hoek[i], [a1, b1] = hoek[(i + 1) % 4]; const L = Math.hypot(a1 - a0, b1 - b0), n = Math.floor(L/0.3);
       for(let k = 0; k < n; k += 2){ pts.push(wp(a0 + (a1 - a0)*k/n, b0 + (b1 - b0)*k/n).setY(0.07), wp(a0 + (a1 - a0)*(k + 1)/n, b0 + (b1 - b0)*(k + 1)/n).setY(0.07)); } }
