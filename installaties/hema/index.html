@@ -323,7 +323,7 @@ function dispenser(naam, pos, nr){ const g = asset(naam, pos, `<b>Dispenser ${nr
   for(const s of [-1, 1]){ const x = s*0.26; box(g, 0.08, 0.2, 0.12, M(0x2a2c2f), x, y0 + 0.95, 0.05); box(g, 0.05, 0.12, 0.1, M(0x111214), x, y0 + 0.9, 0.12);       // holster + stekker
     kabel(g, [V(s*0.15, y0 + 1.7, -0.1), V(s*0.22, y0 + 2.05, -0.05), V(s*0.36, y0 + 1.9, 0.05), V(s*0.42, y0 + 1.1, 0.12), V(s*0.36, y0 + 0.55, 0.14), V(x, y0 + 0.82, 0.12)], 0.016, kab); }
   klikbaar(g, g.userData.info); sprite('dispenser ' + nr + ' · 240 kW', V(pos.x, 2.7, pos.z), 0.6, '#1f7cc4'); return g; }
-dispenser('d1', wp(11.2, 41.5), 1); dispenser('d2', wp(11.0, 48.5), 2);   // direct na het NP-vlak van de poort          // schets: in de trailervakken, 7 m h.o.h.
+dispenser('d1', wp(11.1, 45.5), 1); dispenser('d2', wp(10.9, 52.5), 2);   // direct na het NP-vlak van de poort          // schets: in de trailervakken, 7 m h.o.h.
 
 // ---------- 3. PV-omvormers: 5 × Huawei SUN2000-100KTL-M2 los opgesteld (schets): 1 + 2 op een frame bij de container, 3–5 aan de gevel ----------
 // groep 'pv' ligt op wp(0, 0) met lokaal x = s (langs de gevel) en z = n (van de gevel af)
@@ -356,9 +356,11 @@ dispenser('d1', wp(11.2, 41.5), 1); dispenser('d2', wp(11.0, 48.5), 2);   // dir
   plak(g, 1.2, 0.25, lbl('ZVK01 · PV', 240, 50, '#ffffff', '#1b2a36'), -1.75, 0.3 + H - 0.35, 1.585); plak(g, 1.2, 0.25, lbl('ZVK02 · EV + EOS', 300, 50, '#ffffff', '#1b2a36'), 1.75, 0.3 + H - 0.35, 1.585);
   klikbaar(g, g.userData.info); g.userData.lbl = sprite('ZVK (klant, bestaand)', g.position.clone().add(V(0, 3.6, 0)), 0.7, '#c0281f'); }
 { const g = asset('ems', lp(132666.6, 457825.6), '<b>EMS-veldkast</b> (Pegeo KVSP1-413, EMS Groot — model uit de EMS-pagina)<br>router, switch, SmartLogger, WithTheGrid; 230 V B16 uit de ZVK<br>CAT 6A naar Janitza (inkoopstation), EOS, EV, PV-logger en 3 × MetCom MCS301', YAW + Math.PI/2);
-  const m3 = new THREE.Group(); m3.scale.setScalar(0.001); g.add(m3); box(g, 1.0, 0.1, 0.7, matBeton, 0, 0.05, 0);
+  // net als op de AIO-pagina: met de rug tegen de laatste AIO op de stelconplaat, deur naar buiten (kopse kant)
+  ASSET.eos.add(g); g.position.set(2.77, 0.14, 0.1); g.rotation.y = Math.PI/2;
+  const m3 = new THREE.Group(); m3.scale.setScalar(0.001); g.add(m3);
   GLB('models/ems.glb', sc => { m3.add(sc); klikbaar(m3, g.userData.info); }); GLB('models/emsdeur.glb', sc => m3.add(sc));
-  sprite('EMS-veldkast', g.position.clone().add(V(0, 2.5, 0)), 0.6, '#7a3fbf'); }
+  g.updateMatrixWorld(true); sprite('EMS-veldkast', g.getWorldPosition(V(0, 0, 0)).add(V(0, 2.6, 0)), 0.6, '#7a3fbf'); }
 
 // ---------- 4b. bestaande noodstroom-diesel (blauw, op het binnenterrein; dia 15 'Diesel NSA') ----------
 { const g = asset('nsa', wp(6.81, 2.33), '<b>Noodstroomaggregaat (diesel, bestaand)</b> — blauwe geluidsomkasting op het omheinde binnenterrein (luchtfoto / Cyclomedia, dia 15 "Diesel NSA")<br>maten geschat ± 3,0 × 1,15 × 1,6 m', YAW - Math.PI/2);
@@ -372,7 +374,7 @@ dispenser('d1', wp(11.2, 41.5), 1); dispenser('d2', wp(11.0, 48.5), 2);   // dir
 
 // ---------- 5. elektrische trekker met HEMA-oplegger in het laadvak naast dispenser 1, haaks op het hek zoals de wissellaadbakken (neus naar het hek, laadpoort bij de dispenser) ----------
 const TRUCK = new THREE.Group(); scene.add(TRUCK);
-{ const d = ASSET.d1.position, p = wp(13.9 - 6.3, 41.5 + 2.48); /* vak tussen dispenser 1 en 2; vóór dispenser 1 ligt de NP-zone van de poort */ TRUCK.position.copy(p); TRUCK.rotation.y = YAW; const T = new THREE.Group(); TRUCK.add(T);
+{ const d = ASSET.d1.position, p = wp(13.8 - 6.3, 45.5 + 2.48); /* vak tussen dispenser 1 en 2; vóór dispenser 1 ligt de NP-zone van de poort */ TRUCK.position.copy(p); TRUCK.rotation.y = YAW; const T = new THREE.Group(); TRUCK.add(T);
   const rood = M(0xd2141b, {roughness: 0.45}), witT = M(0xf5f5f2, {roughness: 0.4}), band = M(0x141516, {roughness: 0.85}), velg = M(0xb8bdc1, {metalness: 0.7, roughness: 0.3}), glas = M(0x1e2a33, {roughness: 0.1, metalness: 0.4});
   const wiel = (x, z) => { cyl(T, 0.52, 0.32, band, x, 0.52, z, 'z', 22); cyl(T, 0.3, 0.34, velg, x, 0.52, z, 'z', 12); };
   // trekker (cabine voorin richting +x), elektrisch: accupakketten tussen de assen, laadpoort rechts
@@ -535,7 +537,7 @@ function bootTrailers(img, bb){
     if(q.clone().sub(Cc).dot(oB) > -0.8) return false;                                          // voorbij het hek langs het fietspad
     if(s > 1.0 && n < 13.5) return false;                                                       // technisch terrein (EOS, omvormers, NSA, ZVK, power unit)
     if(n > 28 && n < 39 && s > 7.5) return false;                                               // NP-vlak voor de poort
-    if(n > 38 && n < 52.5 && s > -20) return false;                                             // laadvakken + aanrijroute naar de dispensers
+    if(n > 38 && n < 56.5 && s > -20) return false;                                             // laadvakken + aanrijroute naar de dispensers
     if(BAGR.some(r => inPoly(X, Y, r))) return false;                                           // gebouwen
     return true; };
   // herkenning op meerdere witdrempels (de kleur van de luchtfoto verschilt per jaargang); per drempel: masker → opening → componenten → rechthoek-fit
