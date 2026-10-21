@@ -343,6 +343,7 @@ tr.waiting td{color:var(--muted)}
 .asWho select option,.asWho select optgroup{color:var(--fg);background:#fff}
 .asbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#fff6e0;border:1px solid #f0d58c;color:#6b4d00;border-radius:8px;padding:7px 12px;font-size:13px}
 .asbar .btn{margin-left:auto;background:#fff}
+.acts select.ownersel{width:170px}
 </style>
 </head>
 <body>
@@ -528,6 +529,16 @@ function personaSelect(){
   opts+="</optgroup>";
   return `<label class="asWho" for="asWho"><span>Inloggen als</span><select id="asWho">${opts}</select></label>`;
 }
+function personOptions(role,cur,emptyLabel){
+  const all=personas(),same=all.filter(x=>x[1]===role),other=all.filter(x=>x[1]!==role);
+  let o=`<option value="">${esc(emptyLabel)}</option>`;
+  if(same.length)o+=`<optgroup label="${esc(role)}">${same.map(([n])=>`<option ${n===cur?"selected":""}>${esc(n)}</option>`).join("")}</optgroup>`;
+  const seen=new Set(same.map(x=>x[0]));
+  const rest=other.filter(([n])=>!seen.has(n)&&(seen.add(n),true));
+  if(rest.length)o+=`<optgroup label="Andere functies">${rest.map(([n,r])=>`<option value="${esc(n)}" ${n===cur?"selected":""}>${esc(n)} (${esc(r)})</option>`).join("")}</optgroup>`;
+  if(cur&&!all.some(x=>x[0]===cur))o+=`<option selected>${esc(cur)}</option>`;
+  return o;
+}
 function headerHTML(){
   return `<header class="top"><div><div class="brand">Fudura</div><h1>Projectmanagement systeem</h1><div class="sub">Batterijsystemen op LS · team Project Engineering &amp; Realisatie</div></div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${personaSelect()}${realAdmin()?"":`<span class="small">${esc(S.me)} · ${esc(S.role)}</span>`}<button class="btn" type="button" data-act="logout">Afmelden</button>${isAdmin()?`<button class="btn primary" type="button" data-act="new">+ Nieuw project</button>`:""}</div></header>`;
@@ -653,7 +664,7 @@ function actsHTML(list){
 /* ---------- project dashboard ---------- */
 const HEAD=[
   ["nr","Projectnummer","text"],["name","Projectnaam","text"],["status","Projectstatus","status"],
-  ["owner","Projectleider","person"],["engineer","Sales engineer","person"],["detail","Detailengineer","person"],["drafter","Tekenaar","person"],["contractor","Aannemer","text"],
+  ["owner","Projectleider","person"],["engineer","Sales engineer","person"],["detail","Detailengineer","person"],["drafter","Tekenaar","person"],["contractor","Aannemer","person"],
   ["loc","Locatie / adres","text"],["ean","EAN-code","text"],["power","Batterij (kW / kWh)","text"],["units","Aantal AIO's","text"],["link","Gekoppeld project","text"],
   ["survey","Schouw plandatum","date"],["delivery","Bevestigde leverdatum","date"],["due","Gewenste opleverdatum","date"]
 ];
@@ -670,7 +681,8 @@ function fieldEdit(p,[k,l,t]){
   if(t==="type")inp=`<select id="${id}" data-h="${k}">${TYPES.map(x=>`<option ${v===x?"selected":""}>${esc(x)}</option>`).join("")}</select>`;
   else if(t==="status")inp=`<select id="${id}" data-h="${k}">${Object.entries(STATUSES).map(([a,b])=>`<option value="${a}" ${v===a?"selected":""}>${b.label}</option>`).join("")}</select>`;
   else if(t==="date")inp=`<input type="date" id="${id}" data-h="${k}" value="${esc(v)}">`;
-  else inp=`<input id="${id}" data-h="${k}" value="${esc(v)}" ${t==="person"?'list="people"':""} ${k==="nr"?'class="mono"':""}>`;
+  else if(t==="person")inp=`<select id="${id}" data-h="${k}">${personOptions(l,v,"Niet toegewezen")}</select>`;
+  else inp=`<input id="${id}" data-h="${k}" value="${esc(v)}" ${k==="nr"?'class="mono"':""}>`;
   return `<label class="field" for="${id}"><span class="lbl">${esc(l)}</span>${inp}</label>`;
 }
 function dashHTML(p){
@@ -681,7 +693,7 @@ function dashHTML(p){
   const actRows=acts.map(a=>`<tr data-aid="${a.id}" class="${a.status==="afgerond"?"is-done":""} ${a.status==="nvt"?"is-nvt":""}">
     <td><select class="st-sel st-${a.status}" data-af="status" aria-label="Status">${Object.entries(ACT_ST).map(([k,v])=>`<option value="${k}" ${a.status===k?"selected":""}>${v}</option>`).join("")}</select></td>
     <td class="desc">${esc(a.title)}${(()=>{const w=waitsOn(p,a);return w?`<div class="wait">⊘ wacht op: ${esc(w.title)}</div>`:""})()}${a.gate?`<div class="small">Voorwaarde voor de volgende fase</div>`:""}</td>
-    <td><input data-af="owner" list="people" value="${esc(a.owner)}" placeholder="${esc(a.role||"Naam")}" aria-label="Behandelaar" style="width:150px"></td>
+    <td><select data-af="owner" aria-label="Behandelaar" class="ownersel">${personOptions(a.role,a.owner||"","Iedere "+(a.role||"collega").toLowerCase())}</select></td>
     <td><input type="date" data-af="due" value="${esc(a.due||"")}" aria-label="Deadline" class="${a.due&&a.due<todayStr()&&!isClosed(a)?"late":""}"></td>
     <td class="num">${a.doneAt?fmtDate(a.doneAt):""}</td>
     <td><button class="rowbtn" type="button" data-delact title="Activiteit verwijderen" aria-label="Activiteit verwijderen">✕</button></td></tr>`).join("");
@@ -850,7 +862,8 @@ function openNew(){
       <label class="field" for="n_name" style="grid-column:1/-1"><span class="lbl">Projectnaam</span><input id="n_name" placeholder="bv. BESS 2 MW met nieuw MS-veld"></label>
       <label class="field" for="n_client"><span class="lbl">Klant</span><input id="n_client"></label>
       <label class="field" for="n_loc"><span class="lbl">Locatie</span><input id="n_loc"></label>
-      <label class="field" for="n_owner"><span class="lbl">Projectleider</span><input id="n_owner" list="peopleNew" value="${esc(S.me)}"></label>
+      <label class="field" for="n_owner"><span class="lbl">Projectleider</span><select id="n_owner">${personOptions("Projectleider","","Nog niet bekend")}</select></label>
+      <label class="field" for="n_se"><span class="lbl">Sales engineer</span><select id="n_se">${personOptions("Sales engineer","","Nog niet bekend")}</select></label>
       <label class="field" for="n_due"><span class="lbl">Gewenste opleverdatum</span><input id="n_due" type="date"></label>
     </div>
     <label class="check"><input type="checkbox" id="n_tpl" checked> Standaardactiviteiten per fase toevoegen</label>
@@ -862,7 +875,7 @@ function openNew(){
 function closeNew(){S.newOpen=false;$("#newWrap")?.remove()}
 async function createNew(){
   const name=$("#n_name").value.trim();if(!name){$("#n_name").focus();toast("Vul een projectnaam in");return}
-  const now=nowISO(),data={nr:$("#n_nr").value.trim(),name,type:TYPES[0],power:$("#n_power").value.trim(),client:$("#n_client").value.trim(),loc:$("#n_loc").value.trim(),owner:$("#n_owner").value.trim(),due:$("#n_due").value,
+  const now=nowISO(),data={nr:$("#n_nr").value.trim(),name,type:TYPES[0],power:$("#n_power").value.trim(),client:$("#n_client").value.trim(),loc:$("#n_loc").value.trim(),owner:$("#n_owner").value.trim(),engineer:$("#n_se").value.trim(),due:$("#n_due").value,
     status:"ok",phase:0,phaseSince:now,acts:$("#n_tpl").checked?templateActs():[],createdAt:now};
   $("#n_go").disabled=true;
   const p=await save(null,data,"Project aangemaakt");
