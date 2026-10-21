@@ -59,6 +59,25 @@
 <body>
 <div id="wrap"></div>
 <div id="melding"></div>
+<button id="fbKnop" title="Feedback geven">💬 Feedback</button>
+<div id="fbPaneel" hidden>
+  <div class="fbKop"><b>Feedback op het HEMA-model</b><button id="fbDicht" aria-label="Sluiten">×</button></div>
+  <label>Naam <input id="fbNaam" maxlength="80" placeholder="optioneel"></label>
+  <label>Onderwerp <select id="fbSoort"><option>Opstelling / maatvoering</option><option>Hekwerk / toegang</option><option>Veiligheid</option><option>Kabels / aansluiting</option><option>Model / weergave</option><option>Overig</option></select></label>
+  <label>Opmerking <textarea id="fbTekst" maxlength="4000" rows="4" placeholder="Wat klopt er niet of wat kan beter?"></textarea></label>
+  <label class="fbChk"><input type="checkbox" id="fbPos" checked> huidige camerapositie meesturen</label>
+  <div class="fbRij"><button id="fbStuur">Versturen</button><span id="fbStatus"></span></div>
+  <div class="fbLijstKop">Eerdere feedback</div>
+  <div id="fbLijst">laden…</div>
+</div>
+<style>
+#fbKnop{position:fixed;left:14px;bottom:14px;z-index:30;background:#1b4f8a;color:#fff;border:0;border-radius:20px;padding:9px 14px;font:600 13px system-ui,Arial;box-shadow:0 2px 8px rgba(0,0,0,.25);cursor:pointer}
+#fbPaneel{position:fixed;left:14px;bottom:58px;z-index:31;width:min(340px,calc(100vw - 28px));max-height:calc(100vh - 90px);overflow:auto;background:#fff;color:#17212a;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.3);padding:12px;font:13px system-ui,Arial}
+#fbPaneel label{display:block;margin:6px 0}#fbPaneel input:not([type=checkbox]),#fbPaneel select,#fbPaneel textarea{display:block;width:100%;box-sizing:border-box;margin-top:3px;padding:6px;border:1px solid #c9d1d8;border-radius:6px;font:inherit}
+#fbPaneel .fbChk{display:flex;gap:6px;align-items:center;color:#55606a}.fbKop{display:flex;justify-content:space-between;align-items:center}.fbKop button{border:0;background:none;font-size:20px;cursor:pointer}
+.fbRij{display:flex;gap:10px;align-items:center;margin-top:6px}#fbStuur{background:#1b4f8a;color:#fff;border:0;border-radius:6px;padding:7px 14px;font:600 13px system-ui;cursor:pointer}#fbStatus{color:#55606a}
+.fbLijstKop{margin-top:12px;font-weight:600;border-top:1px solid #e3e7ea;padding-top:8px}.fbItem{border-bottom:1px solid #eef1f3;padding:6px 0}.fbItem small{color:#6b7680}
+</style>
 <button class="pKnop" id="pOpen" title="Paneel openen" aria-label="Paneel openen">‹</button>
 <div id="paneel">
   <div id="pKop"><h3 id="titel"><a href="../../" style="color:#1b4f8a;text-decoration:none" title="Hoofdmenu">‹ menu</a> &nbsp;HEMA · energieplein</h3><button class="pKnop" id="pDicht" title="Paneel inklappen" aria-label="Paneel inklappen">›</button></div>
@@ -821,6 +840,23 @@ function dxfExport(){ try{ bouwMaat(); }catch(e){ console.warn(e); } if(!$t('tVr
   w(0, 'ENDSEC', 0, 'EOF');
   const blob = new Blob([out.join('\r\n')], {type: 'application/dxf'}), a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'HEMA_energieplein_2D.dxf'; document.body.appendChild(a); a.click(); a.remove(); }
 $t('bDxf').addEventListener('click', dxfExport);
+// ---------- feedback (Supabase-tabel fudura_feedback: iedereen mag toevoegen en lezen) ----------
+{ const SB = 'https://mamiqenxpnjfwfcpuixv.supabase.co/rest/v1/fudura_feedback', KEY = 'sb_publishable_GLADcv4OMUnr0rkODpa7cw_R-GGcr4g', H = {apikey: KEY, Authorization: 'Bearer ' + KEY};
+  const paneel = $t('fbPaneel'), st = $t('fbStatus');
+  const laad = async () => { const el = $t('fbLijst'); try{ const r = await fetch(SB + '?pagina=eq.hema&select=created_at,naam,soort,tekst,status&order=created_at.desc&limit=40', {headers: H}); const d = await r.json();
+      el.textContent = ''; if(!d.length){ el.textContent = 'Nog geen feedback.'; return; }
+      d.forEach(x => { const it = document.createElement('div'); it.className = 'fbItem'; const k = document.createElement('small'); k.textContent = new Date(x.created_at).toLocaleString('nl-NL', {dateStyle: 'short', timeStyle: 'short'}) + ' · ' + (x.naam || 'anoniem') + ' · ' + (x.soort || '') + (x.status === 'verwerkt' ? ' · ✅ verwerkt' : '');
+        const t = document.createElement('div'); t.textContent = x.tekst; it.append(k, t); el.append(it); }); }catch(e){ el.textContent = 'Feedback kon niet geladen worden.'; } };
+  $t('fbKnop').addEventListener('click', () => { paneel.hidden = !paneel.hidden; if(!paneel.hidden){ try{ $t('fbNaam').value = localStorage.getItem('fbNaam') || ''; }catch(e){} laad(); } });
+  $t('fbDicht').addEventListener('click', () => paneel.hidden = true);
+  ['keydown', 'keyup'].forEach(ev => paneel.addEventListener(ev, e => e.stopPropagation()));          // typen ≠ WASD-besturing
+  $t('fbStuur').addEventListener('click', async () => { const tekst = $t('fbTekst').value.trim(); if(tekst.length < 2){ st.textContent = 'Vul een opmerking in.'; return; }
+    const naam = $t('fbNaam').value.trim(); try{ localStorage.setItem('fbNaam', naam); }catch(e){}
+    let positie = null; if($t('fbPos').checked){ const E = target.x + RD0.x, Nn = RD0.y - target.z; positie = `RD ${E.toFixed(1)} / ${Nn.toFixed(1)} · afstand ${radius.toFixed(0)} m`; }
+    st.textContent = 'versturen…'; $t('fbStuur').disabled = true;
+    try{ const r = await fetch(SB, {method: 'POST', headers: Object.assign({'Content-Type': 'application/json', Prefer: 'return=minimal'}, H), body: JSON.stringify({pagina: 'hema', naam: naam || null, soort: $t('fbSoort').value, tekst, positie})});
+      if(!r.ok) throw new Error(r.status); st.textContent = '✅ Bedankt, verstuurd!'; $t('fbTekst').value = ''; laad(); }catch(e){ st.textContent = '❌ Versturen mislukt, probeer opnieuw.'; }
+    $t('fbStuur').disabled = false; }); }
 window.__hema = {scene, ASSET, VIEWS, U, N, YAW, bouwMaat: () => bouwMaat()};
 
 </script>
