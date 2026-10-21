@@ -344,6 +344,15 @@ tr.waiting td{color:var(--muted)}
 .asbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#fff6e0;border:1px solid #f0d58c;color:#6b4d00;border-radius:8px;padding:7px 12px;font-size:13px}
 .asbar .btn{margin-left:auto;background:#fff}
 .acts select.ownersel{width:170px}
+
+.plan{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.pl-step{background:var(--surface);border:1px solid var(--line);border-top:3px solid var(--line);border-radius:8px;padding:6px 10px;display:flex;flex-direction:column;gap:1px;min-width:0}
+.pl-step .v{font-weight:600;color:var(--navy);font-variant-numeric:tabular-nums}
+.pl-step.done{border-top-color:var(--sky);background:var(--sky-soft)}
+.pl-step.warn{border-top-color:var(--warn)}
+.pl-step.bad{border-top-color:var(--bad)}
+.pl-step.bad .v{color:var(--bad)}
+@media (max-width:760px){.plan{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 </head>
 <body>
@@ -421,6 +430,18 @@ function fmtDT(d){const x=new Date(d);return isNaN(x)?"":x.toLocaleString("nl-NL
 function isoWeek(d){if(!d)return"";const t=new Date(d+"T00:00:00");t.setDate(t.getDate()+3-((t.getDay()+6)%7));const w1=new Date(t.getFullYear(),0,4);return 1+Math.round(((t-w1)/864e5-3+((w1.getDay()+6)%7))/7)}
 function daysSince(iso){if(!iso)return null;return Math.max(0,Math.floor((Date.now()-new Date(iso).getTime())/864e5))}
 const isLate=p=>p.due&&p.phase<5&&p.due<todayStr();
+/* standaard doorlooptijd: intake 2 weken vanaf aanmaken; na akkoord klant minimaal 8 weken voorbereiding (engineering + werkvoorbereiding) */
+const INTAKE_WEKEN=2,VOORBEREIDING_WEKEN=8;
+function addDays(d,n){if(!d)return"";const x=new Date(d.slice(0,10)+"T12:00:00");x.setDate(x.getDate()+n);return x.toISOString().slice(0,10)}
+const intakeStart=p=>(p.intakeStart||p.createdAt||"").slice(0,10);
+const intakeEnd=p=>addDays(intakeStart(p),INTAKE_WEKEN*7);
+/* akkoord: vastgelegde datum; zolang er nog geen akkoord is rekenen we met het einde van de intake als prognose */
+const akkoordDate=p=>p.akkoord||(p.phase===0?(intakeEnd(p)>todayStr()?intakeEnd(p):todayStr()):"");
+const prepEnd=p=>addDays(akkoordDate(p),VOORBEREIDING_WEKEN*7);
+function phaseTarget(p,ph){if(ph===0)return intakeEnd(p);if(ph===1||ph===2)return prepEnd(p);return""}
+/* deadline van een taak: zelf ingevuld, anders de standaard van de fase */
+function effDue(p,a){return a.due||phaseTarget(p,a.phase)}
+const isStdDue=a=>!a.due;
 function toast(m){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,2400)}
 const get=(st,k)=>{try{return st.getItem(k)}catch(e){return null}};
 const put=(st,k,v)=>{try{v==null?st.removeItem(k):st.setItem(k,v)}catch(e){}};
@@ -558,7 +579,7 @@ function involved(p){if(isAdmin())return true;const me=S.me.toLowerCase();
   return [p.owner,p.engineer,p.detail,p.drafter].some(x=>x&&x.toLowerCase()===me)||(p.acts||[]).some(a=>isMine(a))}
 function inboxRows(){
   const rows=[];S.projects.filter(p=>p.phase<5||isAdmin()).forEach(p=>myTasks(p).forEach(a=>rows.push({p,a,w:waitsOn(p,a)})));
-  rows.sort((x,y)=>(!!x.w-!!y.w)||(x.a.due||x.p.due||"9999").localeCompare(y.a.due||y.p.due||"9999"));
+  rows.sort((x,y)=>(!!x.w-!!y.w)||(effDue(x.p,x.a)||"9999").localeCompare(effDue(y.p,y.a)||"9999"));
   return rows;
 }
 function navHTML(){
@@ -570,7 +591,7 @@ function inboxHTML(){
   if(!S.loaded)return `<div class="notice"><strong>Taken laden…</strong></div>`;
   /* per project één inklapbare regel; open taken eerst, wachtende eronder */
   const groups=[];inboxRows().forEach(r=>{let g=groups.find(x=>x.p.id===r.p.id);if(!g){g={p:r.p,rows:[]};groups.push(g)}g.rows.push(r)});
-  groups.forEach(g=>{g.ready=g.rows.filter(r=>!r.w).length;g.next=g.rows.filter(r=>!r.w).map(r=>r.a.due).filter(Boolean).sort()[0]||g.rows.map(r=>r.a.due).filter(Boolean).sort()[0]||""});
+  groups.forEach(g=>{g.ready=g.rows.filter(r=>!r.w).length;g.next=g.rows.filter(r=>!r.w).map(r=>effDue(r.p,r.a)).filter(Boolean).sort()[0]||g.rows.map(r=>effDue(r.p,r.a)).filter(Boolean).sort()[0]||""});
   groups.sort((a,b)=>(!a.ready-!b.ready)||(a.next||"9999").localeCompare(b.next||"9999"));
   const head=`<div class="sectionhead"><h2>Activiteitenbak</h2><span class="small">${isAdmin()?"Alle open taken in de huidige fase van elk project":"Taken voor "+esc(S.role)+" en taken op jouw naam"}</span>
     ${groups.length?`<span class="spacer"></span><button class="btn ghost" type="button" data-act="${S.inboxOpen.size?"collapseAll":"expandAll"}">${S.inboxOpen.size?"Alles inklappen":"Alles uitklappen"}</button>`:""}</div>`;
@@ -586,10 +607,10 @@ function inboxHTML(){
         <span class="num ${late?"late":""}">${g.next?fmtDate(g.next):"—"}</span>
         <span>${g.ready?`<span class="badge">${g.ready}</span> te doen`:""}${g.rows.length>g.ready?`<span class="small">${g.ready?" · ":""}${g.rows.length-g.ready} wacht</span>`:""}</span>
       </button>
-      ${open?`<div class="ib-body">${actsOf(p,p.phase).filter(a=>isMine(a)).map(a=>{const w=waitsOn(p,a),done=isClosed(a),late2=a.due&&a.due<todayStr()&&!done;return `<label class="taskitem ${done?"done":""}">
+      ${open?`<div class="ib-body">${actsOf(p,p.phase).filter(a=>isMine(a)).map(a=>{const w=waitsOn(p,a),done=isClosed(a),ed=effDue(p,a),late2=ed&&ed<todayStr()&&!done;return `<label class="taskitem ${done?"done":""}">
         <input type="checkbox" data-done="${a.id}" data-proj="${esc(p.id)}" ${a.status==="afgerond"?"checked":""} ${a.status==="nvt"?"disabled":""}>
         <span><span class="tt">${esc(a.title)}</span>${w&&!done?`<span class="wait">⊘ wacht op: ${esc(w.title)}</span>`:""}
-        <span class="small"><span class="${late2?"late":""}">${a.due?"Deadline "+fmtDate(a.due):"Geen deadline"}</span> · ${esc(a.owner||a.role)}${a.doneAt?" · afgerond "+fmtDate(a.doneAt):""}</span></span></label>`}).join("")}
+        <span class="small"><span class="${late2?"late":""}">${ed?"Deadline "+fmtDate(ed)+(isStdDue(a)?" (standaard)":""):"Geen deadline"}</span> · ${esc(a.owner||a.role)}${a.doneAt?" · afgerond "+fmtDate(a.doneAt):""}</span></span></label>`}).join("")}
         <div><button class="btn" type="button" data-open="${esc(p.id)}">Project openen →</button></div></div>`:""}
       </div>`}).join("")}
   </div>`;
@@ -672,7 +693,7 @@ const HEAD=[
   ["nr","Projectnummer","text"],["name","Projectnaam","text"],["status","Projectstatus","status"],
   ["owner","Projectleider","person"],["engineer","Sales engineer","person"],["detail","Detailengineer","person"],["drafter","Tekenaar","person"],["contractor","Aannemer","person"],
   ["loc","Locatie / adres","text"],["ean","EAN-code","text"],["power","Batterij (kW / kWh)","text"],["units","Aantal AIO's","text"],["link","Gekoppeld project","text"],
-  ["survey","Schouw plandatum","date"],["delivery","Bevestigde leverdatum","date"],["due","Gewenste opleverdatum","date"]
+  ["akkoord","Akkoord klant","date"],["survey","Schouw plandatum","date"],["delivery","Bevestigde leverdatum","date"],["due","Gewenste opleverdatum","date"]
 ];
 const CLIENT=[["client","Klant","text"],["contact","Contactpersoon","text"],["email","E-mailadres","text"],["phone","Telefoonnummer","text"]];
 function fieldView(p,[k,l,t]){
@@ -691,6 +712,20 @@ function fieldEdit(p,[k,l,t]){
   else inp=`<input id="${id}" data-h="${k}" value="${esc(v)}" ${k==="nr"?'class="mono"':""}>`;
   return `<label class="field" for="${id}"><span class="lbl">${esc(l)}</span>${inp}</label>`;
 }
+function planHTML(p){
+  const ie=intakeEnd(p),pe=prepEnd(p),t=todayStr();
+  const intakeLate=p.phase===0&&ie&&ie<t, tooEarly=p.due&&pe&&p.due<pe;
+  const step=(lbl,val,sub,cls)=>`<div class="pl-step ${cls||""}"><span class="lbl">${lbl}</span><span class="v">${val||"—"}</span>${sub?`<span class="small">${sub}</span>`:""}</div>`;
+  return `<div class="plan">
+    ${step("Intake ("+INTAKE_WEKEN+" wk)",ie?fmtDate(ie):"","gereed vóór",intakeLate?"warn":p.phase>0?"done":"")}
+    ${step("Akkoord klant",p.akkoord?fmtDate(p.akkoord):"",p.akkoord?"":"nog niet; prognose "+fmtDate(akkoordDate(p)),p.akkoord?"done":"")}
+    ${step("Voorbereiding ("+VOORBEREIDING_WEKEN+" wk)",pe?fmtDate(pe):"","engineering + werkvoorbereiding",p.phase>2?"done":"")}
+    ${step("Vroegste start uitvoering",pe?fmtDate(pe):"",p.akkoord?"":"prognose")}
+    ${step("Gewenste oplevering",p.due?fmtDate(p.due):"",tooEarly?"vóór vroegste start uitvoering":"",tooEarly?"bad":"")}
+  </div>
+  ${intakeLate?`<div class="banner">De intake loopt langer dan ${INTAKE_WEKEN} weken (gereed vóór ${fmtDate(ie)}).</div>`:""}
+  ${tooEarly?`<div class="banner">De gewenste opleverdatum ligt vóór de vroegste start van de uitvoering (${fmtDate(pe)}). Na akkoord is minimaal ${VOORBEREIDING_WEKEN} weken voorbereiding nodig.</div>`:""}`;
+}
 function dashHTML(p){
   if(!p)return `<div class="crumb"><button class="btn" type="button" data-act="back">← Overzicht</button></div><div class="notice"><strong>Project niet gevonden</strong><span>Het is mogelijk verwijderd.</span></div>`;
   const sel=S.selPhase??p.phase,st=STATUSES[p.status],ed=S.editHead;
@@ -700,7 +735,7 @@ function dashHTML(p){
     <td><select class="st-sel st-${a.status}" data-af="status" aria-label="Status">${Object.entries(ACT_ST).map(([k,v])=>`<option value="${k}" ${a.status===k?"selected":""}>${v}</option>`).join("")}</select></td>
     <td class="desc">${esc(a.title)}${(()=>{const w=waitsOn(p,a);return w?`<div class="wait">⊘ wacht op: ${esc(w.title)}</div>`:""})()}${a.gate?`<div class="small">Voorwaarde voor de volgende fase</div>`:""}</td>
     <td><select data-af="owner" aria-label="Behandelaar" class="ownersel">${personOptions(a.role,a.owner||"","Iedere "+(a.role||"collega").toLowerCase())}</select></td>
-    <td><input type="date" data-af="due" value="${esc(a.due||"")}" aria-label="Deadline" class="${a.due&&a.due<todayStr()&&!isClosed(a)?"late":""}"></td>
+    <td>${(()=>{const ed=effDue(p,a),late=ed&&ed<todayStr()&&!isClosed(a);return `<input type="date" data-af="due" value="${esc(a.due||"")}" aria-label="Deadline" class="${late&&a.due?"late":""}">${!a.due&&ed?`<div class="small ${late?"late":""}">standaard ${fmtDate(ed)}</div>`:""}`})()}</td>
     <td class="num">${a.doneAt?fmtDate(a.doneAt):""}</td>
     <td><button class="rowbtn" type="button" data-delact title="Activiteit verwijderen" aria-label="Activiteit verwijderen">✕</button></td></tr>`).join("");
   const openHere=actsOf(p,p.phase).filter(a=>!isClosed(a)).length,blk=gateOpen(p);
@@ -709,6 +744,7 @@ function dashHTML(p){
   return `
   <div class="crumb"><button class="btn" type="button" data-act="back">← Overzicht</button><span class="small">Projectmanagement systeem / ${esc(p.nr||"project")}${p.updatedAt?` · laatst bijgewerkt ${fmtDT(p.updatedAt)}${p.updatedBy?" door "+esc(p.updatedBy):""}`:""}</span></div>
   <div class="dash-title"><h1>${esc(p.nr?p.nr+" – ":"")}${esc(p.name)}</h1><span class="pill ${st.cls}">${st.label}</span><span class="tag">${esc(PHASES[p.phase].long)}</span></div>
+  ${planHTML(p)}
   <div class="dash">
     <div class="stack">
       <section class="panelbox">
@@ -779,7 +815,7 @@ document.addEventListener("click",async e=>{
   if(t.dataset.move&&p){
     if(+t.dataset.move>0&&gateOpen(p)){toast("Eerst afronden: "+gateOpen(p).title);return}
     const np=Math.min(5,Math.max(0,p.phase+(+t.dataset.move)));t.disabled=true;
-    if(await save(p.id,{phase:np,phaseSince:nowISO()},`Fase ${PHASES[np].label} toegewezen`)){S.selPhase=null;render();addLog(p.id,"notitie",`Fase gewijzigd naar ${PHASES[np].long}.`)}
+    if(await save(p.id,{phase:np,phaseSince:nowISO(),...(p.phase===0&&np===1&&!p.akkoord?{akkoord:todayStr()}:{})},`Fase ${PHASES[np].label} toegewezen`)){S.selPhase=null;render();addLog(p.id,"notitie",`Fase gewijzigd naar ${PHASES[np].long}.`)}
     else t.disabled=false;
     return}
   if(t.hasAttribute("data-delact")&&p){const aid=t.closest("tr").dataset.aid;if(await save(p.id,{acts:(p.acts||[]).filter(a=>a.id!==aid)},"Activiteit verwijderd"))render();return}
@@ -882,7 +918,7 @@ function closeNew(){S.newOpen=false;$("#newWrap")?.remove()}
 async function createNew(){
   const name=$("#n_name").value.trim();if(!name){$("#n_name").focus();toast("Vul een projectnaam in");return}
   const now=nowISO(),data={nr:$("#n_nr").value.trim(),name,type:TYPES[0],client:$("#n_client").value.trim(),loc:$("#n_loc").value.trim(),owner:$("#n_owner").value.trim(),engineer:$("#n_se").value.trim(),due:$("#n_due").value,
-    status:"ok",phase:0,phaseSince:now,acts:$("#n_tpl").checked?templateActs():[],createdAt:now};
+    status:"ok",phase:0,phaseSince:now,intakeStart:todayStr(),acts:$("#n_tpl").checked?templateActs():[],createdAt:now};
   $("#n_go").disabled=true;
   const p=await save(null,data,"Project aangemaakt");
   if(p){closeNew();openProject(p.id)}else $("#n_go").disabled=false;
