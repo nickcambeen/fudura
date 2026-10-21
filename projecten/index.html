@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Projectbord PER · Fudura</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+html,body{margin:0}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+[hidden]{display:none!important}
+
+/* Projectbord PER op de Fudura-site.
+   Layout: overzicht (bord / lijst / acties) met fasetellers; per project een dashboard met kopgegevens, faseactiviteiten en een kolom notities & contactmomenten. */
+:root{
+  --bg:#f3f5f6; --surface:#ffffff; --sunk:#e8ecee; --line:#d4dadd;
+  --fg:#1b2428; --muted:#5b686e; --accent:#1b4f8a; --accent-fg:#ffffff; --accent-soft:#dde7f3;
+  --ok:#2f7d4f; --ok-soft:#dcefe3; --warn:#a96a00; --warn-soft:#f8ead0; --bad:#b3362c; --bad-soft:#f6dcd9; --hold:#6a6f86; --hold-soft:#e3e4ec; --run:#2c5fa8; --run-soft:#dde7f6;
+  --shadow:0 1px 2px rgba(20,35,40,.08),0 2px 8px rgba(20,35,40,.06);
+  --f-display:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#12181b; --surface:#1a2226; --sunk:#0e1315; --line:#2c373c;
+  --fg:#e3e9eb; --muted:#93a1a7; --accent:#6fa4e0; --accent-fg:#0d1826; --accent-soft:#1a2a40;
+  --ok:#62c08a; --ok-soft:#173023; --warn:#e2a43a; --warn-soft:#33270f; --bad:#ef7b70; --bad-soft:#3a1c19; --hold:#a4a9c2; --hold-soft:#262838; --run:#7fa8e6; --run-soft:#1b2740;
+  --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12181b; --surface:#1a2226; --sunk:#0e1315; --line:#2c373c;
+  --fg:#e3e9eb; --muted:#93a1a7; --accent:#6fa4e0; --accent-fg:#0d1826; --accent-soft:#1a2a40;
+  --ok:#62c08a; --ok-soft:#173023; --warn:#e2a43a; --warn-soft:#33270f; --bad:#ef7b70; --bad-soft:#3a1c19; --hold:#a4a9c2; --hold-soft:#262838; --run:#7fa8e6; --run-soft:#1b2740;
+  --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.45}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px;max-width:1600px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:.01em}
+h1{font-size:28px;font-weight:700}
+h2{font-size:21px;font-weight:600}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.small{font-size:12px;color:var(--muted)}
+.lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+.top .sub{color:var(--muted);margin-top:2px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:7px 12px;font-weight:500}
+.btn:hover:not([disabled]){border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn.ghost{border-color:transparent;background:none;color:var(--accent);padding-inline:6px}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+
+.phasebar{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:2px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.phasebar button{border:0;background:var(--surface);padding:10px 12px;text-align:left;display:flex;flex-direction:column;gap:2px;min-width:0}
+.phasebar button[aria-pressed="true"]{background:var(--accent-soft)}
+.phasebar .n{font-family:var(--f-display);font-size:24px;font-weight:600;line-height:1}
+.phasebar .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.phasebar .alert{font-size:12px;color:var(--bad);font-weight:500;min-height:1.2em}
+
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tools input[type=search],.tools select{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:7px 10px;min-width:0}
+.tools input[type=search]{flex:1 1 220px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg button{border:0;background:var(--surface);padding:7px 12px}
+.seg button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+.check{display:inline-flex;align-items:center;gap:6px;color:var(--muted)}
+.spacer{flex:1}
+
+.board{display:grid;grid-template-columns:repeat(var(--cols,6),minmax(240px,1fr));gap:12px;overflow-x:auto;padding-bottom:6px}
+.col{background:var(--sunk);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.col h3{font-size:15px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:flex;justify-content:space-between}
+.col .empty{color:var(--muted);font-size:13px;padding:10px 4px}
+.card{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--st,var(--line));border-radius:6px;padding:10px 10px 8px;display:flex;flex-direction:column;gap:6px;box-shadow:var(--shadow);cursor:pointer;text-align:left;width:100%}
+.card:hover{border-color:var(--accent);border-left-color:var(--st,var(--accent))}
+.card .row{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.card .nr{font-size:12px;color:var(--muted)}
+.card .name{font-weight:600;line-height:1.3;overflow-wrap:anywhere}
+.card .meta{font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 10px}
+.card .next{font-size:12px;border-top:1px dashed var(--line);padding-top:6px;overflow-wrap:anywhere}
+.prog{height:4px;background:var(--sunk);border-radius:2px;overflow:hidden}
+.prog i{display:block;height:100%;background:var(--accent)}
+
+.pill{display:inline-block;font-size:11px;font-weight:600;padding:2px 7px;border-radius:999px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+.s-ok{--st:var(--ok)} .pill.s-ok{background:var(--ok-soft);color:var(--ok)}
+.s-warn{--st:var(--warn)} .pill.s-warn{background:var(--warn-soft);color:var(--warn)}
+.s-bad{--st:var(--bad)} .pill.s-bad{background:var(--bad-soft);color:var(--bad)}
+.s-hold{--st:var(--hold)} .pill.s-hold{background:var(--hold-soft);color:var(--hold)}
+.tag{font-size:11px;border:1px solid var(--line);border-radius:4px;padding:1px 6px;color:var(--muted);white-space:nowrap}
+.late{color:var(--bad);font-weight:600}
+
+.tablewrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%}
+.tablewrap table{min-width:900px}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;background:var(--sunk)}
+th button{border:0;background:none;padding:0;font:inherit;color:inherit;text-transform:inherit;letter-spacing:inherit}
+tbody tr.click{cursor:pointer}
+tbody tr.click:hover{background:var(--accent-soft)}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.phasedots{display:flex;gap:3px;align-items:center}
+.phasedots i{width:14px;height:6px;border-radius:2px;background:var(--line)}
+.phasedots i.on{background:var(--accent)}
+
+.notice{background:var(--surface);border:1px dashed var(--line);border-radius:8px;padding:28px 20px;text-align:center;color:var(--muted);display:flex;flex-direction:column;gap:10px;align-items:center}
+.notice strong{color:var(--fg);font-family:var(--f-display);font-size:20px}
+.banner{background:var(--warn-soft);color:var(--warn);border-radius:6px;padding:8px 12px;font-size:13px}
+
+/* project dashboard */
+.crumb{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.dash-title{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px}
+.dash-title h1{font-size:26px}
+.dash{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
+@media (max-width:1000px){.dash{grid-template-columns:minmax(0,1fr)}}
+.stack{display:flex;flex-direction:column;gap:16px;min-width:0}
+.panelbox{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px 18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.panelbox > header{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px 20px}
+.field{display:flex;flex-direction:column;gap:3px;min-width:0}
+.field .v{overflow-wrap:anywhere}
+.field .v.empty{color:var(--muted)}
+.field input,.field select,.field textarea{border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:6px 8px;width:100%;min-width:0}
+
+.phase-track{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px}
+.phase-track button{border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:8px 6px;text-align:left;display:flex;flex-direction:column;gap:2px;min-width:0}
+.phase-track button .t{font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.phase-track button .c{font-size:11px;color:var(--muted)}
+.phase-track button.done{background:var(--accent-soft);border-color:transparent}
+.phase-track button.cur{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.phase-track button.sel{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.phase-track button.sel .c{color:var(--accent-fg)}
+@media (max-width:640px){.phase-track{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+.acts td{vertical-align:middle}
+.acts .desc{overflow-wrap:anywhere}
+.acts select,.acts input{border:1px solid var(--line);background:var(--bg);border-radius:5px;padding:4px 6px;min-width:0;max-width:100%}
+.acts .st-sel{font-weight:600;font-size:12px}
+.st-afgerond{color:var(--ok)} .st-open{color:var(--muted)} .st-bezig{color:var(--run)} .st-geblokkeerd{color:var(--bad)} .st-nvt{color:var(--hold)}
+tr.is-done .desc{color:var(--muted)}
+tr.is-nvt .desc{color:var(--muted);text-decoration:line-through}
+.acts-wrap{overflow-x:auto}
+.acts-wrap table{min-width:640px}
+.rowbtn{border:0;background:none;color:var(--muted);padding:2px 6px;border-radius:4px}
+.rowbtn:hover{color:var(--bad);background:var(--bad-soft)}
+.addact{display:flex;flex-wrap:wrap;gap:8px}
+.addact input,.addact select{border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:6px 8px;min-width:0}
+.addact input.grow{flex:1 1 220px}
+.gate{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;background:var(--sunk);border-radius:6px;padding:10px 12px}
+
+.log{display:flex;flex-direction:column;gap:10px}
+.log-tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
+.log-tabs button{border:0;background:none;padding:6px 10px;border-bottom:2px solid transparent;color:var(--muted);font-weight:500}
+.log-tabs button[aria-pressed="true"]{border-bottom-color:var(--accent);color:var(--fg)}
+.log form{display:flex;flex-direction:column;gap:8px}
+.log textarea,.log input,.log select{border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:7px 9px;width:100%;min-width:0}
+.log textarea{min-height:76px;resize:vertical}
+.entry{border:1px solid var(--line);border-radius:6px;padding:10px;display:flex;flex-direction:column;gap:4px;background:var(--bg)}
+.entry .h{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.entry .h b{color:var(--fg);font-weight:600}
+.entry .b{white-space:pre-wrap;overflow-wrap:anywhere}
+.entry.contact{border-left:3px solid var(--run)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+.confirm{display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:6px;z-index:30;font-size:13px}
+
+/* nieuw-project dialoog */
+.scrim{position:fixed;inset:0;background:rgba(10,20,24,.35);z-index:20}
+.modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(560px,calc(100% - 24px));max-height:calc(100% - 24px);overflow-y:auto;background:var(--surface);border-radius:10px;z-index:21;box-shadow:0 10px 40px rgba(0,0,0,.25);padding:18px;display:flex;flex-direction:column;gap:14px}
+.modal .fields{grid-template-columns:1fr 1fr}
+@media (max-width:480px){.modal .fields{grid-template-columns:1fr}}
+
+@media (max-width:760px){
+  .phasebar{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .board{grid-template-columns:repeat(var(--cols,6),minmax(260px,82vw))}
+}
+
+/* toegangsscherm */
+.login{min-height:70vh;display:grid;place-items:center}
+.login-box{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:24px;width:min(380px,100%);display:flex;flex-direction:column;gap:12px;box-shadow:var(--shadow)}
+.login-box form{display:flex;flex-direction:column;gap:12px}
+.login-box input{border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:9px 10px;width:100%}
+.codein{font-size:22px;letter-spacing:.35em;text-align:center}
+.err{color:var(--bad);font-size:13px;min-height:1.2em}
+
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><div class="notice"><strong>Projectbord laden…</strong></div></div>
+<div id="toast" class="toast" hidden></div>
+<script>
+/* ---------- backend (Supabase RPC, code wordt server-side gecontroleerd) ---------- */
+const SB_URL="https://mamiqenxpnjfwfcpuixv.supabase.co";
+const SB_KEY="sb_publishable_GLADcv4OMUnr0rkODpa7cw_R-GGcr4g";
+async function rpc(fn,args){
+  const r=await fetch(SB_URL+"/rest/v1/rpc/"+fn,{method:"POST",headers:{"apikey":SB_KEY,"Content-Type":"application/json"},body:JSON.stringify(args)});
+  if(!r.ok)throw {code:"server",status:r.status};
+  const j=await r.json();
+  if(j&&j.error)throw {code:j.error};
+  return j;
+}
+
+/* ---------- vaste structuur ---------- */
+const PHASES=[
+  {id:0,label:"Intake",long:"Intake & aanvraag"},
+  {id:1,label:"Engineering",long:"Ontwerp & engineering"},
+  {id:2,label:"Werkvoorbereiding",long:"Werkvoorbereiding & inkoop"},
+  {id:3,label:"Realisatie",long:"Realisatie"},
+  {id:4,label:"Oplevering",long:"Oplevering & inbedrijfname"},
+  {id:5,label:"Afgerond",long:"Afronding & nazorg"}
+];
+const STATUSES={ok:{label:"Op schema",cls:"s-ok"},warn:{label:"Aandacht",cls:"s-warn"},bad:{label:"Vertraagd",cls:"s-bad"},hold:{label:"On hold",cls:"s-hold"}};
+const ACT_ST={open:"Open",bezig:"Bezig",geblokkeerd:"Geblokkeerd",afgerond:"Afgerond",nvt:"N.v.t."};
+const TYPES=["BESS","Laadinfra","MS-installatie","LS-installatie","PV","Data / IT","Overig"];
+const ROLES=["Projectleider","Engineer","Werkvoorbereider","Planner","Inkoop","Aannemer","Klant","Netbeheerder"];
+const TEMPLATE={
+  0:[["Aanvraag registreren","Projectleider"],["Contact opnemen met klant","Projectleider"],["Schouw op locatie","Engineer"],["Offerte opstellen","Projectleider"],["Offerte getekend door klant","Klant"],["Projectteam en fasering vastleggen","Planner"]],
+  1:[["Uitgangspunten en programma van eisen vastleggen","Engineer"],["Netaanvraag / aansluiting bij netbeheerder","Engineer"],["Eendraadschema (SLD) opstellen","Engineer"],["Kabelberekening NEN 1010","Engineer"],["Beveiliging en selectiviteit","Engineer"],["Review ontwerp (IV'er)","Engineer"],["Ontwerp vrijgeven","Projectleider"]],
+  2:[["Materiaal met lange levertijd bestellen","Inkoop"],["Aannemer contracteren","Werkvoorbereider"],["V&G-plan en TRA","Werkvoorbereider"],["Schakelafspraken netbeheerder","Werkvoorbereider"],["Uitvoeringsplanning vastleggen","Planner"],["Kick-off met aannemer","Projectleider"]],
+  3:[["Start uitvoering op locatie","Aannemer"],["Montage installatie","Aannemer"],["Kabels leggen en aansluiten","Aannemer"],["Voortgangscontrole","Werkvoorbereider"],["Meerwerk registreren","Projectleider"]],
+  4:[["Eerste inspectie NEN 1010 / NEN 3140","Engineer"],["Inbedrijfname en schakelen","Werkvoorbereider"],["SAT uitvoeren","Engineer"],["Revisietekeningen en opleverdossier","Engineer"],["Overdracht aan klant","Projectleider"]],
+  5:[["Nacalculatie","Projectleider"],["Evaluatie / lessons learned","Projectleider"],["Project administratief sluiten","Projectleider"]]
+};
+const newActId=()=>"a"+Math.random().toString(36).slice(2,10);
+function templateActs(){const out=[];for(const ph in TEMPLATE)TEMPLATE[ph].forEach(([t,r])=>out.push({id:newActId(),phase:+ph,title:t,role:r,owner:"",status:"open",doneAt:""}));return out}
+
+/* ---------- state ---------- */
+const S={code:null,me:"",projects:[],loaded:false,view:"board",phaseFilter:null,sortKey:"due",sortDir:1,
+  q:"",fType:"",fStatus:"",fOwner:"",showDone:false,openId:null,selPhase:null,actFilter:"",editHead:false,logTab:"notitie",log:[],logLoading:false,newOpen:false,banner:""};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const nowISO=()=>new Date().toISOString();
+const todayStr=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+function fmtDate(d){if(!d)return"";const x=new Date(d.length===10?d+"T00:00:00":d);return isNaN(x)?"":x.toLocaleDateString("nl-NL",{day:"2-digit",month:"2-digit",year:"numeric"})}
+function fmtDT(d){const x=new Date(d);return isNaN(x)?"":x.toLocaleString("nl-NL",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"})}
+function isoWeek(d){if(!d)return"";const t=new Date(d+"T00:00:00");t.setDate(t.getDate()+3-((t.getDay()+6)%7));const w1=new Date(t.getFullYear(),0,4);return 1+Math.round(((t-w1)/864e5-3+((w1.getDay()+6)%7))/7)}
+function daysSince(iso){if(!iso)return null;return Math.max(0,Math.floor((Date.now()-new Date(iso).getTime())/864e5))}
+const isLate=p=>p.due&&p.phase<5&&p.due<todayStr();
+function toast(m){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,2400)}
+const get=(st,k)=>{try{return st.getItem(k)}catch(e){return null}};
+const put=(st,k,v)=>{try{v==null?st.removeItem(k):st.setItem(k,v)}catch(e){}};
+(()=>{const v=get(localStorage,"pb-view");if(["board","list","acts"].includes(v))S.view=v;S.showDone=get(localStorage,"pb-done")==="1";S.me=get(localStorage,"pb-naam")||""})();
+const proj=id=>S.projects.find(p=>p.id===id);
+const actsOf=(p,ph)=>(p.acts||[]).filter(a=>a.phase===ph);
+const isClosed=a=>a.status==="afgerond"||a.status==="nvt";
+function phaseProg(p,ph){const a=actsOf(p,ph);return{done:a.filter(isClosed).length,total:a.length}}
+const nextAct=p=>actsOf(p,p.phase).find(a=>!isClosed(a));
+function norm(x){return{...x,phase:Math.min(5,Math.max(0,+x.phase||0)),status:STATUSES[x.status]?x.status:"ok",acts:Array.isArray(x.acts)?x.acts:[]}}
+
+/* ---------- inloggen ---------- */
+function loginHTML(msg){
+  return `<div class="login"><div class="login-box">
+    <h1>Projectbord PER</h1>
+    <p class="small">Voer de toegangscode in om de projecten van team PER te openen.</p>
+    <form id="loginForm" autocomplete="off">
+      <label class="field" for="lgCode"><span class="lbl">Toegangscode</span><input id="lgCode" class="mono codein" inputmode="numeric" maxlength="12" autocomplete="one-time-code" aria-describedby="lgMsg"></label>
+      <label class="field" for="lgName"><span class="lbl">Je naam</span><input id="lgName" value="${esc(S.me)}" placeholder="Zo zien collega's wie iets schreef"></label>
+      <label class="check"><input type="checkbox" id="lgRemember"> Onthoud op dit apparaat</label>
+      <div id="lgMsg" class="err" role="alert">${esc(msg||"")}</div>
+      <button class="btn primary" type="submit" id="lgGo">Openen</button>
+    </form></div></div>`;
+}
+async function tryLogin(code,quiet){
+  try{await rpc("pb_check",{p_code:code});return true}
+  catch(e){if(!quiet){const m=e.code==="bad"?"Onjuiste code. Probeer het opnieuw.":e.code==="locked"?"Te veel foute pogingen. Probeer het over 15 minuten opnieuw.":"De server is niet bereikbaar. Probeer het later opnieuw.";$("#lgMsg").textContent=m}return false}
+}
+function logout(){S.code=null;put(sessionStorage,"pb-code",null);put(localStorage,"pb-code",null);clearInterval(S.poll);$("#app").innerHTML=loginHTML();$("#lgCode").focus()}
+
+/* ---------- data ---------- */
+async function loadAll(silent){
+  try{const j=await rpc("pb_list",{p_code:S.code});S.projects=(j.projects||[]).map(norm);S.loaded=true;S.banner="";
+    if(!S.editHead&&!S.newOpen&&!isTyping())render()}
+  catch(e){if(e.code==="bad"){logout();return}if(!silent){S.loaded=true;S.banner="De projectlijst kon niet laden. Controleer je verbinding en herlaad de pagina.";render()}}
+}
+const isTyping=()=>{const a=document.activeElement;return a&&(a.tagName==="TEXTAREA"||(a.tagName==="INPUT"&&a.type!=="checkbox")||a.tagName==="SELECT")&&a.id!=="q"};
+async function save(id,data,msg){
+  try{const j=await rpc("pb_save",{p_code:S.code,p_id:id,p_data:{...data,updatedBy:S.me||""}});
+    const p=norm(j.project);const i=S.projects.findIndex(x=>x.id===p.id);if(i>=0)S.projects[i]=p;else S.projects.push(p);
+    if(msg)toast(msg);return p}
+  catch(e){writeErr(e);return null}
+}
+function writeErr(e){
+  if(e.code==="bad"){logout();return}
+  if(e.code==="locked"){toast("Tijdelijk geblokkeerd na te veel foute pogingen.");return}
+  if(e.code==="not_found"){toast("Dit project bestaat niet meer.");loadAll();return}
+  toast("Opslaan lukte niet. Probeer het opnieuw.");
+}
+async function loadLog(pid){
+  S.logLoading=true;S.log=[];
+  try{const j=await rpc("pb_log_list",{p_code:S.code,p_project:pid});if(S.openId===pid){S.log=j.log||[]}}catch(e){}
+  S.logLoading=false;const l=$("#logList");if(l)l.innerHTML=logListHTML();
+}
+async function addLog(pid,kind,text,extra={}){
+  try{await rpc("pb_log_add",{p_code:S.code,p_project:pid,p_data:{kind,text,...extra,author:S.me||""}});await loadLog(pid);return true}
+  catch(e){writeErr(e);return false}
+}
+
+/* ---------- overzicht ---------- */
+function filtered(){
+  const q=S.q.toLowerCase();
+  return S.projects.filter(p=>{
+    if(!S.showDone&&p.phase===5&&S.phaseFilter!==5)return false;
+    if(S.phaseFilter!==null&&p.phase!==S.phaseFilter)return false;
+    if(S.fType&&p.type!==S.fType)return false;
+    if(S.fStatus&&p.status!==S.fStatus)return false;
+    if(S.fOwner&&p.owner!==S.fOwner&&p.engineer!==S.fOwner&&!(p.acts||[]).some(a=>a.owner===S.fOwner))return false;
+    if(q&&![p.nr,p.name,p.client,p.loc,p.owner,p.engineer,p.contractor].join(" ").toLowerCase().includes(q))return false;
+    return true;
+  });
+}
+const people=()=>[...new Set(S.projects.flatMap(p=>[p.owner,p.engineer,...(p.acts||[]).map(a=>a.owner)]).concat(S.me).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"nl"));
+function banner(){return S.banner?`<div class="banner">${esc(S.banner)}</div>`:""}
+function overviewHTML(){
+  const ppl=people();
+  const pb=PHASES.map(ph=>{const l=S.projects.filter(p=>p.phase===ph.id);const bad=l.filter(p=>p.status==="bad"||isLate(p)).length;
+    return `<button type="button" data-phasef="${ph.id}" aria-pressed="${S.phaseFilter===ph.id}"><span class="n">${l.length}</span><span class="l">${esc(ph.label)}</span><span class="alert">${ph.id<5&&bad?bad+" vertraagd":""}</span></button>`}).join("");
+  return `
+  <header class="top"><div><h1>Projectbord PER</h1><div class="sub">Projecten van team Project Engineering &amp; Realisatie, per fase</div></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="small">${S.me?"Ingelogd als "+esc(S.me):""}</span><button class="btn" type="button" data-act="logout">Afmelden</button><button class="btn primary" type="button" data-act="new">+ Nieuw project</button></div></header>
+  ${banner()}
+  <nav class="phasebar" aria-label="Fases">${pb}</nav>
+  <div class="tools">
+    <input type="search" id="q" value="${esc(S.q)}" placeholder="Zoek op projectnummer, naam, klant, locatie of persoon" aria-label="Zoeken">
+    <select id="fType" aria-label="Type"><option value="">Alle types</option>${TYPES.map(t=>`<option ${S.fType===t?"selected":""}>${esc(t)}</option>`).join("")}</select>
+    <select id="fStatus" aria-label="Status"><option value="">Alle statussen</option>${Object.entries(STATUSES).map(([k,v])=>`<option value="${k}" ${S.fStatus===k?"selected":""}>${v.label}</option>`).join("")}</select>
+    <select id="fOwner" aria-label="Persoon"><option value="">Iedereen</option>${ppl.map(o=>`<option ${S.fOwner===o?"selected":""}>${esc(o)}</option>`).join("")}</select>
+    <label class="check"><input type="checkbox" id="fDone" ${S.showDone?"checked":""}> Toon afgerond</label>
+    <span class="spacer"></span>
+    <div class="seg" role="group" aria-label="Weergave">
+      <button type="button" data-view="board" aria-pressed="${S.view==="board"}">Bord</button>
+      <button type="button" data-view="list" aria-pressed="${S.view==="list"}">Lijst</button>
+      <button type="button" data-view="acts" aria-pressed="${S.view==="acts"}">Open acties</button>
+    </div>
+  </div>
+  <div id="ovBody">${overviewBody()}</div>`;
+}
+function overviewBody(){
+  if(!S.loaded)return `<div class="notice"><strong>Projecten laden…</strong><span>Het bord haalt de projectlijst op.</span></div>`;
+  if(!S.projects.length)return `<div class="notice"><strong>Nog geen projecten</strong><span>Voeg het eerste project toe. Het krijgt automatisch de standaardactiviteiten per fase.</span><button class="btn primary" type="button" data-act="new">+ Nieuw project</button></div>`;
+  const list=filtered();
+  if(!list.length)return `<div class="notice"><strong>Geen projecten gevonden</strong><span>Pas de zoekterm of filters aan.</span></div>`;
+  return S.view==="board"?boardHTML(list):S.view==="list"?listHTML(list):actsHTML(list);
+}
+function cardHTML(p){
+  const st=STATUSES[p.status],pr=phaseProg(p,p.phase),na=nextAct(p),d=daysSince(p.phaseSince);
+  return `<div class="card ${st.cls}" data-open="${esc(p.id)}" tabindex="0" role="button">
+    <div class="row"><span class="nr mono">${esc(p.nr||"—")}</span><span class="pill ${st.cls}">${st.label}</span></div>
+    <div class="name">${esc(p.name)}</div>
+    <div class="meta">${p.client?`<span>${esc(p.client)}</span>`:""}${p.loc?`<span>${esc(p.loc)}</span>`:""}</div>
+    <div class="meta">${p.type?`<span class="tag">${esc(p.type)}</span>`:""}${p.owner?`<span>${esc(p.owner)}</span>`:""}${p.due?`<span class="${isLate(p)?"late":""}">Oplevering ${fmtDate(p.due)}</span>`:""}</div>
+    ${pr.total?`<div class="row small"><span>${pr.done}/${pr.total} activiteiten</span><span>${d!==null?d+" dgn in fase":""}</span></div><div class="prog"><i style="width:${Math.round(pr.done/pr.total*100)}%"></i></div>`:""}
+    ${na?`<div class="next"><span class="small">Volgende:</span> ${esc(na.title)}${na.owner||na.role?` <span class="small">· ${esc(na.owner||na.role)}</span>`:""}</div>`:""}
+  </div>`;
+}
+function boardHTML(list){
+  const showDone=S.showDone||S.phaseFilter===5;
+  const phs=S.phaseFilter!==null?PHASES.filter(p=>p.id===S.phaseFilter):PHASES.filter(p=>showDone||p.id<5);
+  return `<div class="board" style="--cols:${phs.length}">${phs.map(ph=>{const it=list.filter(p=>p.phase===ph.id).sort((a,b)=>(a.due||"9999").localeCompare(b.due||"9999"));
+    return `<section class="col"><h3><span>${esc(ph.long)}</span><span class="mono">${it.length}</span></h3>${it.length?it.map(cardHTML).join(""):`<div class="empty">Geen projecten</div>`}</section>`}).join("")}</div>`;
+}
+function listHTML(list){
+  const k=S.sortKey,dir=S.sortDir;
+  const val=p=>k==="phase"?p.phase:k==="status"?Object.keys(STATUSES).indexOf(p.status):(p[k]||"￿").toString().toLowerCase();
+  list=[...list].sort((a,b)=>{const x=val(a),y=val(b);return(x<y?-1:x>y?1:0)*dir});
+  const cols=[["nr","Nr."],["name","Project"],["client","Klant"],["type","Type"],["owner","Projectleider"],["phase","Fase"],["status","Status"],["due","Oplevering"]];
+  return `<div class="tablewrap"><table><thead><tr>${cols.map(([c,l])=>`<th><button type="button" data-sort="${c}">${l}${k===c?(dir>0?" ↑":" ↓"):""}</button></th>`).join("")}</tr></thead><tbody>${list.map(p=>{const st=STATUSES[p.status],pr=phaseProg(p,p.phase);return `<tr class="click" data-open="${esc(p.id)}" tabindex="0">
+    <td class="mono">${esc(p.nr||"—")}</td><td><strong>${esc(p.name)}</strong>${p.loc?`<div class="small">${esc(p.loc)}</div>`:""}</td><td>${esc(p.client)}</td><td>${esc(p.type)}</td><td>${esc(p.owner)}</td>
+    <td><div class="phasedots">${PHASES.map(ph=>`<i class="${ph.id<=p.phase?"on":""}"></i>`).join("")}</div><div class="small">${esc(PHASES[p.phase].label)}${pr.total?` · ${pr.done}/${pr.total}`:""}</div></td>
+    <td><span class="pill ${st.cls}">${st.label}</span></td><td class="num ${isLate(p)?"late":""}">${fmtDate(p.due)}</td></tr>`}).join("")}</tbody></table></div>`;
+}
+function actsHTML(list){
+  const rows=[];list.forEach(p=>actsOf(p,p.phase).forEach(a=>{if(isClosed(a))return;if(S.fOwner&&a.owner!==S.fOwner&&p.owner!==S.fOwner&&p.engineer!==S.fOwner)return;rows.push({p,a})}));
+  rows.sort((x,y)=>(x.a.owner||"￿").localeCompare(y.a.owner||"￿","nl")||(x.p.due||"9999").localeCompare(y.p.due||"9999"));
+  if(!rows.length)return `<div class="notice"><strong>Geen open acties</strong><span>Alle activiteiten in de huidige fase van deze projecten zijn afgerond.</span></div>`;
+  return `<div class="tablewrap"><table><thead><tr><th>Status</th><th>Activiteit</th><th>Behandelaar</th><th>Project</th><th>Fase</th><th>Oplevering</th></tr></thead><tbody>${rows.map(({p,a})=>`<tr class="click" data-open="${esc(p.id)}" tabindex="0">
+    <td class="st-${a.status}"><b>${ACT_ST[a.status]||"Open"}</b></td><td>${esc(a.title)}</td><td>${a.owner?esc(a.owner):`<span class="small">${esc(a.role||"—")}</span>`}</td>
+    <td><span class="mono small">${esc(p.nr||"")}</span> ${esc(p.name)}</td><td>${esc(PHASES[p.phase].label)}</td><td class="num ${isLate(p)?"late":""}">${fmtDate(p.due)}</td></tr>`).join("")}</tbody></table></div>`;
+}
+
+/* ---------- project dashboard ---------- */
+const HEAD=[
+  ["nr","Projectnummer","text"],["name","Projectnaam","text"],["type","Type werkzaamheden","type"],["status","Projectstatus","status"],
+  ["owner","Projectleider","person"],["engineer","Engineer","person"],["contractor","Aannemer","text"],["netop","Netbeheerder","text"],
+  ["loc","Locatie / adres","text"],["ean","EAN-code","text"],["power","Vermogen / aansluitwaarde","text"],["link","Gekoppeld project","text"],
+  ["survey","Schouw plandatum","date"],["delivery","Bevestigde leverdatum","date"],["due","Gewenste opleverdatum","date"]
+];
+const CLIENT=[["client","Klant","text"],["contact","Contactpersoon","text"],["email","E-mailadres","text"],["phone","Telefoonnummer","text"]];
+function fieldView(p,[k,l,t]){
+  let v=p[k]||"";
+  if(t==="status")v=v?`<span class="pill ${STATUSES[v].cls}">${STATUSES[v].label}</span>`:"";
+  else if(t==="date")v=v?`<span class="${k==="due"&&isLate(p)?"late":""}">${fmtDate(v)}</span> <span class="small">week ${isoWeek(v)}</span>`:"";
+  else v=esc(v);
+  return `<div class="field"><span class="lbl">${esc(l)}</span><span class="v ${v?"":"empty"}">${v||"—"}</span></div>`;
+}
+function fieldEdit(p,[k,l,t]){
+  const v=p[k]||"",id="h_"+k;let inp;
+  if(t==="type")inp=`<select id="${id}" data-h="${k}">${TYPES.map(x=>`<option ${v===x?"selected":""}>${esc(x)}</option>`).join("")}</select>`;
+  else if(t==="status")inp=`<select id="${id}" data-h="${k}">${Object.entries(STATUSES).map(([a,b])=>`<option value="${a}" ${v===a?"selected":""}>${b.label}</option>`).join("")}</select>`;
+  else if(t==="date")inp=`<input type="date" id="${id}" data-h="${k}" value="${esc(v)}">`;
+  else inp=`<input id="${id}" data-h="${k}" value="${esc(v)}" ${t==="person"?'list="people"':""} ${k==="nr"?'class="mono"':""}>`;
+  return `<label class="field" for="${id}"><span class="lbl">${esc(l)}</span>${inp}</label>`;
+}
+function dashHTML(p){
+  if(!p)return `<div class="crumb"><button class="btn" type="button" data-act="back">← Overzicht</button></div><div class="notice"><strong>Project niet gevonden</strong><span>Het is mogelijk verwijderd.</span></div>`;
+  const sel=S.selPhase??p.phase,st=STATUSES[p.status],ed=S.editHead;
+  const track=PHASES.map(ph=>{const pr=phaseProg(p,ph.id);return `<button type="button" data-selphase="${ph.id}" class="${ph.id<p.phase?"done":""} ${ph.id===p.phase?"cur":""} ${ph.id===sel?"sel":""}"><span class="t">${esc(ph.label)}</span><span class="c">${ph.id===p.phase?"Huidige fase · ":""}${pr.done}/${pr.total}</span></button>`}).join("");
+  let acts=actsOf(p,sel);if(S.actFilter)acts=acts.filter(a=>a.status===S.actFilter);
+  const actRows=acts.map(a=>`<tr data-aid="${a.id}" class="${a.status==="afgerond"?"is-done":""} ${a.status==="nvt"?"is-nvt":""}">
+    <td><select class="st-sel st-${a.status}" data-af="status" aria-label="Status">${Object.entries(ACT_ST).map(([k,v])=>`<option value="${k}" ${a.status===k?"selected":""}>${v}</option>`).join("")}</select></td>
+    <td class="desc">${esc(a.title)}</td>
+    <td><input data-af="owner" list="people" value="${esc(a.owner)}" placeholder="${esc(a.role||"Naam")}" aria-label="Behandelaar" style="width:150px"></td>
+    <td class="num">${a.doneAt?fmtDate(a.doneAt):""}</td>
+    <td><button class="rowbtn" type="button" data-delact title="Activiteit verwijderen" aria-label="Activiteit verwijderen">✕</button></td></tr>`).join("");
+  const openHere=actsOf(p,p.phase).filter(a=>!isClosed(a)).length;
+  const gate=sel===p.phase?`<div class="gate"><span>${p.phase<5?(openHere?`<b>${openHere}</b> activiteit${openHere>1?"en":""} nog open in deze fase.`:"Alle activiteiten in deze fase zijn afgerond."):"Project staat in de laatste fase."}</span>
+     <span style="display:flex;gap:8px;flex-wrap:wrap">${p.phase>0?`<button class="btn" type="button" data-move="-1">← Terug naar ${esc(PHASES[p.phase-1].label)}</button>`:""}${p.phase<5?`<button class="btn ${openHere?"":"primary"}" type="button" data-move="1">Toewijzen fase ${esc(PHASES[p.phase+1].label)} →</button>`:""}</span></div>`:"";
+  return `
+  <div class="crumb"><button class="btn" type="button" data-act="back">← Overzicht</button><span class="small">Projectbord PER / ${esc(p.nr||"project")}${p.updatedAt?` · laatst bijgewerkt ${fmtDT(p.updatedAt)}${p.updatedBy?" door "+esc(p.updatedBy):""}`:""}</span></div>
+  ${banner()}
+  <div class="dash-title"><h1>${esc(p.nr?p.nr+" – ":"")}${esc(p.name)}</h1><span class="pill ${st.cls}">${st.label}</span><span class="tag">${esc(PHASES[p.phase].long)}</span></div>
+  <div class="dash">
+    <div class="stack">
+      <section class="panelbox">
+        <header><h2>Projectgegevens</h2>${ed?`<span style="display:flex;gap:8px"><button class="btn" type="button" data-act="cancelHead">Annuleren</button><button class="btn primary" type="button" data-act="saveHead">Opslaan</button></span>`:`<button class="btn" type="button" data-act="editHead">Bewerken</button>`}</header>
+        <div class="fields">${HEAD.map(f=>ed?fieldEdit(p,f):fieldView(p,f)).join("")}</div>
+      </section>
+      <section class="panelbox">
+        <header><h2>Klant</h2></header>
+        <div class="fields">${CLIENT.map(f=>ed?fieldEdit(p,f):fieldView(p,f)).join("")}</div>
+      </section>
+      <section class="panelbox">
+        <header><h2>Projectstatus ${esc(PHASES[sel].label)}</h2>
+          <select id="actFilter" aria-label="Filter op status"><option value="">Alle statussen</option>${Object.entries(ACT_ST).map(([k,v])=>`<option value="${k}" ${S.actFilter===k?"selected":""}>${v}</option>`).join("")}</select></header>
+        <div class="phase-track">${track}</div>
+        ${gate}
+        <div class="acts-wrap"><table class="acts"><thead><tr><th style="width:130px">Status</th><th>Omschrijving</th><th style="width:170px">Behandelaar</th><th style="width:100px">Afgerond op</th><th style="width:36px"></th></tr></thead>
+          <tbody>${actRows||`<tr><td colspan="5" class="small">Geen activiteiten${S.actFilter?" met deze status":" in deze fase"}.</td></tr>`}</tbody></table></div>
+        <form class="addact" id="addAct"><input class="grow" id="naTitle" placeholder="Activiteit toevoegen aan ${esc(PHASES[sel].label)}" aria-label="Nieuwe activiteit"><select id="naRole" aria-label="Rol">${ROLES.map(r=>`<option>${r}</option>`).join("")}</select><button class="btn" type="submit">Toevoegen</button></form>
+      </section>
+      <div id="delZone"><button class="btn danger" type="button" data-act="del">Project verwijderen</button></div>
+    </div>
+    <aside class="panelbox log">
+      <header><h2>Logboek</h2></header>
+      <div class="log-tabs" role="group"><button type="button" data-logtab="notitie" aria-pressed="${S.logTab==="notitie"}">Notities</button><button type="button" data-logtab="contact" aria-pressed="${S.logTab==="contact"}">Contactmomenten</button></div>
+      ${S.logTab==="notitie"?`<form id="logForm"><textarea id="lgText" placeholder="Projectnotitie, bijvoorbeeld een afspraak of waar het op wacht"></textarea><button class="btn primary" type="submit">Notitie plaatsen</button></form>`
+        :`<form id="logForm"><div class="row2"><input type="date" id="lgDate" value="${todayStr()}" aria-label="Datum"><select id="lgType" aria-label="Soort"><option>Telefoon</option><option>E-mail</option><option>Overleg</option><option>Bezoek op locatie</option></select></div><input id="lgWith" placeholder="Met wie (naam, organisatie)"><textarea id="lgText" placeholder="Wat is er besproken of afgesproken?"></textarea><button class="btn primary" type="submit">Contactmoment vastleggen</button></form>`}
+      <div id="logList">${logListHTML()}</div>
+    </aside>
+  </div>
+  <datalist id="people">${people().map(o=>`<option value="${esc(o)}">`).join("")}</datalist>`;
+}
+function logListHTML(){
+  if(S.logLoading)return `<div class="small">Laden…</div>`;
+  const items=S.log.filter(e=>e.kind===S.logTab);
+  if(!items.length)return `<div class="small">${S.logTab==="notitie"?"Nog geen notities.":"Nog geen contactmomenten."}</div>`;
+  return `<div class="log">${items.map(e=>`<div class="entry ${e.kind==="contact"?"contact":""}">
+    <div class="h"><span><b>${esc(e.author||"Collega")}</b>${e.kind==="contact"?` · ${esc(e.ctype||"")}${e.with?" met "+esc(e.with):""}`:""}</span><span>${e.kind==="contact"&&e.date?fmtDate(e.date):fmtDT(e.createdAt)}</span></div>
+    <div class="b">${esc(e.text)}</div></div>`).join("")}</div>`;
+}
+
+/* ---------- render & routing ---------- */
+function render(){
+  if(!S.code)return;
+  const app=$("#app"),ae=document.activeElement,focusId=ae?.id,selStart=ae?.selectionStart;
+  app.innerHTML=S.openId?dashHTML(proj(S.openId)):overviewHTML();
+  if(focusId){const el=document.getElementById(focusId);if(el&&el.tagName!=="BUTTON"){el.focus();try{if(selStart!=null)el.setSelectionRange(selStart,selStart)}catch(e){}}}
+}
+function renderOvBody(){const b=$("#ovBody");if(b)b.innerHTML=overviewBody();else render()}
+function openProject(id){
+  S.openId=id;S.selPhase=null;S.actFilter="";S.editHead=false;S.log=[];
+  try{history.replaceState(null,"",id?"#p-"+id:location.pathname)}catch(e){}
+  render();window.scrollTo(0,0);
+  if(id)loadLog(id);
+}
+
+/* ---------- events ---------- */
+document.addEventListener("click",async e=>{
+  const t=e.target.closest("button,[data-open]");if(!t||!S.code)return;
+  if(t.dataset.phasef!==undefined){const v=+t.dataset.phasef;S.phaseFilter=S.phaseFilter===v?null:v;render();return}
+  if(t.dataset.view){S.view=t.dataset.view;put(localStorage,"pb-view",S.view);render();return}
+  if(t.dataset.sort){const k=t.dataset.sort;S.sortDir=S.sortKey===k?-S.sortDir:1;S.sortKey=k;renderOvBody();return}
+  if(t.dataset.open){openProject(t.dataset.open);return}
+  if(t.dataset.selphase!==undefined){S.selPhase=+t.dataset.selphase;render();return}
+  if(t.dataset.logtab){S.logTab=t.dataset.logtab;render();return}
+  const p=proj(S.openId);
+  if(t.dataset.move&&p){
+    const np=Math.min(5,Math.max(0,p.phase+(+t.dataset.move)));t.disabled=true;
+    if(await save(p.id,{phase:np,phaseSince:nowISO()},`Fase ${PHASES[np].label} toegewezen`)){S.selPhase=null;render();addLog(p.id,"notitie",`Fase gewijzigd naar ${PHASES[np].long}.`)}
+    else t.disabled=false;
+    return}
+  if(t.hasAttribute("data-delact")&&p){const aid=t.closest("tr").dataset.aid;if(await save(p.id,{acts:(p.acts||[]).filter(a=>a.id!==aid)},"Activiteit verwijderd"))render();return}
+  switch(t.dataset.act){
+    case "back":openProject(null);break;
+    case "logout":logout();break;
+    case "new":openNew();break;
+    case "editHead":S.editHead=true;render();break;
+    case "cancelHead":S.editHead=false;render();break;
+    case "saveHead":{if(!p)break;const data={};document.querySelectorAll("[data-h]").forEach(i=>data[i.dataset.h]=i.value.trim());
+      if(!data.name){toast("Vul een projectnaam in");$("#h_name")?.focus();break}
+      t.disabled=true;if(await save(p.id,data,"Projectgegevens opgeslagen")){S.editHead=false;render()}else t.disabled=false;break}
+    case "del":$("#delZone").innerHTML=`<span class="confirm"><span>Project en logboek definitief verwijderen?</span><button class="btn danger" type="button" data-act="delYes">Ja, verwijder</button><button class="btn" type="button" data-act="delNo">Nee</button></span>`;break;
+    case "delNo":render();break;
+    case "delYes":{if(!p)break;const n=p.name;try{await rpc("pb_delete",{p_code:S.code,p_id:p.id});S.projects=S.projects.filter(x=>x.id!==p.id);toast(`${n} verwijderd`);openProject(null)}catch(err){writeErr(err)}break}
+    case "closeNew":closeNew();break;
+    case "createNew":createNew();break;
+  }
+});
+document.addEventListener("keydown",e=>{
+  if((e.key==="Enter"||e.key===" ")&&e.target.matches("[data-open]")){e.preventDefault();openProject(e.target.dataset.open)}
+  if(e.key==="Escape"&&S.newOpen)closeNew();
+});
+document.addEventListener("input",e=>{if(e.target.id==="q"){S.q=e.target.value;renderOvBody()}});
+document.addEventListener("change",async e=>{
+  const t=e.target,id=t.id;
+  if(id==="fType"){S.fType=t.value;render();return}
+  if(id==="fStatus"){S.fStatus=t.value;render();return}
+  if(id==="fOwner"){S.fOwner=t.value;render();return}
+  if(id==="fDone"){S.showDone=t.checked;put(localStorage,"pb-done",t.checked?"1":"0");render();return}
+  if(id==="actFilter"){S.actFilter=t.value;render();return}
+  const p=proj(S.openId);
+  if(t.dataset.af&&p){
+    const aid=t.closest("tr").dataset.aid;
+    const patch=t.dataset.af==="status"?{status:t.value,doneAt:t.value==="afgerond"?todayStr():""}:{owner:t.value.trim()};
+    if(await save(p.id,{acts:(p.acts||[]).map(a=>a.id===aid?{...a,...patch}:a)}))render();
+  }
+});
+document.addEventListener("submit",async e=>{
+  e.preventDefault();
+  if(e.target.id==="loginForm"){
+    const code=$("#lgCode").value.trim(),name=$("#lgName").value.trim();
+    if(!code){$("#lgCode").focus();return}
+    if(!name){$("#lgMsg").textContent="Vul je naam in.";$("#lgName").focus();return}
+    $("#lgGo").disabled=true;
+    if(await tryLogin(code)){S.code=code;S.me=name;put(localStorage,"pb-naam",name);put(sessionStorage,"pb-code",code);if($("#lgRemember").checked)put(localStorage,"pb-code",code);start()}
+    else $("#lgGo").disabled=false;
+    return}
+  const p=proj(S.openId);if(!p)return;
+  if(e.target.id==="addAct"){const title=$("#naTitle").value.trim();if(!title){$("#naTitle").focus();return}
+    const sel=S.selPhase??p.phase;
+    if(await save(p.id,{acts:[...(p.acts||[]),{id:newActId(),phase:sel,title,role:$("#naRole").value,owner:"",status:"open",doneAt:""}]},"Activiteit toegevoegd")){render();setTimeout(()=>$("#naTitle")?.focus(),30)}
+    return}
+  if(e.target.id==="logForm"){const text=$("#lgText").value.trim();if(!text){$("#lgText").focus();return}
+    const extra=S.logTab==="contact"?{date:$("#lgDate").value,ctype:$("#lgType").value,with:$("#lgWith").value.trim()}:{};
+    const btn=e.target.querySelector("button");btn.disabled=true;
+    if(await addLog(p.id,S.logTab,text,extra)){$("#lgText").value="";if($("#lgWith"))$("#lgWith").value="";toast(S.logTab==="contact"?"Contactmoment vastgelegd":"Notitie geplaatst")}
+    btn.disabled=false}
+});
+
+/* ---------- nieuw project ---------- */
+function openNew(){
+  S.newOpen=true;
+  const m=document.createElement("div");m.id="newWrap";
+  m.innerHTML=`<div class="scrim" data-act="closeNew"></div><div class="modal" role="dialog" aria-modal="true" aria-labelledby="nTitle">
+    <h2 id="nTitle">Nieuw project</h2>
+    <div class="fields">
+      <label class="field" for="n_nr"><span class="lbl">Projectnummer</span><input id="n_nr" class="mono" placeholder="bv. P-26-0412"></label>
+      <label class="field" for="n_type"><span class="lbl">Type werkzaamheden</span><select id="n_type">${TYPES.map(t=>`<option>${t}</option>`).join("")}</select></label>
+      <label class="field" for="n_name" style="grid-column:1/-1"><span class="lbl">Projectnaam</span><input id="n_name" placeholder="bv. BESS 2 MW met nieuw MS-veld"></label>
+      <label class="field" for="n_client"><span class="lbl">Klant</span><input id="n_client"></label>
+      <label class="field" for="n_loc"><span class="lbl">Locatie</span><input id="n_loc"></label>
+      <label class="field" for="n_owner"><span class="lbl">Projectleider</span><input id="n_owner" list="peopleNew" value="${esc(S.me)}"></label>
+      <label class="field" for="n_due"><span class="lbl">Gewenste opleverdatum</span><input id="n_due" type="date"></label>
+    </div>
+    <label class="check"><input type="checkbox" id="n_tpl" checked> Standaardactiviteiten per fase toevoegen</label>
+    <datalist id="peopleNew">${people().map(o=>`<option value="${esc(o)}">`).join("")}</datalist>
+    <div style="display:flex;justify-content:flex-end;gap:8px"><button class="btn" type="button" data-act="closeNew">Annuleren</button><button class="btn primary" type="button" data-act="createNew" id="n_go">Project aanmaken</button></div>
+  </div>`;
+  document.body.appendChild(m);setTimeout(()=>$("#n_name").focus(),30);
+}
+function closeNew(){S.newOpen=false;$("#newWrap")?.remove()}
+async function createNew(){
+  const name=$("#n_name").value.trim();if(!name){$("#n_name").focus();toast("Vul een projectnaam in");return}
+  const now=nowISO(),data={nr:$("#n_nr").value.trim(),name,type:$("#n_type").value,client:$("#n_client").value.trim(),loc:$("#n_loc").value.trim(),owner:$("#n_owner").value.trim(),due:$("#n_due").value,
+    status:"ok",phase:0,phaseSince:now,acts:$("#n_tpl").checked?templateActs():[],createdAt:now};
+  $("#n_go").disabled=true;
+  const p=await save(null,data,"Project aangemaakt");
+  if(p){closeNew();openProject(p.id)}else $("#n_go").disabled=false;
+}
+
+/* ---------- start ---------- */
+async function start(){
+  render();await loadAll();
+  const h=(location.hash||"").slice(1);if(h.startsWith("p-")&&proj(h.slice(2)))openProject(h.slice(2));
+  clearInterval(S.poll);S.poll=setInterval(()=>{if(document.visibilityState==="visible")loadAll(true)},20000);
+}
+(async()=>{
+  const saved=get(sessionStorage,"pb-code")||get(localStorage,"pb-code");
+  if(saved&&S.me&&await tryLogin(saved,true)){S.code=saved;put(sessionStorage,"pb-code",saved);start();return}
+  $("#app").innerHTML=loginHTML();$("#lgCode").focus();
+})();
+
+</script>
+</body>
+</html>
