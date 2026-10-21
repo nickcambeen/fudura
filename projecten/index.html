@@ -371,6 +371,19 @@ tr.waiting td{color:var(--muted)}
 .acts select,.acts input[type=date]{font-size:12px;padding:3px 4px}
 .acts .stddue{white-space:nowrap;font-size:11px}
 .acts td:last-child{text-align:center;padding-inline:0}
+
+/* uitgeklapte taken: taak – deadline op één regel */
+.ib-body{gap:0;padding:4px 12px 10px 44px}
+.taskrow{display:grid;grid-template-columns:20px minmax(0,1fr) 92px;gap:10px;align-items:center;padding:7px 4px;border-bottom:1px solid var(--line);cursor:pointer}
+.taskrow:hover{background:var(--sky-soft)}
+.taskrow input{width:16px;height:16px;margin:0;accent-color:var(--navy)}
+.taskrow .tr-title{overflow-wrap:anywhere}
+.taskrow .tr-title .wait{display:inline;margin-left:6px;white-space:nowrap}
+.taskrow .tr-due{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+.taskrow .tr-due.late{color:var(--bad);font-weight:600}
+.taskrow.done .tr-title{text-decoration:line-through;color:var(--muted)}
+.taskrow.waiting .tr-title{color:var(--muted)}
+.ib-body > div:last-child{padding-top:8px}
 </style>
 </head>
 <body>
@@ -647,10 +660,10 @@ function inboxHTML(){
         <span class="num ${late?"late":""}">${g.next?fmtDate(g.next):"—"}</span>
         <span>${g.ready?`<span class="badge">${g.ready}</span> te doen`:""}${g.rows.length>g.ready?`<span class="small">${g.ready?" · ":""}${g.rows.length-g.ready} wacht</span>`:""}</span>
       </button>
-      ${open?`<div class="ib-body">${actsOf(p,p.phase).filter(a=>isMine(a,p)).map(a=>{const w=waitsOn(p,a),done=isClosed(a),ed=effDue(p,a),late2=ed&&ed<todayStr()&&!done;return `<label class="taskitem ${done?"done":""}">
+      ${open?`<div class="ib-body">${actsOf(p,p.phase).filter(a=>isMine(a,p)).map(a=>{const w=waitsOn(p,a),done=isClosed(a),ed=effDue(p,a),late2=ed&&ed<todayStr()&&!done;return `<label class="taskrow ${done?"done":""} ${w&&!done?"waiting":""}">
         <input type="checkbox" data-done="${a.id}" data-proj="${esc(p.id)}" ${a.status==="afgerond"?"checked":""} ${a.status==="nvt"?"disabled":""}>
-        <span><span class="tt">${esc(a.title)}</span>${w&&!done?`<span class="wait">⊘ wacht op: ${esc(w.title)}</span>`:""}
-        <span class="small"><span class="${late2?"late":""}">${ed?"Deadline "+fmtDate(ed)+(isStdDue(a)?" (standaard)":""):"Geen deadline"}</span> · ${esc(effOwner(p,a)||a.role)}${a.doneAt?" · afgerond "+fmtDate(a.doneAt):""}</span></span></label>`}).join("")}
+        <span class="tr-title">${esc(a.title)}${w&&!done?` <span class="wait" title="Wacht op: ${esc(w.title)}">⊘ wacht op vorige stap</span>`:""}</span>
+        <span class="tr-due ${late2?"late":""}" title="${isStdDue(a)?"Standaarddeadline":"Deadline"}">${done&&a.doneAt?"✓ "+fmtDate(a.doneAt):ed?fmtDate(ed):"—"}</span></label>`}).join("")}
         <div><button class="btn" type="button" data-open="${esc(p.id)}">Project openen →</button></div></div>`:""}
       </div>`}).join("")}
   </div>`;
