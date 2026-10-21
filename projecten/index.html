@@ -864,7 +864,7 @@ function openNew(){
     <h2 id="nTitle">Nieuw project</h2>
     <div class="fields">
       <label class="field" for="n_nr"><span class="lbl">Projectnummer</span><input id="n_nr" class="mono" placeholder="bv. P-26-0412"></label>
-      <label class="field" for="n_power"><span class="lbl">Batterij (kW / kWh)</span><input id="n_power" placeholder="bv. 250 kW / 522 kWh"></label>
+      
       <label class="field" for="n_name" style="grid-column:1/-1"><span class="lbl">Projectnaam</span><input id="n_name" placeholder="bv. BESS 2 MW met nieuw MS-veld"></label>
       <label class="field" for="n_client"><span class="lbl">Klant</span><input id="n_client"></label>
       <label class="field" for="n_loc"><span class="lbl">Locatie</span><input id="n_loc"></label>
@@ -881,7 +881,7 @@ function openNew(){
 function closeNew(){S.newOpen=false;$("#newWrap")?.remove()}
 async function createNew(){
   const name=$("#n_name").value.trim();if(!name){$("#n_name").focus();toast("Vul een projectnaam in");return}
-  const now=nowISO(),data={nr:$("#n_nr").value.trim(),name,type:TYPES[0],power:$("#n_power").value.trim(),client:$("#n_client").value.trim(),loc:$("#n_loc").value.trim(),owner:$("#n_owner").value.trim(),engineer:$("#n_se").value.trim(),due:$("#n_due").value,
+  const now=nowISO(),data={nr:$("#n_nr").value.trim(),name,type:TYPES[0],client:$("#n_client").value.trim(),loc:$("#n_loc").value.trim(),owner:$("#n_owner").value.trim(),engineer:$("#n_se").value.trim(),due:$("#n_due").value,
     status:"ok",phase:0,phaseSince:now,acts:$("#n_tpl").checked?templateActs():[],createdAt:now};
   $("#n_go").disabled=true;
   const p=await save(null,data,"Project aangemaakt");
