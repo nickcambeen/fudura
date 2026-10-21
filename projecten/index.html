@@ -434,6 +434,39 @@ header.top .sub{display:none}
 
 .aschip{background:#fff1c7;color:#6b4d00;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;white-space:nowrap}
 header.top .asWho select{border-color:rgba(255,255,255,.3)}
+
+/* projectkop */
+.phead{gap:8px;padding:10px 14px}
+.ph-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ph-top h1{font-size:19px;margin:0}
+.ph-top .btn.ghost{padding:3px 6px}
+.ph-team{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;color:var(--fg)}
+.ph-team b{font:600 10.5px var(--f-body);letter-spacing:.06em;color:var(--muted);margin-right:3px}
+.ptrack{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:3px}
+.ptrack .seg{border:0;background:#eef3f7;padding:6px 10px;text-align:left;display:grid;grid-template-columns:1fr auto;gap:0 6px;border-radius:0;position:relative;color:var(--fg)}
+.ptrack .seg:first-child{border-radius:7px 0 0 7px}.ptrack .seg:last-child{border-radius:0 7px 7px 0}
+.ptrack .seg .t{font-weight:600;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ptrack .seg .c{font-size:11px;color:var(--muted);text-align:right}
+.ptrack .seg .d{grid-column:1 / -1;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.ptrack .seg .d.late{color:var(--bad);font-weight:600}
+.ptrack .seg.done{background:var(--sky-soft)}
+.ptrack .seg.cur{background:var(--sky);color:var(--navy)}
+.ptrack .seg.cur .c,.ptrack .seg.cur .d{color:var(--navy)}
+.ptrack .seg.sel{box-shadow:inset 0 -3px 0 var(--navy)}
+.ptrack .seg:hover{filter:brightness(.97)}
+.ph-warn{font-size:12px;color:#8a5a00;background:#fff4dc;border-radius:6px;padding:4px 10px}
+@media (max-width:760px){.ptrack{grid-template-columns:repeat(3,minmax(0,1fr))}.ptrack .seg{border-radius:6px!important}}
+/* activiteiten */
+.stpill{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:#eef3f7}
+.stpill.st-afgerond{background:#e1f2e8}
+.stpill.st-bezig{background:var(--run-soft)}
+.stpill.st-geblokkeerd{background:var(--bad-soft)}
+.duebtn{border:0;background:none;padding:2px 4px;border-radius:4px;font-variant-numeric:tabular-nums;color:var(--fg);cursor:pointer}
+.duebtn:hover{background:var(--sky-soft)}
+.duebtn.std,.duetxt.std{color:var(--muted)}
+.duebtn.late,.duetxt.late{color:var(--bad);font-weight:600}
+.acts .wait{font-size:11px;white-space:nowrap}
+.panelbox > header h2{font-size:16px}
 </style>
 </head>
 <body>
@@ -835,42 +868,66 @@ function planHTML(p){
   ${intakeLate?`<div class="banner">De intake loopt langer dan ${INTAKE_WEKEN} weken (gereed vóór ${fmtDate(ie)}).</div>`:""}
   ${tooEarly?`<div class="banner">De gewenste opleverdatum ligt vóór de vroegste start van de uitvoering (${fmtDate(pe)}). Na akkoord is minimaal ${VOORBEREIDING_WEKEN} weken voorbereiding nodig.</div>`:""}`;
 }
+function phaseDate(p,ph){
+  if(ph===0)return {d:intakeEnd(p),lbl:"gereed"};
+  if(ph===1)return {d:workday(addDays(akkoordDate(p),35)),lbl:"gereed"};
+  if(ph===2)return {d:prepEnd(p),lbl:"gereed"};
+  if(ph===3)return {d:prepEnd(p),lbl:"start ≥"};
+  if(ph===4)return {d:p.due||"",lbl:"gewenst"};
+  return {d:"",lbl:""};
+}
 function dashHTML(p){
   if(!p)return `<div class="crumb"><button class="btn" type="button" data-act="back">← Overzicht</button></div><div class="notice"><strong>Project niet gevonden</strong><span>Het is mogelijk verwijderd.</span></div>`;
-  const sel=S.selPhase??p.phase,st=STATUSES[p.status],ed=S.editHead;
-  const track=PHASES.map(ph=>{const pr=phaseProg(p,ph.id);return `<button type="button" data-selphase="${ph.id}" class="${ph.id<p.phase?"done":""} ${ph.id===p.phase?"cur":""} ${ph.id===sel?"sel":""}"><span class="t">${esc(ph.label)}</span><span class="c">${ph.id===p.phase?"Huidige fase · ":""}${pr.done}/${pr.total}</span></button>`}).join("");
+  const sel=S.selPhase??p.phase,st=STATUSES[p.status],ed=S.editHead,t=todayStr();
+  const ie=intakeEnd(p),pe=prepEnd(p),intakeLate=p.phase===0&&ie&&ie<t,tooEarly=p.due&&pe&&p.due<pe;
+  /* fasebalk: fase, voortgang en streefdatum in één */
+  const track=PHASES.map(ph=>{const pr=phaseProg(p,ph.id),pd=phaseDate(p,ph.id),late=pd.d&&pd.d<t&&ph.id>=p.phase&&ph.id<5,bad=ph.id===4&&tooEarly;
+    return `<button type="button" data-selphase="${ph.id}" class="seg ${ph.id<p.phase?"done":""} ${ph.id===p.phase?"cur":""} ${ph.id===sel?"sel":""}">
+      <span class="t">${esc(ph.label)}</span>
+      <span class="c">${ph.id<p.phase?"✓ klaar":pr.total?pr.done+"/"+pr.total:""}</span>
+      <span class="d ${late||bad?"late":""}">${pd.d?esc(pd.lbl)+" "+fmtDate(pd.d).slice(0,5):"&nbsp;"}</span></button>`}).join("");
+  const team=[["PL","owner"],["SE","engineer"],["DE","detail"],["TK","drafter"],["WVB","wvb"],["AN","contractor"]].filter(([,k])=>p[k]).map(([a,k])=>`<span title="${esc(HEAD.find(h=>h[0]===k)[1])}"><b>${a}</b> ${esc(p[k])}</span>`).join("");
+  const warn=[intakeLate?`Intake loopt langer dan ${INTAKE_WEKEN} weken`:"",tooEarly?`Gewenste oplevering ${fmtDate(p.due)} ligt vóór de vroegste start van de uitvoering (${fmtDate(pe)})`:""].filter(Boolean);
   let acts=actsOf(p,sel);if(S.actFilter)acts=acts.filter(a=>a.status===S.actFilter);
-  const actRows=acts.map(a=>`<tr data-aid="${a.id}" class="${a.status==="afgerond"?"is-done":""} ${a.status==="nvt"?"is-nvt":""}">
-    <td><select class="st-sel st-${a.status}" data-af="status" aria-label="Status" ${a.doneAt&&!canDo(p,a)?"":a.doneAt?`title="Afgerond op ${fmtDate(a.doneAt)}"`:""} ${canDo(p,a)?"":`disabled title="Alleen ${esc(effOwner(p,a)||"de "+a.role.toLowerCase())} kan deze taak afronden"`}>${Object.entries(ACT_ST).map(([k,v])=>`<option value="${k}" ${a.status===k?"selected":""}>${v}</option>`).join("")}</select></td>
-    <td class="desc">${esc(a.title)}${(()=>{const w=waitsOn(p,a);return w?`<div class="wait" title="Wacht op: ${esc(w.title)}">⊘ wacht op vorige stap</div>`:""})()}${a.gate?`<div class="small">Voorwaarde voor de volgende fase</div>`:""}</td>
-    <td>${canEditHead()?`<select data-af="owner" aria-label="Behandelaar" class="ownersel">${personOptions(a.role,a.owner||"",teamDefault(p,a)?"Standaard: "+teamDefault(p,a):"Iedere "+(a.role||"collega").toLowerCase())}</select>`:`<span>${esc(effOwner(p,a)||"Iedere "+(a.role||"collega").toLowerCase())}</span>`}</td>
-    <td>${(()=>{const ed=effDue(p,a),late=ed&&ed<todayStr()&&!isClosed(a);return `<input type="date" data-af="due" value="${esc(a.due||"")}" aria-label="Deadline" class="${late&&a.due?"late":""}" ${canEditHead()?"":"disabled"}>${!a.due&&ed?`<div class="small stddue ${late?"late":""}" title="Standaarddeadline">std. ${fmtDate(ed)}</div>`:""}`})()}</td>
-    <td>${canEditHead()?`<button class="rowbtn" type="button" data-delact title="Activiteit verwijderen" aria-label="Activiteit verwijderen">✕</button>`:""}</td></tr>`).join("");
+  const actRows=acts.map(a=>{const w=waitsOn(p,a),edd=effDue(p,a),late=edd&&edd<t&&!isClosed(a),std=!a.due;return `<tr data-aid="${a.id}" class="${a.status==="afgerond"?"is-done":""} ${a.status==="nvt"?"is-nvt":""}">
+    <td>${canDo(p,a)?`<select class="st-sel st-${a.status}" data-af="status" aria-label="Status" ${a.doneAt?`title="Afgerond op ${fmtDate(a.doneAt)}"`:""}>${Object.entries(ACT_ST).map(([k,v])=>`<option value="${k}" ${a.status===k?"selected":""}>${v}</option>`).join("")}</select>`
+      :`<span class="stpill st-${a.status}" title="${a.doneAt?"Afgerond op "+fmtDate(a.doneAt):"Alleen "+esc(effOwner(p,a)||"de "+a.role.toLowerCase())+" kan deze taak afronden"}">${ACT_ST[a.status]}</span>`}</td>
+    <td class="desc">${esc(a.title)}${w?` <span class="wait" title="Wacht op: ${esc(w.title)}">⊘ wacht</span>`:""}</td>
+    <td>${canEditHead()?`<select data-af="owner" aria-label="Behandelaar" class="ownersel">${personOptions(a.role,a.owner||"",teamDefault(p,a)?teamDefault(p,a):"Iedere "+(a.role||"collega").toLowerCase())}</select>`:`<span>${esc(effOwner(p,a)||"Iedere "+(a.role||"collega").toLowerCase())}</span>`}</td>
+    <td>${S.editDue===a.id?`<input type="date" data-af="due" id="dueEdit" value="${esc(a.due||edd||"")}" aria-label="Deadline">`
+      :canEditHead()?`<button type="button" class="duebtn ${late?"late":""} ${std?"std":""}" data-editdue="${a.id}" title="${std?"Standaarddeadline · klik om aan te passen":"Klik om aan te passen"}">${edd?fmtDate(edd):"—"}</button>`
+      :`<span class="duetxt ${late?"late":""} ${std?"std":""}" title="${std?"Standaarddeadline":""}">${edd?fmtDate(edd):"—"}</span>`}</td>
+    <td>${canEditHead()?`<button class="rowbtn" type="button" data-delact title="Activiteit verwijderen" aria-label="Activiteit verwijderen">✕</button>`:""}</td></tr>`}).join("");
   const openHere=actsOf(p,p.phase).filter(a=>!isClosed(a)&&!a.trans).length,blk=gateOpen(p);
-  const gate=sel===p.phase&&canEditHead()?`<div class="gate"><span>${blk?`<b class="late">Project gaat pas door na: ${esc(blk.title)}.</b> `:""}${p.phase<5?(openHere?`<b>${openHere}</b> activiteit${openHere>1?"en":""} nog open in deze fase.`:"Alle activiteiten in deze fase zijn afgerond."):"Project staat in de laatste fase."}</span>
-     <span style="display:flex;gap:8px;flex-wrap:wrap">${p.phase>0?`<button class="btn" type="button" data-move="-1">← Terug naar ${esc(PHASES[p.phase-1].label)}</button>`:""}${p.phase<5?`<button class="btn ${openHere?"":"primary"}" type="button" data-move="1" ${blk?"disabled":""} title="${blk?"Eerst afronden: "+esc(blk.title):""}">Toewijzen fase ${esc(PHASES[p.phase+1].label)} →</button>`:""}</span></div>`:"";
+  const gate=sel===p.phase&&canEditHead()&&p.phase<5?`<div class="gate"><span>${blk?`<b class="late">Gaat pas door na: ${esc(blk.title)}.</b> `:openHere?`<b>${openHere}</b> open in deze fase`:"Alles in deze fase is afgerond."}</span>
+     <span style="display:flex;gap:6px;flex-wrap:wrap">${p.phase>0?`<button class="btn ghost" type="button" data-move="-1">← ${esc(PHASES[p.phase-1].label)}</button>`:""}<button class="btn ${openHere?"":"primary"}" type="button" data-move="1" ${blk?"disabled":""}>Toewijzen fase ${esc(PHASES[p.phase+1].label)} →</button></span></div>`:"";
   return `
-  <div class="crumb"><button class="btn" type="button" data-act="back">← Overzicht</button><span class="small">Projectmanagement systeem / ${esc(p.nr||"project")}${p.updatedAt?` · laatst bijgewerkt ${fmtDT(p.updatedAt)}${p.updatedBy?" door "+esc(p.updatedBy):""}`:""}</span></div>
-  <div class="dash-title"><h1>${esc(p.nr?p.nr+" – ":"")}${esc(p.name)}</h1><span class="pill ${st.cls}">${st.label}</span><span class="tag">${esc(PHASES[p.phase].long)}</span></div>
-  ${planHTML(p)}
+  <section class="panelbox phead">
+    <div class="ph-top">
+      <button class="btn ghost" type="button" data-act="back">← Overzicht</button>
+      <h1>${esc(p.nr?p.nr+" – ":"")}${esc(p.name)}</h1><span class="pill ${st.cls}">${st.label}</span>
+      <span class="spacer"></span>
+      ${ed?`<button class="btn" type="button" data-act="cancelHead">Annuleren</button><button class="btn primary" type="button" data-act="saveHead">Opslaan</button>`
+        :`<button class="btn ghost" type="button" data-act="toggleHead">${S.headOpen?"Gegevens verbergen ▴":"Alle gegevens ▾"}</button>${canEditHead()?`<button class="btn" type="button" data-act="editHead">Bewerken</button>`:""}`}
+    </div>
+    <div class="ph-team">${team||`<span class="small">Nog geen team toegewezen</span>`}${p.client?`<span><b>Klant</b> ${esc(p.client)}${p.loc?", "+esc(p.loc):""}</span>`:""}</div>
+    ${ed||S.headOpen?`<div class="fields">${HEAD.concat(CLIENT).map(f=>ed?fieldEdit(p,f):fieldView(p,f)).join("")}</div>`:""}
+    <div class="ptrack">${track}</div>
+    ${warn.length?`<div class="ph-warn">⚠ ${warn.map(esc).join(" · ")}</div>`:""}
+  </section>
   <div class="dash">
     <div class="stack">
       <section class="panelbox">
-        <header><h2>Project &amp; klant</h2>${ed?"":`<button class="btn ghost" type="button" data-act="toggleHead">${S.headOpen?"Minder tonen ▴":"Alle gegevens ▾"}</button>`}<span class="spacer"></span>${!canEditHead()?"":ed?`<span style="display:flex;gap:8px"><button class="btn" type="button" data-act="cancelHead">Annuleren</button><button class="btn primary" type="button" data-act="saveHead">Opslaan</button></span>`:`<button class="btn" type="button" data-act="editHead">Bewerken</button>`}</header>
-        ${ed||S.headOpen?`<div class="fields">${HEAD.concat(CLIENT).map(f=>ed?fieldEdit(p,f):fieldView(p,f)).join("")}</div>`
-      :`<div class="fields compact">${HEAD.concat(CLIENT).filter(f=>["owner","engineer","detail","drafter","client","loc"].includes(f[0])).map(f=>fieldView(p,f)).join("")}</div>`}
-      </section>
-      <section class="panelbox">
-        <header><h2>Projectstatus ${esc(PHASES[sel].label)}</h2>
+        <header><h2>${esc(PHASES[sel].long)}</h2>${sel!==p.phase?`<span class="tag">${sel<p.phase?"afgeronde fase":"komende fase"}</span>`:""}<span class="spacer"></span>
           <select id="actFilter" aria-label="Filter op status"><option value="">Alle statussen</option>${Object.entries(ACT_ST).map(([k,v])=>`<option value="${k}" ${S.actFilter===k?"selected":""}>${v}</option>`).join("")}</select></header>
-        <div class="phase-track">${track}</div>
         ${gate}
-        <div class="acts-wrap"><table class="acts"><colgroup><col style="width:112px"><col><col style="width:184px"><col style="width:124px"><col style="width:30px"></colgroup><thead><tr><th>Status</th><th>Omschrijving</th><th>Behandelaar</th><th>Deadline</th><th></th></tr></thead>
+        <div class="acts-wrap"><table class="acts"><colgroup><col style="width:112px"><col><col style="width:184px"><col style="width:96px"><col style="width:30px"></colgroup><thead><tr><th>Status</th><th>Activiteit</th><th>Behandelaar</th><th>Deadline</th><th></th></tr></thead>
           <tbody>${actRows||`<tr><td colspan="5" class="small">Geen activiteiten${S.actFilter?" met deze status":" in deze fase"}.</td></tr>`}</tbody></table></div>
-        ${missingStd(p,sel)?`<div class="gate"><span>Deze fase wijkt af van de standaardwerkwijze.</span><button class="btn" type="button" data-act="syncStd">Standaardstappen bijwerken</button></div>`:""}
+        ${missingStd(p,sel)&&canEditHead()?`<div class="gate"><span>Deze fase wijkt af van de standaardwerkwijze.</span><button class="btn" type="button" data-act="syncStd">Standaardstappen bijwerken</button></div>`:""}
         <form class="addact" id="addAct" ${canEditHead()?"":"hidden"}><input class="grow" id="naTitle" placeholder="Activiteit toevoegen aan ${esc(PHASES[sel].label)}" aria-label="Nieuwe activiteit"><select id="naRole" aria-label="Rol">${ROLES.map(r=>`<option>${r}</option>`).join("")}</select><button class="btn" type="submit">Toevoegen</button></form>
       </section>
       ${isAdmin()?`<div id="delZone"><button class="btn danger" type="button" data-act="del">Project verwijderen</button></div>`:""}
+      <div class="small">Laatst bijgewerkt ${p.updatedAt?fmtDT(p.updatedAt):"—"}${p.updatedBy?" door "+esc(p.updatedBy):""}</div>
     </div>
     <aside class="panelbox log">
       <header><h2>Logboek</h2></header>
@@ -929,6 +986,7 @@ document.addEventListener("click",async e=>{
   if(t.dataset.section){S.section=t.dataset.section;put(sessionStorage,"pb-section",S.section);S.phaseFilter=null;openProject(null);return}
   if(t.dataset.task){S.taskProj=t.dataset.task;render();return}
   if(t.dataset.toggle){const id=t.dataset.toggle;S.inboxOpen.has(id)?S.inboxOpen.delete(id):S.inboxOpen.add(id);render();return}
+  if(t.dataset.editdue){S.editDue=t.dataset.editdue;render();setTimeout(()=>{const i=$("#dueEdit");if(i){i.focus();try{i.showPicker&&i.showPicker()}catch(e){}}},20);return}
   if(t.dataset.selphase!==undefined){S.selPhase=+t.dataset.selphase;render();return}
   if(t.dataset.logtab){S.logTab=t.dataset.logtab;render();return}
   const p=proj(S.openId);
@@ -971,6 +1029,7 @@ document.addEventListener("keydown",e=>{
   if((e.key==="Enter"||e.key===" ")&&e.target.matches("[data-task]")){e.preventDefault();S.taskProj=e.target.dataset.task;render()}
   if(e.key==="Escape"&&S.taskProj){S.taskProj=null;$("#taskWrap")?.remove();render()}
   if(e.key==="Escape"&&S.newOpen)closeNew();
+  if(e.key==="Escape"&&S.editDue){S.editDue=null;render()}
 });
 document.addEventListener("input",e=>{if(e.target.id==="q"){S.q=e.target.value;renderOvBody()}});
 document.addEventListener("change",async e=>{
@@ -988,6 +1047,7 @@ document.addEventListener("change",async e=>{
   const p=proj(S.openId);
   if(t.dataset.af&&p){
     const aid=t.closest("tr").dataset.aid;
+    if(t.dataset.af==="due")S.editDue=null;
     const patch=t.dataset.af==="status"?{status:t.value,doneAt:t.value==="afgerond"?todayStr():""}:t.dataset.af==="due"?{due:t.value}:{owner:t.value.trim()};
     if(await saveActs(p,(p.acts||[]).map(a=>a.id===aid?{...a,...patch}:a))){S.selPhase=null;render()}
   }
