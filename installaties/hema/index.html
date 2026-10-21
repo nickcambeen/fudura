@@ -454,9 +454,12 @@ function bouwPvDak(poly, h){ while(PVDAK.children.length) PVDAK.remove(PVDAK.chi
   let wLad = WN; try{ const w = wandOp(PVS.s); if(w !== null) wLad = w; }catch(e){}
   const sk = wp(PVS.s, 0), sAl = sk.clone().sub(B0).dot(U), top = B0.clone().addScaledVector(U, sAl).addScaledVector(N, wLad - 0.02);
   const lad = M(0xb9bfc3, {metalness: 0.8, roughness: 0.35}); const LG = new THREE.Group(); LG.position.copy(top); LG.rotation.y = YAW; PVDAK.add(LG);
-  const yv = 1.95, hv = h + 0.3 - yv;   // over de looproute heen (vrije hoogte ± 1,95 m)
-  box(LG, 0.5, hv, 0.12, lad, 0, yv + hv/2, 0.1); box(LG, 0.55, hv, 0.03, M(0x9aa3a8, {metalness: 0.6}), 0, yv + hv/2, 0.18);   // verticaal langs de gevel tot goothoogte van de skid
-  box(LG, 0.5, 0.12, 2.2, lad, 0, h + 0.35, -1.0); { const lz = Math.max(0.4, (PVS.n - 2.525) - wLad + 0.4); box(LG, 0.36, 0.08, lz, lad, 0, yv, lz/2); box(LG, 0.38, 0.02, lz, M(0x9aa3a8, {metalness: 0.6}), 0, yv + 0.06, lz/2); }   // horizontaal de skid in (dia: DC op ± 0,9 m)
+  // route (Nick): van de dakrand ± 6 m naast de skid verticaal omlaag, op halve hoogte horizontaal langs de gevel, dan verticaal omlaag naar de skid
+  const yv = 1.95, ym = Math.max(yv + 1.5, h*0.45), xo = -6.0, dek = M(0x9aa3a8, {metalness: 0.6});
+  const vert = (x, y0, y1) => { const hh = y1 - y0; box(LG, 0.5, hh, 0.12, lad, x, y0 + hh/2, 0.1); box(LG, 0.55, hh, 0.03, dek, x, y0 + hh/2, 0.18); };
+  vert(xo, ym - 0.25, h + 0.3); vert(0, yv, ym + 0.25);
+  box(LG, Math.abs(xo) + 0.5, 0.5, 0.12, lad, xo/2, ym, 0.1); box(LG, Math.abs(xo) + 0.55, 0.55, 0.03, dek, xo/2, ym, 0.18);                      // horizontaal langs de gevel
+  box(LG, 0.5, 0.12, 2.2, lad, xo, h + 0.35, -1.0); { const lz = Math.max(0.4, (PVS.n - 2.525) - wLad + 0.4); box(LG, 0.36, 0.08, lz, lad, 0, yv, lz/2); box(LG, 0.38, 0.02, lz, M(0x9aa3a8, {metalness: 0.6}), 0, yv + 0.06, lz/2); }   // horizontaal de skid in (dia: DC op ± 0,9 m)
   PVSPR = sprite('PV op dak · ' + pos.length + ' × 535 Wp', B0.clone().addScaledVector(U, -25).addScaledVector(W, 20).add(V(0, h + 3, 0)), 0.8, '#d4a017');
   { let sp = $t('pvInfo'); if(!sp){ sp = document.createElement('div'); sp.id = 'pvInfo'; $t('bagInfo').after(sp); sp.className = 'cfgInfo'; } sp.textContent = `PV-dak: ${pos.length} panelen geplaatst`; } renderer.shadowMap.needsUpdate = true; vuil(6); }
 
