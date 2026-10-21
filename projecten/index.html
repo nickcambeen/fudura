@@ -431,6 +431,9 @@ header.top .sub{display:none}
 .fields.compact{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
 .side{padding:6px}
 .side button{padding:7px 10px}
+
+.aschip{background:#fff1c7;color:#6b4d00;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+header.top .asWho select{border-color:rgba(255,255,255,.3)}
 </style>
 </head>
 <body>
@@ -667,7 +670,7 @@ function personOptions(role,cur,emptyLabel){
 }
 function headerHTML(){
   return `<header class="top"><div><div class="brand">Fudura</div><h1>Projectmanagement systeem</h1><div class="sub">Batterijsystemen op LS · team Project Engineering &amp; Realisatie</div></div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${personaSelect()}${realAdmin()?"":`<span class="small">${esc(S.me)} · ${esc(S.role)}</span>`}<button class="btn" type="button" data-act="logout">Afmelden</button>${isAdmin()?`<button class="btn primary" type="button" data-act="new">+ Nieuw project</button>`:""}</div></header>`;
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${personaSelect()}${viewingAs()?`<span class="aschip" title="Wat je afvinkt of wijzigt wordt echt opgeslagen">${esc(S.role)} · wijzigingen worden echt opgeslagen</span><button class="btn" type="button" data-act="backToAdmin">Terug naar beheerder</button>`:""}${realAdmin()?"":`<span class="small">${esc(S.me)} · ${esc(S.role)}</span>`}<button class="btn" type="button" data-act="logout">Afmelden</button>${isAdmin()?`<button class="btn primary" type="button" data-act="new">+ Nieuw project</button>`:""}</div></header>`;
 }
 /* ---------- wie doet wat ---------- */
 /* klanttaken (bv. offerte getekend) volgt de accountmanager op */
@@ -893,7 +896,7 @@ function render(){
   if(!S.code)return;
   const app=$("#app"),ae=document.activeElement,focusId=ae?.id,selStart=ae?.selectionStart;
   const main=S.openId?dashHTML(proj(S.openId)):S.section==="inbox"?inboxHTML():overviewHTML();
-  app.innerHTML=`${headerHTML()}${viewingAs()?`<div class="asbar">Je bekijkt het systeem als <b>${esc(S.me)}</b> (${esc(S.role)}). Wat je afvinkt of wijzigt wordt echt opgeslagen. <button class="btn" type="button" data-act="backToAdmin">Terug naar beheerder</button></div>`:""}${banner()}<div class="layout">${navHTML()}<main class="main">${main}</main></div>`;
+  app.innerHTML=`${headerHTML()}${banner()}<div class="layout">${navHTML()}<main class="main">${main}</main></div>`;
   const tm=$("#taskWrap");if(S.taskProj){const tp=proj(S.taskProj);if(tp){if(tm)tm.innerHTML=taskModalHTML(tp);else{const m=document.createElement("div");m.id="taskWrap";m.innerHTML=taskModalHTML(tp);document.body.appendChild(m)}}}
   if(focusId){const el=document.getElementById(focusId);if(el&&el.tagName!=="BUTTON"){el.focus();try{if(selStart!=null)el.setSelectionRange(selStart,selStart)}catch(e){}}}
 }
