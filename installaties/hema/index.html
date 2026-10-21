@@ -660,42 +660,56 @@ function bouwMaat(){
     return r; };
   const lijnM = k => new THREE.LineBasicMaterial({color: k, depthTest: false});
   const rect = (r, kleur, y) => { const pts = [[r.s0, r.n0], [r.s1, r.n0], [r.s1, r.n1], [r.s0, r.n1], [r.s0, r.n0]].map(([a, b]) => wp(a, b).setY(y || 0.08)); const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lijnM(kleur)); l.renderOrder = 9; VRIJ.add(l); };
-  const lab = (txt, a, b, kleur, k) => { const sp = sprite(txt, wp(a, b).setY(0.6), k || 0.42, kleur); const i = LABELS.indexOf(sp); if(i >= 0) LABELS.splice(i, 1); scene.remove(sp); sp.visible = true; VRIJ.add(sp); };
-  const maat = (a0, b0, a1, b1, kleur) => { const p0 = wp(a0, b0).setY(0.12), p1 = wp(a1, b1).setY(0.12); const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([p0, p1]), lijnM(kleur)); l.renderOrder = 9; VRIJ.add(l);
-    const d = Math.hypot(a1 - a0, b1 - b0); lab(Math.round(d*1000) + ' mm', (a0 + a1)/2, (b0 + b1)/2, kleur, 0.36); return d; };
+  const lab = (txt, a, b, kleur, k) => { const sp = sprite(txt, wp(a, b).setY(0.5), k || 0.3, kleur); const i = LABELS.indexOf(sp); if(i >= 0) LABELS.splice(i, 1); scene.remove(sp); sp.visible = true; VRIJ.add(sp); };
+  // maatlijn met pijlpunten (dun, klein label)
+  const maat = (a0, b0, a1, b1, kleur, y) => { const yy = y || 0.15, p0 = wp(a0, b0).setY(yy), p1 = wp(a1, b1).setY(yy), d = p1.clone().sub(p0), L = d.length(); if(L < 0.05) return 0; d.normalize();
+    const zij = V(-d.z, 0, d.x), k = Math.min(0.18, L/4), pts = [p0, p1,
+      p0, p0.clone().addScaledVector(d, k).addScaledVector(zij, k*0.5), p0, p0.clone().addScaledVector(d, k).addScaledVector(zij, -k*0.5),
+      p1, p1.clone().addScaledVector(d, -k).addScaledVector(zij, k*0.5), p1, p1.clone().addScaledVector(d, -k).addScaledVector(zij, -k*0.5)];
+    const l = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), lijnM(kleur)); l.renderOrder = 9; VRIJ.add(l);
+    lab(Math.round(L*1000) + '', (a0 + a1)/2, (b0 + b1)/2, kleur, 0.24); return L; };
   const zone = (cs, cn, ls, ln) => ({s0: cs - ls/2, s1: cs + ls/2, n0: cn - ln/2, n1: cn + ln/2});
-  // lichamen
   const eosB = omhul(ASSET.eos, 0.5), evB = omhul(ASSET.ev, 0.3), pvB = omhul(ASSET.pv, 0.35), nsaB = omhul(ASSET.nsa, 0.3), zvkB = omhul(ASSET.zvk, 0.5);
-  // zones (dia 35: EOS 7575 × 4070; dia 43: DC-unit 3900 × 2980; dia 46: PV 6450 × 3200)
-  const zE = {s0: (eosB.s0 + eosB.s1)/2 - 7.575/2, s1: (eosB.s0 + eosB.s1)/2 + 7.575/2, n0: eosB.n0 - 1.0, n1: eosB.n0 - 1.0 + 4.07};   // dia 35: 1000 achter, rest (incl. 1650 deurzwaai) voor
+  const zE = {s0: (eosB.s0 + eosB.s1)/2 - 7.575/2, s1: (eosB.s0 + eosB.s1)/2 + 7.575/2, n0: eosB.n0 - 1.0, n1: Math.max(eosB.n0 - 1.0 + 4.07, eosB.n1 + 1.65)};   // dia 35: 1000 achter, 1650 voor (deurzwaai)
   const zD = zone((evB.s0 + evB.s1)/2, (evB.n0 + evB.n1)/2 + 0.6, 2.98, 3.9);
   const zP = zone((pvB.s0 + pvB.s1)/2, (pvB.n0 + pvB.n1)/2, 3.2, 6.45);
-  rect(zE, 0x2e9e4f); rect(zD, 0x1f7cc4); rect(zP, 0xd4a017);
-  lab('EOS-zone 7575 × 4070', (zE.s0 + zE.s1)/2, zE.n0 + 0.35, '#2e9e4f'); lab('DC-unit-zone 2980 × 3900', (zD.s0 + zD.s1)/2, zD.n0 + 0.35, '#1f7cc4'); lab('PV-zone 3200 × 6450', (zP.s0 + zP.s1)/2, zP.n0 + 0.4, '#d4a017');
-  // hekgrenzen (zie hekwerk): rokershokzijde s 0,95, trailerzijde n 10,3, wegzijde s = 18,35 − 0,025·n
-  const hS0 = 0.95, hN1 = 10.3, hSE = n => 18.35 - 0.025*n;
-  const C = [], ok = (t, v) => C.push((v ? '✅ ' : '❌ ') + t);
-  const mm = d => Math.round(d*1000) + ' mm';
-  // EOS: afstanden lichaam → zone (eis 700 opzij, 1000 achter, 1650 voor), en vrij van andere lichamen
-  const eV = eosB.n1 - zE.n1 < 0 ? zE.n1 - eosB.n1 : 0;
-  ok(`EOS opzij ${mm(eosB.s0 - zE.s0)} / ${mm(zE.s1 - eosB.s1)} (eis ≥ 700)`, eosB.s0 - zE.s0 > 0.69 && zE.s1 - eosB.s1 > 0.69);
-  ok(`EOS achter (gevelzijde) ${mm(eosB.n0 - zE.n0)} (eis ≥ 1000)`, eosB.n0 - zE.n0 > 0.99);
-  ok(`EOS voor (deuren) ${mm(zE.n1 - eosB.n1)} (eis ≥ 1650 incl. deurzwaai)`, zE.n1 - eosB.n1 > 1.6);
+  const rectD = (r, kleur) => { const pts = []; const hoek = [[r.s0, r.n0], [r.s1, r.n0], [r.s1, r.n1], [r.s0, r.n1]]; for(let i = 0; i < 4; i++){ const [a0, b0] = hoek[i], [a1, b1] = hoek[(i + 1) % 4]; const L = Math.hypot(a1 - a0, b1 - b0), n = Math.floor(L/0.3);
+      for(let k = 0; k < n; k += 2){ pts.push(wp(a0 + (a1 - a0)*k/n, b0 + (b1 - b0)*k/n).setY(0.07), wp(a0 + (a1 - a0)*(k + 1)/n, b0 + (b1 - b0)*(k + 1)/n).setY(0.07)); } }
+    const l = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), lijnM(kleur)); l.renderOrder = 8; VRIJ.add(l); };
+  rectD(zE, 0x2e9e4f); rectD(zD, 0x1f7cc4); rectD(zP, 0xd4a017);
+  const hS0 = 0.95, hN1 = 10.3, hSE = n => 18.35 - 0.025*n, gevel = WN;
+  const C = [], ok = (t, v) => C.push((v ? '✅ ' : '❌ ') + t), mm = d => Math.round(d*1000) + ' mm';
   const over = (a, b) => Math.min(a.s1, b.s1) - Math.max(a.s0, b.s0) > 0.02 && Math.min(a.n1, b.n1) - Math.max(a.n0, b.n0) > 0.02;
-  ok('EOS-zone vrij van ZVK / NSA / PV / DC-unit', ![zvkB, nsaB, pvB, evB].some(b => over(zE, b)));
-  ok('DC-unit-zone vrij van ZVK / EOS / NSA', ![zvkB, eosB, nsaB].some(b => over(zD, b)));
-  ok('PV-zone vrij van NSA / ZVK / EOS', ![nsaB, zvkB, eosB].some(b => over(zP, b)));
-  ok(`EOS-zone binnen het hek (trailerzijde ${mm(hN1 - zE.n1)})`, zE.n1 <= hN1 + 0.01 && zE.s0 >= hS0);
-  ok(`DC-unit-zone binnen het hek (wegzijde ${mm(hSE(zD.n1) - zD.s1)}, trailerzijde ${mm(hN1 - zD.n1)})`, zD.s1 <= hSE(zD.n1) + 0.01 && zD.n1 <= hN1 + 0.01);
-  ok(`PV-zone binnen het hek (rokershokzijde ${mm(zP.s0 - hS0)})`, zP.s0 >= hS0 - 0.01);
-  const gevel = WN; ok(`looproute PV-zone ↔ gevel ${mm(zP.n0 - gevel)} (dia 46: 2000)`, zP.n0 - gevel > 1.95);
-  ok(`EOS-zone ↔ DC-unit-zone: overlap ${mm(Math.max(0, zE.s1 - zD.s0))} (dia 43: vrije ruimtes mogen ± 1 m gecombineerd)`, zE.s1 - zD.s0 < 1.05);
-  // maatlijnen
-  maat(zE.s0, zE.n1 + 0.3, zE.s1, zE.n1 + 0.3, '#2e9e4f'); maat(zE.s0 - 0.3, zE.n0, zE.s0 - 0.3, zE.n1, '#2e9e4f');
-  maat((eosB.s0 + eosB.s1)/2, eosB.n1, (eosB.s0 + eosB.s1)/2, zE.n1, '#c0281f'); maat((eosB.s0 + eosB.s1)/2, zE.n0, (eosB.s0 + eosB.s1)/2, eosB.n0, '#c0281f');
-  maat(zP.s0, zP.n0 - 0.0, zP.s0, gevel, '#c0281f'); maat(zD.s1, (zD.n0 + zD.n1)/2, hSE((zD.n0 + zD.n1)/2), (zD.n0 + zD.n1)/2, '#c0281f');
-  maat(eosB.s1, (eosB.n0 + eosB.n1)/2, zvkB.s0 > eosB.s1 ? zvkB.s0 : evB.s0, (eosB.n0 + eosB.n1)/2, '#c0281f');
-  maat(hSE(20) - 4.6, 20, hSE(20) - 0.3, 20, '#d4a017'); lab('brandweerstrook', hSE(20) - 2.4, 22, '#b8860b', 0.36);
+  const BOD = {EOS: eosB, 'DC-unit': evB, PV: pvB, NSA: nsaB, ZVK: zvkB}, botst = (z, nietVan) => Object.entries(BOD).filter(([k, b]) => !nietVan.includes(k) && over(z, b)).map(([k]) => k);
+  ok(`EOS opzij ${mm(eosB.s0 - zE.s0)} / ${mm(zE.s1 - eosB.s1)} (eis ≥ 700)`, eosB.s0 - zE.s0 > 0.69 && zE.s1 - eosB.s1 > 0.69);
+  ok(`EOS achter ${mm(eosB.n0 - zE.n0)} (eis ≥ 1000)`, eosB.n0 - zE.n0 > 0.99);
+  ok(`EOS voor (deurzijde) ${mm(zE.n1 - eosB.n1)} (eis ≥ 1650)`, zE.n1 - eosB.n1 > 1.64);
+  { const b = botst(zE, ['EOS']); ok('EOS-zone vrij' + (b.length ? ' — raakt ' + b.join(', ') : ''), !b.length); }
+  { const b = botst(zD, ['DC-unit']); ok('DC-unit-zone vrij' + (b.length ? ' — raakt ' + b.join(', ') : ''), !b.length); }
+  { const b = botst(zP, ['PV']); ok('PV-zone vrij' + (b.length ? ' — raakt ' + b.join(', ') : ''), !b.length); }
+  ok(`EOS-zone binnen het hek (${mm(hN1 - zE.n1)} tot hek)`, zE.n1 <= hN1 + 0.01 && zE.s0 >= hS0);
+  ok(`DC-unit-zone binnen het hek (${mm(hSE(zD.n1) - zD.s1)} wegzijde, ${mm(hN1 - zD.n1)} trailerzijde)`, zD.s1 <= hSE(zD.n1) + 0.01 && zD.n1 <= hN1 + 0.01);
+  ok(`PV-zone binnen het hek (${mm(zP.s0 - hS0)} tot hek)`, zP.s0 >= hS0 - 0.01);
+  ok(`looproute PV-zone ↔ gevel ${mm(zP.n0 - gevel)} (dia 46: ≥ 2000)`, zP.n0 - gevel > 1.95);
+  ok(`EOS-zone ↔ DC-unit-zone overlap ${mm(Math.max(0, zE.s1 - zD.s0))} (dia 43: max ± 1000 gecombineerd)`, zE.s1 - zD.s0 < 1.05);
+  // afstanden tussen alle componenten binnen het hek: per component naar de dichtstbijzijnde buur / hek / gevel in 4 richtingen
+  const kleur = '#c0281f', gedaan = new Set();
+  for(const [nm, b] of Object.entries(BOD)){ const ms = (b.s0 + b.s1)/2, mn = (b.n0 + b.n1)/2;
+    lab(nm, ms, mn, '#17212a', 0.26);
+    const kand = { '+s': [[hSE(mn), 'hek']], '-s': [[hS0, 'hek']], '+n': [[hN1, 'hek']], '-n': [[gevel, 'gevel']] };
+    for(const [k2, o] of Object.entries(BOD)){ if(k2 === nm) continue;
+      if(o.n0 < mn && o.n1 > mn){ if(o.s0 >= b.s1 - 0.05) kand['+s'].push([o.s0, k2]); if(o.s1 <= b.s0 + 0.05) kand['-s'].push([o.s1, k2]); }
+      if(o.s0 < ms && o.s1 > ms){ if(o.n0 >= b.n1 - 0.05) kand['+n'].push([o.n0, k2]); if(o.n1 <= b.n0 + 0.05) kand['-n'].push([o.n1, k2]); } }
+    const pak = (lst, max) => lst.reduce((a, c) => max ? (c[0] < a[0] ? c : a) : (c[0] > a[0] ? c : a));
+    const ps = pak(kand['+s'], true), ms2 = pak(kand['-s'], false), pn = pak(kand['+n'], true), mn2 = pak(kand['-n'], false);
+    const teken = (key, f) => { if(gedaan.has(key)) return; gedaan.add(key); f(); };
+    if(ps[0] - b.s1 < 12) teken([nm, ps[1], 's'].sort().join(), () => maat(b.s1, mn, ps[0], mn, kleur));
+    if(b.s0 - ms2[0] < 12) teken([nm, ms2[1], 's'].sort().join() + (ms2[1] === 'hek' ? nm : ''), () => maat(ms2[0], mn, b.s0, mn, kleur));
+    if(pn[0] - b.n1 < 12) teken([nm, pn[1], 'n'].sort().join() + (pn[1] === 'hek' ? nm : ''), () => maat(ms, b.n1, ms, pn[0], kleur));
+    if(b.n0 - mn2[0] < 12) teken([nm, mn2[1], 'n'].sort().join() + (mn2[1] === 'gevel' ? nm : ''), () => maat(ms, mn2[0], ms, b.n0, kleur)); }
+  // maten van de zones zelf (klein, langs de rand)
+  maat(zE.s0, zE.n1 + 0.25, zE.s1, zE.n1 + 0.25, '#2e9e4f', 0.1); maat(zE.s0 - 0.25, zE.n0, zE.s0 - 0.25, zE.n1, '#2e9e4f', 0.1);
+  maat(zP.s0 - 0.2, zP.n0, zP.s0 - 0.2, zP.n1, '#b8860b', 0.1); maat(zD.s0, zD.n1 + 0.2, zD.s1, zD.n1 + 0.2, '#1f7cc4', 0.1);
   let el = $t('maatInfo'); if(!el){ el = document.createElement('div'); el.id = 'maatInfo'; el.className = 'cfgInfo'; $t('tVrij').closest('label').after(el); }
   el.innerHTML = '<b>Controle veiligheidsafstanden</b><br>' + C.join('<br>'); renderer.shadowMap.needsUpdate = true; vuil(3); }
 
