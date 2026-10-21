@@ -516,7 +516,7 @@ const HEK = new THREE.Group(); scene.add(HEK);
   { const s0 = 0.95, n1 = 10.3,                                        // hek rokershokzijde op Nicks lijn (± 1,15 m verder dan eerst)
                                             // kopse kant = bestaand hek aan de kant van het rokershok blijft staan
     sE = fs(n1), gm0 = 11.19 - 1.5, gm1 = 11.19 + 1.5, vd = 13.95;                                    // vluchtdeur 2 direct naast de poort gaas2 = true;
-    seg(wp(s0, -1.5), wp(s0, 0.4), 'gaas'); seg(wp(s0, 1.6), wp(s0, n1), 'gaas');          // vluchtdeur 1 in de looproute langs de gevel                                   // kopse kant (vluchtdeur 1 bij n 8,5)
+    seg(wp(s0, -1.5), wp(s0, 0.4), 'gaas'); seg(wp(s0, 1.6), wp(s0, 8.75), 'gaas'); seg(wp(s0, 9.95), wp(s0, n1), 'gaas');          // vluchtdeur 1 in de looproute langs de gevel                                   // kopse kant (vluchtdeur 1 bij n 8,5)
     seg(wp(s0, n1), wp(gm0, n1), 'gaas'); seg(wp(gm1, n1), wp(vd - 0.6, n1), 'gaas'); seg(wp(vd + 0.6, n1), wp(sE, n1), 'gaas'); gaas2 = false;
     const pg = new THREE.Group(); pg.position.copy(wp(11.19, n1)); pg.rotation.y = YAW; HEK.add(pg);
     for(const x of [-1.5, 1.5]) box(pg, 0.1, 2.2, 0.1, zink, x, 1.1, 0);
@@ -534,7 +534,7 @@ const HEK = new THREE.Group(); scene.add(HEK);
       box(d, 0.85, 0.04, 0.04, M(0xc8102e, {roughness: 0.4}), 0, 1.0, -0.09); for(const x of [-0.42, 0.42]) box(d, 0.04, 0.04, 0.08, M(0xc8102e), x, 1.0, -0.05);   // panieksluiting binnenzijde
       plak(d, 0.6, 0.15, bord, 0, 2.48, 0.03); plak(d, 0.6, 0.15, bord, 0, 2.48, -0.03, Math.PI);
       d.traverse(o => { if(o.isMesh) o.userData.info = '<b>Vluchtdeur</b> 1 m, draait naar buiten, panieksluiting aan de binnenzijde (vrij uitgang zonder sleutel) · bord NOODUITGANG'; }); };
-    vluchtdeur(wp(s0, 1.0), YAW - Math.PI/2); vluchtdeur(wp(vd, n1), YAW);
+    vluchtdeur(wp(s0, 1.0), YAW - Math.PI/2); vluchtdeur(wp(s0, 9.35), YAW - Math.PI/2); vluchtdeur(wp(vd, n1), YAW);
     // looppaden (dia 46, rood): langs het hek aan de rokershokzijde en de trailerzijde, plus 2 m looproute tussen de PV-ruimte en de gevel
     const kl = ctex(128, 128, (c, W, Hh) => { c.fillStyle = '#9a5a4a'; c.fillRect(0, 0, W, Hh); c.strokeStyle = '#7d4538'; c.lineWidth = 3; for(let y = 0; y <= Hh; y += 16){ c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); for(let x = (y/16 % 2) ? 0 : 16; x <= W; x += 32){ c.beginPath(); c.moveTo(x, y); c.lineTo(x, y + 16); c.stroke(); } } });
     kl.wrapS = kl.wrapT = THREE.RepeatWrapping;
