@@ -309,7 +309,7 @@ function dispenser(naam, pos, nr){ const g = asset(naam, pos, `<b>Dispenser ${nr
   for(const s of [-1, 1]){ const x = s*0.26; box(g, 0.08, 0.2, 0.12, M(0x2a2c2f), x, y0 + 0.95, 0.05); box(g, 0.05, 0.12, 0.1, M(0x111214), x, y0 + 0.9, 0.12);       // holster + stekker
     kabel(g, [V(s*0.15, y0 + 1.7, -0.1), V(s*0.22, y0 + 2.05, -0.05), V(s*0.36, y0 + 1.9, 0.05), V(s*0.42, y0 + 1.1, 0.12), V(s*0.36, y0 + 0.55, 0.14), V(x, y0 + 0.82, 0.12)], 0.016, kab); }
   klikbaar(g, g.userData.info); sprite('dispenser ' + nr + ' · 240 kW', V(pos.x, 2.7, pos.z), 0.6, '#1f7cc4'); return g; }
-dispenser('d1', wp(11.3, 36.8), 1); dispenser('d2', wp(10.85, 43.8), 2);          // schets: in de trailervakken, 7 m h.o.h.
+dispenser('d1', wp(11.2, 41.5), 1); dispenser('d2', wp(11.0, 48.5), 2);   // direct na het NP-vlak van de poort          // schets: in de trailervakken, 7 m h.o.h.
 
 // ---------- 3. PV-omvormers: 5 × Huawei SUN2000-100KTL-M2 los opgesteld (schets): 1 + 2 op een frame bij de container, 3–5 aan de gevel ----------
 // groep 'pv' ligt op wp(0, 0) met lokaal x = s (langs de gevel) en z = n (van de gevel af)
@@ -358,7 +358,7 @@ dispenser('d1', wp(11.3, 36.8), 1); dispenser('d2', wp(10.85, 43.8), 2);        
 
 // ---------- 5. elektrische trekker met HEMA-oplegger in het laadvak naast dispenser 1, haaks op het hek zoals de wissellaadbakken (neus naar het hek, laadpoort bij de dispenser) ----------
 const TRUCK = new THREE.Group(); scene.add(TRUCK);
-{ const d = ASSET.d1.position, p = wp(13.9 - 6.3, 36.8 + 2.48); /* vak tussen dispenser 1 en 2; vóór dispenser 1 ligt de NP-zone van de poort */ TRUCK.position.copy(p); TRUCK.rotation.y = YAW; const T = new THREE.Group(); TRUCK.add(T);
+{ const d = ASSET.d1.position, p = wp(13.9 - 6.3, 41.5 + 2.48); /* vak tussen dispenser 1 en 2; vóór dispenser 1 ligt de NP-zone van de poort */ TRUCK.position.copy(p); TRUCK.rotation.y = YAW; const T = new THREE.Group(); TRUCK.add(T);
   const rood = M(0xd2141b, {roughness: 0.45}), witT = M(0xf5f5f2, {roughness: 0.4}), band = M(0x141516, {roughness: 0.85}), velg = M(0xb8bdc1, {metalness: 0.7, roughness: 0.3}), glas = M(0x1e2a33, {roughness: 0.1, metalness: 0.4});
   const wiel = (x, z) => { cyl(T, 0.52, 0.32, band, x, 0.52, z, 'z', 22); cyl(T, 0.3, 0.34, velg, x, 0.52, z, 'z', 12); };
   // trekker (cabine voorin richting +x), elektrisch: accupakketten tussen de assen, laadpoort rechts
@@ -432,9 +432,9 @@ const HEK = new THREE.Group(); scene.add(HEK);
       const ns = Math.floor(L/0.125), sp = new THREE.InstancedMesh(new THREE.BoxGeometry(0.025, H, 0.025), zink, ns);
       for(let i = 0; i < ns; i++){ mm.makeTranslation(0.06 + i*0.125, H/2 + 0.05, 0); sp.setMatrixAt(i, mm); } sp.castShadow = true; g.add(sp); }
     return g; };
-  const N0 = -40, A = wp(fs(N0), N0), B = wp(fs(26.7), 26.7), G1 = wp(fs(34.7), 34.7), C = wp(fs(NC), NC);                                       // loopt door langs de kopgevel (Cyclomedia)
+  const N0 = -40, A = wp(fs(N0), N0), B = wp(fs(29.2), 29.2), G1 = wp(fs(38.0), 38.0), C = wp(fs(NC), NC);                                       // loopt door langs de kopgevel (Cyclomedia)
   gaas2 = true; const g1 = seg(A, B, 'gaas'); gaas2 = false; seg(G1, C, 'spijl');
-  // vrijdragende schuifpoort ± 8 m (luchtfoto 2024: n 26,7–34,7), gesloten; staart schuift binnen langs het hek
+  // vrijdragende schuifpoort ± 8,8 m over de breedte van het NP-vlak (Nick, bovenaanzicht: n 29,2–38,0), gesloten; staart schuift binnen langs het hek
   { const D = G1.clone().sub(B), L = D.length(); D.normalize(); const g = new THREE.Group(); g.position.copy(B); g.rotation.y = Math.atan2(-D.z, D.x); HEK.add(g);
     for(const x of [0, L]) box(g, 0.14, H + 0.2, 0.14, zink, x, (H + 0.2)/2, 0);
     for(const x of [-0.3, -2.8]) { box(g, 0.12, 1.0, 0.12, zink, x, 0.5, 0.32); box(g, 0.3, 0.12, 0.25, matZwart, x, 0.28, 0.32); }          // geleidepalen met rolblokken
@@ -443,9 +443,9 @@ const HEK = new THREE.Group(); scene.add(HEK);
     for(let i = 0; i < ns; i++){ mm.makeTranslation(0.06 + i*0.125, 0.41 + (H - 0.4)/2, 0.2); sp.setMatrixAt(i, mm); } sp.castShadow = true; g.add(sp);
     for(let x = -3.4; x < 0; x += 0.6) box(g, 0.04, 0.04, 0.04, zink, x, 0.33, 0.2);                                                          // staart (contragewicht)
     box(g, 0.3, 0.4, 0.25, M(0x3b3f45), L + 0.4, 0.2, 0.3); cyl(g, 0.05, 0.08, M(0xf2a000, {emissive: 0xf2a000, emissiveIntensity: 0.5}), L, H + 0.25, 0, null, 12);   // aandrijving + oranje lamp
-    // NP-arcering zoals ingemeten op de luchtfoto 2024 (gedraaid vlak ± 5 × 8 m, ± 2 m binnen het hek)
+    // NP-arcering zoals Nick aangaf: ± 8,8 m langs het hek × ± 7,5 m diep, direct achter de poort
     const np = ctex(256, 256, (c, W, Hh) => { c.clearRect(0, 0, W, Hh); c.strokeStyle = 'rgba(255,255,255,0.9)'; c.lineWidth = 6; c.strokeRect(4, 4, W - 8, Hh - 8); c.beginPath(); c.moveTo(4, 4); c.lineTo(W - 4, Hh - 4); c.moveTo(W - 4, 4); c.lineTo(4, Hh - 4); c.stroke(); c.fillStyle = 'rgba(255,255,255,0.9)'; c.font = 'bold 60px Arial'; c.textAlign = 'center'; c.fillText('NP', W/2, Hh/2 + 70); });
-    const q = [[10.72, 26.5], [15.67, 25.15], [15.34, 32.74], [10.3, 34.48]].map(([a, b]) => wp(a, b)), qg = new THREE.BufferGeometry();
+    const q = [[9.8, 29.2], [fs(29.2) - 0.2, 29.2], [fs(38) - 0.2, 38.0], [9.8, 38.0]].map(([a, b]) => wp(a, b)), qg = new THREE.BufferGeometry();
     qg.setAttribute('position', new THREE.Float32BufferAttribute([q[0], q[1], q[2], q[0], q[2], q[3]].flatMap(p => [p.x, 0.04, p.z]), 3));
     qg.setAttribute('uv', new THREE.Float32BufferAttribute([0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0], 2));
     const pm = new THREE.Mesh(qg, new THREE.MeshBasicMaterial({map: np, transparent: true, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -6})); HEK.add(pm);
@@ -480,7 +480,7 @@ const HEK = new THREE.Group(); scene.add(HEK);
   // haag tussen hek en weg (Street View / Cyclomedia) en bomen bij de hoek
   let sd = 7; const rnd = () => (sd = (sd*16807) % 2147483647)/2147483647;
   const bm = [0x3d6528, 0x47722e, 0x557f36, 0x6a7a38].map(c => M(c, {roughness: 0.95})), bgeo = new THREE.IcosahedronGeometry(1, 1);
-  for(let k = 0; k < 4; k++){ const im = new THREE.InstancedMesh(bgeo, bm[k], 45); for(let i = 0; i < 45; i++){ let x = -N0 + 4 + rnd()*56; if(x + N0 > 25.5 && x + N0 < 36) x += 15; const r = 0.45 + rnd()*0.45;   // vrij voor de poort
+  for(let k = 0; k < 4; k++){ const im = new THREE.InstancedMesh(bgeo, bm[k], 45); for(let i = 0; i < 45; i++){ let x = -N0 + 4 + rnd()*56; if(x + N0 > 28.5 && x + N0 < 39) x += 15; const r = 0.45 + rnd()*0.45;   // vrij voor de poort
       mm.compose(V(x, r*0.8, -(0.7 + rnd()*1.3)), new THREE.Quaternion(), V(r, r*(0.9 + rnd()*0.6), r)); im.setMatrixAt(i, mm); } im.castShadow = true; g1.add(im); }
   const stam = M(0x5a4632, {roughness: 0.9});
   for(const [ds, dn] of [[3.5, -2], [5, 3], [2.5, 7.5], [-8, 6.5], [-16, 9.5]]){ const p = C.clone().addScaledVector(U, ds).addScaledVector(N, dn); const t = new THREE.Group(); t.position.copy(p); HEK.add(t);
