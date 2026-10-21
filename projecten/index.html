@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<title>Projectbord PER · Fudura</title>
+<title>Projectmanagement systeem · Fudura</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
@@ -13,7 +13,7 @@ html,body{margin:0}
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 [hidden]{display:none!important}
 
-/* Projectbord PER op de Fudura-site.
+/* Projectmanagement systeem op de Fudura-site.
    Layout: overzicht (bord / lijst / acties) met fasetellers; per project een dashboard met kopgegevens, faseactiviteiten en een kolom notities & contactmomenten. */
 :root{
   --bg:#ffffff; --surface:#ffffff; --sunk:#e8ecee; --line:#d4dadd;
@@ -225,7 +225,7 @@ aside.log{position:sticky;top:10px;max-height:calc(100vh - 20px);overflow-y:auto
 </style>
 </head>
 <body>
-<div class="wrap" id="app"><div class="notice"><strong>Projectbord laden…</strong></div></div>
+<div class="wrap" id="app"><div class="notice"><strong>Projectmanagement systeem laden…</strong></div></div>
 <div id="toast" class="toast" hidden></div>
 <script>
 /* ---------- backend (Supabase RPC, code wordt server-side gecontroleerd) ---------- */
@@ -311,7 +311,7 @@ function norm(x){return{...x,phase:Math.min(5,Math.max(0,+x.phase||0)),status:ST
 /* ---------- inloggen ---------- */
 function loginHTML(msg){
   return `<div class="login"><div class="login-box">
-    <h1>Projectbord PER</h1>
+    <h1>Projectmanagement systeem</h1>
     <p class="small">Voer de toegangscode in om de projecten van team PER te openen.</p>
     <form id="loginForm" autocomplete="off">
       <label class="field" for="lgCode"><span class="lbl">Toegangscode</span><input id="lgCode" class="mono codein" inputmode="numeric" maxlength="12" autocomplete="one-time-code" aria-describedby="lgMsg"></label>
@@ -376,7 +376,7 @@ function overviewHTML(){
   const pb=PHASES.map(ph=>{const l=S.projects.filter(p=>p.phase===ph.id);const bad=l.filter(p=>p.status==="bad"||isLate(p)).length;
     return `<button type="button" data-phasef="${ph.id}" aria-pressed="${S.phaseFilter===ph.id}"><span class="n">${l.length}</span><span class="l">${esc(ph.label)}</span><span class="alert">${ph.id<5&&bad?bad+" vertraagd":""}</span></button>`}).join("");
   return `
-  <header class="top"><div><h1>Projectbord PER</h1><div class="sub">Projecten van team Project Engineering &amp; Realisatie, per fase</div></div>
+  <header class="top"><div><h1>Projectmanagement systeem</h1><div class="sub">Projecten van team Project Engineering &amp; Realisatie, per fase</div></div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="small">${S.me?"Ingelogd als "+esc(S.me):""}</span><button class="btn" type="button" data-act="logout">Afmelden</button><button class="btn primary" type="button" data-act="new">+ Nieuw project</button></div></header>
   ${banner()}
   <nav class="phasebar" aria-label="Fases">${pb}</nav>
@@ -476,7 +476,7 @@ function dashHTML(p){
   const gate=sel===p.phase?`<div class="gate"><span>${blk?`<b class="late">Project gaat pas door na: ${esc(blk.title)}.</b> `:""}${p.phase<5?(openHere?`<b>${openHere}</b> activiteit${openHere>1?"en":""} nog open in deze fase.`:"Alle activiteiten in deze fase zijn afgerond."):"Project staat in de laatste fase."}</span>
      <span style="display:flex;gap:8px;flex-wrap:wrap">${p.phase>0?`<button class="btn" type="button" data-move="-1">← Terug naar ${esc(PHASES[p.phase-1].label)}</button>`:""}${p.phase<5?`<button class="btn ${openHere?"":"primary"}" type="button" data-move="1" ${blk?"disabled":""} title="${blk?"Eerst afronden: "+esc(blk.title):""}">Toewijzen fase ${esc(PHASES[p.phase+1].label)} →</button>`:""}</span></div>`:"";
   return `
-  <div class="crumb"><button class="btn" type="button" data-act="back">← Overzicht</button><span class="small">Projectbord PER / ${esc(p.nr||"project")}${p.updatedAt?` · laatst bijgewerkt ${fmtDT(p.updatedAt)}${p.updatedBy?" door "+esc(p.updatedBy):""}`:""}</span></div>
+  <div class="crumb"><button class="btn" type="button" data-act="back">← Overzicht</button><span class="small">Projectmanagement systeem / ${esc(p.nr||"project")}${p.updatedAt?` · laatst bijgewerkt ${fmtDT(p.updatedAt)}${p.updatedBy?" door "+esc(p.updatedBy):""}`:""}</span></div>
   ${banner()}
   <div class="dash-title"><h1>${esc(p.nr?p.nr+" – ":"")}${esc(p.name)}</h1><span class="pill ${st.cls}">${st.label}</span><span class="tag">${esc(PHASES[p.phase].long)}</span></div>
   <div class="dash">
