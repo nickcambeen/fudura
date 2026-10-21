@@ -83,6 +83,7 @@
     <label>Vrachtwagens bij de dispensers <input type="checkbox" id="tTruck" checked></label>
     <label>Trailers / wissellaadbakken (luchtfoto) <input type="checkbox" id="tVracht" checked></label>
     <label>Mega-rookworst op de gevel <input type="checkbox" id="tWorst"></label>
+    <label>Reuze tompoes op de ZVK <input type="checkbox" id="tTompoes" checked></label>
     <div id="bagInfo" class="cfgInfo">gebouwen laden…</div>
   </details>
   <details><summary>Componenten</summary>
@@ -647,6 +648,15 @@ function bootTrailers(img, bb){
   [bak, poot, opl, wiel, cab, ruit].forEach(o => { o.castShadow = true; o.receiveShadow = true; o.instanceMatrix.needsUpdate = true; o.userData.info = `<b>Wissellaadbakken / trailers</b> — automatisch herkend op de PDOK-luchtfoto en in 3D nagebouwd (${sw.length} wissellaadbakken, ${tl.length} trailers/trucks)<br>vrij gehouden: technisch terrein, NP-vlak bij de poort en de rijbaan naar de laadpalen`; VRACHT.add(o); KLIK.push(o); });
   VRACHT.visible = $t('tVracht').checked; $t('bagInfo').innerHTML += `<br>${sw.length} wissellaadbakken + ${tl.length} trailers/trucks nagebouwd van de luchtfoto`; renderer.shadowMap.needsUpdate = true; vuil(6); }
 
+// ---------- reuze HEMA-tompoes op de ZVK (op verzoek, aan/uit) ----------
+const TOMPOES = new THREE.Group(); TOMPOES.position.set(0, 3.04, 0); ASSET.zvk.add(TOMPOES);
+{ const deeg = M(0xd9a35a, {roughness: 0.8}), room = M(0xf6d34a, {roughness: 0.55}), roze = M(0xf28fb0, {roughness: 0.25}), L = 4.2, B = 1.7;
+  const laag = (h, m, y, inset) => { const o = box(TOMPOES, L - inset, h, B - inset, m, 0, y + h/2, 0); return o; };
+  laag(0.22, deeg, 0, 0); laag(0.95, room, 0.22, 0.12); laag(0.22, deeg, 1.17, 0); laag(0.14, roze, 1.39, 0.02);
+  for(let i = 0; i < 26; i++){ const x = (Math.random() - 0.5)*(L - 0.3), z = (Math.random() < 0.5 ? -1 : 1)*(B - 0.12)/2; box(TOMPOES, 0.12 + Math.random()*0.15, 0.09, 0.09, room, x, 0.2 + Math.random()*0.05, z*1.04, false); }   // uitpuilende room
+  plak(TOMPOES, 1.2, 0.3, lbl('HEMA', 240, 60, '#f28fb0', '#d2141b', 'bold 44px Arial'), 0, 1.54, 0, -Math.PI/2).rotation.x = -Math.PI/2;
+  TOMPOES.traverse(o => { if(o.isMesh){ o.castShadow = true; o.userData.tompoes = true; o.userData.info = '<b>Reuze HEMA-tompoes</b> — 4,2 m, roze geglazuurd. Niet aan de ZVK-deuren eten.'; KLIK.push(o); } }); }
+
 // ---------- easter egg: ergens ligt een HEMA-rookworst ----------
 { const g = new THREE.Group(); g.position.set(1.9, 3.04, -0.9); g.rotation.y = 0.7; ASSET.zvk.add(g);
   const worst = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.028, 12, 28, Math.PI*1.25), M(0x7a2f17, {roughness: 0.45, metalness: 0.05})); worst.rotation.x = Math.PI/2; worst.position.y = 0.03; g.add(worst);
@@ -759,7 +769,7 @@ window.addEventListener('blur', () => { for(const k in KO) KO[k] = false; });
 $t('pDicht').addEventListener('click', () => { $t('paneel').classList.add('dicht'); $t('pOpen').classList.add('toon'); });
 $t('pOpen').addEventListener('click', () => { $t('paneel').classList.remove('dicht'); $t('pOpen').classList.remove('toon'); });
 $t('tFoto').addEventListener('change', zetOnder); $t('rEsri').addEventListener('input', zetOnder); $t('tHek').addEventListener('change', e => { HEK.visible = e.target.checked; renderer.shadowMap.needsUpdate = true; vuil(3); });
-$t('tEsri').addEventListener('change', zetOnder); zetOnder(); $t('tWorst').addEventListener('change', e => { if(MEGA) MEGA.visible = e.target.checked; renderer.shadowMap.needsUpdate = true; vuil(3); }); $t('tVracht').addEventListener('change', e => { VRACHT.visible = e.target.checked; renderer.shadowMap.needsUpdate = true; vuil(3); });
+$t('tEsri').addEventListener('change', zetOnder); zetOnder(); $t('tTompoes').addEventListener('change', e => { TOMPOES.visible = e.target.checked; renderer.shadowMap.needsUpdate = true; vuil(3); }); $t('tWorst').addEventListener('change', e => { if(MEGA) MEGA.visible = e.target.checked; renderer.shadowMap.needsUpdate = true; vuil(3); }); $t('tVracht').addEventListener('change', e => { VRACHT.visible = e.target.checked; renderer.shadowMap.needsUpdate = true; vuil(3); });
 $t('tPvDak').addEventListener('change', e => { PVDAK.visible = e.target.checked; renderer.shadowMap.needsUpdate = true; vuil(3); });
 $t('tBag').addEventListener('change', e => { BAG.visible = e.target.checked; renderer.shadowMap.needsUpdate = true; vuil(3); });
 $t('tBagT').addEventListener('change', zetBagT);
