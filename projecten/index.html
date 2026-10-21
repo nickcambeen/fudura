@@ -406,6 +406,31 @@ tr.waiting td{color:var(--muted)}
 .urg-red .ib-row .dl{color:var(--bad)}
 .urg-orange .ib-row .dl{color:#a65f00}
 .ib-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* compacte bovenkant */
+header.top{padding:8px 14px;border-bottom-width:2px}
+header.top > div:first-child{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+header.top h1{font-size:19px}
+header.top .brand{margin:0;font-size:11px}
+header.top .sub{display:none}
+.asbar{padding:3px 10px;font-size:12px}
+.asbar .btn{padding:2px 8px;font-size:12px}
+.wrap{gap:8px;padding-block:10px 20px}
+.crumb{gap:6px}
+.crumb .small{font-size:11px}
+.dash-title{gap:4px 10px}
+.dash-title h1{font-size:18px}
+.plan{gap:4px}
+.pl-step{flex-direction:row;flex-wrap:wrap;align-items:baseline;gap:2px 6px;padding:3px 8px;border-top-width:2px}
+.pl-step .lbl{font-size:9.5px}
+.pl-step .v{font-size:13px}
+.pl-step .small{display:none}
+.pl-step.bad .small{display:inline;font-size:10.5px}
+.main .banner{padding:4px 10px;font-size:12px}
+.panelbox > header{gap:8px;justify-content:flex-start}
+.fields.compact{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+.side{padding:6px}
+.side button{padding:7px 10px}
 </style>
 </head>
 <body>
@@ -828,8 +853,9 @@ function dashHTML(p){
   <div class="dash">
     <div class="stack">
       <section class="panelbox">
-        <header><h2>Project &amp; klant</h2>${!canEditHead()?"":ed?`<span style="display:flex;gap:8px"><button class="btn" type="button" data-act="cancelHead">Annuleren</button><button class="btn primary" type="button" data-act="saveHead">Opslaan</button></span>`:`<button class="btn" type="button" data-act="editHead">Bewerken</button>`}</header>
-        <div class="fields">${HEAD.concat(CLIENT).map(f=>ed?fieldEdit(p,f):fieldView(p,f)).join("")}</div>
+        <header><h2>Project &amp; klant</h2>${ed?"":`<button class="btn ghost" type="button" data-act="toggleHead">${S.headOpen?"Minder tonen ▴":"Alle gegevens ▾"}</button>`}<span class="spacer"></span>${!canEditHead()?"":ed?`<span style="display:flex;gap:8px"><button class="btn" type="button" data-act="cancelHead">Annuleren</button><button class="btn primary" type="button" data-act="saveHead">Opslaan</button></span>`:`<button class="btn" type="button" data-act="editHead">Bewerken</button>`}</header>
+        ${ed||S.headOpen?`<div class="fields">${HEAD.concat(CLIENT).map(f=>ed?fieldEdit(p,f):fieldView(p,f)).join("")}</div>`
+      :`<div class="fields compact">${HEAD.concat(CLIENT).filter(f=>["owner","engineer","detail","drafter","client","loc"].includes(f[0])).map(f=>fieldView(p,f)).join("")}</div>`}
       </section>
       <section class="panelbox">
         <header><h2>Projectstatus ${esc(PHASES[sel].label)}</h2>
@@ -924,6 +950,7 @@ document.addEventListener("click",async e=>{
     case "logout":logout();break;
     case "new":openNew();break;
     case "editHead":S.editHead=true;render();break;
+    case "toggleHead":S.headOpen=!S.headOpen;render();break;
     case "cancelHead":S.editHead=false;render();break;
     case "saveHead":{if(!p)break;const data={};document.querySelectorAll("[data-h]").forEach(i=>data[i.dataset.h]=i.value.trim());
       if(!data.name){toast("Vul een projectnaam in");$("#h_name")?.focus();break}
