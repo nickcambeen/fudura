@@ -87,7 +87,7 @@
   <details><summary>Componenten</summary>
     <ul>
       <li><b>EOS</b>: 5 × Delta DELTerra C AIO 125 kW / 261 kWh met junction box (model uit de AIO-pagina) op stelconplaten — projectplan: 375 kW / 1290 kWh</li>
-      <li><b>PV</b> (ELIX ZN25-1423): 1.388 × Longi Hi-MO X10 535 Wp = 742,58 kWp, Van der Valk Pro+ oost/west op het dak; 5 × Huawei SUN2000-100KTL-M2 los opgesteld: 1 en 2 op een frame bij de container, 3 t/m 5 aan de gevel; DC via afgedekte kabelladder langs de gevel</li>
+      <li><b>PV</b> (ELIX ZN25-1423): 1.388 × Longi Hi-MO X10 535 Wp = 742,58 kWp, Van der Valk Pro+ oost/west op het dak; 5 × Huawei SUN2000-100KTL-M2 op een skid 5050 × 1800 × 2273 mm met zadeldak (3 voor, 2 achter, rug-aan-rug); DC via afgedekte kabelladder langs de gevel</li>
       <li><b>EV</b>: Sungrow IDC480E power unit 480 kW (900 × 2200 × 1380 mm, 1100 kg) + 2 × IDC480E luchtgekoelde dispenser 240 kW (430 × 1800 × 450 mm), elk 2 × CCS2 7 m</li>
       <li><b>ZVK</b> (klant, Kromwijk, bestaand): ZVK01 PV (5 × 200 A) en ZVK02 EV + EOS (800 / 630 / 80 / 16 A), gevoed uit 2 × 630 kVA</li>
       <li><b>EMS-veldkast</b>: Pegeo met EMS Groot (model uit de EMS-pagina) naast de ZVK</li>
@@ -325,27 +325,38 @@ function dispenser(naam, pos, nr){ const g = asset(naam, pos, `<b>Dispenser ${nr
   klikbaar(g, g.userData.info); sprite('dispenser ' + nr + ' · 240 kW', V(pos.x, 2.7, pos.z), 0.6, '#1f7cc4'); return g; }
 dispenser('d1', wp(11.05, 47.5), 1); dispenser('d2', wp(10.8, 57.1), 2);   // 9,6 m h.o.h.; per laadkabel een truck (4 vakken), vrije rijstrook langs de poort   // direct na het NP-vlak van de poort          // schets: in de trailervakken, 7 m h.o.h.
 
-// ---------- 3. PV-omvormers: 5 × Huawei SUN2000-100KTL-M2 los opgesteld (schets): 1 + 2 op een frame bij de container, 3–5 aan de gevel ----------
-// groep 'pv' ligt op wp(0, 0) met lokaal x = s (langs de gevel) en z = n (van de gevel af)
-{ const g = asset('pv', wp(0, 0), '<b>PV-omvormers — 5 × Huawei SUN2000-100KTL-M2</b> (schets 21-10)<br>1 en 2 op een verzinkt frame bij de container, 3 t/m 5 aan de gevel · 1035 × 700 × 365 mm, ±90 kg, 100 kW per omvormer<br>742,58 kWp: 1.388 × Longi Hi-MO X10 535 Wp (ELIX) · DC via kabelladder langs de gevel · AC 5 × VG-YMvKas 3×120+70 naar 5 × 200 A gG in de ZVK', YAW);
-  const wit = M(0xeef0ef, {roughness: 0.35}), grijs = M(0xc9ced2, {roughness: 0.45});
-  const ledT = ctex(256, 64, (c, W, H) => { c.fillStyle = '#121418'; c.beginPath(); c.ellipse(W/2, H/2, W/2 - 4, H/2 - 6, 0, 0, 7); c.fill(); c.fillStyle = '#3fe07a'; for(let k = 0; k < 4; k++){ c.beginPath(); c.arc(78 + k*34, H/2, 6, 0, 7); c.fill(); } });
-  const omv = (nr, sx, nz, rot, wand) => { const ig = new THREE.Group(); ig.position.set(sx, 1.35, nz); ig.rotation.y = rot; g.add(ig); if(wand) (g.userData.wand = g.userData.wand || []).push(ig);
-    rbox(ig, 0.98, 0.70, 0.30, 0.07, wit, 0, 0, 0.0); box(ig, 0.95, 0.62, 0.07, grijs, 0, 0, -0.18);                                          // huis + koellichaam
+// ---------- 3. PV-omvormerskid (dia 'PV opstelling'): frame 5050 × 1800 × 2273 mm, zadeldak, omvormers rug-aan-rug: 3 voor + 2 achter; dwars op de gevel ----------
+// lokaal x = van de gevel af (5050), z = langs de gevel (1800); DC komt via de kabelladder langs de gevel binnen, AC ondergronds in een sleuf naar de OVK/ZVK
+const PVS = {s: 4.2, n: 2.9};
+{ const g = asset('pv', wp(PVS.s, PVS.n), '<b>PV-omvormerskid — 5 × Huawei SUN2000-100KTL-M2</b> (dia "PV opstelling")<br>verzinkt frame 5050 × 1800 × 2273 mm met zadeldak, omvormers rug-aan-rug: 3 aan de voorzijde, 2 aan de achterzijde · 700 mm vrij rondom<br>1035 × 700 × 365 mm, ± 90 kg, 100 kW per omvormer · 742,58 kWp (1.388 × Longi 535 Wp, ELIX)<br>DC via de afgedekte kabelladder langs de gevel; AC ondergronds in een sleuf naar de OVK/ZVK (5 × 200 A gG)', YAW - Math.PI/2);
+  const wit = M(0xeef0ef, {roughness: 0.35}), grijs = M(0xc9ced2, {roughness: 0.45}), staal = M(0xa9b0b4, {roughness: 0.4, metalness: 0.8}), dak = M(0x6e767b, {roughness: 0.5, metalness: 0.6});
+  const L = 5.05, B = 1.8, H = 2.273;
+  // fundatie: 3 dwarsliggers op betonpoeren + 2 langsliggers
+  for(const x of [-L/2 + 0.1, 0, L/2 - 0.1]){ box(g, 0.14, 0.12, B, staal, x, 0.2, 0); for(const z of [-B/2 + 0.15, B/2 - 0.15]) box(g, 0.4, 0.14, 0.4, matBeton, x, 0.07, z); }
+  for(const z of [-B/2 + 0.15, B/2 - 0.15]) box(g, L, 0.1, 0.1, staal, 0, 0.3, z);
+  // middenframe: staanders + A-schoren aan de kopse kanten, regels voor de omvormers en de kabelgoot
+  for(const x of [-L/2 + 0.08, -0.85, 0.85, L/2 - 0.08]) box(g, 0.08, H - 0.45, 0.08, staal, x, 0.3 + (H - 0.45)/2, 0);
+  for(const x of [-L/2 + 0.08, L/2 - 0.08]) for(const sz of [-1, 1]){ const br = box(g, 0.06, 1.35, 0.06, staal, x, 0.95, sz*0.42); br.rotation.x = sz*0.6; }
+  for(const y of [0.62, 1.05, 1.78]) box(g, L, 0.06, 0.06, staal, 0, y, 0);
+  box(g, L - 0.1, 0.06, 0.36, M(0x9aa3a8, {metalness: 0.6, roughness: 0.4}), 0, 0.86, 0);                                   // kabelgoot (DC/AC)
+  // zadeldak (nok op 2273 mm)
+  for(const sz of [-1, 1]){ const p = box(g, L + 0.25, 0.03, 1.05, dak, 0, H - 0.22, sz*0.47); p.rotation.x = -sz*0.42; }
+  box(g, L + 0.25, 0.05, 0.06, dak, 0, H - 0.02, 0);
+  // omvormers
+  const ledT = ctex(256, 64, (c, W, Hh) => { c.fillStyle = '#121418'; c.beginPath(); c.ellipse(W/2, Hh/2, W/2 - 4, Hh/2 - 6, 0, 0, 7); c.fill(); c.fillStyle = '#3fe07a'; for(let k = 0; k < 4; k++){ c.beginPath(); c.arc(78 + k*34, Hh/2, 6, 0, 7); c.fill(); } });
+  const omv = (nr, x, kant) => { const ig = new THREE.Group(); ig.position.set(x, 1.42, kant*0.26); ig.rotation.y = kant > 0 ? 0 : Math.PI; g.add(ig);
+    rbox(ig, 0.98, 0.70, 0.30, 0.07, wit, 0, 0, 0.0); box(ig, 0.95, 0.62, 0.07, grijs, 0, 0, -0.18);
     for(let k = 0; k < 14; k++) box(ig, 0.012, 0.55, 0.06, M(0xa9aeb2, {metalness: 0.5}), -0.42 + k*0.065, 0, -0.19, false);
     plak(ig, 0.30, 0.075, ledT, 0, 0.04, 0.151, 0, true);
-    for(let k = 0; k < 2; k++) box(ig, 0.07, 0.07, 0.07, matZwart, -0.28 + k*0.56, -0.38, 0.04);                                                   // DC-schakelaars
-    for(let k = 0; k < 10; k++) cyl(ig, 0.012, 0.05, matZwart, -0.36 + k*0.06, -0.37, -0.04, null, 6);                                             // MC4
+    for(let k = 0; k < 2; k++) box(ig, 0.07, 0.07, 0.07, matZwart, -0.28 + k*0.56, -0.38, 0.04);
+    for(let k = 0; k < 10; k++) cyl(ig, 0.012, 0.05, matZwart, -0.36 + k*0.06, -0.37, -0.04, null, 6);
     plak(ig, 0.22, 0.04, lbl('SUN2000-100KTL', 220, 40, '#eef0ef', '#555', '20px Arial'), 0.3, 0.27, 0.151);
     plak(ig, 0.16, 0.16, lbl(String(nr), 64, 64, '#f2b400', '#1b2a36', 'bold 44px Arial'), -0.36, 0.22, 0.152);
-    if(wand){ box(ig, 0.9, 0.08, 0.04, matZink, 0, 0.25, -0.24); box(ig, 0.9, 0.08, 0.04, matZink, 0, -0.25, -0.24); }                           // wandbeugels
-    else { for(const x of [-0.42, 0.42]) box(ig, 0.07, 1.95, 0.07, matZink, x, -1.35 + 0.975, -0.27); for(const y of [-0.25, 0.25]) box(ig, 0.95, 0.05, 0.05, matZink, 0, y, -0.25); } };
-  omv(1, 4.7, 3.3, -Math.PI/2, false); omv(2, 4.7, 1.7, -Math.PI/2, false);                                                                           // frame, front naar het noordwesten
-  for(const x of [-0.42, 0.42]) for(const z of [1.7, 3.3]) box(g, 0.3, 0.12, 0.3, matBeton, 4.7 + 0.27, 0.06, z + x);                               // poeren
-  omv(3, 7.95, 0.30, 0, true); omv(4, 9.45, 0.30, 0, true); omv(5, 10.95, 0.30, 0, true);   // naast het aggregaat (bereikbaar)                                                             // aan de gevel
-  const vrij = new THREE.LineBasicMaterial({color: 0xd4a017});
-  for(const [sx, nz, w, d] of [[4.35, 2.5, 1.4, 3.9], [9.45, 0.9, 4.6, 1.8]]){ const r = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(w, 0.01, d)), vrij); r.position.set(sx, 0.03, nz); g.add(r); }
-  klikbaar(g, g.userData.info); sprite('PV · 5 × Huawei SUN2000-100KTL-M2', wp(7.5, 1.6).add(V(0, 3.0, 0)), 0.8, '#d4a017'); }
+    for(const y of [-0.25, 0.25]) box(ig, 0.9, 0.05, 0.05, staal, 0, y, -0.22); };                                           // montagebeugels op het frame
+  omv(1, -1.75, 1); omv(2, -0.05, 1); omv(3, 1.65, 1); omv(4, -0.9, -1); omv(5, 0.8, -1);
+  box(g, 0.4, 0.55, 0.22, M(0xd9dcd8, {roughness: 0.5}), L/2 - 0.3, 1.35, 0.25);                                              // AC-werkschakelaar / aansluitkast aan de kopse kant
+  const vrij = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(L + 1.4, 0.01, B + 1.4)), new THREE.LineBasicMaterial({color: 0xd4a017})); vrij.position.y = 0.03; g.add(vrij);
+  klikbaar(g, g.userData.info); sprite('PV · 5 × Huawei SUN2000-100KTL-M2', g.position.clone().add(V(0, 3.2, 0)), 0.8, '#d4a017'); }
 
 // ---------- 4. ZVK (klant, staat er al: omcirkeld op de luchtfoto, 5,35 × 3,2 m) en EMS-veldkast ernaast ----------
 { const g = asset('zvk', lp(132669.03, 457822.30), '<b>ZVK — zekeringverdeelkast (klant, Kromwijk)</b> — bestaand, op de luchtfoto zichtbaar (± 5,35 × 3,2 m)<br>blokschema: ZVK01 PV (5 × 200 A gG) · ZVK02 EV + EOS (800 A EV, 630 A EOS, 80 A aux, 16 A EMS)<br>gevoed vanuit 2 × 630 kVA (trafo 1 & 2)', YAW - Math.PI/2);
@@ -429,10 +440,10 @@ function bouwPvDak(poly, h){ WN = wandN(poly); const wl = wandOp(8.7); if(wl !==
   IM.castShadow = true; IM.receiveShadow = true; IM.userData.info = `<b>PV op het dak</b>: ${pos.length} × Longi Hi-MO X10 535 Wp = ${(pos.length*0.535).toFixed(2)} kWp (ELIX: 1.388 × 535 Wp = 742,58 kWp)<br>Van der Valk Pro+ oost/west · legplan indicatief, definitief na akkoord HEMA en constructeur`;
   PVDAK.add(IM); KLIK.push(IM);
   // DC-kabelladder: langs de dakrand en verticaal langs de gevel tussen omvormer 3 en 4 (afgedekt)
-  const sk = wp(8.7, 0), sAl = sk.clone().sub(B0).dot(U), top = B0.clone().addScaledVector(U, sAl).addScaledVector(N, WN + 0.05);
+  const sk = wp(PVS.s, 0), sAl = sk.clone().sub(B0).dot(U), top = B0.clone().addScaledVector(U, sAl).addScaledVector(N, WN + 0.05);
   const lad = M(0xb9bfc3, {metalness: 0.8, roughness: 0.35}); const LG = new THREE.Group(); LG.position.copy(top); LG.rotation.y = YAW; PVDAK.add(LG);
-  box(LG, 0.5, h + 0.3, 0.12, lad, 0, (h + 0.3)/2, 0.1); box(LG, 0.55, h + 0.3, 0.03, M(0x9aa3a8, {metalness: 0.6}), 0, (h + 0.3)/2, 0.18);
-  box(LG, 0.5, 0.12, 2.2, lad, 0, h + 0.35, -1.0); box(LG, 0.5, 0.1, 1.2, lad, 0, 0.55, 0.7);
+  const yv = 0.86, hv = h + 0.3 - yv; box(LG, 0.5, hv, 0.12, lad, 0, yv + hv/2, 0.1); box(LG, 0.55, hv, 0.03, M(0x9aa3a8, {metalness: 0.6}), 0, yv + hv/2, 0.18);   // verticaal langs de gevel tot goothoogte van de skid
+  box(LG, 0.5, 0.12, 2.2, lad, 0, h + 0.35, -1.0); { const lz = Math.max(0.4, (PVS.n - 2.525) - (WN + 0.05) + 0.4); box(LG, 0.36, 0.08, lz, lad, 0, yv, lz/2); box(LG, 0.38, 0.02, lz, M(0x9aa3a8, {metalness: 0.6}), 0, yv + 0.06, lz/2); }   // horizontaal de skid in (dia: DC op ± 0,9 m)
   sprite('PV op dak · ' + pos.length + ' × 535 Wp', B0.clone().addScaledVector(U, -25).addScaledVector(W, 20).add(V(0, h + 3, 0)), 0.8, '#d4a017');
   $t('bagInfo').innerHTML += `<br>PV-dak: ${pos.length} panelen geplaatst`; renderer.shadowMap.needsUpdate = true; vuil(6); }
 
@@ -619,7 +630,7 @@ const VIEWS = {
   bDak: () => kijk(V(GB[0], 12, GB[1]).addScaledVector(U, -30).addScaledVector(N, -25), 95, 0.75, -0.3),
   bPlein: () => kijk(PL0.clone().lerp(PL1, 0.5).add(V(0, 1, 0)), 24, 0.95, -0.4),
   bEos: () => kijk(ASSET.eos.position.clone().add(V(0, 1.2, 0)), 14, 1.2, -0.3),
-  bPv: () => kijk(wp(7.5, 2.2).add(V(0, 1.2, 0)), 11, 1.15, 0.2),
+  bPv: () => kijk(ASSET.pv.position.clone().add(V(0, 1.2, 0)), 9, 1.15, -0.9),
   bZvk: () => kijk(ASSET.zvk.position.clone().add(V(0, 1.2, 0)), 14, 1.1, 0.3),
   bEv: () => kijk(ASSET.ev.position.clone().add(V(0, 1.1, 0)), 7, 1.25, 0.3),
   bD1: () => kijk(ASSET.d1.position.clone().add(V(0, 1.0, 0)).addScaledVector(N, -1.2), 20, 1.1, 1.0),
