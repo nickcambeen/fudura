@@ -251,33 +251,36 @@ const PHASES=[
 const STATUSES={ok:{label:"Op schema",cls:"s-ok"},warn:{label:"Aandacht",cls:"s-warn"},bad:{label:"Vertraagd",cls:"s-bad"},hold:{label:"On hold",cls:"s-hold"}};
 const ACT_ST={open:"Open",bezig:"Bezig",geblokkeerd:"Geblokkeerd",afgerond:"Afgerond",nvt:"N.v.t."};
 const TYPES=["BESS","Laadinfra","MS-installatie","LS-installatie","PV","Data / IT","Overig"];
-const ROLES=["Projectleider","Engineer","Accountmanager","Werkvoorbereider","Planner","Inkoop","Aannemer","Klant","Netbeheerder"];
+const ROLES=["Projectleider","Sales engineer","Detailengineer","Tekenaar","Accountmanager","Werkvoorbereider","Planner","Inkoop","Aannemer","Klant","Netbeheerder"];
 const TEMPLATE={
-  0:[["Aanvraag registreren","Projectleider"],["Contact opnemen met klant","Projectleider"],["Schouw op locatie","Engineer"],
-     ["Projectplan opstellen","Engineer","s"],["Calculatie opstellen","Engineer","s"],
-     ["Projectplan en calculatie in Salesforce doorzetten naar accountmanager","Engineer","s"],
-     ["Offerte opstellen","Accountmanager","s"],["Offerte getekend door klant","Klant","sg"],
-     ["Projectteam en fasering vastleggen","Planner","s"]],
-  1:[["Uitgangspunten en uitsluitingen uit projectplan controleren","Engineer"],["Netaanvraag / aansluiting bij netbeheerder","Engineer"],["Eendraadschema (SLD) opstellen","Engineer"],["Kabelberekening NEN 1010","Engineer"],["Beveiliging en selectiviteit","Engineer"],["Review ontwerp (IV'er)","Engineer"],["Ontwerp vrijgeven","Projectleider"]],
+  0:[["Aanvraag registreren","Sales engineer"],["Contact opnemen met klant","Sales engineer"],["Schouw op locatie","Sales engineer"],
+     ["Projectplan opstellen","Sales engineer","s"],["Calculatie opstellen","Sales engineer","s"],
+     ["Projectplan en calculatie in Salesforce doorzetten naar accountmanager","Sales engineer","s"],
+     ["Offerte opstellen","Accountmanager","s"],["Offerte getekend door klant","Klant","sg"]],
+  1:[["Uitgangspunten en programma van eisen vastleggen","Projectleider"],["Projectteam samenstellen","Projectleider","s"],
+     ["Overdrachtsmoment inplannen (sales engineer, projectleider, tekenaar, detailengineer)","Projectleider","s"],
+     ["Netaanvraag / aansluiting bij netbeheerder","Detailengineer"],["Eendraadschema (SLD) opstellen","Tekenaar"],["Kabelberekening NEN 1010","Detailengineer"],["Beveiliging en selectiviteit","Detailengineer"],["Review ontwerp (IV'er)","Detailengineer"],["Ontwerp vrijgeven","Projectleider"]],
   2:[["Materiaal met lange levertijd bestellen","Inkoop"],["Aannemer contracteren","Werkvoorbereider"],["V&G-plan en TRA","Werkvoorbereider"],["Schakelafspraken netbeheerder","Werkvoorbereider"],["Uitvoeringsplanning vastleggen","Planner"],["Kick-off met aannemer","Projectleider"]],
   3:[["Start uitvoering op locatie","Aannemer"],["Montage installatie","Aannemer"],["Kabels leggen en aansluiten","Aannemer"],["Voortgangscontrole","Werkvoorbereider"],["Meerwerk registreren","Projectleider"]],
-  4:[["Eerste inspectie NEN 1010 / NEN 3140","Engineer"],["Inbedrijfname en schakelen","Werkvoorbereider"],["SAT uitvoeren","Engineer"],["Revisietekeningen en opleverdossier","Engineer"],["Overdracht aan klant","Projectleider"]],
+  4:[["Eerste inspectie NEN 1010 / NEN 3140","Detailengineer"],["Inbedrijfname en schakelen","Werkvoorbereider"],["SAT uitvoeren","Detailengineer"],["Revisietekeningen en opleverdossier","Tekenaar"],["Overdracht aan klant","Projectleider"]],
   5:[["Nacalculatie","Projectleider"],["Evaluatie / lessons learned","Projectleider"],["Project administratief sluiten","Projectleider"]]
 };
 const newActId=()=>"a"+Math.random().toString(36).slice(2,10);
 const flagsOf=f=>({seq:(f||"").includes("s"),gate:(f||"").includes("g")});
 function templateActs(){const out=[];for(const ph in TEMPLATE)TEMPLATE[ph].forEach(([t,r,f])=>out.push({id:newActId(),phase:+ph,title:t,role:r,owner:"",status:"open",doneAt:"",...flagsOf(f)}));return out}
-const ALIASES={"uitgangspunten en programma van eisen vastleggen":"uitgangspunten en uitsluitingen uit projectplan controleren"};
+const ALIASES={"uitgangspunten en uitsluitingen uit projectplan controleren":"uitgangspunten en programma van eisen vastleggen"};
+/* oude standaardstappen die niet meer in de werkwijze zitten: weg bij bijwerken zolang ze onaangeroerd zijn */
+const RETIRED=["projectteam en fasering vastleggen"];
 const normT=t=>{t=(t||"").toLowerCase();return ALIASES[t]||t};
 /* zet de activiteiten van één fase in de standaardvolgorde; bestaande (zelfde titel) blijven met hun status, eigen extra's komen erachter */
 function syncPhase(p,ph){
   const cur=actsOf(p,ph),used=new Set(),list=[];
   TEMPLATE[ph].forEach(([t,r,f])=>{const ex=cur.find(a=>normT(a.title)===t.toLowerCase());
     if(ex){used.add(ex.id);list.push({...ex,title:t,role:r,...flagsOf(f)})}else list.push({id:newActId(),phase:ph,title:t,role:r,owner:"",status:"open",doneAt:"",...flagsOf(f)})});
-  cur.forEach(a=>{if(!used.has(a.id))list.push(a)});
+  cur.forEach(a=>{if(used.has(a.id))return;if(RETIRED.includes(a.title.toLowerCase())&&a.status==="open"&&!a.owner)return;list.push(a)});
   return (p.acts||[]).filter(a=>a.phase!==ph).concat(list);
 }
-const missingStd=(p,ph)=>TEMPLATE[ph].some(([t,,f])=>{const a=actsOf(p,ph).find(x=>x.title.toLowerCase()===t.toLowerCase());return !a||(!!f&&!a.seq)});
+const missingStd=(p,ph)=>TEMPLATE[ph].some(([t,r,f])=>{const a=actsOf(p,ph).find(x=>x.title.toLowerCase()===t.toLowerCase());return !a||(!!f&&!a.seq)||a.role!==r})||actsOf(p,ph).some(a=>RETIRED.includes(a.title.toLowerCase())&&a.status==="open"&&!a.owner);
 /* wacht deze stap op de vorige? */
 function waitsOn(p,a){if(!a.seq||isClosed(a))return null;const l=actsOf(p,a.phase),i=l.findIndex(x=>x.id===a.id),prev=i>0?l[i-1]:null;return prev&&!isClosed(prev)?prev:null}
 const gateOpen=p=>actsOf(p,p.phase).find(a=>a.gate&&a.status!=="afgerond");
@@ -362,11 +365,11 @@ function filtered(){
     if(S.fType&&p.type!==S.fType)return false;
     if(S.fStatus&&p.status!==S.fStatus)return false;
     if(S.fOwner&&p.owner!==S.fOwner&&p.engineer!==S.fOwner&&!(p.acts||[]).some(a=>a.owner===S.fOwner))return false;
-    if(q&&![p.nr,p.name,p.client,p.loc,p.owner,p.engineer,p.contractor].join(" ").toLowerCase().includes(q))return false;
+    if(q&&![p.nr,p.name,p.client,p.loc,p.owner,p.engineer,p.detail,p.drafter,p.contractor].join(" ").toLowerCase().includes(q))return false;
     return true;
   });
 }
-const people=()=>[...new Set(S.projects.flatMap(p=>[p.owner,p.engineer,...(p.acts||[]).map(a=>a.owner)]).concat(S.me).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"nl"));
+const people=()=>[...new Set(S.projects.flatMap(p=>[p.owner,p.engineer,p.detail,p.drafter,...(p.acts||[]).map(a=>a.owner)]).concat(S.me).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"nl"));
 function banner(){return S.banner?`<div class="banner">${esc(S.banner)}</div>`:""}
 function overviewHTML(){
   const ppl=people();
@@ -438,7 +441,7 @@ function actsHTML(list){
 /* ---------- project dashboard ---------- */
 const HEAD=[
   ["nr","Projectnummer","text"],["name","Projectnaam","text"],["type","Type werkzaamheden","type"],["status","Projectstatus","status"],
-  ["owner","Projectleider","person"],["engineer","Engineer","person"],["contractor","Aannemer","text"],["netop","Netbeheerder","text"],
+  ["owner","Projectleider","person"],["engineer","Sales engineer","person"],["detail","Detailengineer","person"],["drafter","Tekenaar","person"],["contractor","Aannemer","text"],["netop","Netbeheerder","text"],
   ["loc","Locatie / adres","text"],["ean","EAN-code","text"],["power","Vermogen / aansluitwaarde","text"],["link","Gekoppeld project","text"],
   ["survey","Schouw plandatum","date"],["delivery","Bevestigde leverdatum","date"],["due","Gewenste opleverdatum","date"]
 ];
