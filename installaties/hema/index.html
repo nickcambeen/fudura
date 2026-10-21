@@ -533,6 +533,13 @@ const HEK = new THREE.Group(); scene.add(HEK);
       const m = new THREE.Mesh(new THREE.PlaneGeometry(sb - sa, nb - na), new THREE.MeshStandardMaterial({map: t, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -3}));
       m.rotation.x = -Math.PI/2; const g2 = new THREE.Group(); g2.position.copy(wp((sa + sb)/2, (na + nb)/2)); g2.position.y = 0.025; g2.rotation.y = YAW; g2.add(m); m.rotation.z = 0; m.receiveShadow = true; HEK.add(g2);
       m.userData.info = '<b>Looppad</b> (dia 46)'; };
+    // brandweer-opstelstrook langs het hek tussen het technische terrein en de poort: vrij houden (gele arcering)
+    { const bw = ctex(512, 128, (c, W, Hh) => { c.clearRect(0, 0, W, Hh); c.strokeStyle = 'rgba(240,200,0,0.85)'; c.lineWidth = 6; c.strokeRect(3, 3, W - 6, Hh - 6); c.lineWidth = 5; for(let x = -Hh; x < W; x += 34){ c.beginPath(); c.moveTo(x, Hh); c.lineTo(x + Hh, 0); c.stroke(); }
+        c.fillStyle = 'rgba(240,200,0,0.95)'; c.fillRect(W/2 - 150, Hh/2 - 26, 300, 52); c.fillStyle = '#222'; c.font = 'bold 34px Arial'; c.textAlign = 'center'; c.fillText('BRANDWEER VRIJ', W/2, Hh/2 + 12); });
+      const na = 10.6, nb = 28.8, q = [[fs(na) - 4.6, na], [fs(na) - 0.3, na], [fs(nb) - 0.3, nb], [fs(nb) - 4.6, nb]].map(([a, b]) => wp(a, b)), qg = new THREE.BufferGeometry();
+      qg.setAttribute('position', new THREE.Float32BufferAttribute([q[0], q[1], q[2], q[0], q[2], q[3]].flatMap(p => [p.x, 0.045, p.z]), 3));
+      qg.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0], 2));
+      const bm = new THREE.Mesh(qg, new THREE.MeshBasicMaterial({map: bw, transparent: true, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -6})); bm.userData.info = '<b>Brandweer-opstelstrook</b> — vrij houden (± 4,3 m breed langs het hek, van het technische terrein tot de poort)'; KLIK.push(bm); HEK.add(bm); }
     pad(s0, s0 + 0.8, 0, n1); pad(s0, 7.3, n1 - 0.8, n1); pad(s0 + 0.8, PVS.s + 1.6, 0, 2.0); }
   // haag tussen hek en weg (Street View / Cyclomedia) en bomen bij de hoek
   let sd = 7; const rnd = () => (sd = (sd*16807) % 2147483647)/2147483647;
@@ -558,7 +565,8 @@ function bootTrailers(img, bb){
     if(n < -60 || n > 160 || s < -140) return false;
     if(s > fsH(n) - 0.5) return false;                                                         // buiten het hek (weg / parkeerplaats)
     if(q.clone().sub(Cc).dot(oB) > -0.8) return false;                                          // voorbij het hek langs het fietspad
-    if(s > 1.0 && n < 11.2) return false;                                                       // technisch terrein (EOS, omvormers, NSA, ZVK, power unit)
+    if(s > 1.0 && n < 11.2) return false;
+    if(n > 9.5 && n < 30 && s > fsH(n) - 4.8) return false;                                    // brandweerstrook langs het hek (tussen terrein en poort)                                                       // technisch terrein (EOS, omvormers, NSA, ZVK, power unit)
     if(n > 28 && n < 39 && s > 7.5) return false;                                               // NP-vlak voor de poort
     if(n > 38 && n < 62 && s > -20) return false;                                             // laadvakken + aanrijroute naar de dispensers
     if(BAGR.some(r => inPoly(X, Y, r))) return false;                                           // gebouwen
