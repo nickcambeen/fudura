@@ -393,6 +393,18 @@ tr.waiting td{color:var(--muted)}
 .taskrow .tr-due{grid-column:4;text-align:left}
 .ib-body > div:last-child{padding:10px 12px 0 44px}
 @media (max-width:640px){.taskrow{grid-template-columns:18px minmax(0,1fr) auto}.taskrow .tr-title{grid-column:2}.taskrow .tr-due{grid-column:3}.ib-body > div:last-child{padding-left:12px}}
+
+/* urgentie in de activiteitenbak: rood bij 1 dag of minder (of te laat), oranje bij 4 dagen of minder */
+.ib-group .ib-row{border-left:4px solid transparent}
+.ib-group.urg-red .ib-row{background:#fde8e6;border-left-color:var(--bad)}
+.ib-group.urg-red .ib-row:hover{background:#fbd9d5}
+.ib-group.urg-orange .ib-row{background:#fff1dc;border-left-color:#e08a00}
+.ib-group.urg-orange .ib-row:hover{background:#ffe7c4}
+.ib-group:not(.urg-red):not(.urg-orange) .ib-row{background:var(--surface)}
+.ib-group:not(.urg-red):not(.urg-orange).open .ib-row,.ib-group:not(.urg-red):not(.urg-orange) .ib-row:hover{background:var(--sky-soft)}
+.ib-row .dl{display:block;font-size:11px;font-weight:600}
+.urg-red .ib-row .dl{color:var(--bad)}
+.urg-orange .ib-row .dl{color:#a65f00}
 </style>
 </head>
 <body>
@@ -660,13 +672,13 @@ function inboxHTML(){
   if(!groups.length)return head+`<div class="notice"><strong>Geen taken</strong><span>Er staat op dit moment niets voor je klaar.</span></div>`;
   return head+`<div class="ibox">
     <div class="ib-head"><span></span><span>Projectnr.</span><span>Projectnaam</span><span>Deadline</span><span>Taken</span></div>
-    ${groups.map(g=>{const p=g.p,open=S.inboxOpen.has(p.id),late=g.next&&g.next<todayStr();
-      return `<div class="ib-group ${open?"open":""}">
+    ${groups.map(g=>{const p=g.p,open=S.inboxOpen.has(p.id),late=g.next&&g.next<todayStr(),dl=g.next?Math.round((new Date(g.next+"T12:00:00")-new Date(todayStr()+"T12:00:00"))/864e5):null,urg=dl==null?"":dl<=1?"urg-red":dl<=4?"urg-orange":"";
+      return `<div class="ib-group ${open?"open":""} ${urg}">
       <button type="button" class="ib-row" data-toggle="${esc(p.id)}" aria-expanded="${open}">
         <span class="chev" aria-hidden="true">▸</span>
         <span class="mono">${esc(p.nr||"—")}</span>
         <span class="ib-name">${esc(p.name)}<span class="small"> · ${esc(PHASES[p.phase].label)}</span></span>
-        <span class="num ${late?"late":""}">${g.next?fmtDate(g.next):"—"}</span>
+        <span class="num ${late?"late":""}">${g.next?fmtDate(g.next):"—"}${dl!=null&&dl<=4?`<span class="dl">${dl<0?Math.abs(dl)+" dg te laat":dl===0?"vandaag":dl===1?"morgen":"nog "+dl+" dg"}</span>`:""}</span>
         <span>${g.ready?`<span class="badge">${g.ready}</span> te doen`:""}${g.rows.length>g.ready?`<span class="small">${g.ready?" · ":""}${g.rows.length-g.ready} wacht</span>`:""}</span>
       </button>
       ${open?`<div class="ib-body">${actsOf(p,p.phase).filter(a=>isMine(a,p)).map(a=>{const w=waitsOn(p,a),done=isClosed(a),ed=effDue(p,a),late2=ed&&ed<todayStr()&&!done;return `<label class="taskrow ${done?"done":""} ${w&&!done?"waiting":""}">
