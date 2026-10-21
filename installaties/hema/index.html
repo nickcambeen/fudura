@@ -565,7 +565,7 @@ function bootTrailers(img, bb){
     if(n < -60 || n > 160 || s < -140) return false;
     if(s > fsH(n) - 0.5) return false;                                                         // buiten het hek (weg / parkeerplaats)
     if(q.clone().sub(Cc).dot(oB) > -0.8) return false;                                          // voorbij het hek langs het fietspad
-    if(s > 1.0 && n < 11.2) return false;
+    if(s > -0.5 && n < 19) return false;                                                        // technisch terrein + rij vakken ernaast vrij (Nick)
     if(n > 9.5 && n < 30 && s > fsH(n) - 4.8) return false;                                    // brandweerstrook langs het hek (tussen terrein en poort)                                                       // technisch terrein (EOS, omvormers, NSA, ZVK, power unit)
     if(n > 28 && n < 39 && s > 7.5) return false;                                               // NP-vlak voor de poort
     if(n > 38 && n < 62 && s > -20) return false;                                             // laadvakken + aanrijroute naar de dispensers
