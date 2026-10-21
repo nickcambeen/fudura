@@ -79,6 +79,7 @@
     <div class="grp">Assets</div>
     <label>Labels <input type="checkbox" id="tLabel"></label>
     <label>Maatvoering + controle veiligheidsafstanden <input type="checkbox" id="tVrij"></label>
+    <div class="knoprij"><button id="bDxf">2D-tekening (DXF) downloaden</button></div>
     <label>PV-panelen op het dak <input type="checkbox" id="tPvDak" checked></label>
     <label>Vrachtwagens bij de dispensers <input type="checkbox" id="tTruck" checked></label>
     <label>Trailers / wissellaadbakken (luchtfoto) <input type="checkbox" id="tVracht" checked></label>
@@ -212,7 +213,7 @@ function inPoly(x, y, r){ let ok = false; for(let i = 0, j = r.length - 1; i < r
       const m = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, {depth: 1, bevelEnabled: false}), hema ? [hemaDak, hemaWandM] : [bagDak, bagWand]);
       m.rotation.x = -Math.PI/2; m.scale.z = h; m.castShadow = m.receiveShadow = true;
       m.userData.tekst = (hema ? '<b>HEMA distributiecentrum</b><br>' : '') + 'BAG-pand ' + p.identificatie + '<br>bouwjaar ' + p.bouwjaar + ' · ' + (p.gebruiksdoel || '–');
-      m.userData.info = m.userData.tekst + '<br>hoogte ' + h + ' m (aangenomen)'; BAG.add(m); KLIK.push(m); n++;
+      m.userData.info = m.userData.tekst + '<br>hoogte ' + h + ' m (aangenomen)'; BAG.add(m); KLIK.push(m); n++; if(r.some(([x, y]) => Math.abs(x - 132665) < 260 && Math.abs(y - 457830) < 260)) dxP(DXS, r.map(([x, y]) => { const [lx, lz] = rdL(x, y); return V(lx, 0, lz); }), 'GEBOUW', false);
       (PER[p.identificatie] = PER[p.identificatie] || []).push(m);
       if(inPoly(132690, 457850, r) && !PVRING) PVRING = {poly: r.map(([x, y]) => rdL(x, y)), h, id: p.identificatie}; }); });
   VR.bag = true; VR.probeer(); try{ bouwPvDak(PVRING ? PVRING.poly : PVNOOD(), 12); }catch(e){ console.warn('PV-dak', e); } try{ hemaLetters(12); }catch(e){ console.warn('letters', e); }   // direct, daarna opnieuw met de 3DBAG-hoogte
@@ -275,6 +276,11 @@ const PL0 = wp(5.4, 8.2), PL1 = wp(15.6, 8.2);  // 2 m richting PV geschoven: EO
 const PLEN = PL0.distanceTo(PL1);
 const opPlein = (s, d) => PL0.clone().addScaledVector(U, s).addScaledVector(N, d);
 const ASSET = {};
+// ---------- DXF-verzameling (2D bovenaanzicht in RD, meters): statisch (hek, BAG, paden) + maatvoering ----------
+const DXS = [], DXM = [];
+const dxL = (lst, p0, p1, laag) => lst.push({t: 'L', a: [p0.x, p0.z], b: [p1.x, p1.z], laag});
+const dxP = (lst, pts, laag, dicht) => { for(let i = 0; i < pts.length - (dicht ? 0 : 1); i++) dxL(lst, pts[i], pts[(i + 1) % pts.length], laag); };
+const dxT = (lst, p, txt, hgt, laag, rot) => lst.push({t: 'T', a: [p.x, p.z], txt, h: hgt, laag, rot: rot || 0});
 function asset(naam, pos, info, yaw){ const g = new THREE.Group(); g.position.copy(pos); g.rotation.y = yaw === undefined ? YAW : yaw; scene.add(g); g.userData.info = info; ASSET[naam] = g; return g; }
 const klikbaar = (g, info) => g.traverse(o => { if(o.isMesh){ o.userData.info = info; KLIK.push(o); } });
 function stelcon(p, nx, nz, y0){ const L = 2.0; for(let i = 0; i < nx; i++) for(let k = 0; k < nz; k++){ box(p, L - 0.01, 0.14, L - 0.01, matBeton, (i - (nx - 1)/2)*L, (y0 || 0) + 0.07, (k - (nz - 1)/2)*L); } }
@@ -372,9 +378,9 @@ const PVS = {s: 0.95 + 1.6, n: 2.0 + 3.225};                             // dia 
 // ---------- 4. ZVK (klant, staat er al: omcirkeld op de luchtfoto, 5,35 × 3,2 m) en EMS-veldkast ernaast ----------
 { const g = asset('zvk', lp(132669.03, 457822.30), '<b>ZVK — zekeringverdeelkast (klant, Kromwijk)</b> — bestaand, op de luchtfoto zichtbaar (± 5,35 × 3,2 m)<br>blokschema: ZVK01 PV (5 × 200 A gG) · ZVK02 EV + EOS (800 A EV, 630 A EOS, 80 A aux, 16 A EMS)<br>gevoed vanuit 2 × 630 kVA (trafo 1 & 2)', YAW - Math.PI/2);
   // betonnen huisje (Cyclomedia): lichtbeige wanden, plat dak met overstek, deuren alleen aan de terreinzijde
-  const H = 2.6, beton = ctex(256, 256, (c, W, Hh) => { c.fillStyle = '#d6cdb9'; c.fillRect(0, 0, W, Hh); for(let i = 0; i < 1400; i++){ c.fillStyle = `rgba(${90 + Math.random()*60},${85 + Math.random()*50},70,${0.05 + Math.random()*0.08})`; c.fillRect(Math.random()*W, Math.random()*Hh, 2, 2); } c.fillStyle = 'rgba(80,90,60,0.18)'; c.fillRect(0, Hh - 26, W, 26); });
+  const H = 2.6, beton = ctex(256, 256, (c, W, Hh) => { c.fillStyle = '#b9b3a6'; c.fillRect(0, 0, W, Hh); for(let k = 0; k < 9000; k++){ const g = 120 + Math.random()*110; c.fillStyle = `rgb(${g + 10},${g},${g - 15})`; c.fillRect(Math.random()*W, Math.random()*Hh, 1 + Math.random()*2, 1 + Math.random()*2); } })
   box(g, 5.35, 0.3, 3.2, matBeton, 0, 0.15, 0); box(g, 5.25, H, 3.1, M(0xffffff, {map: beton, roughness: 0.9}), 0, 0.3 + H/2, 0); box(g, 5.45, 0.14, 3.3, M(0x77735f, {roughness: 0.95}), 0, 0.37 + H, 0);
-  for(const s of [1]) for(let k = 0; k < 3; k++){ const x = -1.75 + k*1.75; box(g, 1.6, H - 0.3, 0.03, M(0xb9bdb9), x, 0.3 + H/2, s*1.565); box(g, 0.04, 0.3, 0.05, matZwart, x + 0.65, 0.3 + H/2, s*1.59); }
+  for(const s of [1]) for(let k = 0; k < 3; k++){ const x = -1.75 + k*1.75; box(g, 1.6, H - 0.3, 0.03, M(0x1f3a30, {roughness: 0.55}), x, 0.3 + H/2, s*1.565); box(g, 0.04, 0.3, 0.05, matZwart, x + 0.65, 0.3 + H/2, s*1.59); }
   plak(g, 1.2, 0.25, lbl('ZVK01 · PV', 240, 50, '#ffffff', '#1b2a36'), -1.75, 0.3 + H - 0.35, 1.585); plak(g, 1.2, 0.25, lbl('ZVK02 · EV + EOS', 300, 50, '#ffffff', '#1b2a36'), 1.75, 0.3 + H - 0.35, 1.585);
   klikbaar(g, g.userData.info); g.userData.lbl = sprite('ZVK (klant, bestaand)', g.position.clone().add(V(0, 3.6, 0)), 0.7, '#c0281f'); }
 { const g = asset('ems', lp(132666.6, 457825.6), '<b>EMS-veldkast</b> (Pegeo KVSP1-413, EMS Groot — model uit de EMS-pagina)<br>router, switch, SmartLogger, WithTheGrid; 230 V B16 uit de ZVK<br>CAT 6A naar Janitza (inkoopstation), EOS, EV, PV-logger en 3 × MetCom MCS301', YAW + Math.PI/2);
@@ -385,9 +391,10 @@ const PVS = {s: 0.95 + 1.6, n: 2.0 + 3.225};                             // dia 
   g.updateMatrixWorld(true); sprite('EMS-veldkast', g.getWorldPosition(V(0, 0, 0)).add(V(0, 2.6, 0)), 0.6, '#7a3fbf'); }
 
 // ---------- 4b. bestaande noodstroom-diesel (blauw, op het binnenterrein; dia 15 'Diesel NSA') ----------
-{ const g = asset('nsa', wp(6.81, 2.33), '<b>Noodstroomaggregaat (diesel, bestaand)</b> — blauwe geluidsomkasting op het omheinde binnenterrein (luchtfoto / Cyclomedia, dia 15 "Diesel NSA")<br>maten geschat ± 3,0 × 1,15 × 1,6 m', YAW - Math.PI/2);
+{ const g = asset('nsa', wp(6.81, 2.33), '<b>Noodstroomaggregaat Kohler SDMO (diesel, bestaand)</b> — blauwe geluidsomkasting op het omheinde binnenterrein (luchtfoto / Cyclomedia, dia 15 "Diesel NSA")<br>maten geschat ± 3,0 × 1,15 × 1,6 m', YAW - Math.PI/2);
   const blauw = M(0x2f6db5, {roughness: 0.45, metalness: 0.3}), L = 3.0, B = 1.15, Hh = 1.6;
   box(g, L + 0.1, 0.12, B + 0.1, M(0x3a3d40), 0, 0.06, 0); rbox(g, L, Hh - 0.12, B, 0.04, blauw, 0, 0.12 + (Hh - 0.12)/2, 0); box(g, L + 0.04, 0.05, B + 0.04, blauw, 0, Hh + 0.02, 0);
+  for(const z of [-B/2 - 0.004, B/2 + 0.004]) plak(g, 0.7, 0.18, lbl('KOHLER | SDMO', 280, 72, '#2f6db5', '#ffffff', 'bold 34px Arial'), -0.9, 1.25, z, z < 0 ? Math.PI : 0);
   const lam = ctex(128, 128, (c, W, H) => { c.fillStyle = '#2a62a5'; c.fillRect(0, 0, W, H); c.fillStyle = '#1b3f6e'; for(let y = 6; y < H; y += 12) c.fillRect(6, y, W - 12, 5); });
   for(const x of [-L/2 - 0.002, L/2 + 0.002]) plak(g, B*0.8, 1.0, lam, x, 0.85, 0, x < 0 ? -Math.PI/2 : Math.PI/2);           // koelluchtroosters op de kopse kanten
   for(const z of [-B/2 - 0.002, B/2 + 0.002]) for(const x of [-0.8, 0.2]){ box(g, 0.9, 1.2, 0.01, M(0x2b66ab, {roughness: 0.5}), x, 0.8, z, false); box(g, 0.04, 0.12, 0.03, matZwart, x + 0.35, 0.85, z + Math.sign(z)*0.015); }
@@ -478,7 +485,7 @@ const HEK = new THREE.Group(); scene.add(HEK);
   const gaas = ctex(256, 512, (c, W, Hh) => { c.clearRect(0, 0, W, Hh); c.fillStyle = '#1f4a35'; for(let x = 0; x < W; x += 13) c.fillRect(x, 0, 3, Hh); for(let y = 6; y < Hh; y += 51){ c.fillRect(0, y, W, 3); c.fillRect(0, y + 5, W, 3); } });
   gaas.wrapS = THREE.RepeatWrapping;
   let gaas2 = false; const gaasG = ctex(256, 512, (c, W, Hh) => { c.clearRect(0, 0, W, Hh); c.fillStyle = '#9aa1a5'; for(let x = 0; x < W; x += 13) c.fillRect(x, 0, 3, Hh); for(let y = 6; y < Hh; y += 51){ c.fillRect(0, y, W, 3); c.fillRect(0, y + 5, W, 3); } });
-  const seg = (p0, p1, type) => { const D = p1.clone().sub(p0), L = D.length(); D.normalize(); const g = new THREE.Group(); g.position.copy(p0); g.rotation.y = Math.atan2(-D.z, D.x); HEK.add(g);
+  const seg = (p0, p1, type) => { dxL(DXS, p0, p1, type === 'spijl' ? 'HEK-SPIJLEN' : 'HEK'); const D = p1.clone().sub(p0), L = D.length(); D.normalize(); const g = new THREE.Group(); g.position.copy(p0); g.rotation.y = Math.atan2(-D.z, D.x); HEK.add(g);
     if(type === 'gaas'){ const t = (gaas2 ? gaasG : gaas).clone(); t.needsUpdate = true; t.wrapS = THREE.RepeatWrapping; t.repeat.set(L/2.5, 1);
       const gm = new THREE.Mesh(new THREE.PlaneGeometry(L, H), new THREE.MeshStandardMaterial({map: t, transparent: true, alphaTest: 0.35, side: THREE.DoubleSide, roughness: 0.5, metalness: 0.3}));
       gm.position.set(L/2, H/2 + 0.05, 0); gm.castShadow = true; g.add(gm);
@@ -491,7 +498,7 @@ const HEK = new THREE.Group(); scene.add(HEK);
   const N0 = -40, A = wp(fs(N0), N0), B = wp(fs(29.2), 29.2), G1 = wp(fs(38.0), 38.0), C = wp(fs(NC), NC);                                       // loopt door langs de kopgevel (Cyclomedia)
   gaas2 = true; const g1 = seg(A, B, 'gaas'); gaas2 = false; seg(G1, C, 'spijl');
   // vrijdragende schuifpoort ± 8,8 m over de breedte van het NP-vlak (Nick, bovenaanzicht: n 29,2–38,0), gesloten; staart schuift binnen langs het hek
-  { const D = G1.clone().sub(B), L = D.length(); D.normalize(); const g = new THREE.Group(); g.position.copy(B); g.rotation.y = Math.atan2(-D.z, D.x); HEK.add(g);
+  { dxL(DXS, B, G1, 'POORT'); dxT(DXS, B.clone().lerp(G1, 0.5).addScaledVector(U, -0.6), 'SCHUIFPOORT', 0.25, 'TEKST'); const D = G1.clone().sub(B), L = D.length(); D.normalize(); const g = new THREE.Group(); g.position.copy(B); g.rotation.y = Math.atan2(-D.z, D.x); HEK.add(g);
     for(const x of [0, L]) box(g, 0.14, H + 0.2, 0.14, zink, x, (H + 0.2)/2, 0);
     for(const x of [-0.3, -2.8]) { box(g, 0.12, 1.0, 0.12, zink, x, 0.5, 0.32); box(g, 0.3, 0.12, 0.25, matZwart, x, 0.28, 0.32); }          // geleidepalen met rolblokken
     box(g, L + 3.6, 0.16, 0.1, zink, L/2 - 1.8, 0.33, 0.2); box(g, L, 0.06, 0.06, zink, L/2, H, 0.2); for(let x = 0.1; x < L; x += 2.5) box(g, 0.05, H - 0.3, 0.05, zink, x, 0.33 + (H - 0.3)/2, 0.2);
@@ -501,7 +508,7 @@ const HEK = new THREE.Group(); scene.add(HEK);
     box(g, 0.3, 0.4, 0.25, M(0x3b3f45), L + 0.4, 0.2, 0.3); cyl(g, 0.05, 0.08, M(0xf2a000, {emissive: 0xf2a000, emissiveIntensity: 0.5}), L, H + 0.25, 0, null, 12);   // aandrijving + oranje lamp
     // NP-arcering zoals Nick aangaf: ± 8,8 m langs het hek × ± 7,5 m diep, direct achter de poort
     const np = ctex(256, 256, (c, W, Hh) => { c.clearRect(0, 0, W, Hh); c.strokeStyle = 'rgba(255,255,255,0.9)'; c.lineWidth = 6; c.strokeRect(4, 4, W - 8, Hh - 8); c.beginPath(); c.moveTo(4, 4); c.lineTo(W - 4, Hh - 4); c.moveTo(W - 4, 4); c.lineTo(4, Hh - 4); c.stroke(); c.fillStyle = 'rgba(255,255,255,0.9)'; c.font = 'bold 60px Arial'; c.textAlign = 'center'; c.fillText('NP', W/2, Hh/2 + 70); });
-    const q = [[9.8, 29.2], [fs(29.2) - 0.2, 29.2], [fs(38) - 0.2, 38.0], [9.8, 38.0]].map(([a, b]) => wp(a, b)), qg = new THREE.BufferGeometry();
+    const q = [[9.8, 29.2], [fs(29.2) - 0.2, 29.2], [fs(38) - 0.2, 38.0], [9.8, 38.0]].map(([a, b]) => wp(a, b)), qg = new THREE.BufferGeometry(); dxP(DXS, q, 'NP-VAK', true); dxL(DXS, q[0], q[2], 'NP-VAK'); dxL(DXS, q[1], q[3], 'NP-VAK');
     qg.setAttribute('position', new THREE.Float32BufferAttribute([q[0], q[1], q[2], q[0], q[2], q[3]].flatMap(p => [p.x, 0.04, p.z]), 3));
     qg.setAttribute('uv', new THREE.Float32BufferAttribute([0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0], 2));
     const pm = new THREE.Mesh(qg, new THREE.MeshBasicMaterial({map: np, transparent: true, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -6})); HEK.add(pm);
@@ -512,7 +519,7 @@ const HEK = new THREE.Group(); scene.add(HEK);
       box(k, 0.002, 0.9, 0.7, M(0x8a8c87), 0.502, 0.87, 0, false); box(k, 0.03, 0.12, 0.04, matZwart, 0.52, 0.95, 0.25);
       k.traverse(o => { if(o.isMesh){ o.userData.info = '<b>Bestaande kast naast de poort</b> (Cyclomedia) — functie nog onbekend (poortbesturing / aansluitkast?) · ± 1,0 × 0,75 × 1,4 m op betonsokkel'; KLIK.push(o); } }); }
     // lantaarnpalen (Cyclomedia): 2 terreinmasten met schijnwerpers bij het hek / de poort
-    const mast = (p, hgt, arm, info) => { MASTEN.push(p.clone()); const L = new THREE.Group(); L.position.copy(p); L.rotation.y = YAW; HEK.add(L);
+    const mast = (p, hgt, arm, info) => { MASTEN.push(p.clone()); dxL(DXS, p.clone().addScaledVector(U, -0.25), p.clone().addScaledVector(U, 0.25), 'MAST'); dxL(DXS, p.clone().addScaledVector(N, -0.25), p.clone().addScaledVector(N, 0.25), 'MAST'); dxT(DXS, p.clone().addScaledVector(U, 0.3), 'mast', 0.2, 'TEKST'); const L = new THREE.Group(); L.position.copy(p); L.rotation.y = YAW; HEK.add(L);
       cyl(L, 0.09, hgt, zink, 0, hgt/2, 0, null, 10); cyl(L, 0.16, 0.5, zink, 0, 0.25, 0, null, 10);
       if(arm){ box(L, 1.6, 0.07, 0.07, zink, -0.8, hgt - 0.1, 0); box(L, 0.6, 0.1, 0.28, M(0x50555a, {roughness: 0.4}), -1.55, hgt - 0.18, 0); box(L, 0.5, 0.02, 0.2, M(0xfff6d8, {emissive: 0xfff2c0, emissiveIntensity: 0.35}), -1.55, hgt - 0.24, 0, false); }
       else for(const z of [-0.3, 0.3]){ const sw = new THREE.Group(); sw.position.set(0.15, hgt - 0.1, z); sw.rotation.z = -0.5; L.add(sw); box(sw, 0.45, 0.12, 0.4, M(0x3a3f44, {roughness: 0.4}), 0.15, 0, 0); box(sw, 0.02, 0.1, 0.36, M(0xfff6d8, {emissive: 0xfff2c0, emissiveIntensity: 0.35}), 0.38, 0, 0, false); }
@@ -530,9 +537,9 @@ const HEK = new THREE.Group(); scene.add(HEK);
   { const s0 = 0.95, n1 = 10.3,                                        // hek rokershokzijde op Nicks lijn (± 1,15 m verder dan eerst)
                                             // kopse kant = bestaand hek aan de kant van het rokershok blijft staan
     sE = fs(n1), gm0 = 9.19 - 1.5, gm1 = 9.19 + 1.5, vd = 11.95;                                    // vluchtdeur 2 direct naast de poort gaas2 = true;
-    seg(wp(s0, -1.5), wp(s0, 0.4), 'gaas'); seg(wp(s0, 1.6), wp(s0, 8.75), 'gaas'); seg(wp(s0, 9.95), wp(s0, n1), 'gaas');          // vluchtdeur 1 in de looproute langs de gevel                                   // kopse kant (vluchtdeur 1 bij n 8,5)
+    seg(wp(s0, -1.5), wp(s0, 0.95), 'gaas'); seg(wp(s0, 2.15), wp(s0, 8.75), 'gaas'); seg(wp(s0, 9.95), wp(s0, n1), 'gaas');          // vluchtdeur 1 in de looproute langs de gevel                                   // kopse kant (vluchtdeur 1 bij n 8,5)
     seg(wp(s0, n1), wp(gm0, n1), 'gaas'); seg(wp(gm1, n1), wp(vd - 0.6, n1), 'gaas'); seg(wp(vd + 0.6, n1), wp(sE, n1), 'gaas'); gaas2 = false;
-    const pg = new THREE.Group(); pg.position.copy(wp(9.19, n1)); pg.rotation.y = YAW; HEK.add(pg);
+    const pg = new THREE.Group(); pg.position.copy(wp(9.19, n1)); pg.rotation.y = YAW; HEK.add(pg); dxL(DXS, wp(gm0, n1), wp(gm1, n1), 'POORT'); dxT(DXS, wp(9.19 - 1.2, n1 + 0.35), 'POORT 2x1500', 0.2, 'TEKST');
     for(const x of [-1.5, 1.5]) box(pg, 0.1, 2.2, 0.1, zink, x, 1.1, 0);
     for(const k of [-1, 1]){ const lg = new THREE.Group(); lg.position.set(k*1.45, 0, 0); pg.add(lg); const t = gaasG.clone(); t.needsUpdate = true; t.wrapS = THREE.RepeatWrapping; t.repeat.set(0.55, 1);
       const pm2 = new THREE.Mesh(new THREE.PlaneGeometry(1.36, 1.8), new THREE.MeshStandardMaterial({map: t, transparent: true, alphaTest: 0.35, side: THREE.DoubleSide, roughness: 0.5, metalness: 0.3})); pm2.position.set(-k*0.71, 1.0, 0); lg.add(pm2);
@@ -540,7 +547,7 @@ const HEK = new THREE.Group(); scene.add(HEK);
     box(pg, 0.03, 0.25, 0.06, matZwart, 0, 1.05, 0.04);
     plak(pg, 0.9, 0.3, lbl('⚡ Verboden toegang voor onbevoegden', 512, 170, '#ffd500', '#111', 'bold 40px Arial'), -2.6, 1.4, 0.03);
     const bord = lbl('NOODUITGANG', 384, 96, '#169b48', '#ffffff', 'bold 52px Arial');
-    const vluchtdeur = (p, rot) => { const d = new THREE.Group(); d.position.copy(p); d.rotation.y = rot; HEK.add(d);             // lokaal +z = buitenkant
+    const vluchtdeur = (p, rot) => { { const dd = V(Math.cos(rot), 0, -Math.sin(rot)); dxL(DXS, p.clone().addScaledVector(dd, -0.55), p.clone().addScaledVector(dd, 0.55), 'VLUCHTDEUR'); dxT(DXS, p.clone().addScaledVector(dd, -0.5).add(V(0.3, 0, 0.3)), 'VLUCHTDEUR', 0.2, 'TEKST'); } const d = new THREE.Group(); d.position.copy(p); d.rotation.y = rot; HEK.add(d);             // lokaal +z = buitenkant
       for(const x of [-0.6, 0.6]) box(d, 0.1, 2.3, 0.1, zink, x, 1.15, 0); box(d, 1.3, 0.08, 0.1, zink, 0, 2.3, 0);
       const t = gaasG.clone(); t.needsUpdate = true; t.wrapS = THREE.RepeatWrapping; t.repeat.set(0.4, 1);
       const lf = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 1.9), new THREE.MeshStandardMaterial({map: t, transparent: true, alphaTest: 0.35, side: THREE.DoubleSide, roughness: 0.5, metalness: 0.3})); lf.position.set(0, 1.03, 0); d.add(lf);
@@ -548,11 +555,11 @@ const HEK = new THREE.Group(); scene.add(HEK);
       box(d, 0.85, 0.04, 0.04, M(0xc8102e, {roughness: 0.4}), 0, 1.0, -0.09); for(const x of [-0.42, 0.42]) box(d, 0.04, 0.04, 0.08, M(0xc8102e), x, 1.0, -0.05);   // panieksluiting binnenzijde
       plak(d, 0.6, 0.15, bord, 0, 2.48, 0.03); plak(d, 0.6, 0.15, bord, 0, 2.48, -0.03, Math.PI);
       d.traverse(o => { if(o.isMesh) o.userData.info = '<b>Vluchtdeur</b> 1 m, draait naar buiten, panieksluiting aan de binnenzijde (vrij uitgang zonder sleutel) · bord NOODUITGANG'; }); };
-    vluchtdeur(wp(s0, 1.0), YAW - Math.PI/2); vluchtdeur(wp(s0, 9.35), YAW - Math.PI/2); vluchtdeur(wp(vd, n1), YAW);
+    vluchtdeur(wp(s0, 1.55), YAW - Math.PI/2); vluchtdeur(wp(s0, 9.35), YAW - Math.PI/2); vluchtdeur(wp(vd, n1), YAW);
     // looppaden (dia 46, rood): langs het hek aan de rokershokzijde en de trailerzijde, plus 2 m looproute tussen de PV-ruimte en de gevel
     const kl = ctex(128, 128, (c, W, Hh) => { c.fillStyle = '#9a5a4a'; c.fillRect(0, 0, W, Hh); c.strokeStyle = '#7d4538'; c.lineWidth = 3; for(let y = 0; y <= Hh; y += 16){ c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); for(let x = (y/16 % 2) ? 0 : 16; x <= W; x += 32){ c.beginPath(); c.moveTo(x, y); c.lineTo(x, y + 16); c.stroke(); } } });
     kl.wrapS = kl.wrapT = THREE.RepeatWrapping;
-    const pad = (sa, sb, na, nb) => { const t = kl.clone(); t.needsUpdate = true; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set((sb - sa)/1.2, (nb - na)/1.2);
+    const pad = (sa, sb, na, nb) => { dxP(DXS, [wp(sa, na), wp(sb, na), wp(sb, nb), wp(sa, nb)], 'LOOPPAD', true); const t = kl.clone(); t.needsUpdate = true; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set((sb - sa)/1.2, (nb - na)/1.2);
       const m = new THREE.Mesh(new THREE.PlaneGeometry(sb - sa, nb - na), new THREE.MeshStandardMaterial({map: t, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -3}));
       m.rotation.x = -Math.PI/2; const g2 = new THREE.Group(); g2.position.copy(wp((sa + sb)/2, (na + nb)/2)); g2.position.y = 0.025; g2.rotation.y = YAW; g2.add(m); m.rotation.z = 0; m.receiveShadow = true; HEK.add(g2);
       m.userData.info = '<b>Looppad</b> (dia 46)'; };
@@ -562,7 +569,7 @@ const HEK = new THREE.Group(); scene.add(HEK);
       const na = 10.6, nb = 28.8, q = [[fs(na) - 4.6, na], [fs(na) - 0.3, na], [fs(nb) - 0.3, nb], [fs(nb) - 4.6, nb]].map(([a, b]) => wp(a, b)), qg = new THREE.BufferGeometry();
       qg.setAttribute('position', new THREE.Float32BufferAttribute([q[0], q[1], q[2], q[0], q[2], q[3]].flatMap(p => [p.x, 0.045, p.z]), 3));
       qg.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0], 2));
-      const bm = new THREE.Mesh(qg, new THREE.MeshBasicMaterial({map: bw, transparent: true, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -6})); bm.userData.info = '<b>Brandweer-opstelstrook</b> — vrij houden (± 4,3 m breed langs het hek, van het technische terrein tot de poort)'; KLIK.push(bm); HEK.add(bm); }
+      const bm = new THREE.Mesh(qg, new THREE.MeshBasicMaterial({map: bw, transparent: true, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -6})); bm.userData.info = '<b>Brandweer-opstelstrook</b> — vrij houden (± 4,3 m breed langs het hek, van het technische terrein tot de poort)'; KLIK.push(bm); HEK.add(bm); dxP(DXS, q, 'BRANDWEER', true); dxT(DXS, q[0].clone().lerp(q[2], 0.5), 'BRANDWEERSTROOK VRIJ', 0.3, 'TEKST'); }
     pad(s0, s0 + 0.8, 0, n1); pad(s0, 7.3, n1 - 0.8, n1); pad(s0 + 0.8, PVS.s + 1.6, 0, 2.0); }
   // haag tussen hek en weg (Street View / Cyclomedia) en bomen bij de hoek
   let sd = 7; const rnd = () => (sd = (sd*16807) % 2147483647)/2147483647;
@@ -677,7 +684,7 @@ function zetTompoes(){ const aan = $t('tTompoes').checked; TOMPOES.visible = aan
 // ---------- maatvoering + controle veiligheidsafstanden (knop): zones uit dia 35/43/46, gemeten aan de echte modellen ----------
 const VRIJ = new THREE.Group(); VRIJ.visible = false; scene.add(VRIJ); VRIJ.userData.t = new THREE.Object3D();
 function bouwMaat(){
-  while(VRIJ.children.length) VRIJ.remove(VRIJ.children[0]);
+  while(VRIJ.children.length) VRIJ.remove(VRIJ.children[0]); DXM.length = 0;
   const O = V(GA[0], 0, GA[1]), sn = p => { const d = p.clone().sub(O); return [d.dot(U), d.dot(N)]; };
   // omhullende in (s, n) uit de echte geometrie (alleen delen boven 0,3 m: geen stelconplaten / poeren)
   const omhul = (obj, ymin) => { const r = {s0: 1e9, s1: -1e9, n0: 1e9, n1: -1e9}, v = V(0, 0, 0); obj.updateMatrixWorld(true);
@@ -686,23 +693,29 @@ function bouwMaat(){
     return r; };
   const lijnM = k => new THREE.LineBasicMaterial({color: k, depthTest: false});
   const rect = (r, kleur, y) => { const pts = [[r.s0, r.n0], [r.s1, r.n0], [r.s1, r.n1], [r.s0, r.n1], [r.s0, r.n0]].map(([a, b]) => wp(a, b).setY(y || 0.08)); const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lijnM(kleur)); l.renderOrder = 9; VRIJ.add(l); };
-  const lab = (txt, a, b, kleur, k) => { const sp = sprite(txt, wp(a, b).setY(0.5), k || 0.3, kleur); const i = LABELS.indexOf(sp); if(i >= 0) LABELS.splice(i, 1); scene.remove(sp); sp.visible = true; VRIJ.add(sp); };
+  const lab = (txt, a, b, kleur, k, laag) => { dxT(DXM, wp(a, b), txt, laag === 'MAAT' ? 0.18 : 0.3, laag || 'TEKST'); const sp = sprite(txt, wp(a, b).setY(0.5), (k || 0.3)*1.45, kleur); const i = LABELS.indexOf(sp); if(i >= 0) LABELS.splice(i, 1); scene.remove(sp); sp.visible = true; VRIJ.add(sp); };
   // maatlijn met pijlpunten (dun, klein label)
   const maat = (a0, b0, a1, b1, kleur, y) => { const yy = y || 0.15, p0 = wp(a0, b0).setY(yy), p1 = wp(a1, b1).setY(yy), d = p1.clone().sub(p0), L = d.length(); if(L < 0.05) return 0; d.normalize();
     const zij = V(-d.z, 0, d.x), k = Math.min(0.18, L/4), pts = [p0, p1,
       p0, p0.clone().addScaledVector(d, k).addScaledVector(zij, k*0.5), p0, p0.clone().addScaledVector(d, k).addScaledVector(zij, -k*0.5),
       p1, p1.clone().addScaledVector(d, -k).addScaledVector(zij, k*0.5), p1, p1.clone().addScaledVector(d, -k).addScaledVector(zij, -k*0.5)];
-    const l = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), lijnM(kleur)); l.renderOrder = 9; VRIJ.add(l);
-    lab(Math.round(L*1000) + '', (a0 + a1)/2, (b0 + b1)/2, kleur, 0.36); return L; };
+    const l = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), lijnM(kleur)); l.renderOrder = 9; VRIJ.add(l); for(let i = 0; i < pts.length; i += 2) dxL(DXM, pts[i], pts[i + 1], 'MAAT');
+    lab(Math.round(L*1000) + '', (a0 + a1)/2, (b0 + b1)/2, kleur, 0.36, 'MAAT'); return L; };
   const zone = (cs, cn, ls, ln) => ({s0: cs - ls/2, s1: cs + ls/2, n0: cn - ln/2, n1: cn + ln/2});
   const eosB = omhul(ASSET.eos, 0.5), evB = omhul(ASSET.ev, 0.3), pvB = omhul(ASSET.pv, 0.35), nsaB = omhul(ASSET.nsa, 0.3), zvkB = omhul(ASSET.zvk, 0.5);
   const zE = {s0: (eosB.s0 + eosB.s1)/2 - 7.575/2, s1: (eosB.s0 + eosB.s1)/2 + 7.575/2, n0: eosB.n0 - 1.0, n1: Math.max(eosB.n0 - 1.0 + 4.07, eosB.n1 + 1.65)};   // dia 35: 1000 achter, 1650 voor (deurzwaai)
   const zD = zone((evB.s0 + evB.s1)/2, (evB.n0 + evB.n1)/2 + 0.6, 2.98, 3.9);
   const zP = zone((pvB.s0 + pvB.s1)/2, (pvB.n0 + pvB.n1)/2, 3.2, 6.45);
-  const rectD = (r, kleur) => { const pts = []; const hoek = [[r.s0, r.n0], [r.s1, r.n0], [r.s1, r.n1], [r.s0, r.n1]]; for(let i = 0; i < 4; i++){ const [a0, b0] = hoek[i], [a1, b1] = hoek[(i + 1) % 4]; const L = Math.hypot(a1 - a0, b1 - b0), n = Math.floor(L/0.3);
+  const rectD = (r, kleur, laag) => { dxP(DXM, [[r.s0, r.n0], [r.s1, r.n0], [r.s1, r.n1], [r.s0, r.n1]].map(([a, b]) => wp(a, b)), laag || 'ZONE', true); const pts = []; const hoek = [[r.s0, r.n0], [r.s1, r.n0], [r.s1, r.n1], [r.s0, r.n1]]; for(let i = 0; i < 4; i++){ const [a0, b0] = hoek[i], [a1, b1] = hoek[(i + 1) % 4]; const L = Math.hypot(a1 - a0, b1 - b0), n = Math.floor(L/0.3);
       for(let k = 0; k < n; k += 2){ pts.push(wp(a0 + (a1 - a0)*k/n, b0 + (b1 - b0)*k/n).setY(0.07), wp(a0 + (a1 - a0)*(k + 1)/n, b0 + (b1 - b0)*(k + 1)/n).setY(0.07)); } }
     const l = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), lijnM(kleur)); l.renderOrder = 8; VRIJ.add(l); };
-  rectD(zE, 0x2e9e4f); rectD(zD, 0x1f7cc4); rectD(zP, 0xd4a017);
+  rectD(zE, 0x2e9e4f, 'ZONE-EOS'); rectD(zD, 0x1f7cc4, 'ZONE-DC'); rectD(zP, 0xd4a017, 'ZONE-PV');
+  { const box4 = (r, laag) => dxP(DXM, [[r.s0, r.n0], [r.s1, r.n0], [r.s1, r.n1], [r.s0, r.n1]].map(([a, b]) => wp(a, b)), laag, true);
+    const emsB = omhul(ASSET.ems, 0.3); box4(emsB, 'EMS'); const vis = ASSET.ems.visible; ASSET.ems.visible = false; box4(omhul(ASSET.eos, 0.5), 'EOS'); ASSET.ems.visible = vis;
+    box4(evB, 'DC-UNIT'); box4(pvB, 'PV-SKID'); box4(nsaB, 'NSA'); box4(zvkB, 'ZVK');
+    for(const k of ['d1', 'd2']) if(ASSET[k]){ const b = omhul(ASSET[k], 0.2); box4(b, 'DISPENSER'); dxT(DXM, wp(b.s1 + 0.3, (b.n0 + b.n1)/2), 'dispenser ' + k[1], 0.3, 'TEKST'); }
+    dxP(DXM, [PL0.clone().addScaledVector(N, -2.1), PL1.clone().addScaledVector(N, -2.1), PL1.clone().addScaledVector(N, 2.1), PL0.clone().addScaledVector(N, 2.1)], 'EOS-PLEIN', true);
+    dxL(DXM, wp(-60, WN), wp(30, WN), 'GEVEL'); }
   const hS0 = 0.95, hN1 = 10.3, hSE = n => 18.35 - 0.025*n, gevel = WN;
   const C = [], ok = (t, v) => C.push((v ? '✅ ' : '❌ ') + t), mm = d => Math.round(d*1000) + ' mm';
   const over = (a, b) => Math.min(a.s1, b.s1) - Math.max(a.s0, b.s0) > 0.02 && Math.min(a.n1, b.n1) - Math.max(a.n0, b.n0) > 0.02;
@@ -721,7 +734,7 @@ function bouwMaat(){
   // afstanden tussen alle componenten binnen het hek: per component naar de dichtstbijzijnde buur / hek / gevel in 4 richtingen
   const kleur = '#c0281f', gedaan = new Set();
   for(const [nm, b] of Object.entries(BOD)){ const ms = (b.s0 + b.s1)/2, mn = (b.n0 + b.n1)/2;
-    lab(nm, ms, mn, '#17212a', 0.4);
+    lab(nm, ms, mn, '#17212a', 0.4, 'TEKST');
     const kand = { '+s': [[hSE(mn), 'hek']], '-s': [[hS0, 'hek']], '+n': [[hN1, 'hek']], '-n': [[gevel, 'gevel']] };
     for(const [k2, o] of Object.entries(BOD)){ if(k2 === nm) continue;
       if(o.n0 < mn && o.n1 > mn){ if(o.s0 >= b.s1 - 0.05) kand['+s'].push([o.s0, k2]); if(o.s1 <= b.s0 + 0.05) kand['-s'].push([o.s1, k2]); }
@@ -795,6 +808,19 @@ let tPrev = performance.now(); const camVorig = new THREE.Matrix4();
   if(up) target.y = Math.max(-3, Math.min(150, target.y + up*Math.max(2, Math.min(40, radius*0.15))*dt*sp));
   updateCam(); camera.updateMatrixWorld(); const veranderd = !camVorig.equals(camera.matrixWorld); camVorig.copy(camera.matrixWorld);
   if(veranderd || VUIL > 0){ VUIL = Math.max(0, VUIL - 1); renderer.render(scene, camera); } })();
+function dxfExport(){ try{ bouwMaat(); }catch(e){ console.warn(e); } if(!$t('tVrij').checked){ VRIJ.visible = false; const el = $t('maatInfo'); if(el) el.remove(); }
+  const LAGEN = {GEBOUW: 8, GEVEL: 250, HEK: 3, 'HEK-SPIJLEN': 3, POORT: 1, VLUCHTDEUR: 3, LOOPPAD: 30, BRANDWEER: 2, 'NP-VAK': 7, MAST: 8, 'EOS-PLEIN': 6, EOS: 5, EMS: 6, 'DC-UNIT': 4, 'PV-SKID': 40, NSA: 150, ZVK: 9, DISPENSER: 4, 'ZONE-EOS': 3, 'ZONE-DC': 4, 'ZONE-PV': 40, MAAT: 1, TEKST: 7};
+  const E = x => (x + RD0.x).toFixed(3), Nn = z => (RD0.y - z).toFixed(3), out = [];
+  const w = (...a) => { for(let i = 0; i < a.length; i += 2) out.push(String(a[i]), String(a[i + 1])); };
+  w(0, 'SECTION', 2, 'HEADER', 9, '$ACADVER', 1, 'AC1009', 9, '$INSUNITS', 70, 6, 0, 'ENDSEC');
+  w(0, 'SECTION', 2, 'TABLES', 0, 'TABLE', 2, 'LAYER', 70, Object.keys(LAGEN).length); for(const [k, c] of Object.entries(LAGEN)) w(0, 'LAYER', 2, k, 70, 0, 62, c, 6, 'CONTINUOUS'); w(0, 'ENDTAB', 0, 'ENDSEC');
+  w(0, 'SECTION', 2, 'ENTITIES');
+  for(const e of [...DXS, ...DXM]){ if(e.t === 'L') w(0, 'LINE', 8, e.laag, 10, E(e.a[0]), 20, Nn(e.a[1]), 30, 0, 11, E(e.b[0]), 21, Nn(e.b[1]), 31, 0);
+    else w(0, 'TEXT', 8, e.laag, 10, E(e.a[0]), 20, Nn(e.a[1]), 30, 0, 40, e.h, 1, String(e.txt).replace(/[^\x20-\x7E]/g, '-'), 50, 0, 72, 1, 11, E(e.a[0]), 21, Nn(e.a[1]), 31, 0); }
+  w(0, 'TEXT', 8, 'TEKST', 10, E(wp(-8, 14).x), 20, Nn(wp(-8, 14).z), 30, 0, 40, 0.5, 1, 'HEMA DC Utrecht - energieplein (project 112115) - bovenaanzicht RD (m), maten in mm - Fudura');
+  w(0, 'ENDSEC', 0, 'EOF');
+  const blob = new Blob([out.join('\r\n')], {type: 'application/dxf'}), a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'HEMA_energieplein_2D.dxf'; document.body.appendChild(a); a.click(); a.remove(); }
+$t('bDxf').addEventListener('click', dxfExport);
 window.__hema = {scene, ASSET, VIEWS, U, N, YAW, bouwMaat: () => bouwMaat()};
 
 </script>
