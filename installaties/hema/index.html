@@ -327,7 +327,7 @@ dispenser('d1', wp(11.05, 47.5), 1); dispenser('d2', wp(10.8, 57.1), 2);   // 9,
 
 // ---------- 3. PV-omvormerskid (dia 'PV opstelling'): frame 5050 × 1800 × 2273 mm, zadeldak, omvormers rug-aan-rug: 3 voor + 2 achter; dwars op de gevel ----------
 // lokaal x = van de gevel af (5050), z = langs de gevel (1800); DC komt via de kabelladder langs de gevel binnen, AC ondergronds in een sleuf naar de OVK/ZVK
-const PVS = {s: 1.9 + 1.6, n: 2.0 + 3.225};                             // dia 46: PV-ruimte 6450 × 3200 tegen het bestaande hek bij het rokershok (s 1,9), 2 m looproute langs de gevel
+const PVS = {s: 0.95 + 1.6, n: 2.0 + 3.225};                             // dia 46: PV-ruimte 6450 × 3200 tegen het bestaande hek bij het rokershok (s 1,9), 2 m looproute langs de gevel
 { const g = asset('pv', wp(PVS.s, PVS.n), '<b>PV-omvormerskid — 5 × Huawei SUN2000-100KTL-M2</b> (dia "PV opstelling")<br>verzinkt frame 5050 × 1800 × 2273 mm met zadeldak, omvormers rug-aan-rug: 3 aan de voorzijde, 2 aan de achterzijde · 700 mm vrij rondom<br>1035 × 700 × 365 mm, ± 90 kg, 100 kW per omvormer · 742,58 kWp (1.388 × Longi 535 Wp, ELIX)<br>DC via de afgedekte kabelladder langs de gevel; AC ondergronds in een sleuf naar de OVK/ZVK (5 × 200 A gG)', YAW - Math.PI/2);
   const wit = M(0xeef0ef, {roughness: 0.35}), grijs = M(0xc9ced2, {roughness: 0.45}), staal = M(0xa9b0b4, {roughness: 0.4, metalness: 0.8}), dak = M(0x6e767b, {roughness: 0.5, metalness: 0.6});
   const L = 5.05, B = 1.8, H = 2.273;
@@ -504,7 +504,8 @@ const HEK = new THREE.Group(); scene.add(HEK);
     seg(p, p.clone().addScaledVector(h2, 90), 'spijl'); }
   // afgeschermd technisch terrein (niet toegankelijk voor leken): verzinkt gaas 2 m van de gevel om omvormers, NSA, EMS, EOS, ZVK en power box tot aan het hek langs de weg
   // dubbele poort 2 × 1,5 m voor de AIO-deuren + 2 vluchtdeuren (naar buiten draaiend, panieksluiting, groen bord)
-  { const s0 = 1.9, n1 = 10.3,                                         // kopse kant = bestaand hek aan de kant van het rokershok (luchtfoto: s ± 1,9), blijft staan
+  { const s0 = 0.95, n1 = 10.3,                                        // hek rokershokzijde op Nicks lijn (± 1,15 m verder dan eerst)
+                                            // kopse kant = bestaand hek aan de kant van het rokershok blijft staan
     sE = fs(n1), gm0 = 11.19 - 1.5, gm1 = 11.19 + 1.5, vd = 16.0; gaas2 = true;
     seg(wp(s0, -1.5), wp(s0, 8.75), 'gaas'); seg(wp(s0, 9.95), wp(s0, n1), 'gaas');                                   // kopse kant (vluchtdeur 1 bij n 8,5)
     seg(wp(s0, n1), wp(gm0, n1), 'gaas'); seg(wp(gm1, n1), wp(vd - 0.6, n1), 'gaas'); seg(wp(vd + 0.6, n1), wp(sE, n1), 'gaas'); gaas2 = false;
@@ -532,7 +533,7 @@ const HEK = new THREE.Group(); scene.add(HEK);
       const m = new THREE.Mesh(new THREE.PlaneGeometry(sb - sa, nb - na), new THREE.MeshStandardMaterial({map: t, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -3}));
       m.rotation.x = -Math.PI/2; const g2 = new THREE.Group(); g2.position.copy(wp((sa + sb)/2, (na + nb)/2)); g2.position.y = 0.025; g2.rotation.y = YAW; g2.add(m); m.rotation.z = 0; m.receiveShadow = true; HEK.add(g2);
       m.userData.info = '<b>Looppad</b> (dia 46)'; };
-    pad(s0, s0 + 0.8, 0, n1); pad(s0, 7.3, n1 - 0.8, n1); pad(s0 + 0.8, 5.1, 0, 2.0); }
+    pad(s0, s0 + 0.8, 0, n1); pad(s0, 7.3, n1 - 0.8, n1); pad(s0 + 0.8, PVS.s + 1.6, 0, 2.0); }
   // haag tussen hek en weg (Street View / Cyclomedia) en bomen bij de hoek
   let sd = 7; const rnd = () => (sd = (sd*16807) % 2147483647)/2147483647;
   const bm = [0x3d6528, 0x47722e, 0x557f36, 0x6a7a38].map(c => M(c, {roughness: 0.95})), bgeo = new THREE.IcosahedronGeometry(1, 1);
