@@ -384,6 +384,15 @@ tr.waiting td{color:var(--muted)}
 .taskrow.done .tr-title{text-decoration:line-through;color:var(--muted)}
 .taskrow.waiting .tr-title{color:var(--muted)}
 .ib-body > div:last-child{padding-top:8px}
+
+/* takenregels in dezelfde kolommen als de projectregel: vinkje onder het pijltje, deadline onder Deadline */
+.ib-body{padding:0 0 10px;gap:0}
+.taskrow{grid-template-columns:22px 110px minmax(0,1fr) 100px 150px;padding:7px 12px;gap:10px}
+.taskrow input{grid-column:1;justify-self:center}
+.taskrow .tr-title{grid-column:2 / span 2}
+.taskrow .tr-due{grid-column:4;text-align:left}
+.ib-body > div:last-child{padding:10px 12px 0 44px}
+@media (max-width:640px){.taskrow{grid-template-columns:18px minmax(0,1fr) auto}.taskrow .tr-title{grid-column:2}.taskrow .tr-due{grid-column:3}.ib-body > div:last-child{padding-left:12px}}
 </style>
 </head>
 <body>
