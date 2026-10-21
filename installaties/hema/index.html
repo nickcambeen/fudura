@@ -432,15 +432,28 @@ const HEK = new THREE.Group(); scene.add(HEK);
     return g; };
   const A = wp(fs(0.8), 0.8), B = wp(fs(32), 32), C = wp(fs(NC), NC), E = wp(fs(NC) - 60, NC);
   const g1 = seg(A, B, 'gaas'); seg(B, C, 'spijl'); seg(C, E, 'spijl');
-  // hekwerk rondom de EOS (verzinkt gaas, 2 m): 1 m rond het plein, kopse kant bij de power box op 0,3 m; dubbele poort 2 × 1,5 m aan de voorzijde (deuren AIO's)
-  { const s0 = 2.14, s1 = 13.65, n0 = 5.94, n1 = 12.14, pm = (s0 + s1)/2; gaas2 = true;
-    seg(wp(s0, n0), wp(s1, n0), 'gaas'); seg(wp(s1, n0), wp(s1, n1), 'gaas'); seg(wp(s1, n1), wp(pm + 1.5, n1), 'gaas'); seg(wp(pm - 1.5, n1), wp(s0, n1), 'gaas'); seg(wp(s0, n1), wp(s0, n0), 'gaas'); gaas2 = false;
-    const pg = new THREE.Group(); pg.position.copy(wp(pm, n1)); pg.rotation.y = YAW; HEK.add(pg);
+  // afgeschermd technisch terrein (niet toegankelijk voor leken): verzinkt gaas 2 m van de gevel om omvormers, NSA, EMS, EOS, ZVK en power box tot aan het hek langs de weg
+  // dubbele poort 2 × 1,5 m voor de AIO-deuren + 2 vluchtdeuren (naar buiten draaiend, panieksluiting, groen bord)
+  { const s0 = 2.1, n1 = 12.14, sE = fs(n1), gm0 = 8.24 - 1.5, gm1 = 8.24 + 1.5, vd = 15.8; gaas2 = true;
+    seg(wp(s0, -1.5), wp(s0, 7.9), 'gaas'); seg(wp(s0, 9.1), wp(s0, n1), 'gaas');                                   // kopse kant (vluchtdeur 1 bij n 8,5)
+    seg(wp(s0, n1), wp(gm0, n1), 'gaas'); seg(wp(gm1, n1), wp(vd - 0.6, n1), 'gaas'); seg(wp(vd + 0.6, n1), wp(sE, n1), 'gaas'); gaas2 = false;
+    const pg = new THREE.Group(); pg.position.copy(wp(8.24, n1)); pg.rotation.y = YAW; HEK.add(pg);
     for(const x of [-1.5, 1.5]) box(pg, 0.1, 2.2, 0.1, zink, x, 1.1, 0);
     for(const k of [-1, 1]){ const lg = new THREE.Group(); lg.position.set(k*1.45, 0, 0); pg.add(lg); const t = gaasG.clone(); t.needsUpdate = true; t.wrapS = THREE.RepeatWrapping; t.repeat.set(0.55, 1);
       const pm2 = new THREE.Mesh(new THREE.PlaneGeometry(1.36, 1.8), new THREE.MeshStandardMaterial({map: t, transparent: true, alphaTest: 0.35, side: THREE.DoubleSide, roughness: 0.5, metalness: 0.3})); pm2.position.set(-k*0.71, 1.0, 0); lg.add(pm2);
       for(const y of [0.08, 1.92]) box(lg, 1.42, 0.05, 0.05, zink, -k*0.71, y, 0); for(const x of [0.02, 1.4]) box(lg, 0.05, 1.9, 0.05, zink, -k*x, 1.0, 0); }
-    box(pg, 0.03, 0.25, 0.06, matZwart, 0, 1.05, 0.04); }
+    box(pg, 0.03, 0.25, 0.06, matZwart, 0, 1.05, 0.04);
+    plak(pg, 0.9, 0.3, lbl('⚡ Verboden toegang voor onbevoegden', 512, 170, '#ffd500', '#111', 'bold 40px Arial'), -2.6, 1.4, 0.03);
+    const bord = lbl('NOODUITGANG', 384, 96, '#169b48', '#ffffff', 'bold 52px Arial');
+    const vluchtdeur = (p, rot) => { const d = new THREE.Group(); d.position.copy(p); d.rotation.y = rot; HEK.add(d);             // lokaal +z = buitenkant
+      for(const x of [-0.6, 0.6]) box(d, 0.1, 2.3, 0.1, zink, x, 1.15, 0); box(d, 1.3, 0.08, 0.1, zink, 0, 2.3, 0);
+      const t = gaasG.clone(); t.needsUpdate = true; t.wrapS = THREE.RepeatWrapping; t.repeat.set(0.4, 1);
+      const lf = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 1.9), new THREE.MeshStandardMaterial({map: t, transparent: true, alphaTest: 0.35, side: THREE.DoubleSide, roughness: 0.5, metalness: 0.3})); lf.position.set(0, 1.03, 0); d.add(lf);
+      for(const y of [0.1, 1.97]) box(d, 1.06, 0.05, 0.05, zink, 0, y, 0); for(const x of [-0.52, 0.52]) box(d, 0.05, 1.9, 0.05, zink, x, 1.03, 0);
+      box(d, 0.85, 0.04, 0.04, M(0xc8102e, {roughness: 0.4}), 0, 1.0, -0.09); for(const x of [-0.42, 0.42]) box(d, 0.04, 0.04, 0.08, M(0xc8102e), x, 1.0, -0.05);   // panieksluiting binnenzijde
+      plak(d, 0.6, 0.15, bord, 0, 2.48, 0.03); plak(d, 0.6, 0.15, bord, 0, 2.48, -0.03, Math.PI);
+      d.traverse(o => { if(o.isMesh) o.userData.info = '<b>Vluchtdeur</b> 1 m, draait naar buiten, panieksluiting aan de binnenzijde (vrij uitgang zonder sleutel) · bord NOODUITGANG'; }); };
+    vluchtdeur(wp(s0, 8.5), YAW - Math.PI/2); vluchtdeur(wp(vd, n1), YAW); }
   // haag tussen hek en weg (Street View / Cyclomedia) en bomen bij de hoek
   let sd = 7; const rnd = () => (sd = (sd*16807) % 2147483647)/2147483647;
   const bm = [0x3d6528, 0x47722e, 0x557f36, 0x6a7a38].map(c => M(c, {roughness: 0.95})), bgeo = new THREE.IcosahedronGeometry(1, 1);
@@ -449,7 +462,7 @@ const HEK = new THREE.Group(); scene.add(HEK);
   const stam = M(0x5a4632, {roughness: 0.9});
   for(const [ds, dn] of [[3.5, -2], [5, 3], [1.5, 6], [-6, 2.5], [-14, 2.5]]){ const p = C.clone().addScaledVector(U, ds).addScaledVector(N, dn); const t = new THREE.Group(); t.position.copy(p); HEK.add(t);
     cyl(t, 0.18, 3.0, stam, 0, 1.5, 0, null, 8); const k = new THREE.Mesh(bgeo, bm[(ds > 0 ? 1 : 2)]); k.scale.set(2.6, 2.3, 2.6); k.position.y = 4.4; k.castShadow = true; t.add(k); }
-  HEK.traverse(o => { if(o.isMesh){ o.userData.info = '<b>Hekwerk</b>: om de EOS verzinkt gaas 2 m met dubbele poort; groen dubbelstaafmat bij de gevel, verzinkt spijlenhek langs de trailervakken tot de kruising en de hoek om langs het fietspad (Cyclomedia) · haag aan de wegzijde'; KLIK.push(o); } }); }
+  HEK.traverse(o => { if(o.isMesh){ if(!o.userData.info) o.userData.info = '<b>Hekwerk</b>: afgeschermd technisch terrein (omvormers, NSA, EMS, EOS, ZVK, power box) verzinkt gaas 2 m met dubbele poort en 2 vluchtdeuren; groen dubbelstaafmat bij de gevel, verzinkt spijlenhek langs de trailervakken tot de kruising en de hoek om langs het fietspad (Cyclomedia) · haag aan de wegzijde'; KLIK.push(o); } }); }
 
 // ---------- easter egg: ergens ligt een HEMA-rookworst ----------
 { const g = new THREE.Group(); g.position.set(1.9, 2.84, -0.9); g.rotation.y = 0.7; ASSET.zvk.add(g);
