@@ -450,10 +450,12 @@ function bouwPvDak(poly, h){ WN = wandN(poly); const wl = wandOp(8.7); if(wl !==
   IM.castShadow = true; IM.receiveShadow = true; IM.userData.info = `<b>PV op het dak</b>: ${pos.length} × Longi Hi-MO X10 535 Wp = ${(pos.length*0.535).toFixed(2)} kWp (ELIX: 1.388 × 535 Wp = 742,58 kWp)<br>Van der Valk Pro+ oost/west · legplan indicatief, definitief na akkoord HEMA en constructeur`;
   PVDAK.add(IM); KLIK.push(IM);
   // DC-kabelladder: langs de dakrand en verticaal langs de gevel tussen omvormer 3 en 4 (afgedekt)
-  const sk = wp(PVS.s, 0), sAl = sk.clone().sub(B0).dot(U), top = B0.clone().addScaledVector(U, sAl).addScaledVector(N, WN + 0.05);
+  let wLad = WN; try{ const w = wandOp(PVS.s); if(w !== null) wLad = w; }catch(e){}
+  const sk = wp(PVS.s, 0), sAl = sk.clone().sub(B0).dot(U), top = B0.clone().addScaledVector(U, sAl).addScaledVector(N, wLad - 0.02);
   const lad = M(0xb9bfc3, {metalness: 0.8, roughness: 0.35}); const LG = new THREE.Group(); LG.position.copy(top); LG.rotation.y = YAW; PVDAK.add(LG);
-  const yv = 1.95, hv = h + 0.3 - yv;   // over de looproute heen (vrije hoogte ± 1,95 m) box(LG, 0.5, hv, 0.12, lad, 0, yv + hv/2, 0.1); box(LG, 0.55, hv, 0.03, M(0x9aa3a8, {metalness: 0.6}), 0, yv + hv/2, 0.18);   // verticaal langs de gevel tot goothoogte van de skid
-  box(LG, 0.5, 0.12, 2.2, lad, 0, h + 0.35, -1.0); { const lz = Math.max(0.4, (PVS.n - 2.525) - (WN + 0.05) + 0.4); box(LG, 0.36, 0.08, lz, lad, 0, yv, lz/2); box(LG, 0.38, 0.02, lz, M(0x9aa3a8, {metalness: 0.6}), 0, yv + 0.06, lz/2); }   // horizontaal de skid in (dia: DC op ± 0,9 m)
+  const yv = 1.95, hv = h + 0.3 - yv;   // over de looproute heen (vrije hoogte ± 1,95 m)
+  box(LG, 0.5, hv, 0.12, lad, 0, yv + hv/2, 0.1); box(LG, 0.55, hv, 0.03, M(0x9aa3a8, {metalness: 0.6}), 0, yv + hv/2, 0.18);   // verticaal langs de gevel tot goothoogte van de skid
+  box(LG, 0.5, 0.12, 2.2, lad, 0, h + 0.35, -1.0); { const lz = Math.max(0.4, (PVS.n - 2.525) - wLad + 0.4); box(LG, 0.36, 0.08, lz, lad, 0, yv, lz/2); box(LG, 0.38, 0.02, lz, M(0x9aa3a8, {metalness: 0.6}), 0, yv + 0.06, lz/2); }   // horizontaal de skid in (dia: DC op ± 0,9 m)
   sprite('PV op dak · ' + pos.length + ' × 535 Wp', B0.clone().addScaledVector(U, -25).addScaledVector(W, 20).add(V(0, h + 3, 0)), 0.8, '#d4a017');
   $t('bagInfo').innerHTML += `<br>PV-dak: ${pos.length} panelen geplaatst`; renderer.shadowMap.needsUpdate = true; vuil(6); }
 
