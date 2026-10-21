@@ -60,29 +60,31 @@
   <div id="pKop"><h3 id="titel"><a href="../../" style="color:#1b4f8a;text-decoration:none" title="Hoofdmenu">‹ menu</a> &nbsp;HEMA · energieplein</h3><button class="pKnop" id="pDicht" title="Paneel inklappen" aria-label="Paneel inklappen">›</button></div>
   <details open><summary>Bekijken</summary>
     <div class="grp">Overzicht</div>
-    <div class="knoprij"><button id="bOverzicht">energieplein</button><button id="bTerrein">terrein</button><button id="bBoven">boven</button></div>
+    <div class="knoprij"><button id="bOverzicht">energieplein</button><button id="bPlein">EOS-plein</button><button id="bDak">PV op dak</button><button id="bTerrein">terrein</button><button id="bBoven">boven</button></div>
     <div class="grp">Assets</div>
     <div class="knoprij"><button id="bEos">EOS (AIO's)</button><button id="bPv">omvormers</button><button id="bZvk">ZVK + EMS</button><button id="bEv">power cabinet</button><button id="bD1">dispenser 1</button><button id="bD2">dispenser 2</button></div>
   </details>
   <details open><summary>Weergave</summary>
     <div class="grp">Omgeving</div>
-    <label>Luchtfoto PDOK (onderlegger) <input type="checkbox" id="tFoto" checked></label>
+    <label>Luchtfoto PDOK 2025 (onderlegger) <input type="checkbox" id="tFoto" checked></label>
+    <label>Satelliet Esri (i.p.v. PDOK) <input type="checkbox" id="tEsri"></label>
     <label>Gebouwen BAG / 3DBAG <input type="checkbox" id="tBag" checked></label>
     <label>Gebouwen doorzichtig <input type="checkbox" id="tBagT"></label>
     <div class="grp">Assets</div>
     <label>Labels <input type="checkbox" id="tLabel" checked></label>
-    <label>Maatvoering vrije ruimte <input type="checkbox" id="tVrij"></label>
+    <label>Maatvoering EOS-ruimte <input type="checkbox" id="tVrij"></label>
+    <label>PV-panelen op het dak <input type="checkbox" id="tPvDak" checked></label>
     <label>Vrachtwagen bij dispenser 1 <input type="checkbox" id="tTruck" checked></label>
     <div id="bagInfo" class="cfgInfo">gebouwen laden…</div>
   </details>
   <details><summary>Componenten</summary>
     <ul>
       <li><b>EOS</b>: 5 × Delta DELTerra C AIO 125 kW / 261 kWh met junction box (model uit de AIO-pagina) op stelconplaten — projectplan: 375 kW / 1290 kWh</li>
-      <li><b>PV</b>: 5 × Huawei SUN2000-100KTL-M2 (1035 × 700 × 365 mm, ±90 kg) op een frame met PV-shelter, op het straatwerk; 1.388 × Longi Hi-MO X10 540 Wp = 749,52 kWp op het dak</li>
+      <li><b>PV</b> (ELIX ZN25-1423): 1.388 × Longi Hi-MO X10 535 Wp = 742,58 kWp, Van der Valk Pro+ oost/west op het dak; 5 × Huawei SUN2000-100KTL-M2 op een skid 5050 × 1800 mm (+700 mm vrij); DC via afgedekte kabelladder langs de gevel</li>
       <li><b>EV</b>: Sungrow IDC480E power unit 480 kW (900 × 2200 × 1380 mm, 1100 kg) + 2 × IDC480E luchtgekoelde dispenser 240 kW (430 × 1800 × 450 mm), elk 2 × CCS2 7 m</li>
-      <li><b>ZVK</b> (klant, Kromwijk): 5 × 200 A (PV), 630 A (EOS), 80 A (EOS aux), 800 A (EV), 16 A (EMS)</li>
+      <li><b>ZVK</b> (klant, Kromwijk, bestaand): ZVK01 PV (5 × 200 A) en ZVK02 EV + EOS (800 / 630 / 80 / 16 A), gevoed uit 2 × 630 kVA</li>
       <li><b>EMS-veldkast</b>: Pegeo met EMS Groot (model uit de EMS-pagina) naast de ZVK</li>
-      <li>Ligging: Atoomweg 60, Utrecht (Lage Weide) — posities naar de projectschets 112115, exacte maten volgen</li>
+      <li>Ligging: Atoomweg 60, Utrecht (Lage Weide) — opstellingsvoorstel na schouw (okt-2026): EOS-plein 10,2 × 4,2 m, dispensers ± 35 m west op eilanden in de trailervakken</li>
     </ul>
   </details>
   <details><summary>Bediening</summary>
@@ -149,11 +151,25 @@ function fotoVlak(bb, px, y){ const w = bb.x1 - bb.x0, h = bb.y1 - bb.y0, [cx, c
   new THREE.TextureLoader().setCrossOrigin('anonymous').load(url, t => { t.encoding = THREE.sRGBEncoding; t.anisotropy = 8; m.map = t; m.needsUpdate = true; o.visible = true; renderer.shadowMap.needsUpdate = true; vuil(6); },
     undefined, () => { $t('bagInfo').innerHTML += '<br>luchtfoto kon niet geladen worden (geen internet of geblokkeerd in deze weergave)'; }); }
 fotoVlak(GROOT, 4000, 0.0); fotoVlak(DETAIL, 4000, 0.01);
+// ---------- alternatieve onderlegger: Esri World Imagery (satelliet), tegels via WGS84 → RD (Schreutelkamp & Strang van Hees) ----------
+function wgsRd(lat, lon){ const p = 0.36*(lat - 52.15517440), l = 0.36*(lon - 5.38720621);
+  const X = 155000 + 190094.945*l - 11832.228*p*l - 114.221*p*p*l - 32.391*l*l*l - 0.705*p - 2.340*p*p*p*l - 0.608*p*l*l*l - 0.008*l*l + 0.148*p*p*l*l*l;
+  const Y = 463000 + 309056.544*p + 3638.893*l*l + 73.077*p*p - 157.984*p*l*l + 59.788*p*p*p + 0.433*l - 6.439*p*p*l*l - 0.032*p*l + 0.092*l*l*l*l - 0.054*p*l*l*l*l; return [X, Y]; }
+const ESRI = new THREE.Group(); ESRI.visible = false; scene.add(ESRI); let esriGeladen = false;
+function laadEsri(){ if(esriGeladen) return; esriGeladen = true; const z = 19, n = Math.pow(2, z), lat0 = 52.1092, lon0 = 5.0601;
+  const tx0 = Math.floor((lon0 + 180)/360*n), ty0 = Math.floor((1 - Math.log(Math.tan(lat0*Math.PI/180) + 1/Math.cos(lat0*Math.PI/180))/Math.PI)/2*n);
+  const ll = (tx, ty) => [Math.atan(Math.sinh(Math.PI*(1 - 2*ty/n)))*180/Math.PI, tx/n*360 - 180];
+  for(let dx = -3; dx <= 3; dx++) for(let dy = -3; dy <= 3; dy++){ const tx = tx0 + dx, ty = ty0 + dy;
+    const c = [[tx, ty], [tx + 1, ty], [tx, ty + 1], [tx + 1, ty + 1]].map(([a, b]) => { const [la, lo] = ll(a, b), [X, Y] = wgsRd(la, lo); return rdL(X, Y); });
+    const g = new THREE.PlaneGeometry(1, 1); const P = g.attributes.position; [c[0], c[1], c[2], c[3]].forEach(([x, zz], i) => P.setXYZ(i, x, 0.015, zz)); g.computeVertexNormals();
+    const m = new THREE.MeshStandardMaterial({color: 0xffffff, roughness: 1, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -3}); const o = new THREE.Mesh(g, m); o.receiveShadow = true; ESRI.add(o);
+    new THREE.TextureLoader().setCrossOrigin('anonymous').load(`https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${ty}/${tx}`, t => { t.encoding = THREE.sRGBEncoding; m.map = t; m.needsUpdate = true; vuil(4); }); } }
 
 // ---------- gebouwen: BAG-panden (PDOK WFS, RD) met hoogte uit 3DBAG (b3_h_dak_70p − b3_h_maaiveld) ----------
 const BAG = new THREE.Group(); scene.add(BAG);
 const bagWand = M(0xd8d6cf, {roughness: 0.85}), bagDak = M(0x55595d, {roughness: 0.9}), hemaWand = M(0xc9ccce, {roughness: 0.8}), hemaDak = M(0x4b4f53, {roughness: 0.9});
 const bagMats = [bagDak, bagWand, hemaWand, hemaDak];
+let PVRING = null; const PVNOOD = () => { const B0 = V(GB[0], 0, GB[1]), W = N.clone().negate(); return [[0.5, 0], [-75, 0], [-75, 60], [0.5, 60]].map(([a, b]) => { const p = B0.clone().addScaledVector(U, a).addScaledVector(W, b); return [p.x, p.z]; }); };
 const HEMA_PT = [[132734.7, 458066.4], [132690, 457850]];                          // adres Atoomweg 60 en de aanbouw bij het energieplein
 function inPoly(x, y, r){ let ok = false; for(let i = 0, j = r.length - 1; i < r.length; j = i++){ const [xi, yi] = r[i], [xj, yj] = r[j]; if(((yi > y) !== (yj > y)) && (x < (xj - xi)*(y - yi)/(yj - yi) + xi)) ok = !ok; } return ok; }
 (async function laadBag(){
@@ -173,69 +189,57 @@ function inPoly(x, y, r){ let ok = false; for(let i = 0, j = r.length - 1; i < r
         rings.slice(1).forEach(hr => sh.holes.push(new THREE.Path(hr.map(([x, y]) => { const [lx, lz] = rdL(x, y); return new THREE.Vector2(lx, -lz); }))));
         const geo = new THREE.ExtrudeGeometry(sh, {depth: h, bevelEnabled: false}); const m = new THREE.Mesh(geo, hema ? [hemaDak, hemaWand] : [bagDak, bagWand]);
         m.rotation.x = -Math.PI/2; m.castShadow = m.receiveShadow = true; m.userData.info = (hema ? '<b>HEMA distributiecentrum</b><br>' : '') + 'BAG-pand ' + p.identificatie + '<br>bouwjaar ' + p.bouwjaar + ' · ' + (p.gebruiksdoel || '–') + '<br>hoogte ' + h.toFixed(1) + ' m (3DBAG)';
-        BAG.add(m); KLIK.push(m); n++; }); });
+        BAG.add(m); KLIK.push(m); n++; if(inPoly(132690, 457850, r) && !PVRING) PVRING = {poly: r.map(([x, y]) => rdL(x, y)), h}; }); });
+    bouwPvDak(PVRING ? PVRING.poly : PVNOOD(), PVRING ? PVRING.h : 11);
     info.innerHTML = `${n} BAG-panden geladen (PDOK), ${nh} met hoogte uit 3DBAG`; zetBagT(); renderer.shadowMap.needsUpdate = true; vuil(6);
-  }catch(e){ info.innerHTML = 'BAG-gebouwen konden niet geladen worden (geen internet of geblokkeerd in deze weergave)'; console.warn(e); }
+  }catch(e){ info.innerHTML = 'BAG-gebouwen konden niet geladen worden (geen internet of geblokkeerd in deze weergave)'; console.warn(e); bouwPvDak(PVNOOD(), 11); }
 })();
 function zetBagT(){ const v = $t('tBagT').checked; bagMats.forEach(m => { m.transparent = v; m.opacity = v ? 0.25 : 1; m.depthWrite = !v; m.needsUpdate = true; }); vuil(3); }
 
-// ---------- plaatsing t.o.v. de zuidwestgevel van de aanbouw (ingemeten op de luchtfoto, RD) ----------
-// gevellijn A–B (B = zuidhoek aanbouw), u = langs de gevel richting zuid-oost, n = loodrecht van de gevel af (west)
-const GA = rdL(132644.7, 457868.8), GB = rdL(132674.1, 457821.2);
+// ---------- plaatsing: opstellingsvoorstel na schouw (okt-2026, dia 15/18/22/36/43/45) op de PDOK-luchtfoto, RD ----------
+// gevellijn aanbouw A–B (B = zuidhoek), U = langs de gevel richting zuid-oost, N = loodrecht van de gevel af (west)
+const GA = rdL(132663.32, 457837.0), GB = rdL(132674.63, 457820.09);
 const U = V(GB[0] - GA[0], 0, GB[1] - GA[1]).normalize(), N = V(U.z, 0, -U.x); if(N.x > 0) N.negate();
-const YAW = Math.atan2(-U.z, U.x);                                                      // +x van een object langs U, +z (voorzijde) langs N
-const opGevel = (s, d) => V(GB[0], 0, GB[1]).addScaledVector(U, s).addScaledVector(N, d);
+const YAW = Math.atan2(-U.z, U.x);                                                      // +x langs U, +z (voorzijde) langs N
+const lp = (E, Nn) => { const [x, z] = rdL(E, Nn); return V(x, 0, z); };
+// EOS-plein (dia 45): 10,5 × 4,2 m, noordkant hoeken 2/3, zuidkant 1/4; as van noord naar zuid langs U
+const PL0 = lp((132662.02 + 132658.70)/2, (457829.11 + 457827.17)/2), PL1 = lp((132667.26 + 132663.88)/2, (457820.71 + 457818.67)/2);
+const PLEN = PL0.distanceTo(PL1);
+const opPlein = (s, d) => PL0.clone().addScaledVector(U, s).addScaledVector(N, d);
 const ASSET = {};
 function asset(naam, pos, info, yaw){ const g = new THREE.Group(); g.position.copy(pos); g.rotation.y = yaw === undefined ? YAW : yaw; scene.add(g); g.userData.info = info; ASSET[naam] = g; return g; }
 const klikbaar = (g, info) => g.traverse(o => { if(o.isMesh){ o.userData.info = info; KLIK.push(o); } });
 function stelcon(p, nx, nz, y0){ const L = 2.0; for(let i = 0; i < nx; i++) for(let k = 0; k < nz; k++){ box(p, L - 0.01, 0.14, L - 0.01, matBeton, (i - (nx - 1)/2)*L, (y0 || 0) + 0.07, (k - (nz - 1)/2)*L); } }
 
 // ---------- GLB-modellen (uit de AIO- en EMS-pagina) met base64-reserve ----------
+// ---------- GLB-modellen (uit de AIO- en EMS-pagina) met base64-reserve ----------
 const GLB = (() => { let ld = null; return (url, cb) => { try{ if(!ld){ ld = new THREE.GLTFLoader(); if(window.MeshoptDecoder) ld.setMeshoptDecoder(MeshoptDecoder); }
   const klaar = g => { g.scene.traverse(o => { if(o.isMesh){ const tr = [].concat(o.material).some(m => m.transparent); o.castShadow = !tr; o.receiveShadow = true; } }); cb(g.scene); renderer.shadowMap.needsUpdate = true; vuil(6); };
   const reserve = () => fetch(url.replace(/\.glb$/, '.b64.txt')).then(r => r.text()).then(t => { const b = atob(t.trim()), a = new Uint8Array(b.length); for(let i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); ld.parse(a.buffer, '', klaar, e => console.warn('GLB', e)); }).catch(e => console.warn('GLB', url, e));
   ld.load(url, klaar, undefined, reserve); }catch(e){ console.warn('GLB', e); } }; })();
 
-// ---------- 1. EOS: 5 × DELTerra C (model uit de AIO-pagina) parallel aan de gevel ----------
-{ const g = asset('eos', opGevel(-14.5, 4.6), '<b>EOS — 5 × Delta DELTerra C 125 kW / 261 kWh</b><br>model uit de AIO-pagina (junction box + 5 AIO\'s op stelconplaten)<br>projectplan: 375 kW / 1290 kWh, LFP; voeding 2 × YMvK 4×185 + aux 5×16/25 naar de ZVK (630 A / 80 A)');
-  const ph = new THREE.Group(); g.add(ph); box(ph, 7.6, 0.02, 2.2, M(0x2e9e4f, {transparent: true, opacity: 0.35}), 0, 0.02, 0, false);
+// ---------- 0. EOS-plein: 10,2 × 4,2 m (EOS 7575 × 4070 + DC-unit 3900 × 2980, kopse vrije ruimte gecombineerd), 1 m buffer + 1,5 m tot de erfgrens ----------
+{ const g = asset('plein', PL0.clone().lerp(PL1, 0.5), '<b>EOS-plein</b> 10,2 × 4,2 m (dia 43/45)<br>noord: EOS 7575 × 4070 mm (5 × AIO + junction box, 700 mm vrij rondom, 1000 mm achter)<br>zuid: DC-unit 3900 × 2980 mm, voorkant DC-unit en kopse vrije ruimte EOS gecombineerd (1 m)<br>daarna 1 m buffer + 1,5 m tot de erfgrens');
+  const vlak = (w, d, kleur, op, ds) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshStandardMaterial({color: kleur, transparent: true, opacity: op, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4}));
+    m.rotation.x = -Math.PI/2; m.position.set(ds || 0, 0.03, 0); g.add(m); return m; };
+  const tegels = ctex(256, 128, (c, W, H) => { c.fillStyle = '#a7a59e'; c.fillRect(0, 0, W, H); c.strokeStyle = '#8b8982'; c.lineWidth = 2; for(let x = 0; x <= W; x += 21) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, H); c.stroke(); } for(let y = 0; y <= H; y += 21){ c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); } });
+  tegels.wrapS = tegels.wrapT = THREE.RepeatWrapping; tegels.repeat.set(5, 2);
+  const tv = new THREE.Mesh(new THREE.PlaneGeometry(PLEN, 4.2), new THREE.MeshStandardMaterial({map: tegels, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -3})); tv.rotation.x = -Math.PI/2; tv.position.y = 0.02; tv.receiveShadow = true; g.add(tv);
+  const rand = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(PLEN, 0.01, 4.2)), new THREE.LineBasicMaterial({color: 0x7a3fbf})); rand.position.y = 0.04; g.add(rand);
+  vlak(1.0, 4.2, 0x8bc34a, 0.45, PLEN/2 + 0.5); vlak(1.5, 4.2, 0xf08a24, 0.4, PLEN/2 + 1.75);
+  sprite('EOS-plein 10,2 × 4,2 m · 1 m buffer · 1,5 m tot erfgrens', opPlein(PLEN + 1.5, 0).add(V(0, 1.6, 0)), 0.5, '#7a3fbf'); }
+
+// ---------- 1. EOS: 5 × DELTerra C + junction box (model uit de AIO-pagina), noordelijk deel van het plein ----------
+{ const g = asset('eos', opPlein(0.7 + 6.175/2, -(2.1 - 1.0 - 0.71)), '<b>EOS — 5 × Delta DELTerra C 125 kW / 261 kWh + junction box</b><br>model uit de AIO-pagina · opstelling 6175 × 1420 mm, 700 mm vrij rondom, 1000 mm aan de achterzijde (dia 36)<br>projectplan: 375 kW / 1290 kWh, LFP; voeding naar ZVK (630 A gG) + aux (80 A gG)');
+  const ph = new THREE.Group(); g.add(ph); box(ph, 6.2, 0.02, 1.4, M(0x2e9e4f, {transparent: true, opacity: 0.35}), 0, 0.02, 0, false);
   GLB('models/aio5.glb', sc => { g.remove(ph); const w = new THREE.Group(); w.scale.setScalar(0.1); w.add(sc); g.add(w); w.updateMatrixWorld(true);
-    const b = new THREE.Box3().setFromObject(w); const c = b.getCenter(V(0, 0, 0)); g.worldToLocal(c); w.position.set(-c.x, -b.min.y + 0.0, -c.z); klikbaar(w, g.userData.info); });
-  sprite('EOS · 5 × AIO 125 kW / 261 kWh', V(g.position.x, 4.2, g.position.z), 1.0, '#2e9e4f'); }
+    const b = new THREE.Box3().setFromObject(w); const c = b.getCenter(V(0, 0, 0)); g.worldToLocal(c); w.position.set(-c.x, -b.min.y, -c.z); klikbaar(w, g.userData.info); });
+  sprite('EOS · 5 × AIO 125 kW / 261 kWh', g.position.clone().add(V(0, 4.0, 0)), 1.0, '#2e9e4f'); }
 
-// ---------- 2. PV: 5 × Huawei SUN2000-100KTL-M2 op een frame met PV-shelter langs de gevel ----------
-{ const g = asset('pv', opGevel(-5.0, 1.0), '<b>5 × Huawei SUN2000-100KTL-M2</b><br>1035 × 700 × 365 mm, ±90 kg, 100 kW, IP66<br>749,52 kWp (1.388 × Longi 540 Wp) · AC 5 × VG-YMvKas 3×120+70 naar 5 × 200 A gG in de ZVK');
-  const wit = M(0xeef0ef, {roughness: 0.35}), grijs = M(0xc9ced2, {roughness: 0.45}), led = M(0x111317, {roughness: 0.25});
-  const ledT = ctex(256, 64, (c, W, H) => { c.fillStyle = '#121418'; c.beginPath(); c.ellipse(W/2, H/2, W/2 - 4, H/2 - 6, 0, 0, 7); c.fill(); c.fillStyle = '#3fe07a'; for(let k = 0; k < 4; k++){ c.beginPath(); c.arc(78 + k*34, H/2, 6, 0, 7); c.fill(); } });
-  for(const x of [-3.0, 3.0]) for(const z of [-0.3, 0.3]) box(g, 0.08, 2.6, 0.08, matZink, x, 1.3, z);                                        // frame (verzinkt)
-  for(const y of [0.55, 1.75]) for(const z of [-0.3, 0.3]) box(g, 6.2, 0.06, 0.06, matZink, 0, y, z);
-  box(g, 6.6, 0.06, 1.3, M(0x8d969b, {metalness: 0.6, roughness: 0.4}), 0, 2.66, 0.1);                                                     // PV-shelter (dak)
-  for(let i = 0; i < 5; i++){ const x = -2.4 + i*1.2, ig = new THREE.Group(); ig.position.set(x, 1.15, 0.35); g.add(ig);
-    rbox(ig, 1.035, 0.70, 0.30, 0.07, wit, 0, 0, 0.0); box(ig, 0.95, 0.62, 0.07, grijs, 0, 0, -0.18);                                        // huis + koellichaam
-    for(let k = 0; k < 14; k++) box(ig, 0.012, 0.55, 0.06, M(0xa9aeb2, {metalness: 0.5}), -0.42 + k*0.065, 0, -0.19, false);
-    plak(ig, 0.30, 0.075, ledT, 0, 0.04, 0.151, 0, true);
-    for(let k = 0; k < 2; k++){ box(ig, 0.07, 0.07, 0.07, matZwart, -0.28 + k*0.56, -0.38, 0.04); }                                               // DC-schakelaars
-    for(let k = 0; k < 10; k++) cyl(ig, 0.012, 0.05, matZwart, -0.36 + k*0.06, -0.37, -0.04, null, 6);                                           // MC4
-    plak(ig, 0.22, 0.04, lbl('SUN2000-100KTL', 220, 40, '#eef0ef', '#555', '20px Arial'), 0.3, 0.27, 0.151); }
-  klikbaar(g, g.userData.info); sprite('PV · 5 × Huawei SUN2000-100KTL-M2', V(g.position.x, 3.6, g.position.z), 0.8, '#d4a017'); }
-
-// ---------- 3. ZVK (klant) en EMS-veldkast ----------
-{ const g = asset('zvk', opGevel(3.0, 1.6), '<b>ZVK — zekeringverdeelkast (klant, Kromwijk)</b><br>stroken: 5 × 200 A gG (PV) · 630 A (EOS) · 80 A (EOS aux) · 800 A (EV) · 16 A (EMS)<br>TN-S, 400 V; hoofdmeter MetCom MCS301 in het inkoopstation');
-  box(g, 3.4, 0.5, 0.9, matBeton, 0, 0.25, 0); box(g, 3.2, 2.0, 0.8, matRal7035, 0, 1.5, 0);
-  for(const x of [-0.8, 0.8]){ box(g, 1.55, 1.9, 0.03, M(0xc9ccc6), x, 1.5, 0.415); box(g, 0.04, 0.25, 0.05, matZwart, x + 0.6, 1.5, 0.44); }
-  box(g, 3.3, 0.08, 0.95, matRal7035, 0, 2.54, 0); plak(g, 0.9, 0.18, lbl('ZVK', 200, 40, '#ffffff', '#1b2a36'), -0.8, 2.25, 0.432);
-  klikbaar(g, g.userData.info); sprite('ZVK (klant)', V(g.position.x, 3.4, g.position.z), 0.7, '#c0281f'); }
-{ const g = asset('ems', opGevel(-0.6, 3.6), '<b>EMS-veldkast</b> (Pegeo KVSP1-413, EMS Groot — model uit de EMS-pagina)<br>router, switch, SmartLogger, WithTheGrid; 230 V B16 uit de ZVK<br>CAT 6A naar Janitza (inkoopstation), EOS, EV, PV-logger en 3 × MetCom MCS301');
-  const plat = new THREE.Group(); g.add(plat); stelcon(plat, 1, 1);
-  const m3 = new THREE.Group(); m3.scale.setScalar(0.001); m3.position.y = 0.14; g.add(m3);
-  GLB('models/ems.glb', sc => { m3.add(sc); klikbaar(m3, g.userData.info); }); GLB('models/emsdeur.glb', sc => m3.add(sc));
-  sprite('EMS-veldkast', V(g.position.x, 2.6, g.position.z), 0.6, '#7a3fbf'); }
-
-// ---------- 4. EV: Sungrow IDC480E power unit + 2 dispensers ----------
-const lp = (E, Nn) => { const [x, z] = rdL(E, Nn); return V(x, 0, z); };
+// ---------- 2. EV: Sungrow IDC480E power unit, zuidelijk deel van het plein, deur naar het noorden ----------
 const wit2 = M(0xf4f5f3, {roughness: 0.35, metalness: 0.15}), donker = M(0x3b3f45, {roughness: 0.45}), voet = M(0x55595d, {roughness: 0.6});
-{ const g = asset('ev', lp(132646.8, 457795.6), '<b>Sungrow IDC480E power unit — 480 kW</b><br>900 × 2200 × 1380 mm, 1100 kg, IP65, C5, luchtgekoeld (isolated air-cooling)<br>3F+N+PE 400 V, 770 A · 2 × YMvKas 4×300+150 naar 800 A gG in de ZVK · OCPP 1.6J');
-  stelcon(g, 2, 1); const y0 = 0.14;
+{ const g = asset('ev', opPlein(PLEN - 1.55, 0), '<b>Sungrow IDC480E power unit — 480 kW</b> (DC-unit 1380 × 900, zone 3900 × 2980 mm)<br>900 × 2200 × 1380 mm, 1100 kg, IP65, C5, luchtgekoeld<br>3F+N+PE 400 V, 770 A · 2 × YMvKas 4×300+150 naar 800 A gG · DC naar 2 dispensers (± 35 m)', YAW - Math.PI/2);
+  const y0 = 0.0;
   box(g, 0.92, 0.12, 1.4, voet, 0, y0 + 0.06, 0); box(g, 0.9, 2.08, 1.38, wit2, 0, y0 + 0.12 + 1.04, 0);
   // voorzijde (+z): twee deuren, rechterdeur met ventilatieroosters; zijkant met logo-vlak, status en noodstop
   const kant = 0.9/2 + 0.002, front = 1.38/2 + 0.002;
@@ -247,9 +251,9 @@ const wit2 = M(0xf4f5f3, {roughness: 0.35, metalness: 0.15}), donker = M(0x3b3f4
   plak(zij, 0.4, 0.08, lbl('IDC480E', 300, 60, '#f4f5f3', '#4a5258', 'bold 34px Arial'), 0, 0.45, 0.001);
   rbox(zij, 0.11, 0.36, 0.02, 0.05, M(0x15171a), 0, 0.05, 0.01); cyl(zij, 0.03, 0.02, M(0x2f7fe0, {emissive: 0x2f7fe0, emissiveIntensity: 0.8}), 0, 0.15, 0.025, 'z', 18);
   cyl(zij, 0.035, 0.04, M(0xd82020), 0, -0.05, 0.03, 'z', 18); cyl(zij, 0.045, 0.01, M(0xf2c400), 0, -0.05, 0.022, 'z', 18);
-  klikbaar(g, g.userData.info); sprite('EV power unit 480 kW', V(g.position.x, 3.4, g.position.z), 0.7, '#1f7cc4'); }
-function dispenser(naam, pos, nr){ const g = asset(naam, pos, `<b>Dispenser ${nr} — Sungrow IDC480E luchtgekoeld, 240 kW</b><br>430 × 1800 × 450 mm, 180–195 kg, 2 × CCS2 (7 m), 10" touchscreen, RFID, MID-meter<br>DC + hulpspanning + data vanaf de power unit (${nr === 1 ? 'max. 5 m' : 'max. 50 m'})`, YAW + Math.PI);
-  stelcon(g, 1, 1); const y0 = 0.14;
+  klikbaar(g, g.userData.info); sprite('EV power unit 480 kW', g.position.clone().add(V(0, 3.2, 0)), 0.7, '#1f7cc4'); }
+function dispenser(naam, pos, nr){ const g = asset(naam, pos, `<b>Dispenser ${nr} — Sungrow IDC480E luchtgekoeld, 240 kW</b><br>430 × 1800 × 450 mm, 180–195 kg, 2 × CCS2 (7 m), 10" touchscreen, RFID, MID-meter<br>DC + hulpspanning + data vanaf de power unit (± 35 m, dia 15)`, YAW - Math.PI/2);
+  box(g, 1.6, 0.15, 3.0, matBeton, 0, 0.075, 0); for(const s of [-1, 1]) box(g, 0.12, 0.6, 0.12, M(0xf2c400), 0, 0.45, s*1.25); const y0 = 0.15;          // verhoogd eiland met aanrijdpaaltjes
   box(g, 0.36, 0.12, 0.34, voet, 0, y0 + 0.06, 0);
   rbox(g, 0.43, 1.68, 0.2, 0.06, wit2, 0, y0 + 0.12 + 0.84, 0.1); box(g, 0.4, 1.66, 0.25, donker, 0, y0 + 0.12 + 0.83, -0.12);
   const scr = ctex(256, 320, (c, W, H) => { c.fillStyle = '#0d1116'; c.fillRect(0, 0, W, H); c.fillStyle = '#2b3a4a'; c.fillRect(16, 20, W - 32, 150); c.fillStyle = '#dfe9f2'; c.font = 'bold 22px Arial'; c.fillText('Plug in to charge', 40, 70);
@@ -261,11 +265,42 @@ function dispenser(naam, pos, nr){ const g = asset(naam, pos, `<b>Dispenser ${nr
   for(const s of [-1, 1]){ const x = s*0.26; box(g, 0.08, 0.2, 0.12, M(0x2a2c2f), x, y0 + 0.95, 0.05); box(g, 0.05, 0.12, 0.1, M(0x111214), x, y0 + 0.9, 0.12);       // holster + stekker
     kabel(g, [V(s*0.15, y0 + 1.7, -0.1), V(s*0.22, y0 + 2.05, -0.05), V(s*0.36, y0 + 1.9, 0.05), V(s*0.42, y0 + 1.1, 0.12), V(s*0.36, y0 + 0.55, 0.14), V(x, y0 + 0.82, 0.12)], 0.016, kab); }
   klikbaar(g, g.userData.info); sprite('dispenser ' + nr + ' · 240 kW', V(pos.x, 2.7, pos.z), 0.6, '#1f7cc4'); return g; }
-dispenser('d1', lp(132640.5, 457802.1), 1); dispenser('d2', lp(132597.0, 457779.0), 2);
+dispenser('d1', lp(132633.8, 457803.0), 1); dispenser('d2', lp(132627.0, 457799.2), 2);
 
-// ---------- 5. elektrische trekker met HEMA-oplegger aan dispenser 1 ----------
+// ---------- 3. PV-omvormerskid 5050 × 1800 mm met 5 × Huawei SUN2000-100KTL-M2 + 700 mm vrij rondom (dia 21/45), dwars op de gevel ----------
+{ const g = asset('pv', lp(132662.4, 457833.1), '<b>PV-omvormerskid — 5 × Huawei SUN2000-100KTL-M2</b><br>skid 5050 × 1800 mm + 700 mm vrije werkruimte rondom · 1035 × 700 × 365 mm, ±90 kg, 100 kW per omvormer<br>742,58 kWp: 1.388 × Longi Hi-MO X10 535 Wp (ELIX) · AC 5 × VG-YMvKas 3×120+70 naar 5 × 200 A gG in de ZVK', YAW - Math.PI/2);
+  box(g, 5.05, 0.15, 1.8, M(0x7d8287, {metalness: 0.5, roughness: 0.5}), 0, 0.075, 0); g.position.y = 0.0;
+  const gg = new THREE.Group(); gg.position.y = 0.15; g.add(gg); { const g = gg;
+  const wit = M(0xeef0ef, {roughness: 0.35}), grijs = M(0xc9ced2, {roughness: 0.45}), led = M(0x111317, {roughness: 0.25});
+  const ledT = ctex(256, 64, (c, W, H) => { c.fillStyle = '#121418'; c.beginPath(); c.ellipse(W/2, H/2, W/2 - 4, H/2 - 6, 0, 0, 7); c.fill(); c.fillStyle = '#3fe07a'; for(let k = 0; k < 4; k++){ c.beginPath(); c.arc(78 + k*34, H/2, 6, 0, 7); c.fill(); } });
+  for(const x of [-2.45, 2.45]) for(const z of [-0.3, 0.3]) box(g, 0.08, 2.6, 0.08, matZink, x, 1.3, z);                                        // frame (verzinkt)
+  for(const y of [0.55, 1.75]) for(const z of [-0.3, 0.3]) box(g, 4.9, 0.06, 0.06, matZink, 0, y, z);
+  box(g, 5.3, 0.06, 1.3, M(0x8d969b, {metalness: 0.6, roughness: 0.4}), 0, 2.66, 0.1);                                                     // PV-shelter (dak)
+  for(let i = 0; i < 5; i++){ const x = -2.06 + i*1.03, ig = new THREE.Group(); ig.position.set(x, 1.15, 0.35); g.add(ig);
+    rbox(ig, 0.98, 0.70, 0.30, 0.07, wit, 0, 0, 0.0); box(ig, 0.95, 0.62, 0.07, grijs, 0, 0, -0.18);                                        // huis + koellichaam
+    for(let k = 0; k < 14; k++) box(ig, 0.012, 0.55, 0.06, M(0xa9aeb2, {metalness: 0.5}), -0.42 + k*0.065, 0, -0.19, false);
+    plak(ig, 0.30, 0.075, ledT, 0, 0.04, 0.151, 0, true);
+    for(let k = 0; k < 2; k++){ box(ig, 0.07, 0.07, 0.07, matZwart, -0.28 + k*0.56, -0.38, 0.04); }                                               // DC-schakelaars
+    for(let k = 0; k < 10; k++) cyl(ig, 0.012, 0.05, matZwart, -0.36 + k*0.06, -0.37, -0.04, null, 6);                                           // MC4
+    plak(ig, 0.22, 0.04, lbl('SUN2000-100KTL', 220, 40, '#eef0ef', '#555', '20px Arial'), 0.3, 0.27, 0.151); }
+  }
+  const vrij = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(5.05 + 1.4, 0.01, 1.8 + 1.4)), new THREE.LineBasicMaterial({color: 0xd4a017})); vrij.position.y = 0.03; g.add(vrij);
+  klikbaar(g, g.userData.info); sprite('PV · 5 × Huawei SUN2000-100KTL-M2', g.position.clone().add(V(0, 3.4, 0)), 0.8, '#d4a017'); }
+
+// ---------- 4. ZVK (klant, staat er al: omcirkeld op de luchtfoto, 5,35 × 3,2 m) en EMS-veldkast ernaast ----------
+{ const g = asset('zvk', lp(132669.03, 457822.30), '<b>ZVK — zekeringverdeelkast (klant, Kromwijk)</b> — bestaand, op de luchtfoto zichtbaar (± 5,35 × 3,2 m)<br>blokschema: ZVK01 PV (5 × 200 A gG) · ZVK02 EV + EOS (800 A EV, 630 A EOS, 80 A aux, 16 A EMS)<br>gevoed vanuit 2 × 630 kVA (trafo 1 & 2)', YAW - Math.PI/2);
+  const H = 2.4; box(g, 5.35, 0.3, 3.2, matBeton, 0, 0.15, 0); box(g, 5.25, H, 3.1, M(0xc9ccc8, {roughness: 0.7}), 0, 0.3 + H/2, 0); box(g, 5.45, 0.12, 3.3, M(0x8e9396, {roughness: 0.8}), 0, 0.36 + H, 0);
+  for(const s of [-1, 1]) for(let k = 0; k < 3; k++){ const x = -1.75 + k*1.75; box(g, 1.6, H - 0.3, 0.03, M(0xb9bdb9), x, 0.3 + H/2, s*1.565); box(g, 0.04, 0.3, 0.05, matZwart, x + 0.65, 0.3 + H/2, s*1.59); }
+  plak(g, 1.2, 0.25, lbl('ZVK01 · PV', 240, 50, '#ffffff', '#1b2a36'), -1.75, 0.3 + H - 0.35, 1.585); plak(g, 1.2, 0.25, lbl('ZVK02 · EV + EOS', 300, 50, '#ffffff', '#1b2a36'), 1.75, 0.3 + H - 0.35, 1.585);
+  klikbaar(g, g.userData.info); sprite('ZVK (klant, bestaand)', g.position.clone().add(V(0, 3.6, 0)), 0.7, '#c0281f'); }
+{ const g = asset('ems', lp(132666.6, 457825.6), '<b>EMS-veldkast</b> (Pegeo KVSP1-413, EMS Groot — model uit de EMS-pagina)<br>router, switch, SmartLogger, WithTheGrid; 230 V B16 uit de ZVK<br>CAT 6A naar Janitza (inkoopstation), EOS, EV, PV-logger en 3 × MetCom MCS301', YAW + Math.PI/2);
+  const m3 = new THREE.Group(); m3.scale.setScalar(0.001); g.add(m3); box(g, 1.0, 0.1, 0.7, matBeton, 0, 0.05, 0);
+  GLB('models/ems.glb', sc => { m3.add(sc); klikbaar(m3, g.userData.info); }); GLB('models/emsdeur.glb', sc => m3.add(sc));
+  sprite('EMS-veldkast', g.position.clone().add(V(0, 2.5, 0)), 0.6, '#7a3fbf'); }
+
+// ---------- 5. elektrische trekker met HEMA-oplegger in het laadvak naast dispenser 1 (vakken 3 m breed) ----------
 const TRUCK = new THREE.Group(); scene.add(TRUCK);
-{ const d = ASSET.d1.position, p = d.clone().addScaledVector(N, -2.9).addScaledVector(U, -4.6); TRUCK.position.copy(p); TRUCK.rotation.y = YAW; const T = new THREE.Group(); TRUCK.add(T);
+{ const d = ASSET.d1.position, p = d.clone().addScaledVector(U, 2.2).addScaledVector(N, 6.0); TRUCK.position.copy(p); TRUCK.rotation.y = YAW - Math.PI/2; const T = new THREE.Group(); TRUCK.add(T);
   const rood = M(0xd2141b, {roughness: 0.45}), witT = M(0xf5f5f2, {roughness: 0.4}), band = M(0x141516, {roughness: 0.85}), velg = M(0xb8bdc1, {metalness: 0.7, roughness: 0.3}), glas = M(0x1e2a33, {roughness: 0.1, metalness: 0.4});
   const wiel = (x, z) => { cyl(T, 0.52, 0.32, band, x, 0.52, z, 'z', 22); cyl(T, 0.3, 0.34, velg, x, 0.52, z, 'z', 12); };
   // trekker (cabine voorin richting +x), elektrisch: accupakketten tussen de assen, laadpoort rechts
@@ -283,23 +318,48 @@ const TRUCK = new THREE.Group(); scene.add(TRUCK);
       c.fillStyle = '#d2141b'; c.font = 'bold 54px Arial'; c.textAlign = 'left'; c.fillText('rijdt elektrisch', 340, H/2 + 4); });
     plak(T, 13.4, 2.6, t, -4.0, 2.75, s*1.282, s > 0 ? 0 : Math.PI); }
   for(const x of [-8.2, -9.5, -10.8]){ wiel(x, 1.05); wiel(x, -1.05); } for(const s of [-1, 1]) box(T, 0.15, 0.6, 0.15, matZink, -1.0, 0.7, s*0.9);     // poten
-  // laadkabel van dispenser 1 naar de laadpoort van de trekker
-  const dp = d.clone().add(V(0, 1.0, 0)).addScaledVector(N, -0.15).addScaledVector(U, 0.26);
-  TRUCK.updateMatrixWorld(true); const lpw = TRUCK.localToWorld(V(4.1, 1.4, 1.3));
-  kabel(scene, [dp, dp.clone().add(V(0, -0.6, 0)).addScaledVector(N, -0.6), lpw.clone().add(V(0, -0.8, 0)).addScaledVector(N, 0.6), lpw], 0.02, M(0x1a1b1d)).userData.truck = true;
-  TRUCK.traverse(o => { if(o.isMesh){ o.castShadow = true; o.userData.info = '<b>Elektrische trekker met HEMA-oplegger</b> aan dispenser 1 (CCS2, tot 240 kW)'; KLIK.push(o); } }); }
+  TRUCK.updateMatrixWorld(true); const lpw = TRUCK.localToWorld(V(4.1, 1.4, 1.3)), dp = d.clone().add(V(0, 1.05, 0)).addScaledVector(U, 0.12);
+  kabel(scene, [dp, dp.clone().add(V(0, -0.7, 0)).addScaledVector(U, 0.6), lpw.clone().add(V(0, -0.9, 0)).addScaledVector(U, -0.5), lpw], 0.02, M(0x1a1b1d)).userData.truck = true;
+  TRUCK.traverse(o => { if(o.isMesh){ o.castShadow = true; o.userData.info = '<b>Elektrische trekker met HEMA-oplegger</b> in het laadvak naast dispenser 1 (CCS2, tot 240 kW)'; KLIK.push(o); } }); }
+
+// ---------- 6. PV op het dak van de aanbouw: 1.388 × Longi Hi-MO X10 535 Wp (1990 × 1134 mm), Van der Valk Pro+ oost/west, + DC-kabelladder langs de gevel ----------
+const PVDAK = new THREE.Group(); scene.add(PVDAK);
+function bouwPvDak(poly, h){                                                          // poly = pand-ring in lokale coördinaten [[x, z], ...]
+  const inP = (x, z) => { let ok = false; for(let i = 0, j = poly.length - 1; i < poly.length; j = i++){ const [xi, zi] = poly[i], [xj, zj] = poly[j]; if(((zi > z) !== (zj > z)) && (x < (xj - xi)*(z - zi)/(zj - zi) + xi)) ok = !ok; } return ok; };
+  const B0 = V(GB[0], 0, GB[1]), W = N.clone().negate();                               // W = de dakrichting (van de gevel het pand in)
+  const tilt = 13*Math.PI/180, pl = 1.134, pdx = pl*Math.cos(tilt), lang = 1.99, nodig = 1388, pos = [];
+  // rijen evenwijdig aan de gevel (nok langs U): blok = 10 dubbele E/W-rijen, 0,6 m looppad; 1,5 m randafstand
+  for(let e = 2.0; e < 120 && pos.length < nodig; e += 2*pdx + 0.08 + ((Math.round((e - 2)/(2*pdx + 0.08)) % 10 === 9) ? 0.6 : 0)){
+    for(let sAlong = -2.0; sAlong > -140 && pos.length < nodig; sAlong -= lang + 0.02){
+      const c = B0.clone().addScaledVector(U, sAlong - lang/2).addScaledVector(W, e + pdx);
+      const ok = [[-lang/2 - 1.5, -pdx - 1.5], [lang/2 + 1.5, -pdx - 1.5], [-lang/2 - 1.5, pdx + 1.5], [lang/2 + 1.5, pdx + 1.5]].every(([a, b]) => { const p = c.clone().addScaledVector(U, a).addScaledVector(W, b); return inP(p.x, p.z); });
+      if(!ok) continue; for(const side of [-1, 1]) if(pos.length < nodig) pos.push({c, side}); } }
+  const geo = new THREE.BoxGeometry(lang, 0.035, pl), mat = M(0x1b2433, {roughness: 0.25, metalness: 0.35}), IM = new THREE.InstancedMesh(geo, mat, pos.length);
+  const mm = new THREE.Matrix4(), q = new THREE.Quaternion(), e3 = new THREE.Euler();
+  pos.forEach(({c, side}, i) => { const p = c.clone().addScaledVector(W, side*pdx/2); p.y = h + 0.25 + Math.sin(tilt)*pl/2;
+    e3.set(0, YAW, side*tilt, 'YXZ'); q.setFromEuler(e3); const r = new THREE.Matrix4().makeRotationY(YAW); const tl = new THREE.Matrix4().makeRotationX(-side*tilt);
+    mm.copy(r).multiply(tl); mm.setPosition(p); IM.setMatrixAt(i, mm); });
+  IM.castShadow = true; IM.receiveShadow = true; IM.userData.info = `<b>PV op het dak</b>: ${pos.length} × Longi Hi-MO X10 535 Wp = ${(pos.length*0.535).toFixed(2)} kWp (ELIX: 1.388 × 535 Wp = 742,58 kWp)<br>Van der Valk Pro+ oost/west · legplan indicatief, definitief na akkoord HEMA en constructeur`;
+  PVDAK.add(IM); KLIK.push(IM);
+  // DC-kabelladder: langs de dakrand en verticaal langs de gevel naar de omvormerskid (afgedekt), open goot naar de skid
+  const sk = ASSET.pv.position.clone(), sAl = sk.clone().sub(B0).dot(U), top = B0.clone().addScaledVector(U, sAl).addScaledVector(N, 0.25);
+  const lad = M(0xb9bfc3, {metalness: 0.8, roughness: 0.35}); const LG = new THREE.Group(); LG.position.copy(top); LG.rotation.y = YAW; PVDAK.add(LG);
+  box(LG, 0.5, h + 0.3, 0.12, lad, 0, (h + 0.3)/2, 0.1); box(LG, 0.55, h + 0.3, 0.03, M(0x9aa3a8, {metalness: 0.6}), 0, (h + 0.3)/2, 0.18);
+  box(LG, 0.5, 0.12, 2.2, lad, 0, h + 0.35, -1.0); box(LG, 0.5, 0.1, 1.2, lad, 0, 0.55, 0.7);
+  sprite('PV op dak · ' + pos.length + ' × 535 Wp', B0.clone().addScaledVector(U, -25).addScaledVector(W, 20).add(V(0, h + 3, 0)), 0.8, '#d4a017');
+  $t('bagInfo').innerHTML += `<br>PV-dak: ${pos.length} panelen geplaatst`; renderer.shadowMap.needsUpdate = true; vuil(6); }
 
 // ---------- easter egg: ergens ligt een HEMA-rookworst ----------
-{ const g = new THREE.Group(); const p = ASSET.pv.localToWorld(V(2.4, 2.71, 0.25)); g.position.copy(p); g.rotation.y = 0.7; scene.add(g);
+{ const g = new THREE.Group(); ASSET.pv.updateMatrixWorld(true); const p = ASSET.pv.localToWorld(V(2.0, 2.86, 0.25)); g.position.copy(p); g.rotation.y = 0.7; scene.add(g);
   const worst = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.028, 12, 28, Math.PI*1.25), M(0x7a2f17, {roughness: 0.45, metalness: 0.05})); worst.rotation.x = Math.PI/2; worst.position.y = 0.03; g.add(worst);
   for(const a of [0, Math.PI*1.25]){ const k = new THREE.Mesh(new THREE.SphereGeometry(0.03, 10, 8), M(0xc9b48a)); k.position.set(Math.cos(a)*0.16, 0.03, -Math.sin(a)*0.16); g.add(k); }
   g.traverse(o => { if(o.isMesh){ o.castShadow = true; o.userData.rookworst = true; KLIK.push(o); } }); }
 
-// ---------- maatvoering vrije ruimte: 70 cm vanaf de opengedraaide deuren (EOS) ----------
+// ---------- maatvoering vrije ruimte rond EOS (700 mm, achter 1000 mm) ----------
 const VRIJ = new THREE.Group(); VRIJ.visible = false; scene.add(VRIJ);
-{ const e = ASSET.eos, m = M(0x2e9e4f, {transparent: true, opacity: 0.18, depthWrite: false});
-  const z = new THREE.Mesh(new THREE.BoxGeometry(7.6, 0.03, 1.4 + 0.7), m); z.position.copy(e.position).addScaledVector(N, 1.0 + (1.4 + 0.7)/2); z.position.y = 0.05; z.rotation.y = YAW; VRIJ.add(z);
-  const t = sprite('vrije loopruimte ≥ 700 mm vanaf de opengedraaide deuren', z.position.clone().add(V(0, 1.2, 0)), 0.5, '#2e9e4f'); t.visible = false; VRIJ.userData.t = t; }
+{ const e = ASSET.eos, m = new THREE.LineBasicMaterial({color: 0x2e9e4f});
+  const z = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(7.575, 0.01, 4.07)), m); z.position.copy(opPlein(7.575/2, 0)); z.position.y = 0.06; z.rotation.y = YAW; VRIJ.add(z);
+  const t = sprite('EOS-ruimte 7575 × 4070 mm (700 mm vrij, achter 1000 mm)', z.position.clone().add(V(0, 1.2, 0)), 0.5, '#2e9e4f'); t.visible = false; VRIJ.userData.t = t; }
 
 // ---------- camera + bediening ----------
 const target = V(0, 0, 0); let theta = 0, phi = 1.0, radius = 80;
@@ -309,11 +369,13 @@ const VIEWS = {
   bOverzicht: () => kijk(V(-15, 0, 12), 75, 0.95, -0.5),
   bTerrein: () => kijk(V(20, 0, -80), 420, 0.75, 0.2),
   bBoven: () => { kijk(V(-15, 0, 12), 110, 0.02, 0); theta = 0; },
+  bDak: () => kijk(V(GB[0], 12, GB[1]).addScaledVector(U, -30).addScaledVector(N, -25), 95, 0.75, -0.3),
+  bPlein: () => kijk(PL0.clone().lerp(PL1, 0.5).add(V(0, 1, 0)), 24, 0.95, -0.4),
   bEos: () => kijk(ASSET.eos.position.clone().add(V(0, 1.2, 0)), 14, 1.2, -0.3),
   bPv: () => kijk(ASSET.pv.position.clone().add(V(0, 1.2, 0)), 9, 1.25, 0.2),
-  bZvk: () => kijk(ASSET.zvk.position.clone().add(V(0, 1.2, 0)).addScaledVector(U, -1.8), 11, 1.2, 0.3),
+  bZvk: () => kijk(ASSET.zvk.position.clone().add(V(0, 1.2, 0)), 14, 1.1, 0.3),
   bEv: () => kijk(ASSET.ev.position.clone().add(V(0, 1.1, 0)), 7, 1.25, -0.6),
-  bD1: () => kijk(ASSET.d1.position.clone().add(V(0, 1.0, 0)), 16, 1.15, 1.0),
+  bD1: () => kijk(ASSET.d1.position.clone().add(V(0, 1.0, 0)).addScaledVector(N, 3), 20, 1.1, 1.3),
   bD2: () => kijk(ASSET.d2.position.clone().add(V(0, 1.0, 0)), 6, 1.25, 0.4),
 };
 Object.keys(VIEWS).forEach(id => $t(id).addEventListener('click', () => { VIEWS[id](); vuil(3); }));
@@ -339,6 +401,8 @@ window.addEventListener('blur', () => { for(const k in KO) KO[k] = false; });
 $t('pDicht').addEventListener('click', () => { $t('paneel').classList.add('dicht'); $t('pOpen').classList.add('toon'); });
 $t('pOpen').addEventListener('click', () => { $t('paneel').classList.remove('dicht'); $t('pOpen').classList.remove('toon'); });
 $t('tFoto').addEventListener('change', e => { FOTO.visible = e.target.checked; vuil(3); });
+$t('tEsri').addEventListener('change', e => { if(e.target.checked) laadEsri(); ESRI.visible = e.target.checked; FOTO.visible = !e.target.checked && $t('tFoto').checked; vuil(3); });
+$t('tPvDak').addEventListener('change', e => { PVDAK.visible = e.target.checked; renderer.shadowMap.needsUpdate = true; vuil(3); });
 $t('tBag').addEventListener('change', e => { BAG.visible = e.target.checked; renderer.shadowMap.needsUpdate = true; vuil(3); });
 $t('tBagT').addEventListener('change', zetBagT);
 $t('tLabel').addEventListener('change', e => { LABELS.forEach(l => l.visible = e.target.checked && l !== VRIJ.userData.t); if(VRIJ.visible) VRIJ.userData.t.visible = e.target.checked; vuil(3); });
