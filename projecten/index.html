@@ -467,6 +467,18 @@ header.top .asWho select{border-color:rgba(255,255,255,.3)}
 .duebtn.late,.duetxt.late{color:var(--bad);font-weight:600}
 .acts .wait{font-size:11px;white-space:nowrap}
 .panelbox > header h2{font-size:16px}
+
+/* status: altijd hetzelfde bolletje, met pijltje als je hem mag wijzigen */
+.acts select.st-sel,.acts .stpill{display:inline-block;width:108px;box-sizing:border-box;border:0;border-radius:999px;font:600 12px var(--f-body);line-height:1.2;padding:4px 10px;text-align:left;background-color:#eef3f7;color:var(--muted)}
+.acts select.st-sel{-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%235b6e7d' stroke-width='1.6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:24px;cursor:pointer}
+.acts select.st-sel:hover{filter:brightness(.96)}
+.acts select.st-sel:focus-visible{outline:2px solid var(--sky);outline-offset:1px}
+.acts .st-afgerond{background-color:#e1f2e8!important;color:var(--ok)!important}
+.acts .st-bezig{background-color:var(--run-soft)!important;color:var(--run)!important}
+.acts .st-geblokkeerd{background-color:var(--bad-soft)!important;color:var(--bad)!important}
+.acts .st-nvt{background-color:var(--hold-soft)!important;color:var(--hold)!important}
+.acts .st-open{background-color:#eef3f7!important;color:var(--muted)!important}
+.acts select.st-sel option{background:#fff;color:var(--fg);font-weight:400}
 </style>
 </head>
 <body>
