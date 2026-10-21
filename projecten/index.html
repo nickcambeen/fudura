@@ -291,6 +291,36 @@ tbody tr.click:hover{background:var(--sky-soft)}
 .login-box{border-top:4px solid var(--sky);border-radius:var(--radius)}
 .login-box .brand{color:var(--accent)}
 .toast{background:var(--navy)}
+
+/* zijmenu-indeling */
+.layout{display:grid;grid-template-columns:210px minmax(0,1fr);gap:14px;align-items:start}
+.main{display:flex;flex-direction:column;gap:10px;min-width:0}
+.side{position:sticky;top:10px;display:flex;flex-direction:column;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:8px;box-shadow:var(--shadow)}
+.side button{display:flex;justify-content:space-between;align-items:center;gap:8px;border:0;background:none;text-align:left;padding:9px 10px;border-radius:7px;font-weight:500;color:var(--navy);border-left:3px solid transparent}
+.side button:hover{background:var(--sky-soft)}
+.side button[aria-current="page"]{background:var(--sky-soft);border-left-color:var(--sky);font-weight:600}
+.badge{background:var(--navy);color:#fff;border-radius:999px;font-size:11px;font-weight:600;padding:1px 8px;font-variant-numeric:tabular-nums}
+.side button[aria-current="page"] .badge{background:var(--sky);color:var(--navy)}
+.sectionhead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.sectionhead h2{font-size:19px}
+.sectionhead h3{font-size:15px}
+table.inbox{min-width:640px}
+tr.waiting td{color:var(--muted)}
+.tasklist{display:flex;flex-direction:column;gap:6px}
+.taskitem{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:8px;padding:9px 10px;cursor:pointer;background:var(--surface)}
+.taskitem:hover{border-color:var(--sky);background:var(--sky-soft)}
+.taskitem input{width:18px;height:18px;margin-top:1px;accent-color:var(--navy);flex:none}
+.taskitem > span{display:flex;flex-direction:column;gap:2px;min-width:0}
+.taskitem .tt{font-weight:600;overflow-wrap:anywhere}
+.taskitem.done .tt{text-decoration:line-through;color:var(--muted)}
+.acts input[type=date]{width:128px}
+.acts input.late{color:var(--bad);border-color:var(--bad)}
+@media (max-width:820px){
+  .layout{grid-template-columns:minmax(0,1fr)}
+  .side{position:static;flex-direction:row;overflow-x:auto}
+  .side button{flex:1 0 auto;border-left:0;border-bottom:3px solid transparent}
+  .side button[aria-current="page"]{border-bottom-color:var(--sky)}
+}
 </style>
 </head>
 <body>
@@ -356,7 +386,7 @@ function waitsOn(p,a){if(!a.seq||isClosed(a))return null;const l=actsOf(p,a.phas
 const gateOpen=p=>actsOf(p,p.phase).find(a=>a.gate&&a.status!=="afgerond");
 
 /* ---------- state ---------- */
-const S={code:null,me:"",projects:[],loaded:false,view:"board",phaseFilter:null,sortKey:"due",sortDir:1,
+const S={code:null,role:"",section:"inbox",taskProj:null,me:"",projects:[],loaded:false,view:"board",phaseFilter:null,sortKey:"due",sortDir:1,
   q:"",fType:"",fStatus:"",fOwner:"",showDone:false,openId:null,selPhase:null,actFilter:"",editHead:false,logTab:"notitie",log:[],logLoading:false,newOpen:false,banner:""};
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -393,10 +423,10 @@ function loginHTML(msg){
     </form></div></div>`;
 }
 async function tryLogin(code,quiet){
-  try{await rpc("pb_check",{p_code:code});return true}
+  try{const j=await rpc("pb_check",{p_code:code});return j.role||"Beheerder"}
   catch(e){if(!quiet){const m=e.code==="bad"?"Onjuiste code. Probeer het opnieuw.":e.code==="locked"?"Te veel foute pogingen. Probeer het over 15 minuten opnieuw.":"De server is niet bereikbaar. Probeer het later opnieuw.";$("#lgMsg").textContent=m}return false}
 }
-function logout(){S.code=null;put(sessionStorage,"pb-code",null);put(localStorage,"pb-code",null);clearInterval(S.poll);$("#app").innerHTML=loginHTML();$("#lgCode").focus()}
+function logout(){S.code=null;S.role="";S.taskProj=null;$("#taskWrap")?.remove();put(sessionStorage,"pb-code",null);put(localStorage,"pb-code",null);clearInterval(S.poll);$("#app").innerHTML=loginHTML();$("#lgCode").focus()}
 
 /* ---------- data ---------- */
 async function loadAll(silent){
@@ -414,6 +444,7 @@ async function save(id,data,msg){
 function writeErr(e){
   if(e.code==="bad"){logout();return}
   if(e.code==="locked"){toast("Tijdelijk geblokkeerd na te veel foute pogingen.");return}
+  if(e.code==="forbidden"){toast("Alleen de beheerder kan projecten aanmaken of verwijderen.");return}
   if(e.code==="not_found"){toast("Dit project bestaat niet meer.");loadAll();return}
   toast("Opslaan lukte niet. Probeer het opnieuw.");
 }
@@ -431,6 +462,7 @@ async function addLog(pid,kind,text,extra={}){
 function filtered(){
   const q=S.q.toLowerCase();
   return S.projects.filter(p=>{
+    if(S.section==="mine"&&!S.openId&&!involved(p))return false;
     if(!S.showDone&&p.phase===5&&S.phaseFilter!==5)return false;
     if(S.phaseFilter!==null&&p.phase!==S.phaseFilter)return false;
     if(S.fType&&p.type!==S.fType)return false;
@@ -442,14 +474,57 @@ function filtered(){
 }
 const people=()=>[...new Set(S.projects.flatMap(p=>[p.owner,p.engineer,p.detail,p.drafter,...(p.acts||[]).map(a=>a.owner)]).concat(S.me).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"nl"));
 function banner(){return S.banner?`<div class="banner">${esc(S.banner)}</div>`:""}
-function overviewHTML(){
+const isAdmin=()=>S.role==="Beheerder";
+const canEditHead=()=>isAdmin()||S.role==="Projectleider";
+function headerHTML(){
+  return `<header class="top"><div><div class="brand">Fudura</div><h1>Projectmanagement systeem</h1><div class="sub">Batterijsystemen op LS · team Project Engineering &amp; Realisatie</div></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="small">${esc(S.me)} · ${esc(S.role)}</span><button class="btn" type="button" data-act="logout">Afmelden</button>${isAdmin()?`<button class="btn primary" type="button" data-act="new">+ Nieuw project</button>`:""}</div></header>`;
+}
+/* ---------- wie doet wat ---------- */
+/* klanttaken (bv. offerte getekend) volgt de accountmanager op */
+const roleMatch=a=>a.role===S.role||(a.role==="Klant"&&S.role==="Accountmanager");
+function isMine(a){if(isAdmin())return true;if(a.owner)return a.owner.toLowerCase()===S.me.toLowerCase();return roleMatch(a)}
+function myTasks(p){return actsOf(p,p.phase).filter(a=>!isClosed(a)&&isMine(a))}
+function involved(p){if(isAdmin())return true;const me=S.me.toLowerCase();
+  return [p.owner,p.engineer,p.detail,p.drafter].some(x=>x&&x.toLowerCase()===me)||(p.acts||[]).some(a=>isMine(a))}
+function inboxRows(){
+  const rows=[];S.projects.filter(p=>p.phase<5||isAdmin()).forEach(p=>myTasks(p).forEach(a=>rows.push({p,a,w:waitsOn(p,a)})));
+  rows.sort((x,y)=>(!!x.w-!!y.w)||(x.a.due||x.p.due||"9999").localeCompare(y.a.due||y.p.due||"9999"));
+  return rows;
+}
+function navHTML(){
+  const n=inboxRows().filter(r=>!r.w).length;
+  const item=(k,l,c)=>`<button type="button" data-section="${k}" aria-current="${S.section===k&&!S.openId?"page":"false"}"><span>${l}</span>${c!=null?`<span class="badge">${c}</span>`:""}</button>`;
+  return `<nav class="side" aria-label="Menu">${item("inbox","Activiteitenbak",n)}${item("mine","Projectenoverzicht",S.projects.filter(involved).length)}${item("all","Alle projecten",S.projects.length)}</nav>`;
+}
+function inboxHTML(){
+  if(!S.loaded)return `<div class="notice"><strong>Taken laden…</strong></div>`;
+  const rows=inboxRows(),now=rows.filter(r=>!r.w),later=rows.filter(r=>r.w);
+  const row=({p,a,w})=>{const d=a.due||"";const late=d&&d<todayStr();return `<tr class="click ${w?"waiting":""}" data-task="${esc(p.id)}" tabindex="0">
+    <td class="mono">${esc(p.nr||"—")}</td><td><strong>${esc(p.name)}</strong></td>
+    <td class="num ${late?"late":""}">${d?fmtDate(d):`<span class="small">—</span>`}</td>
+    <td>${esc(a.title)}${w?`<div class="wait">⊘ wacht op: ${esc(w.title)}</div>`:""}${isAdmin()?`<div class="small">${esc(a.owner||a.role)}</div>`:""}</td>
+    <td class="st-${a.status}"><b>${ACT_ST[a.status]}</b></td></tr>`};
+  const table=(list)=>`<div class="tablewrap"><table class="inbox"><thead><tr><th style="width:120px">Projectnr.</th><th>Projectnaam</th><th style="width:110px">Deadline</th><th>Taak</th><th style="width:110px">Status</th></tr></thead><tbody>${list.map(row).join("")}</tbody></table></div>`;
+  return `<div class="sectionhead"><h2>Activiteitenbak</h2><span class="small">${isAdmin()?"Alle open taken in de huidige fase van elk project":"Taken voor "+esc(S.role)+" en taken op jouw naam"}</span></div>
+    ${now.length?table(now):`<div class="notice"><strong>Geen taken om op te pakken</strong><span>Er staat op dit moment niets voor je klaar.</span></div>`}
+    ${later.length?`<div class="sectionhead"><h3>Komt eraan</h3><span class="small">Wacht nog op een vorige stap</span></div>${table(later)}`:""}`;
+}
+function taskModalHTML(p){
+  const mine=actsOf(p,p.phase).filter(a=>isMine(a));
+  return `<div class="scrim" data-act="closeTask"></div><div class="modal" role="dialog" aria-modal="true" aria-labelledby="tTitle">
+    <div><div class="small mono">${esc(p.nr||"")}</div><h2 id="tTitle">${esc(p.name)}</h2><div class="small">${esc(PHASES[p.phase].long)}${p.due?" · oplevering "+fmtDate(p.due):""}</div></div>
+    <div class="tasklist">${mine.length?mine.map(a=>{const w=waitsOn(p,a),done=isClosed(a);return `<label class="taskitem ${done?"done":""}">
+      <input type="checkbox" data-done="${a.id}" ${a.status==="afgerond"?"checked":""} ${a.status==="nvt"?"disabled":""}>
+      <span><span class="tt">${esc(a.title)}</span>${w&&!done?`<span class="wait">⊘ wacht op: ${esc(w.title)}</span>`:""}
+      <span class="small">${a.due?"Deadline "+fmtDate(a.due)+" · ":""}${esc(a.owner||a.role)}${a.doneAt?" · afgerond "+fmtDate(a.doneAt):""}</span></span></label>`}).join(""):`<div class="small">Geen taken voor jou in deze fase.</div>`}</div>
+    <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><button class="btn" type="button" data-act="closeTask">Sluiten</button><button class="btn primary" type="button" data-act="openFromTask">Project openen</button></div></div>`;
+}
+function overviewHTML(onlyMine){
   const ppl=people();
   const pb=PHASES.map(ph=>{const l=S.projects.filter(p=>p.phase===ph.id);const bad=l.filter(p=>p.status==="bad"||isLate(p)).length;
     return `<button type="button" data-phasef="${ph.id}" aria-pressed="${S.phaseFilter===ph.id}"><span class="n">${l.length}</span><span class="l">${esc(ph.label)}</span><span class="alert">${ph.id<5&&bad?bad+" vertraagd":""}</span></button>`}).join("");
-  return `
-  <header class="top"><div><div class="brand">Fudura</div><h1>Projectmanagement systeem</h1><div class="sub">Batterijsystemen op LS · team Project Engineering &amp; Realisatie</div></div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="small">${S.me?"Ingelogd als "+esc(S.me):""}</span><button class="btn" type="button" data-act="logout">Afmelden</button><button class="btn primary" type="button" data-act="new">+ Nieuw project</button></div></header>
-  ${banner()}
+  return `<div class="sectionhead"><h2>${S.section==="mine"?"Projectenoverzicht":"Alle projecten"}</h2><span class="small">${S.section==="mine"?(isAdmin()?"Als beheerder zie je alle projecten":"Projecten waar jij bij betrokken bent"):""}</span></div>
   <nav class="phasebar" aria-label="Fases">${pb}</nav>
   <div class="tools">
     <input type="search" id="q" value="${esc(S.q)}" placeholder="Zoek op projectnummer, naam, klant, locatie of persoon" aria-label="Zoeken">
@@ -467,9 +542,9 @@ function overviewHTML(){
 }
 function overviewBody(){
   if(!S.loaded)return `<div class="notice"><strong>Projecten laden…</strong><span>Het bord haalt de projectlijst op.</span></div>`;
-  if(!S.projects.length)return `<div class="notice"><strong>Nog geen projecten</strong><span>Voeg het eerste project toe. Het krijgt automatisch de standaardactiviteiten per fase.</span><button class="btn primary" type="button" data-act="new">+ Nieuw project</button></div>`;
+  if(!S.projects.length)return `<div class="notice"><strong>Nog geen projecten</strong><span>${isAdmin()?"Voeg het eerste project toe. Het krijgt automatisch de standaardactiviteiten per fase.":"De beheerder heeft nog geen projecten aangemaakt."}</span>${isAdmin()?`<button class="btn primary" type="button" data-act="new">+ Nieuw project</button>`:""}</div>`;
   const list=filtered();
-  if(!list.length)return `<div class="notice"><strong>Geen projecten gevonden</strong><span>Pas de zoekterm of filters aan.</span></div>`;
+  if(!list.length)return `<div class="notice"><strong>Geen projecten gevonden</strong><span>${S.section==="mine"?"Je bent nog niet bij een project betrokken, of pas de filters aan.":"Pas de zoekterm of filters aan."}</span></div>`;
   return S.view==="board"?boardHTML(list):S.view==="list"?listHTML(list):actsHTML(list);
 }
 function cardHTML(p){
@@ -540,6 +615,7 @@ function dashHTML(p){
     <td><select class="st-sel st-${a.status}" data-af="status" aria-label="Status">${Object.entries(ACT_ST).map(([k,v])=>`<option value="${k}" ${a.status===k?"selected":""}>${v}</option>`).join("")}</select></td>
     <td class="desc">${esc(a.title)}${(()=>{const w=waitsOn(p,a);return w?`<div class="wait">⊘ wacht op: ${esc(w.title)}</div>`:""})()}${a.gate?`<div class="small">Voorwaarde voor de volgende fase</div>`:""}</td>
     <td><input data-af="owner" list="people" value="${esc(a.owner)}" placeholder="${esc(a.role||"Naam")}" aria-label="Behandelaar" style="width:150px"></td>
+    <td><input type="date" data-af="due" value="${esc(a.due||"")}" aria-label="Deadline" class="${a.due&&a.due<todayStr()&&!isClosed(a)?"late":""}"></td>
     <td class="num">${a.doneAt?fmtDate(a.doneAt):""}</td>
     <td><button class="rowbtn" type="button" data-delact title="Activiteit verwijderen" aria-label="Activiteit verwijderen">✕</button></td></tr>`).join("");
   const openHere=actsOf(p,p.phase).filter(a=>!isClosed(a)).length,blk=gateOpen(p);
@@ -547,12 +623,11 @@ function dashHTML(p){
      <span style="display:flex;gap:8px;flex-wrap:wrap">${p.phase>0?`<button class="btn" type="button" data-move="-1">← Terug naar ${esc(PHASES[p.phase-1].label)}</button>`:""}${p.phase<5?`<button class="btn ${openHere?"":"primary"}" type="button" data-move="1" ${blk?"disabled":""} title="${blk?"Eerst afronden: "+esc(blk.title):""}">Toewijzen fase ${esc(PHASES[p.phase+1].label)} →</button>`:""}</span></div>`:"";
   return `
   <div class="crumb"><button class="btn" type="button" data-act="back">← Overzicht</button><span class="small">Projectmanagement systeem / ${esc(p.nr||"project")}${p.updatedAt?` · laatst bijgewerkt ${fmtDT(p.updatedAt)}${p.updatedBy?" door "+esc(p.updatedBy):""}`:""}</span></div>
-  ${banner()}
   <div class="dash-title"><h1>${esc(p.nr?p.nr+" – ":"")}${esc(p.name)}</h1><span class="pill ${st.cls}">${st.label}</span><span class="tag">${esc(PHASES[p.phase].long)}</span></div>
   <div class="dash">
     <div class="stack">
       <section class="panelbox">
-        <header><h2>Project &amp; klant</h2>${ed?`<span style="display:flex;gap:8px"><button class="btn" type="button" data-act="cancelHead">Annuleren</button><button class="btn primary" type="button" data-act="saveHead">Opslaan</button></span>`:`<button class="btn" type="button" data-act="editHead">Bewerken</button>`}</header>
+        <header><h2>Project &amp; klant</h2>${!canEditHead()?"":ed?`<span style="display:flex;gap:8px"><button class="btn" type="button" data-act="cancelHead">Annuleren</button><button class="btn primary" type="button" data-act="saveHead">Opslaan</button></span>`:`<button class="btn" type="button" data-act="editHead">Bewerken</button>`}</header>
         <div class="fields">${HEAD.concat(CLIENT).map(f=>ed?fieldEdit(p,f):fieldView(p,f)).join("")}</div>
       </section>
       <section class="panelbox">
@@ -560,12 +635,12 @@ function dashHTML(p){
           <select id="actFilter" aria-label="Filter op status"><option value="">Alle statussen</option>${Object.entries(ACT_ST).map(([k,v])=>`<option value="${k}" ${S.actFilter===k?"selected":""}>${v}</option>`).join("")}</select></header>
         <div class="phase-track">${track}</div>
         ${gate}
-        <div class="acts-wrap"><table class="acts"><thead><tr><th style="width:130px">Status</th><th>Omschrijving</th><th style="width:170px">Behandelaar</th><th style="width:100px">Afgerond op</th><th style="width:36px"></th></tr></thead>
-          <tbody>${actRows||`<tr><td colspan="5" class="small">Geen activiteiten${S.actFilter?" met deze status":" in deze fase"}.</td></tr>`}</tbody></table></div>
+        <div class="acts-wrap"><table class="acts"><thead><tr><th style="width:130px">Status</th><th>Omschrijving</th><th style="width:170px">Behandelaar</th><th style="width:130px">Deadline</th><th style="width:100px">Afgerond op</th><th style="width:36px"></th></tr></thead>
+          <tbody>${actRows||`<tr><td colspan="6" class="small">Geen activiteiten${S.actFilter?" met deze status":" in deze fase"}.</td></tr>`}</tbody></table></div>
         ${missingStd(p,sel)?`<div class="gate"><span>Deze fase wijkt af van de standaardwerkwijze.</span><button class="btn" type="button" data-act="syncStd">Standaardstappen bijwerken</button></div>`:""}
         <form class="addact" id="addAct"><input class="grow" id="naTitle" placeholder="Activiteit toevoegen aan ${esc(PHASES[sel].label)}" aria-label="Nieuwe activiteit"><select id="naRole" aria-label="Rol">${ROLES.map(r=>`<option>${r}</option>`).join("")}</select><button class="btn" type="submit">Toevoegen</button></form>
       </section>
-      <div id="delZone"><button class="btn danger" type="button" data-act="del">Project verwijderen</button></div>
+      ${isAdmin()?`<div id="delZone"><button class="btn danger" type="button" data-act="del">Project verwijderen</button></div>`:""}
     </div>
     <aside class="panelbox log">
       <header><h2>Logboek</h2></header>
@@ -590,7 +665,9 @@ function logListHTML(){
 function render(){
   if(!S.code)return;
   const app=$("#app"),ae=document.activeElement,focusId=ae?.id,selStart=ae?.selectionStart;
-  app.innerHTML=S.openId?dashHTML(proj(S.openId)):overviewHTML();
+  const main=S.openId?dashHTML(proj(S.openId)):S.section==="inbox"?inboxHTML():overviewHTML();
+  app.innerHTML=`${headerHTML()}${banner()}<div class="layout">${navHTML()}<main class="main">${main}</main></div>`;
+  const tm=$("#taskWrap");if(S.taskProj){const tp=proj(S.taskProj);if(tp){if(tm)tm.innerHTML=taskModalHTML(tp);else{const m=document.createElement("div");m.id="taskWrap";m.innerHTML=taskModalHTML(tp);document.body.appendChild(m)}}}
   if(focusId){const el=document.getElementById(focusId);if(el&&el.tagName!=="BUTTON"){el.focus();try{if(selStart!=null)el.setSelectionRange(selStart,selStart)}catch(e){}}}
 }
 function renderOvBody(){const b=$("#ovBody");if(b)b.innerHTML=overviewBody();else render()}
@@ -603,11 +680,13 @@ function openProject(id){
 
 /* ---------- events ---------- */
 document.addEventListener("click",async e=>{
-  const t=e.target.closest("button,[data-open]");if(!t||!S.code)return;
+  const t=e.target.closest("button,[data-open],[data-task],[data-act]");if(!t||!S.code)return;
   if(t.dataset.phasef!==undefined){const v=+t.dataset.phasef;S.phaseFilter=S.phaseFilter===v?null:v;render();return}
   if(t.dataset.view){S.view=t.dataset.view;put(localStorage,"pb-view",S.view);render();return}
   if(t.dataset.sort){const k=t.dataset.sort;S.sortDir=S.sortKey===k?-S.sortDir:1;S.sortKey=k;renderOvBody();return}
   if(t.dataset.open){openProject(t.dataset.open);return}
+  if(t.dataset.section){S.section=t.dataset.section;put(sessionStorage,"pb-section",S.section);S.phaseFilter=null;openProject(null);return}
+  if(t.dataset.task){S.taskProj=t.dataset.task;render();return}
   if(t.dataset.selphase!==undefined){S.selPhase=+t.dataset.selphase;render();return}
   if(t.dataset.logtab){S.logTab=t.dataset.logtab;render();return}
   const p=proj(S.openId);
@@ -620,6 +699,8 @@ document.addEventListener("click",async e=>{
   if(t.hasAttribute("data-delact")&&p){const aid=t.closest("tr").dataset.aid;if(await save(p.id,{acts:(p.acts||[]).filter(a=>a.id!==aid)},"Activiteit verwijderd"))render();return}
   switch(t.dataset.act){
     case "back":openProject(null);break;
+    case "closeTask":S.taskProj=null;$("#taskWrap")?.remove();render();break;
+    case "openFromTask":{const id=S.taskProj;S.taskProj=null;$("#taskWrap")?.remove();openProject(id);break}
     case "logout":logout();break;
     case "new":openNew();break;
     case "editHead":S.editHead=true;render();break;
@@ -637,6 +718,8 @@ document.addEventListener("click",async e=>{
 });
 document.addEventListener("keydown",e=>{
   if((e.key==="Enter"||e.key===" ")&&e.target.matches("[data-open]")){e.preventDefault();openProject(e.target.dataset.open)}
+  if((e.key==="Enter"||e.key===" ")&&e.target.matches("[data-task]")){e.preventDefault();S.taskProj=e.target.dataset.task;render()}
+  if(e.key==="Escape"&&S.taskProj){S.taskProj=null;$("#taskWrap")?.remove();render()}
   if(e.key==="Escape"&&S.newOpen)closeNew();
 });
 document.addEventListener("input",e=>{if(e.target.id==="q"){S.q=e.target.value;renderOvBody()}});
@@ -647,10 +730,14 @@ document.addEventListener("change",async e=>{
   if(id==="fOwner"){S.fOwner=t.value;render();return}
   if(id==="fDone"){S.showDone=t.checked;put(localStorage,"pb-done",t.checked?"1":"0");render();return}
   if(id==="actFilter"){S.actFilter=t.value;render();return}
+  if(t.dataset.done&&S.taskProj){const tp=proj(S.taskProj);if(!tp)return;t.disabled=true;
+    const st=t.checked?"afgerond":"open";
+    if(await save(tp.id,{acts:(tp.acts||[]).map(a=>a.id===t.dataset.done?{...a,status:st,doneAt:st==="afgerond"?todayStr():""}:a)},t.checked?"Taak afgerond":"Taak heropend"))render();else t.disabled=false;
+    return}
   const p=proj(S.openId);
   if(t.dataset.af&&p){
     const aid=t.closest("tr").dataset.aid;
-    const patch=t.dataset.af==="status"?{status:t.value,doneAt:t.value==="afgerond"?todayStr():""}:{owner:t.value.trim()};
+    const patch=t.dataset.af==="status"?{status:t.value,doneAt:t.value==="afgerond"?todayStr():""}:t.dataset.af==="due"?{due:t.value}:{owner:t.value.trim()};
     if(await save(p.id,{acts:(p.acts||[]).map(a=>a.id===aid?{...a,...patch}:a)}))render();
   }
 });
@@ -661,7 +748,7 @@ document.addEventListener("submit",async e=>{
     if(!code){$("#lgCode").focus();return}
     if(!name){$("#lgMsg").textContent="Vul je naam in.";$("#lgName").focus();return}
     $("#lgGo").disabled=true;
-    if(await tryLogin(code)){S.code=code;S.me=name;put(localStorage,"pb-naam",name);put(sessionStorage,"pb-code",code);if($("#lgRemember").checked)put(localStorage,"pb-code",code);start()}
+    const role=await tryLogin(code);if(role){S.code=code;S.role=role;S.section=role==="Beheerder"?"all":"inbox";S.me=name;put(localStorage,"pb-naam",name);put(sessionStorage,"pb-code",code);if($("#lgRemember").checked)put(localStorage,"pb-code",code);start()}
     else $("#lgGo").disabled=false;
     return}
   const p=proj(S.openId);if(!p)return;
@@ -715,7 +802,8 @@ async function start(){
 }
 (async()=>{
   const saved=get(sessionStorage,"pb-code")||get(localStorage,"pb-code");
-  if(saved&&S.me&&await tryLogin(saved,true)){S.code=saved;put(sessionStorage,"pb-code",saved);start();return}
+  const role=saved&&S.me?await tryLogin(saved,true):null;
+  if(role){S.code=saved;S.role=role;S.section=get(sessionStorage,"pb-section")||(role==="Beheerder"?"all":"inbox");put(sessionStorage,"pb-code",saved);start();return}
   $("#app").innerHTML=loginHTML();$("#lgCode").focus();
 })();
 
