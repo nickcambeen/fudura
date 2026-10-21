@@ -455,11 +455,17 @@ function bouwPvDak(poly, h){ while(PVDAK.children.length) PVDAK.remove(PVDAK.chi
   const sk = wp(PVS.s, 0), sAl = sk.clone().sub(B0).dot(U), top = B0.clone().addScaledVector(U, sAl).addScaledVector(N, wLad - 0.02);
   const lad = M(0xb9bfc3, {metalness: 0.8, roughness: 0.35}); const LG = new THREE.Group(); LG.position.copy(top); LG.rotation.y = YAW; PVDAK.add(LG);
   // route (Nick): van de dakrand ± 6 m naast de skid verticaal omlaag, op halve hoogte horizontaal langs de gevel, dan verticaal omlaag naar de skid
-  const yv = 1.95, ym = Math.max(yv + 1.5, h*0.45), xo = -6.0, dek = M(0x9aa3a8, {metalness: 0.6});
+  const yv = 0.35, ym = Math.max(3.5, h*0.45), xo = -6.0, dek = M(0x9aa3a8, {metalness: 0.6});
   const vert = (x, y0, y1) => { const hh = y1 - y0; box(LG, 0.5, hh, 0.12, lad, x, y0 + hh/2, 0.1); box(LG, 0.55, hh, 0.03, dek, x, y0 + hh/2, 0.18); };
   vert(xo, ym - 0.25, h + 0.3); vert(0, yv, ym + 0.25);
   box(LG, Math.abs(xo) + 0.5, 0.5, 0.12, lad, xo/2, ym, 0.1); box(LG, Math.abs(xo) + 0.55, 0.55, 0.03, dek, xo/2, ym, 0.18);                      // horizontaal langs de gevel
-  box(LG, 0.5, 0.12, 2.2, lad, xo, h + 0.35, -1.0); { const lz = Math.max(0.4, (PVS.n - 2.525) - wLad + 0.4); box(LG, 0.36, 0.08, lz, lad, 0, yv, lz/2); box(LG, 0.38, 0.02, lz, M(0x9aa3a8, {metalness: 0.6}), 0, yv + 0.06, lz/2); }   // horizontaal de skid in (dia: DC op ± 0,9 m)
+  box(LG, 0.5, 0.12, 2.2, lad, xo, h + 0.35, -1.0); { // langs de gevel tot net boven maaiveld, dan ondergronds (mantelbuizen in een sleuf, 0,6 m diep) onder de looproute door en onder de skid omhoog
+    const lz = Math.max(0.4, (PVS.n - 2.525) - wLad + 0.5), buis = M(0xd25a1e, {roughness: 0.6}), zand = M(0xb89a6a, {roughness: 1});
+    box(LG, 0.5, 0.95, 0.12, lad, 0, 0.35 - 0.95/2 + 0.475 - 0.475, 0.1);                                                               // gootje tot in de grond
+    for(const x of [-0.15, 0, 0.15]){ cyl(LG, 0.055, 0.85, buis, x, -0.25, 0.2, null, 10); cyl(LG, 0.055, lz, buis, x, -0.62, 0.2 + lz/2, 'z', 10); cyl(LG, 0.055, 1.25, buis, x, -0.05, 0.2 + lz, null, 10); }   // bocht omlaag, sleuf, omhoog de skid in
+    box(LG, 0.6, 0.12, lz, zand, 0, -0.72, 0.2 + lz/2);
+    const sl = new THREE.Mesh(new THREE.PlaneGeometry(0.6, lz), new THREE.MeshBasicMaterial({color: 0x8a5a2b, transparent: true, opacity: 0.55, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -7})); sl.rotation.x = -Math.PI/2; sl.position.set(0, 0.05, 0.2 + lz/2); LG.add(sl);   // sleuf-markering op maaiveld
+    sl.userData.info = '<b>DC-kabels ondergronds</b>: 3 mantelbuizen in een sleuf (± 0,6 m diep) onder de looproute door, onder de skid omhoog'; KLIK.push(sl); }
   PVSPR = sprite('PV op dak · ' + pos.length + ' × 535 Wp', B0.clone().addScaledVector(U, -25).addScaledVector(W, 20).add(V(0, h + 3, 0)), 0.8, '#d4a017');
   { let sp = $t('pvInfo'); if(!sp){ sp = document.createElement('div'); sp.id = 'pvInfo'; $t('bagInfo').after(sp); sp.className = 'cfgInfo'; } sp.textContent = `PV-dak: ${pos.length} panelen geplaatst`; } renderer.shadowMap.needsUpdate = true; vuil(6); }
 
