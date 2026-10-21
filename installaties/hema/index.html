@@ -667,7 +667,7 @@ function bouwMaat(){
   // lichamen
   const eosB = omhul(ASSET.eos, 0.5), evB = omhul(ASSET.ev, 0.3), pvB = omhul(ASSET.pv, 0.35), nsaB = omhul(ASSET.nsa, 0.3), zvkB = omhul(ASSET.zvk, 0.5);
   // zones (dia 35: EOS 7575 × 4070; dia 43: DC-unit 3900 × 2980; dia 46: PV 6450 × 3200)
-  const zE = zone((eosB.s0 + eosB.s1)/2, (eosB.n0 + eosB.n1)/2 + (1.65 - 1.0)/2, 7.575, 4.07);
+  const zE = {s0: (eosB.s0 + eosB.s1)/2 - 7.575/2, s1: (eosB.s0 + eosB.s1)/2 + 7.575/2, n0: eosB.n0 - 1.0, n1: eosB.n0 - 1.0 + 4.07};   // dia 35: 1000 achter, rest (incl. 1650 deurzwaai) voor
   const zD = zone((evB.s0 + evB.s1)/2, (evB.n0 + evB.n1)/2 + 0.6, 2.98, 3.9);
   const zP = zone((pvB.s0 + pvB.s1)/2, (pvB.n0 + pvB.n1)/2, 3.2, 6.45);
   rect(zE, 0x2e9e4f); rect(zD, 0x1f7cc4); rect(zP, 0xd4a017);
@@ -680,7 +680,7 @@ function bouwMaat(){
   const eV = eosB.n1 - zE.n1 < 0 ? zE.n1 - eosB.n1 : 0;
   ok(`EOS opzij ${mm(eosB.s0 - zE.s0)} / ${mm(zE.s1 - eosB.s1)} (eis ≥ 700)`, eosB.s0 - zE.s0 > 0.69 && zE.s1 - eosB.s1 > 0.69);
   ok(`EOS achter (gevelzijde) ${mm(eosB.n0 - zE.n0)} (eis ≥ 1000)`, eosB.n0 - zE.n0 > 0.99);
-  ok(`EOS voor (deuren) ${mm(zE.n1 - eosB.n1)} (eis ≥ 1650 incl. deur)`, zE.n1 - eosB.n1 > 1.0);
+  ok(`EOS voor (deuren) ${mm(zE.n1 - eosB.n1)} (eis ≥ 1650 incl. deurzwaai)`, zE.n1 - eosB.n1 > 1.6);
   const over = (a, b) => Math.min(a.s1, b.s1) - Math.max(a.s0, b.s0) > 0.02 && Math.min(a.n1, b.n1) - Math.max(a.n0, b.n0) > 0.02;
   ok('EOS-zone vrij van ZVK / NSA / PV / DC-unit', ![zvkB, nsaB, pvB, evB].some(b => over(zE, b)));
   ok('DC-unit-zone vrij van ZVK / EOS / NSA', ![zvkB, eosB, nsaB].some(b => over(zD, b)));
