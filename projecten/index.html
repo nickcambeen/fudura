@@ -405,6 +405,7 @@ tr.waiting td{color:var(--muted)}
 .ib-row .dl{display:block;font-size:11px;font-weight:600}
 .urg-red .ib-row .dl{color:var(--bad)}
 .urg-orange .ib-row .dl{color:#a65f00}
+.ib-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -435,7 +436,7 @@ const PHASES=[
 const STATUSES={ok:{label:"Op schema",cls:"s-ok"},warn:{label:"Aandacht",cls:"s-warn"},bad:{label:"Vertraagd",cls:"s-bad"},hold:{label:"On hold",cls:"s-hold"}};
 const ACT_ST={open:"Open",bezig:"Bezig",geblokkeerd:"Geblokkeerd",afgerond:"Afgerond",nvt:"N.v.t."};
 const TYPES=["BESS op LS"];
-const ROLES=["Projectleider","Sales engineer","Detailengineer","Tekenaar","Accountmanager","Werkvoorbereider","Uitvoerder","Planner","Inkoop","Aannemer","Klant","Netbeheerder"];
+const ROLES=["Projectleider","Sales engineer","Detailengineer","Tekenaar","Accountmanager","Werkvoorbereider","Uitvoerder","Inkoop","Aannemer","Klant","Netbeheerder"];
 const TEMPLATE={
   0:[["Aanvraag registreren","Sales engineer"],["Schouw op locatie","Sales engineer"],
      ["Projectplan opstellen","Sales engineer","s"],["Calculatie opstellen","Sales engineer","s"],
@@ -689,7 +690,8 @@ function inboxHTML(){
         <input type="checkbox" data-done="${a.id}" data-proj="${esc(p.id)}" ${a.status==="afgerond"?"checked":""} ${a.status==="nvt"||!canDo(p,a)?"disabled":""}>
         <span class="tr-title">${esc(a.title)}${w&&!done?` <span class="wait" title="Wacht op: ${esc(w.title)}">⊘ wacht op vorige stap</span>`:""}</span>
         <span class="tr-due ${late2?"late":""}" title="${isStdDue(a)?"Standaarddeadline":"Deadline"}">${done&&a.doneAt?"✓ "+fmtDate(a.doneAt):ed?fmtDate(ed):"—"}</span></label>`}).join("")}
-        <div><button class="btn" type="button" data-open="${esc(p.id)}">Project openen →</button></div></div>`:""}
+        <div class="ib-actions"><button class="btn" type="button" data-open="${esc(p.id)}">Project openen →</button>${canEditHead()&&p.phase<5?(()=>{const open=actsOf(p,p.phase).filter(a=>!isClosed(a)).length,blk=gateOpen(p);
+          return `<button class="btn ${open||blk?"":"primary"}" type="button" data-movefrom="${esc(p.id)}" ${blk?`disabled title="Eerst afronden: ${esc(blk.title)}"`:""}>Toewijzen fase ${esc(PHASES[p.phase+1].label)} →</button>${open?`<span class="small">${open} open in deze fase</span>`:""}`})():""}</div></div>`:""}
       </div>`}).join("")}
   </div>`;
 }
@@ -889,6 +891,10 @@ document.addEventListener("click",async e=>{
   if(t.dataset.selphase!==undefined){S.selPhase=+t.dataset.selphase;render();return}
   if(t.dataset.logtab){S.logTab=t.dataset.logtab;render();return}
   const p=proj(S.openId);
+  if(t.dataset.movefrom){const mp=proj(t.dataset.movefrom);if(!mp)return;if(gateOpen(mp)){toast("Eerst afronden: "+gateOpen(mp).title);return}
+    const np=Math.min(5,mp.phase+1);t.disabled=true;
+    if(await save(mp.id,{phase:np,phaseSince:nowISO(),...(mp.phase===0&&!mp.akkoord?{akkoord:todayStr()}:{})},`${mp.name}: fase ${PHASES[np].label} toegewezen`)){render();addLog(mp.id,"notitie",`Fase gewijzigd naar ${PHASES[np].long}.`)}else t.disabled=false;
+    return}
   if(t.dataset.move&&p){
     if(+t.dataset.move>0&&gateOpen(p)){toast("Eerst afronden: "+gateOpen(p).title);return}
     const np=Math.min(5,Math.max(0,p.phase+(+t.dataset.move)));t.disabled=true;
