@@ -67,7 +67,7 @@
   <details open><summary>Weergave</summary>
     <div class="grp">Omgeving</div>
     <label>Luchtfoto PDOK 2025 (onderlegger) <input type="checkbox" id="tFoto" checked></label>
-    <label>Satelliet Esri (lijkt op Google) <input type="checkbox" id="tEsri"></label>
+    <label>Satelliet Esri (lijkt op Google) <input type="checkbox" id="tEsri" checked></label>
     <label id="rEsriRij" style="display:none">Dekking satelliet over PDOK <input type="range" id="rEsri" min="0" max="100" value="50" style="width:110px"></label>
     <label>Gebouwen BAG / 3DBAG <input type="checkbox" id="tBag" checked></label>
     <label>Gebouwen doorzichtig <input type="checkbox" id="tBagT"></label>
@@ -180,35 +180,42 @@ const hemaGevelTex = ctex(256, 512, (c, W, H) => { const gr = c.createLinearGrad
   for(let x = 0; x < W; x += 16){ c.fillStyle = 'rgba(20,60,60,0.22)'; c.fillRect(x, 0, 3, H); c.fillStyle = 'rgba(255,255,255,0.10)'; c.fillRect(x + 6, 0, 2, H); }
   c.fillStyle = '#9fd6e0'; c.fillRect(0, 0, W, 14); c.fillStyle = '#7fbfcc'; c.fillRect(0, 14, W, 4);                                    // daktrim (lichtblauw, zichtbaar op de luchtfoto)
   c.fillStyle = '#5d6466'; c.fillRect(0, H - 14, W, 14); });                                                                              // plint
-function hemaWandMat(h){ const t = hemaGevelTex.clone(); t.needsUpdate = true; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1/2.2, -1/h); t.offset.set(0, 1/h);
-  const m = M(0xffffff, {map: t, roughness: 0.55, metalness: 0.2}); bagMats.push(m); return m; }
+const hemaWandM = (() => { const t = hemaGevelTex; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1/2.2, -1); t.offset.set(0, 1); const m = M(0xffffff, {map: t, roughness: 0.55, metalness: 0.2}); bagMats.push(m); return m; })();
 let PVRING = null; const PVNOOD = () => { const B0 = V(GB[0], 0, GB[1]), W = N.clone().negate(); return [[0.5, 0], [-75, 0], [-75, 60], [0.5, 60]].map(([a, b]) => { const p = B0.clone().addScaledVector(U, a).addScaledVector(W, b); return [p.x, p.z]; }); };
 const HEMA_PT = [[132734.7, 458066.4], [132690, 457850]];                          // adres Atoomweg 60 en de aanbouw bij het energieplein
 function inPoly(x, y, r){ let ok = false; for(let i = 0, j = r.length - 1; i < r.length; j = i++){ const [xi, yi] = r[i], [xj, yj] = r[j]; if(((yi > y) !== (yj > y)) && (x < (xj - xi)*(y - yi)/(yj - yi) + xi)) ok = !ok; } return ok; }
+// gebouwen staan direct (WFS, standaardhoogte) en groeien daarna naar de 3DBAG-hoogte; 3DBAG alleen rond het terrein (sneller)
 (async function laadBag(){
-  const bb = [GROOT.x0, GROOT.y0, GROOT.x1, GROOT.y1].join(','); const info = $t('bagInfo');
-  try{
-    const wfs = `https://service.pdok.nl/lv/bag/wfs/v2_0?service=WFS&version=2.0.0&request=GetFeature&typeName=bag:pand&outputFormat=application/json&srsName=EPSG:28992&count=1000&bbox=${bb},urn:ogc:def:crs:EPSG::28992`;
-    const fc = await fetch(wfs).then(r => r.json());
-    const H = {}; let url = `https://api.3dbag.nl/collections/pand/items?bbox=${bb}&limit=100`, pag = 0;
-    try{ while(url && pag++ < 40){ const j = await fetch(url).then(r => r.json()); (j.features || []).forEach(f => Object.entries(f.CityObjects || {}).forEach(([k, o]) => { const a = o.attributes || {}; if(a.b3_h_dak_70p != null && a.b3_h_maaiveld != null) H[k.split('.').pop()] = a.b3_h_dak_70p - a.b3_h_maaiveld; }));
-        const nx = (j.links || []).find(l => l.rel === 'next'); url = nx ? nx.href : null; } }catch(e){ console.warn('3DBAG', e); }
-    let n = 0, nh = 0;
-    fc.features.forEach(f => { const g = f.geometry, p = f.properties; if(!g) return; const polys = g.type === 'Polygon' ? [g.coordinates] : g.coordinates;
-      if(p.status && /gesloopt|niet gerealiseerd/i.test(p.status)) return;
-      polys.forEach(rings => { const r = rings[0]; const hema = HEMA_PT.some(([x, y]) => inPoly(x, y, r));
-        let h = H[p.identificatie]; if(h == null || !(h > 0.5)) h = hema ? 12 : 7; else nh++;
-        const sh = new THREE.Shape(r.map(([x, y]) => { const [lx, lz] = rdL(x, y); return new THREE.Vector2(lx, -lz); }));
-        rings.slice(1).forEach(hr => sh.holes.push(new THREE.Path(hr.map(([x, y]) => { const [lx, lz] = rdL(x, y); return new THREE.Vector2(lx, -lz); }))));
-        const geo = new THREE.ExtrudeGeometry(sh, {depth: h, bevelEnabled: false}); const m = new THREE.Mesh(geo, hema ? [hemaDak, hemaWandMat(h)] : [bagDak, bagWand]);
-        m.rotation.x = -Math.PI/2; m.castShadow = m.receiveShadow = true; m.userData.info = (hema ? '<b>HEMA distributiecentrum</b><br>' : '') + 'BAG-pand ' + p.identificatie + '<br>bouwjaar ' + p.bouwjaar + ' · ' + (p.gebruiksdoel || '–') + '<br>hoogte ' + h.toFixed(1) + ' m (3DBAG)';
-        BAG.add(m); KLIK.push(m); n++; if(inPoly(132690, 457850, r) && !PVRING) PVRING = {poly: r.map(([x, y]) => rdL(x, y)), h}; }); });
-    bouwPvDak(PVRING ? PVRING.poly : PVNOOD(), PVRING ? PVRING.h : 11); hemaLetters(PVRING ? PVRING.h : 11);
-    info.innerHTML = `${n} BAG-panden geladen (PDOK), ${nh} met hoogte uit 3DBAG`; zetBagT(); renderer.shadowMap.needsUpdate = true; vuil(6);
-  }catch(e){ info.innerHTML = 'BAG-gebouwen konden niet geladen worden (geen internet of geblokkeerd in deze weergave)'; console.warn(e); noodPand(); bouwPvDak(PVNOOD(), 11); hemaLetters(11); }
+  const bb = [GROOT.x0, GROOT.y0, GROOT.x1, GROOT.y1].join(','), bb3 = [132480, 457680, 132900, 458150].join(','); const info = $t('bagInfo');
+  let fc; try{ const wfs = `https://service.pdok.nl/lv/bag/wfs/v2_0?service=WFS&version=2.0.0&request=GetFeature&typeName=bag:pand&outputFormat=application/json&srsName=EPSG:28992&count=1000&bbox=${bb},urn:ogc:def:crs:EPSG::28992`;
+    fc = await fetch(wfs).then(r => r.json()); }
+  catch(e){ info.innerHTML = 'BAG-gebouwen konden niet geladen worden (geen internet of geblokkeerd in deze weergave)'; console.warn(e); noodPand(); bouwPvDak(PVNOOD(), 11); hemaLetters(11); return; }
+  const PER = {}; let n = 0;
+  fc.features.forEach(f => { const g = f.geometry, p = f.properties; if(!g) return; const polys = g.type === 'Polygon' ? [g.coordinates] : g.coordinates;
+    if(p.status && /gesloopt|niet gerealiseerd/i.test(p.status)) return;
+    polys.forEach(rings => { const r = rings[0]; if(inPoly(132669.03, 457822.30, r)) return;                 // BAG-pand van de ZVK zelf: weg, het eigen ZVK-model staat er al
+      const hema = HEMA_PT.some(([x, y]) => inPoly(x, y, r)), h = hema ? 12 : 7;
+      const sh = new THREE.Shape(r.map(([x, y]) => { const [lx, lz] = rdL(x, y); return new THREE.Vector2(lx, -lz); }));
+      rings.slice(1).forEach(hr => sh.holes.push(new THREE.Path(hr.map(([x, y]) => { const [lx, lz] = rdL(x, y); return new THREE.Vector2(lx, -lz); }))));
+      const m = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, {depth: 1, bevelEnabled: false}), hema ? [hemaDak, hemaWandM] : [bagDak, bagWand]);
+      m.rotation.x = -Math.PI/2; m.scale.z = h; m.castShadow = m.receiveShadow = true;
+      m.userData.tekst = (hema ? '<b>HEMA distributiecentrum</b><br>' : '') + 'BAG-pand ' + p.identificatie + '<br>bouwjaar ' + p.bouwjaar + ' · ' + (p.gebruiksdoel || '–');
+      m.userData.info = m.userData.tekst + '<br>hoogte ' + h + ' m (aangenomen)'; BAG.add(m); KLIK.push(m); n++;
+      (PER[p.identificatie] = PER[p.identificatie] || []).push(m);
+      if(inPoly(132690, 457850, r) && !PVRING) PVRING = {poly: r.map(([x, y]) => rdL(x, y)), h, id: p.identificatie}; }); });
+  info.innerHTML = `${n} BAG-panden geladen (PDOK) · hoogtes uit 3DBAG laden…`; zetBagT(); renderer.shadowMap.needsUpdate = true; vuil(6);
+  let nh = 0, url = `https://api.3dbag.nl/collections/pand/items?bbox=${bb3}&limit=100`, pag = 0;
+  try{ while(url && pag++ < 25){ const j = await fetch(url).then(r => r.json());
+      (j.features || []).forEach(f => Object.entries(f.CityObjects || {}).forEach(([k, o]) => { const a = o.attributes || {}; const id = k.split('.').pop().replace(/-\d+$/, '');
+        if(a.b3_h_dak_70p == null || a.b3_h_maaiveld == null || !PER[id]) return; const h = a.b3_h_dak_70p - a.b3_h_maaiveld; if(!(h > 0.5)) return;
+        PER[id].forEach(m => { if(m.userData.h3) return; m.userData.h3 = true; m.scale.z = h; m.userData.info = m.userData.tekst + '<br>hoogte ' + h.toFixed(1) + ' m (3DBAG)'; nh++; });
+        if(PVRING && PVRING.id === id) PVRING.h = h; }));
+      info.innerHTML = `${n} BAG-panden geladen (PDOK), ${nh} met hoogte uit 3DBAG`; renderer.shadowMap.needsUpdate = true; vuil(4);
+      const nx = (j.links || []).find(l => l.rel === 'next'); url = nx ? nx.href : null; } }catch(e){ console.warn('3DBAG', e); }
+  bouwPvDak(PVRING ? PVRING.poly : PVNOOD(), PVRING ? PVRING.h : 11); hemaLetters(PVRING ? PVRING.h : 11);
 })();
 function noodPand(){ const r = PVNOOD(), h = 11; const sh = new THREE.Shape(r.map(([x, z]) => new THREE.Vector2(x, -z)));                  // zonder internet: aanbouw als blok
-  const m = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, {depth: h, bevelEnabled: false}), [hemaDak, hemaWandMat(h)]); m.rotation.x = -Math.PI/2; m.castShadow = m.receiveShadow = true; m.userData.info = '<b>HEMA distributiecentrum</b> (benadering, BAG niet geladen)'; BAG.add(m); KLIK.push(m); }
+  const m = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, {depth: 1, bevelEnabled: false}), [hemaDak, hemaWandM]); m.rotation.x = -Math.PI/2; m.scale.z = h; m.castShadow = m.receiveShadow = true; m.userData.info = '<b>HEMA distributiecentrum</b> (benadering, BAG niet geladen)'; BAG.add(m); KLIK.push(m); }
 // rode HEMA-dakletters op een stalen frame langs de gevel (luchtfoto: s ≈ −3 … 8 m, net achter de dakrand)
 function hemaLetters(h){ const g = new THREE.Group(); g.position.copy(wp(2.6, -1.1)); g.position.y = h; g.rotation.y = YAW; scene.add(g);
   const rood = M(0xe1251b, {roughness: 0.35, metalness: 0.1}), zij = M(0xf3f1ee, {roughness: 0.5}), staal = M(0x6d7377, {metalness: 0.7, roughness: 0.4}), LH = 3.0;
@@ -230,9 +237,9 @@ const YAW = Math.atan2(-U.z, U.x);                                              
 const lp = (E, Nn) => { const [x, z] = rdL(E, Nn); return V(x, 0, z); };
 // wp(s, n): s meter langs de gevel vanaf A (richting zuid-oost), n meter van de gevel af (west)
 const wp = (s, n) => V(GA[0], 0, GA[1]).addScaledVector(U, s).addScaledVector(N, n);
-// opstelling volgens Nicks schets op Google Maps (21-10-2026), ingepast op container + ZVK (± 10,5 px/m):
-// EOS-plein 10,2 × 4,2 m in de trailervakken naast het hek (s 3,6–13,8, n 8,6–12,8), power box los richting erfgrens
-const PL0 = wp(3.6, 10.7), PL1 = wp(13.8, 10.7);
+// opstelling volgens Nicks schets op Google Maps (21-10-2026), ingepast op de container, de gevelrichting en de rand van de verharding (PDOK), ± 13,1 px/m:
+// EOS-plein 10,2 × 4,2 m in de trailervakken naast het terrein (s 3,1–13,3, n 6,9–11,1), power box los ervoor richting hek
+const PL0 = wp(3.14, 9.04), PL1 = wp(13.34, 9.04);
 const PLEN = PL0.distanceTo(PL1);
 const opPlein = (s, d) => PL0.clone().addScaledVector(U, s).addScaledVector(N, d);
 const ASSET = {};
@@ -266,7 +273,7 @@ const GLB = (() => { let ld = null; return (url, cb) => { try{ if(!ld){ ld = new
 
 // ---------- 2. EV: Sungrow IDC480E power unit, los voorbij het plein richting erfgrens (schets), deur naar het westen ----------
 const wit2 = M(0xf4f5f3, {roughness: 0.35, metalness: 0.15}), donker = M(0x3b3f45, {roughness: 0.45}), voet = M(0x55595d, {roughness: 0.6});
-{ const g = asset('ev', wp(16.6, 11.3), '<b>Sungrow IDC480E power unit — 480 kW</b> (DC-unit 1380 × 900, zone 3900 × 2980 mm)<br>900 × 2200 × 1380 mm, 1100 kg, IP65, C5, luchtgekoeld<br>3F+N+PE 400 V, 770 A · 2 × YMvKas 4×300+150 naar 800 A gG · DC langs het hek naar 2 dispensers (± 35 m)', YAW);
+{ const g = asset('ev', wp(14.9, 9.5), '<b>Sungrow IDC480E power unit — 480 kW</b> (DC-unit 1380 × 900, zone 3900 × 2980 mm)<br>900 × 2200 × 1380 mm, 1100 kg, IP65, C5, luchtgekoeld<br>3F+N+PE 400 V, 770 A · 2 × YMvKas 4×300+150 naar 800 A gG · DC langs het hek naar 2 dispensers (± 35 m)', YAW);
   { const z = new THREE.Mesh(new THREE.PlaneGeometry(2.98, 3.9), new THREE.MeshStandardMaterial({color: 0xa7a59e, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -3})); z.rotation.x = -Math.PI/2; z.position.set(0, 0.02, 0.5); z.receiveShadow = true; g.add(z);
     const r = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(2.98, 0.01, 3.9)), new THREE.LineBasicMaterial({color: 0x1f7cc4})); r.position.set(0, 0.04, 0.5); g.add(r); }
   const y0 = 0.0;
@@ -295,7 +302,7 @@ function dispenser(naam, pos, nr){ const g = asset(naam, pos, `<b>Dispenser ${nr
   for(const s of [-1, 1]){ const x = s*0.26; box(g, 0.08, 0.2, 0.12, M(0x2a2c2f), x, y0 + 0.95, 0.05); box(g, 0.05, 0.12, 0.1, M(0x111214), x, y0 + 0.9, 0.12);       // holster + stekker
     kabel(g, [V(s*0.15, y0 + 1.7, -0.1), V(s*0.22, y0 + 2.05, -0.05), V(s*0.36, y0 + 1.9, 0.05), V(s*0.42, y0 + 1.1, 0.12), V(s*0.36, y0 + 0.55, 0.14), V(x, y0 + 0.82, 0.12)], 0.016, kab); }
   klikbaar(g, g.userData.info); sprite('dispenser ' + nr + ' · 240 kW', V(pos.x, 2.7, pos.z), 0.6, '#1f7cc4'); return g; }
-dispenser('d1', lp(132632.55, 457801.56), 1); dispenser('d2', lp(132626.51, 457798.03), 2);          // schets: in de trailervakken, 7 m h.o.h.
+dispenser('d1', wp(11.3, 36.8), 1); dispenser('d2', wp(10.85, 43.8), 2);          // schets: in de trailervakken, 7 m h.o.h.
 
 // ---------- 3. PV-omvormers: 5 × Huawei SUN2000-100KTL-M2 los opgesteld (schets): 1 + 2 op een frame bij de container, 3–5 aan de gevel ----------
 // groep 'pv' ligt op wp(0, 0) met lokaal x = s (langs de gevel) en z = n (van de gevel af)
@@ -312,11 +319,11 @@ dispenser('d1', lp(132632.55, 457801.56), 1); dispenser('d2', lp(132626.51, 4577
     plak(ig, 0.16, 0.16, lbl(String(nr), 64, 64, '#f2b400', '#1b2a36', 'bold 44px Arial'), -0.36, 0.22, 0.152);
     if(wand){ box(ig, 0.9, 0.08, 0.04, matZink, 0, 0.25, -0.24); box(ig, 0.9, 0.08, 0.04, matZink, 0, -0.25, -0.24); }                           // wandbeugels
     else { for(const x of [-0.42, 0.42]) box(ig, 0.07, 1.95, 0.07, matZink, x, -1.35 + 0.975, -0.27); for(const y of [-0.25, 0.25]) box(ig, 0.95, 0.05, 0.05, matZink, 0, y, -0.25); } };
-  omv(1, 4.5, 3.5, -Math.PI/2, false); omv(2, 4.5, 1.6, -Math.PI/2, false);                                                                           // frame, front naar het noordwesten
-  for(const x of [-0.42, 0.42]) for(const z of [1.6, 3.5]) box(g, 0.3, 0.12, 0.3, matBeton, 4.5 + 0.27, 0.06, z + x);                               // poeren
-  omv(3, 6.7, 0.30, 0, true); omv(4, 8.78, 0.30, 0, true); omv(5, 10.75, 0.30, 0, true);                                                             // aan de gevel
+  omv(1, 4.7, 3.3, -Math.PI/2, false); omv(2, 4.7, 1.7, -Math.PI/2, false);                                                                           // frame, front naar het noordwesten
+  for(const x of [-0.42, 0.42]) for(const z of [1.7, 3.3]) box(g, 0.3, 0.12, 0.3, matBeton, 4.7 + 0.27, 0.06, z + x);                               // poeren
+  omv(3, 6.75, 0.30, 0, true); omv(4, 8.35, 0.30, 0, true); omv(5, 9.95, 0.30, 0, true);                                                             // aan de gevel
   const vrij = new THREE.LineBasicMaterial({color: 0xd4a017});
-  for(const [sx, nz, w, d] of [[4.5 - 0.35, 2.55, 1.4, 4.2], [8.73, 0.9, 5.4, 1.8]]){ const r = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(w, 0.01, d)), vrij); r.position.set(sx, 0.03, nz); g.add(r); }
+  for(const [sx, nz, w, d] of [[4.35, 2.5, 1.4, 3.9], [8.35, 0.9, 4.8, 1.8]]){ const r = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(w, 0.01, d)), vrij); r.position.set(sx, 0.03, nz); g.add(r); }
   klikbaar(g, g.userData.info); sprite('PV · 5 × Huawei SUN2000-100KTL-M2', wp(7.5, 1.6).add(V(0, 3.0, 0)), 0.8, '#d4a017'); }
 
 // ---------- 4. ZVK (klant, staat er al: omcirkeld op de luchtfoto, 5,35 × 3,2 m) en EMS-veldkast ernaast ----------
@@ -332,7 +339,7 @@ dispenser('d1', lp(132632.55, 457801.56), 1); dispenser('d2', lp(132626.51, 4577
 
 // ---------- 5. elektrische trekker met HEMA-oplegger in het laadvak naast dispenser 1, haaks op het hek zoals de wissellaadbakken (neus naar het hek, laadpoort bij de dispenser) ----------
 const TRUCK = new THREE.Group(); scene.add(TRUCK);
-{ const d = ASSET.d1.position, p = wp(14.6 - 6.3, 45.28 - 2.48); TRUCK.position.copy(p); TRUCK.rotation.y = YAW; const T = new THREE.Group(); TRUCK.add(T);
+{ const d = ASSET.d1.position, p = wp(13.9 - 6.3, 36.8 - 2.48); TRUCK.position.copy(p); TRUCK.rotation.y = YAW; const T = new THREE.Group(); TRUCK.add(T);
   const rood = M(0xd2141b, {roughness: 0.45}), witT = M(0xf5f5f2, {roughness: 0.4}), band = M(0x141516, {roughness: 0.85}), velg = M(0xb8bdc1, {metalness: 0.7, roughness: 0.3}), glas = M(0x1e2a33, {roughness: 0.1, metalness: 0.4});
   const wiel = (x, z) => { cyl(T, 0.52, 0.32, band, x, 0.52, z, 'z', 22); cyl(T, 0.3, 0.34, velg, x, 0.52, z, 'z', 12); };
   // trekker (cabine voorin richting +x), elektrisch: accupakketten tussen de assen, laadpoort rechts
@@ -374,7 +381,7 @@ function bouwPvDak(poly, h){                                                    
   IM.castShadow = true; IM.receiveShadow = true; IM.userData.info = `<b>PV op het dak</b>: ${pos.length} × Longi Hi-MO X10 535 Wp = ${(pos.length*0.535).toFixed(2)} kWp (ELIX: 1.388 × 535 Wp = 742,58 kWp)<br>Van der Valk Pro+ oost/west · legplan indicatief, definitief na akkoord HEMA en constructeur`;
   PVDAK.add(IM); KLIK.push(IM);
   // DC-kabelladder: langs de dakrand en verticaal langs de gevel tussen omvormer 3 en 4 (afgedekt)
-  const sk = wp(7.74, 0), sAl = sk.clone().sub(B0).dot(U), top = B0.clone().addScaledVector(U, sAl).addScaledVector(N, 0.25);
+  const sk = wp(7.55, 0), sAl = sk.clone().sub(B0).dot(U), top = B0.clone().addScaledVector(U, sAl).addScaledVector(N, 0.25);
   const lad = M(0xb9bfc3, {metalness: 0.8, roughness: 0.35}); const LG = new THREE.Group(); LG.position.copy(top); LG.rotation.y = YAW; PVDAK.add(LG);
   box(LG, 0.5, h + 0.3, 0.12, lad, 0, (h + 0.3)/2, 0.1); box(LG, 0.55, h + 0.3, 0.03, M(0x9aa3a8, {metalness: 0.6}), 0, (h + 0.3)/2, 0.18);
   box(LG, 0.5, 0.12, 2.2, lad, 0, h + 0.35, -1.0); box(LG, 0.5, 0.1, 1.2, lad, 0, 0.55, 0.7);
@@ -383,7 +390,7 @@ function bouwPvDak(poly, h){                                                    
 
 // ---------- hekwerk langs de Nucleonenweg (schets/luchtfoto: langs de rand van de verharding) + haag ----------
 const HEK = new THREE.Group(); scene.add(HEK);
-{ const fs = n => 19.7 - 0.0955*n, fp = n => wp(fs(n), n), N0 = 0.8, N1 = 96, NS = 32;                 // n 0,8–32: dubbelstaafmat (groen), 32–96: spijlenhek (verzinkt)
+{ const fs = n => 17.21 - 0.07*n, fp = n => wp(fs(n), n), N0 = 0.8, N1 = 96, NS = 32;                 // n 0,8–32: dubbelstaafmat (groen), 32–96: spijlenhek (verzinkt)
   const D = fp(1).sub(fp(0)).normalize(), L = fp(N1).distanceTo(fp(N0)), LS = fp(NS).distanceTo(fp(N0));
   const g = new THREE.Group(); g.position.copy(fp(N0)); g.rotation.y = Math.atan2(-D.z, D.x); HEK.add(g);                       // lokaal x langs het hek, −z naar de weg
   const groen = M(0x1f4a35, {roughness: 0.5, metalness: 0.3}), H = 2.0;
@@ -457,7 +464,7 @@ window.addEventListener('blur', () => { for(const k in KO) KO[k] = false; });
 $t('pDicht').addEventListener('click', () => { $t('paneel').classList.add('dicht'); $t('pOpen').classList.add('toon'); });
 $t('pOpen').addEventListener('click', () => { $t('paneel').classList.remove('dicht'); $t('pOpen').classList.remove('toon'); });
 $t('tFoto').addEventListener('change', zetOnder); $t('rEsri').addEventListener('input', zetOnder); $t('tHek').addEventListener('change', e => { HEK.visible = e.target.checked; renderer.shadowMap.needsUpdate = true; vuil(3); });
-$t('tEsri').addEventListener('change', zetOnder);
+$t('tEsri').addEventListener('change', zetOnder); zetOnder();
 $t('tPvDak').addEventListener('change', e => { PVDAK.visible = e.target.checked; renderer.shadowMap.needsUpdate = true; vuil(3); });
 $t('tBag').addEventListener('change', e => { BAG.visible = e.target.checked; renderer.shadowMap.needsUpdate = true; vuil(3); });
 $t('tBagT').addEventListener('change', zetBagT);
