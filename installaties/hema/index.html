@@ -496,7 +496,7 @@ function bouwPvDak(poly, h){ while(PVDAK.children.length) PVDAK.remove(PVDAK.chi
   // DC-kabelladder: langs de dakrand en verticaal langs de gevel tussen omvormer 3 en 4 (afgedekt)
   let wLad = WN; try{ const w = wandOp(PVS.s); if(w !== null) wLad = w; }catch(e){}
   try{ const w0 = wandOp(0.95 + 0.3); if(w0 !== null && HEK.userData.gevelDeur) HEK.userData.gevelDeur(w0); }catch(e){ console.warn('gevelDeur', e); }
-  PVS.n = wLad + 1.8 + 0.7 + 0.055 + 2.65;   // + 5,5 cm (Nick) { const p = wp(PVS.s, PVS.n); ASSET.pv.position.x = p.x; ASSET.pv.position.z = p.z; }          // skid begint 0,7 m na de vluchtdeur van 1,8 m (Nick): 2,5 m van de gevel
+  PVS.n = wLad + 2.70 + 2.65; { const p = wp(PVS.s, PVS.n); ASSET.pv.position.x = p.x; ASSET.pv.position.z = p.z; }   // skid (incl. dak) op 2700 mm van de gevel (Nick)
   { // bestaand trottoir langs de hele gevel (± 1,5 m breed, grijze tegels)
     const tg = ctex(128, 128, (c, W, Hh) => { c.fillStyle = '#a9aaa6'; c.fillRect(0, 0, W, Hh); c.strokeStyle = '#8f908c'; c.lineWidth = 3; for(let x = 0; x <= W; x += 42.7){ c.beginPath(); c.moveTo(x, 0); c.lineTo(x, Hh); c.stroke(); } for(let y = 0; y <= Hh; y += 42.7){ c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); } });
     tg.wrapS = tg.wrapT = THREE.RepeatWrapping; const sa = -70, sb = 19, bw = 1.5; tg.repeat.set((sb - sa)/0.9, bw/0.9);
@@ -785,13 +785,13 @@ function bouwMaat(){
   ok(`EOS-zone binnen het hek (${mm(hN1 - zE.n1)} tot hek)`, zE.n1 <= hN1 + 0.01 && zE.s0 >= hS0);
   ok(`DC-unit-zone binnen het hek (${mm(hSE(zD.n1) - zD.s1)} wegzijde, ${mm(hN1 - zD.n1)} trailerzijde)`, zD.s1 <= hSE(zD.n1) + 0.01 && zD.n1 <= hN1 + 0.01);
   ok(`PV-zone binnen het hek (${mm(zP.s0 - hS0)} tot hek)`, zP.s0 >= hS0 - 0.01);
-  ok(`PV-skid ↔ gevel ${mm(pvB.n0 - gevel)} (vluchtdeur 1800 + 700 = 2500)`, pvB.n0 - gevel > 2.4);
+  { const gp = (() => { try{ const w = wandOp((pvB.s0 + pvB.s1)/2); return w !== null ? w : gevel; }catch(e){ return gevel; } })(); ok(`PV-skid ↔ gevel ${mm(pvB.n0 - gp)} (eis 2700)`, Math.abs(pvB.n0 - gp - 2.7) < 0.03); }
   ok(`EOS-zone ↔ DC-unit-zone overlap ${mm(Math.max(0, zE.s1 - zD.s0))} (dia 43: max ± 1000 gecombineerd)`, zE.s1 - zD.s0 < 1.05);
   // afstanden tussen alle componenten binnen het hek: per component naar de dichtstbijzijnde buur / hek / gevel in 4 richtingen
   const kleur = '#c0281f', gedaan = new Set();
   for(const [nm, b] of Object.entries(BOD)){ const ms = (b.s0 + b.s1)/2, mn = (b.n0 + b.n1)/2;
     lab(nm, ms, mn, '#17212a', 0.4, 'TEKST');
-    const kand = { '+s': [[hSE(mn), 'hek']], '-s': [[hS0, 'hek']], '+n': [[hN1, 'hek']], '-n': [[gevel, 'gevel']] };
+    const gv = (() => { try{ const w = wandOp(ms); return w !== null ? w : gevel; }catch(e){ return gevel; } })(); const kand = { '+s': [[hSE(mn), 'hek']], '-s': [[hS0, 'hek']], '+n': [[hN1, 'hek']], '-n': [[gv, 'gevel']] };
     for(const [k2, o] of Object.entries(BOD)){ if(k2 === nm) continue;
       if(o.n0 < mn && o.n1 > mn){ if(o.s0 >= b.s1 - 0.05) kand['+s'].push([o.s0, k2]); if(o.s1 <= b.s0 + 0.05) kand['-s'].push([o.s1, k2]); }
       if(o.s0 < ms && o.s1 > ms){ if(o.n0 >= b.n1 - 0.05) kand['+n'].push([o.n0, k2]); if(o.n1 <= b.n0 + 0.05) kand['-n'].push([o.n1, k2]); } }
@@ -894,7 +894,7 @@ $t('bDxf').addEventListener('click', dxfExport);
     try{ const r = await fetch(SB, {method: 'POST', headers: Object.assign({'Content-Type': 'application/json', Prefer: 'return=minimal'}, H), body: JSON.stringify({pagina: 'hema', naam: naam || null, soort: $t('fbSoort').value, tekst, positie})});
       if(!r.ok) throw new Error(r.status); st.textContent = '✅ Bedankt, verstuurd!'; $t('fbTekst').value = ''; laad(); }catch(e){ st.textContent = '❌ Versturen mislukt, probeer opnieuw.'; }
     $t('fbStuur').disabled = false; }); }
-window.__hema = {scene, ASSET, VIEWS, U, N, YAW, bouwMaat: () => bouwMaat()};
+window.__hema = {scene, ASSET, VIEWS, U, N, YAW, bouwMaat: () => bouwMaat(), dbg: () => ({WN, PVS: Object.assign({}, PVS), wl: (() => { try{ return wandOp(PVS.s); }catch(e){ return String(e); } })(), w87: wandOp(8.7)})};
 
 </script>
 </body>
