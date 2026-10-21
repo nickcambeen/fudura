@@ -77,6 +77,7 @@
     <label>Maatvoering EOS-ruimte <input type="checkbox" id="tVrij"></label>
     <label>PV-panelen op het dak <input type="checkbox" id="tPvDak" checked></label>
     <label>Vrachtwagen bij dispenser 1 <input type="checkbox" id="tTruck" checked></label>
+    <label>Trailers / wissellaadbakken (luchtfoto) <input type="checkbox" id="tVracht" checked></label>
     <div id="bagInfo" class="cfgInfo">gebouwen laden…</div>
   </details>
   <details><summary>Componenten</summary>
@@ -144,14 +145,14 @@ const matRal7035 = M(0xd4d7d1, {roughness: 0.55}), matAntr = M(0x3a3e43, {roughn
 const GROOT = {x0: 132200, y0: 457450, x1: 133100, y1: 458150}, DETAIL = {x0: 132540, y0: 457730, x1: 132740, y1: 457880};
 const grondM = M(0x9aa58f, {roughness: 1}); const grond = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000), grondM); grond.rotation.x = -Math.PI/2; grond.position.y = -0.02; grond.receiveShadow = true; scene.add(grond);
 const FOTO = new THREE.Group(); scene.add(FOTO);
-function fotoVlak(bb, px, y){ const w = bb.x1 - bb.x0, h = bb.y1 - bb.y0, [cx, cz] = rdL((bb.x0 + bb.x1)/2, (bb.y0 + bb.y1)/2);
+function fotoVlak(bb, px, y, cb){ const w = bb.x1 - bb.x0, h = bb.y1 - bb.y0, [cx, cz] = rdL((bb.x0 + bb.x1)/2, (bb.y0 + bb.y1)/2);
   const pw = Math.round(px*Math.min(1, w/h)), ph = Math.round(px*Math.min(1, h/w));
   const url = `https://service.pdok.nl/hwh/luchtfotorgb/wms/v1_0?service=WMS&version=1.3.0&request=GetMap&layers=Actueel_orthoHR&styles=&crs=EPSG:28992&bbox=${bb.x0},${bb.y0},${bb.x1},${bb.y1}&width=${pw}&height=${ph}&format=image/jpeg`;
   const m = new THREE.MeshStandardMaterial({color: 0xffffff, roughness: 1, metalness: 0, polygonOffset: true, polygonOffsetFactor: y > 0.01 ? -2 : -1});
   const o = new THREE.Mesh(new THREE.PlaneGeometry(w, h), m); o.rotation.x = -Math.PI/2; o.position.set(cx, y, cz); o.receiveShadow = true; o.visible = false; FOTO.add(o);
-  new THREE.TextureLoader().setCrossOrigin('anonymous').load(url, t => { t.encoding = THREE.sRGBEncoding; t.anisotropy = 8; m.map = t; m.needsUpdate = true; o.visible = true; renderer.shadowMap.needsUpdate = true; vuil(6); },
+  new THREE.TextureLoader().setCrossOrigin('anonymous').load(url, t => { t.encoding = THREE.sRGBEncoding; t.anisotropy = 8; m.map = t; m.needsUpdate = true; if(cb) cb(t.image, bb); o.visible = true; renderer.shadowMap.needsUpdate = true; vuil(6); },
     undefined, () => { $t('bagInfo').innerHTML += '<br>luchtfoto kon niet geladen worden (geen internet of geblokkeerd in deze weergave)'; }); }
-fotoVlak(GROOT, 4000, 0.0); fotoVlak(DETAIL, 4000, 0.01);
+fotoVlak(GROOT, 4000, 0.0); fotoVlak(DETAIL, 4000, 0.01, (img, bb) => { VR.img = img; VR.bb = bb; VR.probeer(); });
 // ---------- alternatieve onderlegger: Esri World Imagery (satelliet), tegels via WGS84 → RD (Schreutelkamp & Strang van Hees) ----------
 function wgsRd(lat, lon){ const p = 0.36*(lat - 52.15517440), l = 0.36*(lon - 5.38720621);
   const X = 155000 + 190094.945*l - 11832.228*p*l - 114.221*p*p*l - 32.391*l*l*l - 0.705*p - 2.340*p*p*p*l - 0.608*p*l*l*l - 0.008*l*l + 0.148*p*p*l*l*l;
@@ -182,19 +183,19 @@ const hemaGevelTex = ctex(256, 512, (c, W, H) => { const gr = c.createLinearGrad
   c.fillStyle = '#5d6466'; c.fillRect(0, H - 14, W, 14); });                                                                              // plint
 const hemaWandM = (() => { const t = hemaGevelTex; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1/2.2, -1); t.offset.set(0, 1); const m = M(0xffffff, {map: t, roughness: 0.55, metalness: 0.2}); bagMats.push(m); return m; })();
 let PVRING = null; const PVNOOD = () => { const B0 = V(GB[0], 0, GB[1]), W = N.clone().negate(); return [[0.5, 0], [-75, 0], [-75, 60], [0.5, 60]].map(([a, b]) => { const p = B0.clone().addScaledVector(U, a).addScaledVector(W, b); return [p.x, p.z]; }); };
-const HEMA_PT = [[132734.7, 458066.4], [132690, 457850]];                          // adres Atoomweg 60 en de aanbouw bij het energieplein
+const HEMA_PT = [[132734.7, 458066.4], [132690, 457850]]; const BAGR = []; const VR = {img: null, bb: null, bag: false, klaar: false, probeer(){}};                          // adres Atoomweg 60 en de aanbouw bij het energieplein
 function inPoly(x, y, r){ let ok = false; for(let i = 0, j = r.length - 1; i < r.length; j = i++){ const [xi, yi] = r[i], [xj, yj] = r[j]; if(((yi > y) !== (yj > y)) && (x < (xj - xi)*(y - yi)/(yj - yi) + xi)) ok = !ok; } return ok; }
 // gebouwen staan direct (WFS, standaardhoogte) en groeien daarna naar de 3DBAG-hoogte; 3DBAG alleen rond het terrein (sneller)
 (async function laadBag(){
   const bb = [GROOT.x0, GROOT.y0, GROOT.x1, GROOT.y1].join(','), bb3 = [132480, 457680, 132900, 458150].join(','); const info = $t('bagInfo');
   let fc; try{ const wfs = `https://service.pdok.nl/lv/bag/wfs/v2_0?service=WFS&version=2.0.0&request=GetFeature&typeName=bag:pand&outputFormat=application/json&srsName=EPSG:28992&count=1000&bbox=${bb},urn:ogc:def:crs:EPSG::28992`;
     fc = await fetch(wfs).then(r => r.json()); }
-  catch(e){ info.innerHTML = 'BAG-gebouwen konden niet geladen worden (geen internet of geblokkeerd in deze weergave)'; console.warn(e); noodPand(); bouwPvDak(PVNOOD(), 11); hemaLetters(11); return; }
+  catch(e){ info.innerHTML = 'BAG-gebouwen konden niet geladen worden (geen internet of geblokkeerd in deze weergave)'; console.warn(e); noodPand(); try{ bouwPvDak(PVNOOD(), 11); }catch(e2){ console.warn(e2); } hemaLetters(11); VR.bag = true; VR.probeer(); return; }
   const PER = {}; let n = 0;
   fc.features.forEach(f => { const g = f.geometry, p = f.properties; if(!g) return; const polys = g.type === 'Polygon' ? [g.coordinates] : g.coordinates;
     if(p.status && /gesloopt|niet gerealiseerd/i.test(p.status)) return;
     polys.forEach(rings => { const r = rings[0]; if(inPoly(132669.03, 457822.30, r)){ zvkOpBag(r, p); return; }   // BAG-pand van de ZVK: niet als blok, ons ZVK-model komt op die plek
-      const hema = HEMA_PT.some(([x, y]) => inPoly(x, y, r)), h = hema ? 12 : 7;
+      BAGR.push(r); const hema = HEMA_PT.some(([x, y]) => inPoly(x, y, r)), h = hema ? 12 : 7;
       const sh = new THREE.Shape(r.map(([x, y]) => { const [lx, lz] = rdL(x, y); return new THREE.Vector2(lx, -lz); }));
       rings.slice(1).forEach(hr => sh.holes.push(new THREE.Path(hr.map(([x, y]) => { const [lx, lz] = rdL(x, y); return new THREE.Vector2(lx, -lz); }))));
       const m = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, {depth: 1, bevelEnabled: false}), hema ? [hemaDak, hemaWandM] : [bagDak, bagWand]);
@@ -203,6 +204,7 @@ function inPoly(x, y, r){ let ok = false; for(let i = 0, j = r.length - 1; i < r
       m.userData.info = m.userData.tekst + '<br>hoogte ' + h + ' m (aangenomen)'; BAG.add(m); KLIK.push(m); n++;
       (PER[p.identificatie] = PER[p.identificatie] || []).push(m);
       if(inPoly(132690, 457850, r) && !PVRING) PVRING = {poly: r.map(([x, y]) => rdL(x, y)), h, id: p.identificatie}; }); });
+  VR.bag = true; VR.probeer();
   info.innerHTML = `${n} BAG-panden geladen (PDOK) · hoogtes uit 3DBAG laden…`; zetBagT(); renderer.shadowMap.needsUpdate = true; vuil(6);
   let nh = 0, url = `https://api.3dbag.nl/collections/pand/items?bbox=${bb3}&limit=100`, pag = 0;
   try{ while(url && pag++ < 25){ const j = await fetch(url).then(r => r.json());
@@ -212,7 +214,7 @@ function inPoly(x, y, r){ let ok = false; for(let i = 0, j = r.length - 1; i < r
         if(PVRING && PVRING.id === id) PVRING.h = h; }));
       info.innerHTML = `${n} BAG-panden geladen (PDOK), ${nh} met hoogte uit 3DBAG`; renderer.shadowMap.needsUpdate = true; vuil(4);
       const nx = (j.links || []).find(l => l.rel === 'next'); url = nx ? nx.href : null; } }catch(e){ console.warn('3DBAG', e); }
-  bouwPvDak(PVRING ? PVRING.poly : PVNOOD(), PVRING ? PVRING.h : 11); hemaLetters(PVRING ? PVRING.h : 11);
+  try{ bouwPvDak(PVRING ? PVRING.poly : PVNOOD(), PVRING ? PVRING.h : 11); }catch(e){ console.warn('PV-dak', e); } hemaLetters(PVRING ? PVRING.h : 11);
 })();
 // ZVK-model op de BAG-contour (in lijn met het gebouw): midden + maten in het gevelstelsel (s langs U, n langs N)
 function zvkOpBag(r, p){ const g = ASSET.zvk, O = V(GA[0], 0, GA[1]); let s0 = 1e9, s1 = -1e9, n0 = 1e9, n1 = -1e9;
@@ -224,7 +226,9 @@ function zvkOpBag(r, p){ const g = ASSET.zvk, O = V(GA[0], 0, GA[1]); let s0 = 1
 function noodPand(){ const r = PVNOOD(), h = 11; const sh = new THREE.Shape(r.map(([x, z]) => new THREE.Vector2(x, -z)));                  // zonder internet: aanbouw als blok
   const m = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, {depth: 1, bevelEnabled: false}), [hemaDak, hemaWandM]); m.rotation.x = -Math.PI/2; m.scale.z = h; m.castShadow = m.receiveShadow = true; m.userData.info = '<b>HEMA distributiecentrum</b> (benadering, BAG niet geladen)'; BAG.add(m); KLIK.push(m); }
 // rode HEMA-dakletters op een stalen frame langs de gevel (luchtfoto: s ≈ −3 … 8 m, net achter de dakrand)
-function hemaLetters(h){ const g = new THREE.Group(); g.position.copy(wp(2.6, WN - 1.1)); g.position.y = h; g.rotation.y = YAW; scene.add(g);
+function hemaLetters(h){ let wn = WN; try{ const w = wandOp(2.6); if(w !== null) wn = w; }catch(e){}
+  const p0 = wp(2.6, wn - 1.1); try{ BAG.updateMatrixWorld(true); const hit = new THREE.Raycaster(p0.clone().setY(80), V(0, -1, 0), 0, 100).intersectObjects(BAG.children, false)[0]; if(hit) h = hit.point.y; }catch(e){}
+  const g = new THREE.Group(); g.position.copy(p0); g.position.y = h; g.rotation.y = YAW; scene.add(g);
   const rood = M(0xe1251b, {roughness: 0.35, metalness: 0.1}), zij = M(0xf3f1ee, {roughness: 0.5}), staal = M(0x6d7377, {metalness: 0.7, roughness: 0.4}), LH = 3.0;
   for(let x = -5.3; x <= 5.31; x += 1.325){ box(g, 0.08, LH + 0.4, 0.08, staal, x, (LH + 0.4)/2, -0.6); box(g, 0.06, 0.06, 1.2, staal, x, 0.3, -0.3); }              // frame + schoren
   box(g, 10.8, 0.08, 0.08, staal, 0, 0.3, -0.6); box(g, 10.8, 0.08, 0.08, staal, 0, LH, -0.6);
@@ -505,6 +509,71 @@ const HEK = new THREE.Group(); scene.add(HEK);
     cyl(t, 0.18, 3.0, stam, 0, 1.5, 0, null, 8); const k = new THREE.Mesh(bgeo, bm[(ds > 0 ? 1 : 2)]); k.scale.set(2.6, 2.3, 2.6); k.position.y = 4.4; k.castShadow = true; t.add(k); }
   HEK.traverse(o => { if(o.isMesh){ if(!o.userData.info) o.userData.info = '<b>Hekwerk</b>: afgeschermd technisch terrein (omvormers, NSA, EMS, EOS, ZVK, power box) verzinkt gaas 2 m met dubbele poort en 2 vluchtdeuren; verzinkt gaas langs de kopgevel en de ZVK, verzinkt spijlenhek langs de trailervakken tot de kruising en de hoek om langs het fietspad (Cyclomedia) · haag aan de wegzijde'; KLIK.push(o); } }); }
 
+// ---------- wissellaadbakken / trailers / trucks: automatisch herkend op de PDOK-luchtfoto (witte rechthoeken) en in 3D nagebouwd ----------
+// vrij gehouden: technisch terrein, NP-vlak voor de poort en de rijbaan/vakken bij de laadpalen; alleen binnen het hek
+const VRACHT = new THREE.Group(); scene.add(VRACHT);
+VR.probeer = function(){ if(VR.klaar || !VR.img || !VR.bag) return; VR.klaar = true; try{ bootTrailers(VR.img, VR.bb); }catch(e){ console.warn('trailers', e); } };
+function bootTrailers(img, bb){
+  const PPM = 10, W = Math.round((bb.x1 - bb.x0)*PPM), H = Math.round((bb.y1 - bb.y0)*PPM);
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const cx = cv.getContext('2d'); cx.drawImage(img, 0, 0, W, H);
+  let d; try{ d = cx.getImageData(0, 0, W, H).data; }catch(e){ console.warn('luchtfoto niet uitleesbaar', e); return; }
+  const O = V(GA[0], 0, GA[1]), fsH = n => 18.35 - 0.025*n, Cc = wp(fsH(85), 85), oB = U.clone().multiplyScalar(Math.sin(0.22)).addScaledVector(N, Math.cos(0.22));
+  const toSN = (px, py) => { const X = bb.x0 + (px + 0.5)/PPM, Y = bb.y1 - (py + 0.5)/PPM, [lx, lz] = rdL(X, Y), q = V(lx, 0, lz); const dd = q.clone().sub(O); return {X, Y, q, s: dd.dot(U), n: dd.dot(N)}; };
+  const vrij = (s, n, X, Y, q) => {
+    if(n < -6 || n > 125 || s < -75) return false;
+    if(s > fsH(n) - 0.5) return false;                                                         // buiten het hek (weg / parkeerplaats)
+    if(q.clone().sub(Cc).dot(oB) > -0.8) return false;                                          // voorbij het hek langs het fietspad
+    if(s > 1.0 && n < 13.5) return false;                                                       // technisch terrein (EOS, omvormers, NSA, ZVK, power unit)
+    if(n > 28 && n < 39 && s > 7.5) return false;                                               // NP-vlak voor de poort
+    if(n > 38 && n < 52.5 && s > -20) return false;                                             // laadvakken + aanrijroute naar de dispensers
+    if(BAGR.some(r => inPoly(X, Y, r))) return false;                                           // gebouwen
+    return true; };
+  // masker wit + sluiten (1 px)
+  const m0 = new Uint8Array(W*H);
+  for(let i = 0, j = 0; i < W*H; i++, j += 4){ const r = d[j], g = d[j + 1], b = d[j + 2], mx = Math.max(r, g, b), mn = Math.min(r, g, b); m0[i] = (mn > 192 && mx - mn < 40) ? 1 : 0; }
+  const m1 = new Uint8Array(W*H), m = new Uint8Array(W*H);
+  for(let y = 1; y < H - 1; y++) for(let x = 1; x < W - 1; x++){ const i = y*W + x; m1[i] = m0[i] | m0[i - 1] | m0[i + 1] | m0[i - W] | m0[i + W]; }
+  for(let y = 1; y < H - 1; y++) for(let x = 1; x < W - 1; x++){ const i = y*W + x; m[i] = m1[i] & m1[i - 1] & m1[i + 1] & m1[i - W] & m1[i + W]; }
+  const lab = new Int32Array(W*H), st = new Int32Array(W*H); let nl = 0; const vond = [];
+  for(let i0 = 0; i0 < W*H; i0++){ if(!m[i0] || lab[i0]) continue; nl++; let sp = 0, cnt = 0, sx = 0, sy = 0, sxx = 0, syy = 0, sxy = 0; st[sp++] = i0; lab[i0] = nl;
+    while(sp){ const i = st[--sp], x = i % W, y = (i - x)/W; cnt++; sx += x; sy += y; sxx += x*x; syy += y*y; sxy += x*y;
+      if(x > 0 && m[i - 1] && !lab[i - 1]){ lab[i - 1] = nl; st[sp++] = i - 1; } if(x < W - 1 && m[i + 1] && !lab[i + 1]){ lab[i + 1] = nl; st[sp++] = i + 1; }
+      if(y > 0 && m[i - W] && !lab[i - W]){ lab[i - W] = nl; st[sp++] = i - W; } if(y < H - 1 && m[i + W] && !lab[i + W]){ lab[i + W] = nl; st[sp++] = i + W; } }
+    const A = cnt/(PPM*PPM); if(A < 9 || A > 90) continue;
+    const mx = sx/cnt, my = sy/cnt, cxx = sxx/cnt - mx*mx, cyy = syy/cnt - my*my, cxy = sxy/cnt - mx*my, tr = cxx + cyy, de = Math.sqrt(Math.max(0, (cxx - cyy)*(cxx - cyy)/4 + cxy*cxy));
+    const l1 = tr/2 + de, l2 = tr/2 - de, L = Math.sqrt(12*l1)/PPM, Bw = Math.sqrt(12*Math.max(l2, 0))/PPM, ang = 0.5*Math.atan2(2*cxy, cxx - cyy);
+    if(A/(L*Bw) < 0.72 || L < 5.0 || L > 18.5) continue;
+    const ux = Math.cos(ang), uy = Math.sin(ang), dir = V(ux, 0, uy).normalize();                 // beeld (x rechts, y omlaag) = lokaal (x, z)
+    const plaats = (ox, oy, Lb) => { const P = toSN(mx + ox, my + oy); if(vrij(P.s, P.n, P.X, P.Y, P.q)) vond.push({p: P.q, dir, L: Lb}); };
+    if(Bw >= 1.9 && Bw <= 3.3) plaats(0, 0, L);
+    else if(Bw > 4.2 && Bw < 6.2){ const k = Bw*PPM/4; plaats(-uy*k, ux*k, L); plaats(uy*k, -ux*k, L); }                         // twee tegen elkaar
+  }
+  // bouwen (instanced): wissellaadbak 7,45 m op poten, oplegger 13,6 m (+ trekker als het geheel > 15,5 m), bakwagen 9,5–12 m
+  const zijT = ctex(1024, 256, (c, Wc, Hc) => { c.fillStyle = '#f3f3f0'; c.fillRect(0, 0, Wc, Hc); c.fillStyle = '#e1e1dc'; for(let x = 0; x < Wc; x += 64) c.fillRect(x, 0, 3, Hc);
+    c.fillStyle = '#d2141b'; c.fillRect(Wc - 230, 40, 190, 150); c.fillStyle = '#fff'; c.font = 'bold 64px Arial'; c.textAlign = 'center'; c.fillText('HEMA', Wc - 135, 138);
+    c.fillStyle = '#d2141b'; c.font = 'bold 52px Arial'; c.fillText('meer HEMA', Wc/2 - 60, 140); });
+  const kopT = ctex(256, 256, (c, Wc, Hc) => { c.fillStyle = '#e9e9e5'; c.fillRect(0, 0, Wc, Hc); c.strokeStyle = '#b9b9b4'; c.lineWidth = 6; c.strokeRect(10, 10, Wc - 20, Hc - 20); c.beginPath(); c.moveTo(Wc/2, 10); c.lineTo(Wc/2, Hc - 10); c.stroke(); c.fillStyle = '#d2141b'; c.fillRect(Wc/2 - 40, 30, 80, 50); });
+  const witM = M(0xf3f3f0, {roughness: 0.6}), mats = [M(0xffffff, {map: kopT}), M(0xffffff, {map: kopT}), witM, M(0x7a7b7c), M(0xffffff, {map: zijT}), M(0xffffff, {map: zijT})];
+  const sw = vond.filter(v => v.L < 9.6), tl = vond.filter(v => v.L >= 9.6);
+  const mm = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = V(1, 1, 1);
+  const zet = (im, i, p, dir, dx, y, dz, ry) => { const yaw = Math.atan2(-dir.z, dir.x) + (ry || 0); q.setFromAxisAngle(V(0, 1, 0), yaw); const r = V(dx, 0, dz).applyQuaternion(q);
+    mm.compose(V(p.x + r.x, y, p.z + r.z), q, sc); im.setMatrixAt(i, mm); };
+  const bak = new THREE.InstancedMesh(new THREE.BoxGeometry(7.45, 2.65, 2.55), mats, Math.max(1, sw.length)), poot = new THREE.InstancedMesh(new THREE.BoxGeometry(0.1, 1.2, 0.1), matZink, Math.max(1, sw.length*4));
+  sw.forEach((v, i) => { zet(bak, i, v.p, v.dir, 0, 1.2 + 1.325, 0); [[-3.2, -1.1], [-3.2, 1.1], [3.2, -1.1], [3.2, 1.1]].forEach(([a, b], k) => zet(poot, i*4 + k, v.p, v.dir, a, 0.6, b)); });
+  bak.count = sw.length; poot.count = sw.length*4;
+  const nT = Math.max(1, tl.length), opl = new THREE.InstancedMesh(new THREE.BoxGeometry(13.6, 2.75, 2.55), mats, nT), wiel = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.5, 0.5, 0.3, 14), M(0x161718, {roughness: 0.85}), nT*6);
+  const cab = new THREE.InstancedMesh(new THREE.BoxGeometry(2.3, 2.9, 2.5), M(0xeeeeec, {roughness: 0.4}), nT), ruit = new THREE.InstancedMesh(new THREE.BoxGeometry(0.05, 0.9, 2.2), M(0x1e2a33, {roughness: 0.1, metalness: 0.4}), nT);
+  let nc = 0; const qw = new THREE.Quaternion().setFromAxisAngle(V(1, 0, 0), Math.PI/2);
+  tl.forEach((v, i) => { const trek = v.L > 15.5, bakw = v.L < 12.5, lb = bakw ? 7.45 : 13.6, off = (trek || bakw) ? -(v.L/2 - lb/2) : 0;   // laadbak achter, cabine voor
+    const yaw = Math.atan2(-v.dir.z, v.dir.x); q.setFromAxisAngle(V(0, 1, 0), yaw);
+    const r0 = V(off, 0, 0).applyQuaternion(q); mm.compose(V(v.p.x + r0.x, 1.3 + 1.375, v.p.z + r0.z), q, V(lb/13.6, 1, 1)); opl.setMatrixAt(i, mm);
+    [1.3, 2.6, 3.9].forEach((a, k) => [-1.05, 1.05].forEach((b, j) => { const r = V(off - lb/2 + a, 0, b).applyQuaternion(q);
+      mm.compose(V(v.p.x + r.x, 0.5, v.p.z + r.z), q.clone().multiply(qw), sc); wiel.setMatrixAt(i*6 + k*2 + j, mm); }));
+    if(trek || bakw){ const x = v.L/2 - 1.2; zet(cab, nc, v.p, v.dir, x, 0.4 + 1.45, 0); zet(ruit, nc, v.p, v.dir, x + 1.16, 2.3, 0); nc++; } });
+  opl.count = tl.length; wiel.count = tl.length*6; cab.count = nc; ruit.count = nc;
+  [bak, poot, opl, wiel, cab, ruit].forEach(o => { o.castShadow = true; o.receiveShadow = true; o.instanceMatrix.needsUpdate = true; o.userData.info = `<b>Wissellaadbakken / trailers</b> — automatisch herkend op de PDOK-luchtfoto en in 3D nagebouwd (${sw.length} wissellaadbakken, ${tl.length} trailers/trucks)<br>vrij gehouden: technisch terrein, NP-vlak bij de poort en de rijbaan naar de laadpalen`; VRACHT.add(o); KLIK.push(o); });
+  VRACHT.visible = $t('tVracht').checked; $t('bagInfo').innerHTML += `<br>${sw.length} wissellaadbakken + ${tl.length} trailers/trucks nagebouwd van de luchtfoto`; renderer.shadowMap.needsUpdate = true; vuil(6); }
+
 // ---------- easter egg: ergens ligt een HEMA-rookworst ----------
 { const g = new THREE.Group(); g.position.set(1.9, 3.04, -0.9); g.rotation.y = 0.7; ASSET.zvk.add(g);
   const worst = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.028, 12, 28, Math.PI*1.25), M(0x7a2f17, {roughness: 0.45, metalness: 0.05})); worst.rotation.x = Math.PI/2; worst.position.y = 0.03; g.add(worst);
@@ -557,7 +626,7 @@ window.addEventListener('blur', () => { for(const k in KO) KO[k] = false; });
 $t('pDicht').addEventListener('click', () => { $t('paneel').classList.add('dicht'); $t('pOpen').classList.add('toon'); });
 $t('pOpen').addEventListener('click', () => { $t('paneel').classList.remove('dicht'); $t('pOpen').classList.remove('toon'); });
 $t('tFoto').addEventListener('change', zetOnder); $t('rEsri').addEventListener('input', zetOnder); $t('tHek').addEventListener('change', e => { HEK.visible = e.target.checked; renderer.shadowMap.needsUpdate = true; vuil(3); });
-$t('tEsri').addEventListener('change', zetOnder); zetOnder();
+$t('tEsri').addEventListener('change', zetOnder); zetOnder(); $t('tVracht').addEventListener('change', e => { VRACHT.visible = e.target.checked; renderer.shadowMap.needsUpdate = true; vuil(3); });
 $t('tPvDak').addEventListener('change', e => { PVDAK.visible = e.target.checked; renderer.shadowMap.needsUpdate = true; vuil(3); });
 $t('tBag').addEventListener('change', e => { BAG.visible = e.target.checked; renderer.shadowMap.needsUpdate = true; vuil(3); });
 $t('tBagT').addEventListener('change', zetBagT);
