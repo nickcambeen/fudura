@@ -358,7 +358,7 @@ dispenser('d1', wp(11.3, 36.8), 1); dispenser('d2', wp(10.85, 43.8), 2);        
 
 // ---------- 5. elektrische trekker met HEMA-oplegger in het laadvak naast dispenser 1, haaks op het hek zoals de wissellaadbakken (neus naar het hek, laadpoort bij de dispenser) ----------
 const TRUCK = new THREE.Group(); scene.add(TRUCK);
-{ const d = ASSET.d1.position, p = wp(13.9 - 6.3, 36.8 - 2.48); TRUCK.position.copy(p); TRUCK.rotation.y = YAW; const T = new THREE.Group(); TRUCK.add(T);
+{ const d = ASSET.d1.position, p = wp(13.9 - 6.3, 36.8 + 2.48); /* vak tussen dispenser 1 en 2; vóór dispenser 1 ligt de NP-zone van de poort */ TRUCK.position.copy(p); TRUCK.rotation.y = YAW; const T = new THREE.Group(); TRUCK.add(T);
   const rood = M(0xd2141b, {roughness: 0.45}), witT = M(0xf5f5f2, {roughness: 0.4}), band = M(0x141516, {roughness: 0.85}), velg = M(0xb8bdc1, {metalness: 0.7, roughness: 0.3}), glas = M(0x1e2a33, {roughness: 0.1, metalness: 0.4});
   const wiel = (x, z) => { cyl(T, 0.52, 0.32, band, x, 0.52, z, 'z', 22); cyl(T, 0.3, 0.34, velg, x, 0.52, z, 'z', 12); };
   // trekker (cabine voorin richting +x), elektrisch: accupakketten tussen de assen, laadpoort rechts
@@ -366,7 +366,7 @@ const TRUCK = new THREE.Group(); scene.add(TRUCK);
   rbox(T, 2.2, 2.6, 2.5, 0.15, witT, 5.2, 2.55, 0); box(T, 0.05, 1.0, 2.2, glas, 6.31, 3.05, 0, false);                  // cabine + voorruit
   box(T, 0.1, 0.45, 2.3, M(0x2a2c2f), 6.32, 1.45, 0); for(const s of [-1, 1]){ box(T, 0.06, 0.6, 0.6, glas, 5.6, 3.2, s*1.26, false); box(T, 0.2, 0.18, 0.25, matZwart, 6.3, 3.4, s*1.35); }
   for(const z of [-0.85, 0.85]) box(T, 2.0, 0.85, 0.35, M(0x2f6fb0, {roughness: 0.4}), 3.0, 0.95, z);                    // accupakketten
-  box(T, 0.25, 0.25, 0.05, matZwart, 4.1, 1.4, 1.26); plak(T, 0.5, 0.12, lbl('⚡ CCS2', 160, 40, '#2a2c2f', '#7fe0a0', 'bold 24px Arial'), 4.1, 1.7, 1.27);
+  box(T, 0.25, 0.25, 0.05, matZwart, 4.1, 1.4, -1.26); plak(T, 0.5, 0.12, lbl('⚡ CCS2', 160, 40, '#2a2c2f', '#7fe0a0', 'bold 24px Arial'), 4.1, 1.7, -1.27, Math.PI);     // laadpoort links (kant dispenser 1)
   plak(T, 1.6, 0.4, lbl('HEMA', 320, 80, '#d2141b', '#ffffff', 'bold 60px Arial'), 5.2, 3.5, 1.256); plak(T, 1.6, 0.4, lbl('HEMA', 320, 80, '#d2141b', '#ffffff', 'bold 60px Arial'), 5.2, 3.5, -1.256, Math.PI);
   box(T, 0.8, 0.1, 2.0, matZwart, 2.0, 1.2, 0);                                                                        // koppelschotel
   wiel(5.6, 1.05); wiel(5.6, -1.05); wiel(2.3, 1.05); wiel(2.3, -1.05);
@@ -376,7 +376,7 @@ const TRUCK = new THREE.Group(); scene.add(TRUCK);
       c.fillStyle = '#d2141b'; c.font = 'bold 54px Arial'; c.textAlign = 'left'; c.fillText('rijdt elektrisch', 340, H/2 + 4); });
     plak(T, 13.4, 2.6, t, -4.0, 2.75, s*1.282, s > 0 ? 0 : Math.PI); }
   for(const x of [-8.2, -9.5, -10.8]){ wiel(x, 1.05); wiel(x, -1.05); } for(const s of [-1, 1]) box(T, 0.15, 0.6, 0.15, matZink, -1.0, 0.7, s*0.9);     // poten
-  TRUCK.updateMatrixWorld(true); const lpw = TRUCK.localToWorld(V(4.1, 1.4, 1.3)), dp = d.clone().add(V(0, 1.05, 0)).addScaledVector(U, -0.25);
+  TRUCK.updateMatrixWorld(true); const lpw = TRUCK.localToWorld(V(4.1, 1.4, -1.3)), dp = d.clone().add(V(0, 1.05, 0)).addScaledVector(U, -0.25);
   kabel(scene, [dp, dp.clone().lerp(lpw, 0.35).add(V(0, -0.75, 0)), dp.clone().lerp(lpw, 0.75).add(V(0, -0.65, 0)), lpw], 0.02, M(0x1a1b1d)).userData.truck = true;
   TRUCK.traverse(o => { if(o.isMesh){ o.castShadow = true; o.userData.info = '<b>Elektrische trekker met HEMA-oplegger</b> in het laadvak naast dispenser 1 (CCS2, tot 240 kW)'; KLIK.push(o); } }); }
 
@@ -417,7 +417,7 @@ function bouwPvDak(poly, h){ WN = wandN(poly); (ASSET.pv.userData.wand || []).fo
 // ---------- hekwerk langs de Nucleonenweg (schets/luchtfoto: langs de rand van de verharding) + haag ----------
 const HEK = new THREE.Group(); scene.add(HEK);
 // lijn: binnenkant haag evenwijdig aan de Nucleonenweg (luchtfoto 2024, as weg ± 25 m van de gevel), bij de kruising (Cyclomedia, ± 82 m) haaks de hoek om langs het fietspad
-{ const fs = n => 18.35 - 0.025*n, NC = 82, H = 2.0, mm = new THREE.Matrix4();
+{ const fs = n => 18.35 - 0.025*n, NC = 85, H = 2.0, mm = new THREE.Matrix4();
   const groen = M(0x1f4a35, {roughness: 0.5, metalness: 0.3}), zink = M(0xaab1b5, {roughness: 0.4, metalness: 0.8});
   const gaas = ctex(256, 512, (c, W, Hh) => { c.clearRect(0, 0, W, Hh); c.fillStyle = '#1f4a35'; for(let x = 0; x < W; x += 13) c.fillRect(x, 0, 3, Hh); for(let y = 6; y < Hh; y += 51){ c.fillRect(0, y, W, 3); c.fillRect(0, y + 5, W, 3); } });
   gaas.wrapS = THREE.RepeatWrapping;
@@ -432,8 +432,26 @@ const HEK = new THREE.Group(); scene.add(HEK);
       const ns = Math.floor(L/0.125), sp = new THREE.InstancedMesh(new THREE.BoxGeometry(0.025, H, 0.025), zink, ns);
       for(let i = 0; i < ns; i++){ mm.makeTranslation(0.06 + i*0.125, H/2 + 0.05, 0); sp.setMatrixAt(i, mm); } sp.castShadow = true; g.add(sp); }
     return g; };
-  const N0 = -40, A = wp(fs(N0), N0), B = wp(fs(32), 32), C = wp(fs(NC), NC), E = wp(fs(NC) - 60, NC);           // loopt door langs de kopgevel (Cyclomedia)
-  gaas2 = true; const g1 = seg(A, B, 'gaas'); gaas2 = false; seg(B, C, 'spijl'); seg(C, E, 'spijl');
+  const N0 = -40, A = wp(fs(N0), N0), B = wp(fs(25), 25), G1 = wp(fs(35), 35), C = wp(fs(NC), NC);                                       // loopt door langs de kopgevel (Cyclomedia)
+  gaas2 = true; const g1 = seg(A, B, 'gaas'); gaas2 = false; seg(G1, C, 'spijl');
+  // vrijdragende schuifpoort ± 10 m bij de NP-zone (Cyclomedia), gesloten; staart schuift binnen langs het hek
+  { const D = G1.clone().sub(B), L = D.length(); D.normalize(); const g = new THREE.Group(); g.position.copy(B); g.rotation.y = Math.atan2(-D.z, D.x); HEK.add(g);
+    for(const x of [0, L]) box(g, 0.14, H + 0.2, 0.14, zink, x, (H + 0.2)/2, 0);
+    for(const x of [-0.3, -2.8]) { box(g, 0.12, 1.0, 0.12, zink, x, 0.5, 0.32); box(g, 0.3, 0.12, 0.25, matZwart, x, 0.28, 0.32); }          // geleidepalen met rolblokken
+    box(g, L + 3.6, 0.16, 0.1, zink, L/2 - 1.8, 0.33, 0.2); box(g, L, 0.06, 0.06, zink, L/2, H, 0.2); for(let x = 0.1; x < L; x += 2.5) box(g, 0.05, H - 0.3, 0.05, zink, x, 0.33 + (H - 0.3)/2, 0.2);
+    const ns = Math.floor(L/0.125), sp = new THREE.InstancedMesh(new THREE.BoxGeometry(0.025, H - 0.4, 0.025), zink, ns);
+    for(let i = 0; i < ns; i++){ mm.makeTranslation(0.06 + i*0.125, 0.41 + (H - 0.4)/2, 0.2); sp.setMatrixAt(i, mm); } sp.castShadow = true; g.add(sp);
+    for(let x = -3.4; x < 0; x += 0.6) box(g, 0.04, 0.04, 0.04, zink, x, 0.33, 0.2);                                                          // staart (contragewicht)
+    box(g, 0.3, 0.4, 0.25, M(0x3b3f45), L + 0.4, 0.2, 0.3); cyl(g, 0.05, 0.08, M(0xf2a000, {emissive: 0xf2a000, emissiveIntensity: 0.5}), L, H + 0.25, 0, null, 12);   // aandrijving + oranje lamp
+    // NP-arcering op de verharding voor de poort
+    const np = ctex(256, 256, (c, W, Hh) => { c.clearRect(0, 0, W, Hh); c.strokeStyle = 'rgba(255,255,255,0.9)'; c.lineWidth = 6; c.strokeRect(4, 4, W - 8, Hh - 8); c.beginPath(); c.moveTo(4, 4); c.lineTo(W - 4, Hh - 4); c.moveTo(W - 4, 4); c.lineTo(4, Hh - 4); c.stroke(); c.fillStyle = 'rgba(255,255,255,0.9)'; c.font = 'bold 60px Arial'; c.textAlign = 'center'; c.fillText('NP', W/2, Hh/2 + 70); });
+    const pm = new THREE.Mesh(new THREE.PlaneGeometry(L, 8), new THREE.MeshBasicMaterial({map: np, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -6})); pm.rotation.x = -Math.PI/2; pm.position.set(L/2, 0.04, 4.3); g.add(pm);
+    g.traverse(o => { if(o.isMesh) o.userData.info = '<b>Schuifpoort</b> (bestaand, Cyclomedia) ± 10 m vrijdragend met NP-zone ervoor'; }); }
+  // bij de kruising met een ronde hoek (r ± 4 m) mee met de weg langs het fietspad: ± 20° van de gevelrichting af (Nicks lijn), ± 90 m
+  { const h1 = C.clone().sub(B).normalize(), h2 = U.clone().negate().multiplyScalar(Math.cos(0.35)).addScaledVector(N, Math.sin(0.35)).normalize(), r = 4, nk = 5;
+    let p = C.clone(); const hoek = Math.acos(THREE.MathUtils.clamp(h1.dot(h2), -1, 1));
+    for(let k = 0; k < nk; k++){ const d = h1.clone().lerp(h2, (k + 0.5)/nk).normalize(), q = p.clone().addScaledVector(d, r*hoek/nk); seg(p, q, 'spijl'); p = q; }
+    seg(p, p.clone().addScaledVector(h2, 90), 'spijl'); }
   // afgeschermd technisch terrein (niet toegankelijk voor leken): verzinkt gaas 2 m van de gevel om omvormers, NSA, EMS, EOS, ZVK en power box tot aan het hek langs de weg
   // dubbele poort 2 × 1,5 m voor de AIO-deuren + 2 vluchtdeuren (naar buiten draaiend, panieksluiting, groen bord)
   { const s0 = 2.1, n1 = 12.14, sE = fs(n1), gm0 = 8.24 - 1.5, gm1 = 8.24 + 1.5, vd = 15.8; gaas2 = true;
@@ -459,10 +477,10 @@ const HEK = new THREE.Group(); scene.add(HEK);
   // haag tussen hek en weg (Street View / Cyclomedia) en bomen bij de hoek
   let sd = 7; const rnd = () => (sd = (sd*16807) % 2147483647)/2147483647;
   const bm = [0x3d6528, 0x47722e, 0x557f36, 0x6a7a38].map(c => M(c, {roughness: 0.95})), bgeo = new THREE.IcosahedronGeometry(1, 1);
-  for(let k = 0; k < 4; k++){ const im = new THREE.InstancedMesh(bgeo, bm[k], 45); for(let i = 0; i < 45; i++){ const x = -N0 + 4 + rnd()*56, r = 0.45 + rnd()*0.45;
+  for(let k = 0; k < 4; k++){ const im = new THREE.InstancedMesh(bgeo, bm[k], 45); for(let i = 0; i < 45; i++){ let x = -N0 + 4 + rnd()*56; if(x + N0 > 23 && x + N0 < 37) x += 15; const r = 0.45 + rnd()*0.45;   // vrij voor de poort
       mm.compose(V(x, r*0.8, -(0.7 + rnd()*1.3)), new THREE.Quaternion(), V(r, r*(0.9 + rnd()*0.6), r)); im.setMatrixAt(i, mm); } im.castShadow = true; g1.add(im); }
   const stam = M(0x5a4632, {roughness: 0.9});
-  for(const [ds, dn] of [[3.5, -2], [5, 3], [1.5, 6], [-6, 2.5], [-14, 2.5]]){ const p = C.clone().addScaledVector(U, ds).addScaledVector(N, dn); const t = new THREE.Group(); t.position.copy(p); HEK.add(t);
+  for(const [ds, dn] of [[3.5, -2], [5, 3], [2.5, 7.5], [-8, 6.5], [-16, 9.5]]){ const p = C.clone().addScaledVector(U, ds).addScaledVector(N, dn); const t = new THREE.Group(); t.position.copy(p); HEK.add(t);
     cyl(t, 0.18, 3.0, stam, 0, 1.5, 0, null, 8); const k = new THREE.Mesh(bgeo, bm[(ds > 0 ? 1 : 2)]); k.scale.set(2.6, 2.3, 2.6); k.position.y = 4.4; k.castShadow = true; t.add(k); }
   HEK.traverse(o => { if(o.isMesh){ if(!o.userData.info) o.userData.info = '<b>Hekwerk</b>: afgeschermd technisch terrein (omvormers, NSA, EMS, EOS, ZVK, power box) verzinkt gaas 2 m met dubbele poort en 2 vluchtdeuren; verzinkt gaas langs de kopgevel en de ZVK, verzinkt spijlenhek langs de trailervakken tot de kruising en de hoek om langs het fietspad (Cyclomedia) · haag aan de wegzijde'; KLIK.push(o); } }); }
 
