@@ -374,7 +374,7 @@ const PHASES=[
 const STATUSES={ok:{label:"Op schema",cls:"s-ok"},warn:{label:"Aandacht",cls:"s-warn"},bad:{label:"Vertraagd",cls:"s-bad"},hold:{label:"On hold",cls:"s-hold"}};
 const ACT_ST={open:"Open",bezig:"Bezig",geblokkeerd:"Geblokkeerd",afgerond:"Afgerond",nvt:"N.v.t."};
 const TYPES=["BESS op LS"];
-const ROLES=["Projectleider","Sales engineer","Detailengineer","Tekenaar","Accountmanager","Werkvoorbereider","Planner","Inkoop","Aannemer","Klant","Netbeheerder"];
+const ROLES=["Projectleider","Sales engineer","Detailengineer","Tekenaar","Accountmanager","Werkvoorbereider","Uitvoerder","Planner","Inkoop","Aannemer","Klant","Netbeheerder"];
 const TEMPLATE={
   0:[["Aanvraag registreren","Sales engineer"],["Schouw op locatie","Sales engineer"],
      ["Projectplan opstellen","Sales engineer","s"],["Calculatie opstellen","Sales engineer","s"],
@@ -384,8 +384,8 @@ const TEMPLATE={
      ["Overdrachtsmoment inplannen (sales engineer, projectleider, tekenaar, detailengineer)","Projectleider","s"],
      ["Contact opnemen met onderaannemer: afspraken maken","Projectleider","s"],
      ["Projecttekening maken","Tekenaar"],["Eendraadschema (SLD) opstellen","Tekenaar","s"],["Kabelberekening NEN 1010","Detailengineer"],["Review ontwerp (IV'er)","Detailengineer"],["Ontwerp vrijgeven","Projectleider"]],
-  2:[["Materiaal met lange levertijd bestellen","Inkoop"],["Aannemer contracteren","Werkvoorbereider"],["V&G-plan en TRA","Werkvoorbereider"],["Uitvoeringsplanning vastleggen","Planner"],["Kick-off met aannemer","Projectleider"]],
-  3:[["Start uitvoering op locatie","Aannemer"],["Montage installatie","Aannemer"],["Kabels leggen en aansluiten","Aannemer"],["Voortgangscontrole","Werkvoorbereider"],["Meerwerk registreren","Projectleider"]],
+  2:[["Materiaal met lange levertijd bestellen","Inkoop"],["Aannemer contracteren","Werkvoorbereider"],["V&G-plan en TRA","Werkvoorbereider"],["Uitvoeringsplanning vastleggen","Werkvoorbereider"],["Kick-off met aannemer","Projectleider"]],
+  3:[["Start uitvoering op locatie","Aannemer"],["Montage installatie","Aannemer"],["Kabels leggen en aansluiten","Aannemer"],["Voortgangscontrole","Uitvoerder"],["Meerwerk registreren","Projectleider"]],
   4:[["Eerste inspectie NEN 1010 / NEN 3140","Aannemer"],["Inbedrijfname en schakelen","Werkvoorbereider"],["SAT uitvoeren","Detailengineer"],["Opleverdossier aannemer aanleveren (inmeetgegevens en meetrapporten)","Aannemer"],["Revisie uit de uitvoering verwerken in tekeningen en SLD","Tekenaar","s"],["Opleverdossier samenstellen","Projectleider","s"],["Overdracht aan klant","Projectleider"]],
   5:[["Nacalculatie","Projectleider"],["Evaluatie / lessons learned","Projectleider"],["Project administratief sluiten","Projectleider"]]
 };
@@ -454,7 +454,7 @@ function logout(){S.code=null;S.role="";S.realRole="";if(S.realMe)S.me=S.realMe;
 
 /* ---------- data ---------- */
 async function loadAll(silent){
-  try{const j=await rpc("pb_list",{p_code:S.code});S.projects=(j.projects||[]).map(norm);S.loaded=true;S.banner="";
+  try{const j=await rpc("pb_list",{p_code:S.code});const all=j.projects||[];S.team=all.find(x=>x.kind==="team")||null;S.projects=all.filter(x=>x.kind!=="team").map(norm);S.loaded=true;S.banner="";
     if(!S.editHead&&!S.newOpen&&!isTyping())render()}
   catch(e){if(e.code==="bad"){logout();return}if(!silent){S.loaded=true;S.banner="De projectlijst kon niet laden. Controleer je verbinding en herlaad de pagina.";render()}}
 }
@@ -503,13 +503,19 @@ const canEditHead=()=>isAdmin()||S.role==="Projectleider";
 /* fictieve personen per functie, aangevuld met de namen uit de projecten */
 const PERSONAS=[["Mark Jansen","Projectleider"],["Lotte Verbeek","Projectleider"],["Ruben de Wit","Sales engineer"],["Iris Bakker","Sales engineer"],
   ["Daan Koster","Accountmanager"],["Thomas van Dijk","Detailengineer"],["Sophie Meijer","Detailengineer"],["Bram Visser","Tekenaar"],["Eva Smits","Tekenaar"],
-  ["Nina Willems","Werkvoorbereider"],["Joost Smit","Planner"],["Sanne Hoekstra","Inkoop"],["Elektro Brabant BV","Aannemer"],["Installatietechniek Zuid BV","Aannemer"]];
+  ["Nina Willems","Werkvoorbereider"],["Sanne Hoekstra","Inkoop"],["Elektro Brabant BV","Aannemer"],["Installatietechniek Zuid BV","Aannemer"]];
 function personas(){
-  const list=PERSONAS.map(x=>x.slice()),has=(n,r)=>list.some(([a,b])=>a.toLowerCase()===n.toLowerCase()&&b===r);
+  let list=[];
+  if(S.team&&Array.isArray(S.team.members)){
+    S.team.members.forEach(m=>{const rs=Array.isArray(m.roles)&&m.roles.length?m.roles:[m.title||"Overig"];rs.forEach(r=>list.push([m.name,r]))});
+    const covered=new Set(list.map(x=>x[1]));
+    PERSONAS.forEach(([n,r])=>{if(!covered.has(r))list.push([n,r])});
+  }else list=PERSONAS.map(x=>x.slice());
+  const has=(n,r)=>list.some(([a,b])=>a.toLowerCase()===n.toLowerCase()&&b===r);
   S.projects.forEach(p=>[["owner","Projectleider"],["engineer","Sales engineer"],["detail","Detailengineer"],["drafter","Tekenaar"],["contractor","Aannemer"]]
     .forEach(([k,r])=>{if(p[k]&&!has(p[k],r))list.push([p[k],r])}));
-  const order=ROLES.concat(["Aannemer"]);
-  return list.sort((a,b)=>order.indexOf(a[1])-order.indexOf(b[1])||a[0].localeCompare(b[0],"nl"));
+  const order=ROLES.concat(["Aannemer"]),idx=r=>{const i=order.indexOf(r);return i<0?99:i};
+  return list.sort((a,b)=>idx(a[1])-idx(b[1])||a[1].localeCompare(b[1],"nl")||a[0].localeCompare(b[0],"nl"));
 }
 const realAdmin=()=>S.realRole==="Beheerder";
 const viewingAs=()=>realAdmin()&&S.role!=="Beheerder";
