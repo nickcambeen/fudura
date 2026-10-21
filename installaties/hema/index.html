@@ -323,7 +323,7 @@ function dispenser(naam, pos, nr){ const g = asset(naam, pos, `<b>Dispenser ${nr
   for(const s of [-1, 1]){ const x = s*0.26; box(g, 0.08, 0.2, 0.12, M(0x2a2c2f), x, y0 + 0.95, 0.05); box(g, 0.05, 0.12, 0.1, M(0x111214), x, y0 + 0.9, 0.12);       // holster + stekker
     kabel(g, [V(s*0.15, y0 + 1.7, -0.1), V(s*0.22, y0 + 2.05, -0.05), V(s*0.36, y0 + 1.9, 0.05), V(s*0.42, y0 + 1.1, 0.12), V(s*0.36, y0 + 0.55, 0.14), V(x, y0 + 0.82, 0.12)], 0.016, kab); }
   klikbaar(g, g.userData.info); sprite('dispenser ' + nr + ' · 240 kW', V(pos.x, 2.7, pos.z), 0.6, '#1f7cc4'); return g; }
-dispenser('d1', wp(11.0, 49.5), 1); dispenser('d2', wp(10.75, 59.1), 2);   // 9,6 m h.o.h.; per laadkabel een truck (4 vakken), vrije rijstrook langs de poort   // direct na het NP-vlak van de poort          // schets: in de trailervakken, 7 m h.o.h.
+dispenser('d1', wp(11.05, 47.5), 1); dispenser('d2', wp(10.8, 57.1), 2);   // 9,6 m h.o.h.; per laadkabel een truck (4 vakken), vrije rijstrook langs de poort   // direct na het NP-vlak van de poort          // schets: in de trailervakken, 7 m h.o.h.
 
 // ---------- 3. PV-omvormers: 5 × Huawei SUN2000-100KTL-M2 los opgesteld (schets): 1 + 2 op een frame bij de container, 3–5 aan de gevel ----------
 // groep 'pv' ligt op wp(0, 0) met lokaal x = s (langs de gevel) en z = n (van de gevel af)
@@ -396,7 +396,7 @@ function maakTruck(p, zijde, disp, nr){ const TR = new THREE.Group(); TR.positio
   TR.updateMatrixWorld(true); const lpw = TR.localToWorld(V(4.1, 1.4, zijde*1.3)), dp = d.clone().add(V(0, 1.05, 0)).addScaledVector(U, -0.25);
   kabel(scene, [dp, dp.clone().lerp(lpw, 0.35).add(V(0, -0.75, 0)), dp.clone().lerp(lpw, 0.75).add(V(0, -0.65, 0)), lpw], 0.02, M(0x1a1b1d)).userData.truck = true;
   TR.traverse(o => { if(o.isMesh){ o.castShadow = true; o.userData.info = `<b>Elektrische trekker met HEMA-oplegger ${nr}</b> laadt aan dispenser ${nr[0]}, kabel ${nr[1]} (CCS2; 2 trucks per dispenser delen 240 kW)`; KLIK.push(o); } }); }
-[[46.82, 1, 'd1', '1a'], [52.18, -1, 'd1', '1b'], [56.42, 1, 'd2', '2a'], [61.78, -1, 'd2', '2b']].forEach(([n, z, d, nr]) => maakTruck(wp(13.7 - 0.025*(n - 45) - 6.3, n), z, ASSET[d], nr));
+[[44.82, 1, 'd1', '1a'], [50.18, -1, 'd1', '1b'], [54.42, 1, 'd2', '2a'], [59.78, -1, 'd2', '2b']].forEach(([n, z, d, nr]) => maakTruck(wp(13.7 - 0.025*(n - 45) - 6.3, n), z, ASSET[d], nr));
 
 // ---------- 6. PV op het dak van de aanbouw: 1.388 × Longi Hi-MO X10 535 Wp (1990 × 1134 mm), Van der Valk Pro+ oost/west, + DC-kabelladder langs de gevel ----------
 const PVDAK = new THREE.Group(); scene.add(PVDAK);
@@ -539,7 +539,7 @@ function bootTrailers(img, bb){
     if(q.clone().sub(Cc).dot(oB) > -0.8) return false;                                          // voorbij het hek langs het fietspad
     if(s > 1.0 && n < 13.5) return false;                                                       // technisch terrein (EOS, omvormers, NSA, ZVK, power unit)
     if(n > 28 && n < 39 && s > 7.5) return false;                                               // NP-vlak voor de poort
-    if(n > 38 && n < 64 && s > -20) return false;                                             // laadvakken + aanrijroute naar de dispensers
+    if(n > 38 && n < 62 && s > -20) return false;                                             // laadvakken + aanrijroute naar de dispensers
     if(BAGR.some(r => inPoly(X, Y, r))) return false;                                           // gebouwen
     return true; };
   // herkenning op meerdere witdrempels (de kleur van de luchtfoto verschilt per jaargang); per drempel: masker → opening → componenten → rechthoek-fit
