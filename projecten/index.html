@@ -590,10 +590,15 @@ function headerHTML(){
 /* ---------- wie doet wat ---------- */
 /* klanttaken (bv. offerte getekend) volgt de accountmanager op */
 const roleMatch=a=>a.role===S.role||(a.role==="Klant"&&S.role==="Accountmanager");
-function isMine(a){if(isAdmin())return true;if(a.owner)return a.owner.toLowerCase()===S.me.toLowerCase();return roleMatch(a)}
-function myTasks(p){return actsOf(p,p.phase).filter(a=>!isClosed(a)&&isMine(a))}
+const TEAM_FIELD={"Projectleider":"owner","Sales engineer":"engineer","Detailengineer":"detail","Tekenaar":"drafter","Aannemer":"contractor","Accountmanager":"am","Klant":"am","Werkvoorbereider":"wvb","Uitvoerder":"uitv"};
+function teamDefault(p,a){const f=TEAM_FIELD[a.role];return f&&p?(p[f]||""):""}
+function effOwner(p,a){return a.owner||teamDefault(p,a)}
+/* van wie is deze taak: van de behandelaar, of zolang niemand is toegewezen van iedereen met die functie */
+function isMine(a,p){if(isAdmin())return true;const o=effOwner(p,a);if(o)return o.toLowerCase()===S.me.toLowerCase();return roleMatch(a)}
+const canDo=(p,a)=>isMine(a,p);
+function myTasks(p){return actsOf(p,p.phase).filter(a=>!isClosed(a)&&isMine(a,p))}
 function involved(p){if(isAdmin())return true;const me=S.me.toLowerCase();
-  return [p.owner,p.engineer,p.detail,p.drafter].some(x=>x&&x.toLowerCase()===me)||(p.acts||[]).some(a=>isMine(a))}
+  return [p.owner,p.engineer,p.detail,p.drafter,p.contractor,p.am,p.wvb,p.uitv].some(x=>x&&x.toLowerCase()===me)||(p.acts||[]).some(a=>isMine(a,p))}
 function inboxRows(){
   const rows=[];S.projects.filter(p=>p.phase<5||isAdmin()).forEach(p=>myTasks(p).forEach(a=>rows.push({p,a,w:waitsOn(p,a)})));
   rows.sort((x,y)=>(!!x.w-!!y.w)||(effDue(x.p,x.a)||"9999").localeCompare(effDue(y.p,y.a)||"9999"));
@@ -624,16 +629,16 @@ function inboxHTML(){
         <span class="num ${late?"late":""}">${g.next?fmtDate(g.next):"—"}</span>
         <span>${g.ready?`<span class="badge">${g.ready}</span> te doen`:""}${g.rows.length>g.ready?`<span class="small">${g.ready?" · ":""}${g.rows.length-g.ready} wacht</span>`:""}</span>
       </button>
-      ${open?`<div class="ib-body">${actsOf(p,p.phase).filter(a=>isMine(a)).map(a=>{const w=waitsOn(p,a),done=isClosed(a),ed=effDue(p,a),late2=ed&&ed<todayStr()&&!done;return `<label class="taskitem ${done?"done":""}">
+      ${open?`<div class="ib-body">${actsOf(p,p.phase).filter(a=>isMine(a,p)).map(a=>{const w=waitsOn(p,a),done=isClosed(a),ed=effDue(p,a),late2=ed&&ed<todayStr()&&!done;return `<label class="taskitem ${done?"done":""}">
         <input type="checkbox" data-done="${a.id}" data-proj="${esc(p.id)}" ${a.status==="afgerond"?"checked":""} ${a.status==="nvt"?"disabled":""}>
         <span><span class="tt">${esc(a.title)}</span>${w&&!done?`<span class="wait">⊘ wacht op: ${esc(w.title)}</span>`:""}
-        <span class="small"><span class="${late2?"late":""}">${ed?"Deadline "+fmtDate(ed)+(isStdDue(a)?" (standaard)":""):"Geen deadline"}</span> · ${esc(a.owner||a.role)}${a.doneAt?" · afgerond "+fmtDate(a.doneAt):""}</span></span></label>`}).join("")}
+        <span class="small"><span class="${late2?"late":""}">${ed?"Deadline "+fmtDate(ed)+(isStdDue(a)?" (standaard)":""):"Geen deadline"}</span> · ${esc(effOwner(p,a)||a.role)}${a.doneAt?" · afgerond "+fmtDate(a.doneAt):""}</span></span></label>`}).join("")}
         <div><button class="btn" type="button" data-open="${esc(p.id)}">Project openen →</button></div></div>`:""}
       </div>`}).join("")}
   </div>`;
 }
 function taskModalHTML(p){
-  const mine=actsOf(p,p.phase).filter(a=>isMine(a));
+  const mine=actsOf(p,p.phase).filter(a=>isMine(a,p));
   return `<div class="scrim" data-act="closeTask"></div><div class="modal" role="dialog" aria-modal="true" aria-labelledby="tTitle">
     <div><div class="small mono">${esc(p.nr||"")}</div><h2 id="tTitle">${esc(p.name)}</h2><div class="small">${esc(PHASES[p.phase].long)}${p.due?" · oplevering "+fmtDate(p.due):""}</div></div>
     <div class="tasklist">${mine.length?mine.map(a=>{const w=waitsOn(p,a),done=isClosed(a);return `<label class="taskitem ${done?"done":""}">
@@ -708,7 +713,7 @@ function actsHTML(list){
 /* ---------- project dashboard ---------- */
 const HEAD=[
   ["nr","Projectnummer","text"],["name","Projectnaam","text"],["status","Projectstatus","status"],
-  ["owner","Projectleider","person"],["engineer","Sales engineer","person"],["detail","Detailengineer","person"],["drafter","Tekenaar","person"],["contractor","Aannemer","person"],
+  ["owner","Projectleider","person"],["engineer","Sales engineer","person"],["detail","Detailengineer","person"],["drafter","Tekenaar","person"],["contractor","Aannemer","person"],["am","Accountmanager","person"],["wvb","Werkvoorbereider","person"],["uitv","Uitvoerder","person"],
   ["loc","Locatie / adres","text"],["ean","EAN-code","text"],["power","Batterij (kW / kWh)","text"],["units","Aantal AIO's","text"],["link","Gekoppeld project","text"],
   ["akkoord","Akkoord klant","date"],["survey","Schouw plandatum","date"],["delivery","Bevestigde leverdatum","date"],["due","Gewenste opleverdatum","date"]
 ];
@@ -749,14 +754,14 @@ function dashHTML(p){
   const track=PHASES.map(ph=>{const pr=phaseProg(p,ph.id);return `<button type="button" data-selphase="${ph.id}" class="${ph.id<p.phase?"done":""} ${ph.id===p.phase?"cur":""} ${ph.id===sel?"sel":""}"><span class="t">${esc(ph.label)}</span><span class="c">${ph.id===p.phase?"Huidige fase · ":""}${pr.done}/${pr.total}</span></button>`}).join("");
   let acts=actsOf(p,sel);if(S.actFilter)acts=acts.filter(a=>a.status===S.actFilter);
   const actRows=acts.map(a=>`<tr data-aid="${a.id}" class="${a.status==="afgerond"?"is-done":""} ${a.status==="nvt"?"is-nvt":""}">
-    <td><select class="st-sel st-${a.status}" data-af="status" aria-label="Status">${Object.entries(ACT_ST).map(([k,v])=>`<option value="${k}" ${a.status===k?"selected":""}>${v}</option>`).join("")}</select></td>
+    <td><select class="st-sel st-${a.status}" data-af="status" aria-label="Status" ${canDo(p,a)?"":`disabled title="Alleen ${esc(effOwner(p,a)||"de "+a.role.toLowerCase())} kan deze taak afronden"`}>${Object.entries(ACT_ST).map(([k,v])=>`<option value="${k}" ${a.status===k?"selected":""}>${v}</option>`).join("")}</select></td>
     <td class="desc">${esc(a.title)}${(()=>{const w=waitsOn(p,a);return w?`<div class="wait">⊘ wacht op: ${esc(w.title)}</div>`:""})()}${a.gate?`<div class="small">Voorwaarde voor de volgende fase</div>`:""}</td>
-    <td><select data-af="owner" aria-label="Behandelaar" class="ownersel">${personOptions(a.role,a.owner||"","Iedere "+(a.role||"collega").toLowerCase())}</select></td>
-    <td>${(()=>{const ed=effDue(p,a),late=ed&&ed<todayStr()&&!isClosed(a);return `<input type="date" data-af="due" value="${esc(a.due||"")}" aria-label="Deadline" class="${late&&a.due?"late":""}">${!a.due&&ed?`<div class="small ${late?"late":""}">standaard ${fmtDate(ed)}</div>`:""}`})()}</td>
+    <td>${canEditHead()?`<select data-af="owner" aria-label="Behandelaar" class="ownersel">${personOptions(a.role,a.owner||"",teamDefault(p,a)?"Standaard: "+teamDefault(p,a):"Iedere "+(a.role||"collega").toLowerCase())}</select>`:`<span>${esc(effOwner(p,a)||"Iedere "+(a.role||"collega").toLowerCase())}</span>`}</td>
+    <td>${(()=>{const ed=effDue(p,a),late=ed&&ed<todayStr()&&!isClosed(a);return `<input type="date" data-af="due" value="${esc(a.due||"")}" aria-label="Deadline" class="${late&&a.due?"late":""}" ${canEditHead()?"":"disabled"}>${!a.due&&ed?`<div class="small ${late?"late":""}">standaard ${fmtDate(ed)}</div>`:""}`})()}</td>
     <td class="num">${a.doneAt?fmtDate(a.doneAt):""}</td>
-    <td><button class="rowbtn" type="button" data-delact title="Activiteit verwijderen" aria-label="Activiteit verwijderen">✕</button></td></tr>`).join("");
+    <td>${canEditHead()?`<button class="rowbtn" type="button" data-delact title="Activiteit verwijderen" aria-label="Activiteit verwijderen">✕</button>`:""}</td></tr>`).join("");
   const openHere=actsOf(p,p.phase).filter(a=>!isClosed(a)).length,blk=gateOpen(p);
-  const gate=sel===p.phase?`<div class="gate"><span>${blk?`<b class="late">Project gaat pas door na: ${esc(blk.title)}.</b> `:""}${p.phase<5?(openHere?`<b>${openHere}</b> activiteit${openHere>1?"en":""} nog open in deze fase.`:"Alle activiteiten in deze fase zijn afgerond."):"Project staat in de laatste fase."}</span>
+  const gate=sel===p.phase&&canEditHead()?`<div class="gate"><span>${blk?`<b class="late">Project gaat pas door na: ${esc(blk.title)}.</b> `:""}${p.phase<5?(openHere?`<b>${openHere}</b> activiteit${openHere>1?"en":""} nog open in deze fase.`:"Alle activiteiten in deze fase zijn afgerond."):"Project staat in de laatste fase."}</span>
      <span style="display:flex;gap:8px;flex-wrap:wrap">${p.phase>0?`<button class="btn" type="button" data-move="-1">← Terug naar ${esc(PHASES[p.phase-1].label)}</button>`:""}${p.phase<5?`<button class="btn ${openHere?"":"primary"}" type="button" data-move="1" ${blk?"disabled":""} title="${blk?"Eerst afronden: "+esc(blk.title):""}">Toewijzen fase ${esc(PHASES[p.phase+1].label)} →</button>`:""}</span></div>`:"";
   return `
   <div class="crumb"><button class="btn" type="button" data-act="back">← Overzicht</button><span class="small">Projectmanagement systeem / ${esc(p.nr||"project")}${p.updatedAt?` · laatst bijgewerkt ${fmtDT(p.updatedAt)}${p.updatedBy?" door "+esc(p.updatedBy):""}`:""}</span></div>
@@ -776,7 +781,7 @@ function dashHTML(p){
         <div class="acts-wrap"><table class="acts"><thead><tr><th style="width:130px">Status</th><th>Omschrijving</th><th style="width:170px">Behandelaar</th><th style="width:130px">Deadline</th><th style="width:100px">Afgerond op</th><th style="width:36px"></th></tr></thead>
           <tbody>${actRows||`<tr><td colspan="6" class="small">Geen activiteiten${S.actFilter?" met deze status":" in deze fase"}.</td></tr>`}</tbody></table></div>
         ${missingStd(p,sel)?`<div class="gate"><span>Deze fase wijkt af van de standaardwerkwijze.</span><button class="btn" type="button" data-act="syncStd">Standaardstappen bijwerken</button></div>`:""}
-        <form class="addact" id="addAct"><input class="grow" id="naTitle" placeholder="Activiteit toevoegen aan ${esc(PHASES[sel].label)}" aria-label="Nieuwe activiteit"><select id="naRole" aria-label="Rol">${ROLES.map(r=>`<option>${r}</option>`).join("")}</select><button class="btn" type="submit">Toevoegen</button></form>
+        <form class="addact" id="addAct" ${canEditHead()?"":"hidden"}><input class="grow" id="naTitle" placeholder="Activiteit toevoegen aan ${esc(PHASES[sel].label)}" aria-label="Nieuwe activiteit"><select id="naRole" aria-label="Rol">${ROLES.map(r=>`<option>${r}</option>`).join("")}</select><button class="btn" type="submit">Toevoegen</button></form>
       </section>
       ${isAdmin()?`<div id="delZone"><button class="btn danger" type="button" data-act="del">Project verwijderen</button></div>`:""}
     </div>
