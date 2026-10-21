@@ -9,13 +9,14 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 html,body{margin:0}
+:root{color-scheme:light}
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 [hidden]{display:none!important}
 
 /* Projectbord PER op de Fudura-site.
    Layout: overzicht (bord / lijst / acties) met fasetellers; per project een dashboard met kopgegevens, faseactiviteiten en een kolom notities & contactmomenten. */
 :root{
-  --bg:#f3f5f6; --surface:#ffffff; --sunk:#e8ecee; --line:#d4dadd;
+  --bg:#ffffff; --surface:#ffffff; --sunk:#e8ecee; --line:#d4dadd;
   --fg:#1b2428; --muted:#5b686e; --accent:#1b4f8a; --accent-fg:#ffffff; --accent-soft:#dde7f3;
   --ok:#2f7d4f; --ok-soft:#dcefe3; --warn:#a96a00; --warn-soft:#f8ead0; --bad:#b3362c; --bad-soft:#f6dcd9; --hold:#6a6f86; --hold-soft:#e3e4ec; --run:#2c5fa8; --run-soft:#dde7f6;
   --shadow:0 1px 2px rgba(20,35,40,.08),0 2px 8px rgba(20,35,40,.06);
@@ -23,16 +24,6 @@ html,body{margin:0}
   --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
 }
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#12181b; --surface:#1a2226; --sunk:#0e1315; --line:#2c373c;
-  --fg:#e3e9eb; --muted:#93a1a7; --accent:#6fa4e0; --accent-fg:#0d1826; --accent-soft:#1a2a40;
-  --ok:#62c08a; --ok-soft:#173023; --warn:#e2a43a; --warn-soft:#33270f; --bad:#ef7b70; --bad-soft:#3a1c19; --hold:#a4a9c2; --hold-soft:#262838; --run:#7fa8e6; --run-soft:#1b2740;
-  --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#12181b; --surface:#1a2226; --sunk:#0e1315; --line:#2c373c;
-  --fg:#e3e9eb; --muted:#93a1a7; --accent:#6fa4e0; --accent-fg:#0d1826; --accent-soft:#1a2a40;
-  --ok:#62c08a; --ok-soft:#173023; --warn:#e2a43a; --warn-soft:#33270f; --bad:#ef7b70; --bad-soft:#3a1c19; --hold:#a4a9c2; --hold-soft:#262838; --run:#7fa8e6; --run-soft:#1b2740;
-  --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark}
 
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.45}
