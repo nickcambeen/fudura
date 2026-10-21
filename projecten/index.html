@@ -221,6 +221,7 @@ aside.log{position:sticky;top:10px;max-height:calc(100vh - 20px);overflow-y:auto
 #delZone{text-align:right}
 #delZone .btn{font-size:12px;padding:3px 8px}
 @media (max-width:1000px){aside.log{position:static;max-height:none}}
+.wait{font-size:11px;color:var(--warn);font-weight:500}
 </style>
 </head>
 <body>
@@ -250,9 +251,13 @@ const PHASES=[
 const STATUSES={ok:{label:"Op schema",cls:"s-ok"},warn:{label:"Aandacht",cls:"s-warn"},bad:{label:"Vertraagd",cls:"s-bad"},hold:{label:"On hold",cls:"s-hold"}};
 const ACT_ST={open:"Open",bezig:"Bezig",geblokkeerd:"Geblokkeerd",afgerond:"Afgerond",nvt:"N.v.t."};
 const TYPES=["BESS","Laadinfra","MS-installatie","LS-installatie","PV","Data / IT","Overig"];
-const ROLES=["Projectleider","Engineer","Werkvoorbereider","Planner","Inkoop","Aannemer","Klant","Netbeheerder"];
+const ROLES=["Projectleider","Engineer","Accountmanager","Werkvoorbereider","Planner","Inkoop","Aannemer","Klant","Netbeheerder"];
 const TEMPLATE={
-  0:[["Aanvraag registreren","Projectleider"],["Contact opnemen met klant","Projectleider"],["Schouw op locatie","Engineer"],["Offerte opstellen","Projectleider"],["Offerte getekend door klant","Klant"],["Projectteam en fasering vastleggen","Planner"]],
+  0:[["Aanvraag registreren","Projectleider"],["Contact opnemen met klant","Projectleider"],["Schouw op locatie","Engineer"],
+     ["Projectplan opstellen","Engineer","s"],["Calculatie opstellen","Engineer","s"],
+     ["Projectplan en calculatie in Salesforce doorzetten naar accountmanager","Engineer","s"],
+     ["Offerte opstellen","Accountmanager","s"],["Offerte getekend door klant","Klant","sg"],
+     ["Projectteam en fasering vastleggen","Planner","s"]],
   1:[["Uitgangspunten en programma van eisen vastleggen","Engineer"],["Netaanvraag / aansluiting bij netbeheerder","Engineer"],["Eendraadschema (SLD) opstellen","Engineer"],["Kabelberekening NEN 1010","Engineer"],["Beveiliging en selectiviteit","Engineer"],["Review ontwerp (IV'er)","Engineer"],["Ontwerp vrijgeven","Projectleider"]],
   2:[["Materiaal met lange levertijd bestellen","Inkoop"],["Aannemer contracteren","Werkvoorbereider"],["V&G-plan en TRA","Werkvoorbereider"],["Schakelafspraken netbeheerder","Werkvoorbereider"],["Uitvoeringsplanning vastleggen","Planner"],["Kick-off met aannemer","Projectleider"]],
   3:[["Start uitvoering op locatie","Aannemer"],["Montage installatie","Aannemer"],["Kabels leggen en aansluiten","Aannemer"],["Voortgangscontrole","Werkvoorbereider"],["Meerwerk registreren","Projectleider"]],
@@ -260,7 +265,20 @@ const TEMPLATE={
   5:[["Nacalculatie","Projectleider"],["Evaluatie / lessons learned","Projectleider"],["Project administratief sluiten","Projectleider"]]
 };
 const newActId=()=>"a"+Math.random().toString(36).slice(2,10);
-function templateActs(){const out=[];for(const ph in TEMPLATE)TEMPLATE[ph].forEach(([t,r])=>out.push({id:newActId(),phase:+ph,title:t,role:r,owner:"",status:"open",doneAt:""}));return out}
+const flagsOf=f=>({seq:(f||"").includes("s"),gate:(f||"").includes("g")});
+function templateActs(){const out=[];for(const ph in TEMPLATE)TEMPLATE[ph].forEach(([t,r,f])=>out.push({id:newActId(),phase:+ph,title:t,role:r,owner:"",status:"open",doneAt:"",...flagsOf(f)}));return out}
+/* zet de activiteiten van één fase in de standaardvolgorde; bestaande (zelfde titel) blijven met hun status, eigen extra's komen erachter */
+function syncPhase(p,ph){
+  const cur=actsOf(p,ph),used=new Set(),list=[];
+  TEMPLATE[ph].forEach(([t,r,f])=>{const ex=cur.find(a=>a.title.toLowerCase()===t.toLowerCase());
+    if(ex){used.add(ex.id);list.push({...ex,role:r,...flagsOf(f)})}else list.push({id:newActId(),phase:ph,title:t,role:r,owner:"",status:"open",doneAt:"",...flagsOf(f)})});
+  cur.forEach(a=>{if(!used.has(a.id))list.push(a)});
+  return (p.acts||[]).filter(a=>a.phase!==ph).concat(list);
+}
+const missingStd=(p,ph)=>TEMPLATE[ph].some(([t,,f])=>{const a=actsOf(p,ph).find(x=>x.title.toLowerCase()===t.toLowerCase());return !a||(f&&!a.seq)});
+/* wacht deze stap op de vorige? */
+function waitsOn(p,a){if(!a.seq||isClosed(a))return null;const l=actsOf(p,a.phase),i=l.findIndex(x=>x.id===a.id),prev=i>0?l[i-1]:null;return prev&&!isClosed(prev)?prev:null}
+const gateOpen=p=>actsOf(p,p.phase).find(a=>a.gate&&a.status!=="afgerond");
 
 /* ---------- state ---------- */
 const S={code:null,me:"",projects:[],loaded:false,view:"board",phaseFilter:null,sortKey:"due",sortDir:1,
@@ -445,13 +463,13 @@ function dashHTML(p){
   let acts=actsOf(p,sel);if(S.actFilter)acts=acts.filter(a=>a.status===S.actFilter);
   const actRows=acts.map(a=>`<tr data-aid="${a.id}" class="${a.status==="afgerond"?"is-done":""} ${a.status==="nvt"?"is-nvt":""}">
     <td><select class="st-sel st-${a.status}" data-af="status" aria-label="Status">${Object.entries(ACT_ST).map(([k,v])=>`<option value="${k}" ${a.status===k?"selected":""}>${v}</option>`).join("")}</select></td>
-    <td class="desc">${esc(a.title)}</td>
+    <td class="desc">${esc(a.title)}${(()=>{const w=waitsOn(p,a);return w?`<div class="wait">⊘ wacht op: ${esc(w.title)}</div>`:""})()}${a.gate?`<div class="small">Voorwaarde voor de volgende fase</div>`:""}</td>
     <td><input data-af="owner" list="people" value="${esc(a.owner)}" placeholder="${esc(a.role||"Naam")}" aria-label="Behandelaar" style="width:150px"></td>
     <td class="num">${a.doneAt?fmtDate(a.doneAt):""}</td>
     <td><button class="rowbtn" type="button" data-delact title="Activiteit verwijderen" aria-label="Activiteit verwijderen">✕</button></td></tr>`).join("");
-  const openHere=actsOf(p,p.phase).filter(a=>!isClosed(a)).length;
-  const gate=sel===p.phase?`<div class="gate"><span>${p.phase<5?(openHere?`<b>${openHere}</b> activiteit${openHere>1?"en":""} nog open in deze fase.`:"Alle activiteiten in deze fase zijn afgerond."):"Project staat in de laatste fase."}</span>
-     <span style="display:flex;gap:8px;flex-wrap:wrap">${p.phase>0?`<button class="btn" type="button" data-move="-1">← Terug naar ${esc(PHASES[p.phase-1].label)}</button>`:""}${p.phase<5?`<button class="btn ${openHere?"":"primary"}" type="button" data-move="1">Toewijzen fase ${esc(PHASES[p.phase+1].label)} →</button>`:""}</span></div>`:"";
+  const openHere=actsOf(p,p.phase).filter(a=>!isClosed(a)).length,blk=gateOpen(p);
+  const gate=sel===p.phase?`<div class="gate"><span>${blk?`<b class="late">Project gaat pas door na: ${esc(blk.title)}.</b> `:""}${p.phase<5?(openHere?`<b>${openHere}</b> activiteit${openHere>1?"en":""} nog open in deze fase.`:"Alle activiteiten in deze fase zijn afgerond."):"Project staat in de laatste fase."}</span>
+     <span style="display:flex;gap:8px;flex-wrap:wrap">${p.phase>0?`<button class="btn" type="button" data-move="-1">← Terug naar ${esc(PHASES[p.phase-1].label)}</button>`:""}${p.phase<5?`<button class="btn ${openHere?"":"primary"}" type="button" data-move="1" ${blk?"disabled":""} title="${blk?"Eerst afronden: "+esc(blk.title):""}">Toewijzen fase ${esc(PHASES[p.phase+1].label)} →</button>`:""}</span></div>`:"";
   return `
   <div class="crumb"><button class="btn" type="button" data-act="back">← Overzicht</button><span class="small">Projectbord PER / ${esc(p.nr||"project")}${p.updatedAt?` · laatst bijgewerkt ${fmtDT(p.updatedAt)}${p.updatedBy?" door "+esc(p.updatedBy):""}`:""}</span></div>
   ${banner()}
@@ -469,6 +487,7 @@ function dashHTML(p){
         ${gate}
         <div class="acts-wrap"><table class="acts"><thead><tr><th style="width:130px">Status</th><th>Omschrijving</th><th style="width:170px">Behandelaar</th><th style="width:100px">Afgerond op</th><th style="width:36px"></th></tr></thead>
           <tbody>${actRows||`<tr><td colspan="5" class="small">Geen activiteiten${S.actFilter?" met deze status":" in deze fase"}.</td></tr>`}</tbody></table></div>
+        ${missingStd(p,sel)?`<div class="gate"><span>Deze fase wijkt af van de standaardwerkwijze.</span><button class="btn" type="button" data-act="syncStd">Standaardstappen bijwerken</button></div>`:""}
         <form class="addact" id="addAct"><input class="grow" id="naTitle" placeholder="Activiteit toevoegen aan ${esc(PHASES[sel].label)}" aria-label="Nieuwe activiteit"><select id="naRole" aria-label="Rol">${ROLES.map(r=>`<option>${r}</option>`).join("")}</select><button class="btn" type="submit">Toevoegen</button></form>
       </section>
       <div id="delZone"><button class="btn danger" type="button" data-act="del">Project verwijderen</button></div>
@@ -518,6 +537,7 @@ document.addEventListener("click",async e=>{
   if(t.dataset.logtab){S.logTab=t.dataset.logtab;render();return}
   const p=proj(S.openId);
   if(t.dataset.move&&p){
+    if(+t.dataset.move>0&&gateOpen(p)){toast("Eerst afronden: "+gateOpen(p).title);return}
     const np=Math.min(5,Math.max(0,p.phase+(+t.dataset.move)));t.disabled=true;
     if(await save(p.id,{phase:np,phaseSince:nowISO()},`Fase ${PHASES[np].label} toegewezen`)){S.selPhase=null;render();addLog(p.id,"notitie",`Fase gewijzigd naar ${PHASES[np].long}.`)}
     else t.disabled=false;
@@ -535,6 +555,7 @@ document.addEventListener("click",async e=>{
     case "del":$("#delZone").innerHTML=`<span class="confirm"><span>Project en logboek definitief verwijderen?</span><button class="btn danger" type="button" data-act="delYes">Ja, verwijder</button><button class="btn" type="button" data-act="delNo">Nee</button></span>`;break;
     case "delNo":render();break;
     case "delYes":{if(!p)break;const n=p.name;try{await rpc("pb_delete",{p_code:S.code,p_id:p.id});S.projects=S.projects.filter(x=>x.id!==p.id);toast(`${n} verwijderd`);openProject(null)}catch(err){writeErr(err)}break}
+    case "syncStd":{if(!p)break;const ph=S.selPhase??p.phase;t.disabled=true;if(await save(p.id,{acts:syncPhase(p,ph)},"Standaardstappen bijgewerkt"))render();else t.disabled=false;break}
     case "closeNew":closeNew();break;
     case "createNew":createNew();break;
   }
