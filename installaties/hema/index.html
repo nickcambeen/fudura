@@ -78,7 +78,7 @@
     <label>Hekwerk + haag <input type="checkbox" id="tHek" checked></label>
     <div class="grp">Assets</div>
     <label>Labels <input type="checkbox" id="tLabel"></label>
-    <label>Maatvoering EOS-ruimte <input type="checkbox" id="tVrij"></label>
+    <label>Maatvoering + controle veiligheidsafstanden <input type="checkbox" id="tVrij"></label>
     <label>PV-panelen op het dak <input type="checkbox" id="tPvDak" checked></label>
     <label>Vrachtwagens bij de dispensers <input type="checkbox" id="tTruck" checked></label>
     <label>Trailers / wissellaadbakken (luchtfoto) <input type="checkbox" id="tVracht" checked></label>
@@ -648,10 +648,56 @@ function bootTrailers(img, bb){
   g.traverse(o => { if(o.isMesh){ o.castShadow = true; o.userData.rookworst = true; KLIK.push(o); } }); }
 
 // ---------- maatvoering vrije ruimte rond EOS (700 mm, achter 1000 mm) ----------
-const VRIJ = new THREE.Group(); VRIJ.visible = false; scene.add(VRIJ);
-{ const e = ASSET.eos, m = new THREE.LineBasicMaterial({color: 0x2e9e4f});
-  const z = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(7.575, 0.01, 4.07)), m); z.position.copy(opPlein(7.575/2, 0)); z.position.y = 0.06; z.rotation.y = YAW; VRIJ.add(z);
-  const t = sprite('EOS-ruimte 7575 × 4070 mm (700 mm vrij, achter 1000 mm)', z.position.clone().add(V(0, 1.2, 0)), 0.5, '#2e9e4f'); t.visible = false; VRIJ.userData.t = t; }
+// ---------- maatvoering + controle veiligheidsafstanden (knop): zones uit dia 35/43/46, gemeten aan de echte modellen ----------
+const VRIJ = new THREE.Group(); VRIJ.visible = false; scene.add(VRIJ); VRIJ.userData.t = new THREE.Object3D();
+function bouwMaat(){
+  while(VRIJ.children.length) VRIJ.remove(VRIJ.children[0]);
+  const O = V(GA[0], 0, GA[1]), sn = p => { const d = p.clone().sub(O); return [d.dot(U), d.dot(N)]; };
+  // omhullende in (s, n) uit de echte geometrie (alleen delen boven 0,3 m: geen stelconplaten / poeren)
+  const omhul = (obj, ymin) => { const r = {s0: 1e9, s1: -1e9, n0: 1e9, n1: -1e9}, v = V(0, 0, 0); obj.updateMatrixWorld(true);
+    obj.traverse(o => { if(!o.isMesh || !o.geometry || !o.geometry.attributes.position || o.isInstancedMesh) return; const P = o.geometry.attributes.position, st = Math.max(1, Math.floor(P.count/400));
+      for(let i = 0; i < P.count; i += st){ v.fromBufferAttribute(P, i).applyMatrix4(o.matrixWorld); if(v.y < (ymin || 0.3)) continue; const [a, b] = sn(v); r.s0 = Math.min(r.s0, a); r.s1 = Math.max(r.s1, a); r.n0 = Math.min(r.n0, b); r.n1 = Math.max(r.n1, b); } });
+    return r; };
+  const lijnM = k => new THREE.LineBasicMaterial({color: k, depthTest: false});
+  const rect = (r, kleur, y) => { const pts = [[r.s0, r.n0], [r.s1, r.n0], [r.s1, r.n1], [r.s0, r.n1], [r.s0, r.n0]].map(([a, b]) => wp(a, b).setY(y || 0.08)); const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lijnM(kleur)); l.renderOrder = 9; VRIJ.add(l); };
+  const lab = (txt, a, b, kleur, k) => { const sp = sprite(txt, wp(a, b).setY(0.6), k || 0.42, kleur); const i = LABELS.indexOf(sp); if(i >= 0) LABELS.splice(i, 1); scene.remove(sp); sp.visible = true; VRIJ.add(sp); };
+  const maat = (a0, b0, a1, b1, kleur) => { const p0 = wp(a0, b0).setY(0.12), p1 = wp(a1, b1).setY(0.12); const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([p0, p1]), lijnM(kleur)); l.renderOrder = 9; VRIJ.add(l);
+    const d = Math.hypot(a1 - a0, b1 - b0); lab(Math.round(d*1000) + ' mm', (a0 + a1)/2, (b0 + b1)/2, kleur, 0.36); return d; };
+  const zone = (cs, cn, ls, ln) => ({s0: cs - ls/2, s1: cs + ls/2, n0: cn - ln/2, n1: cn + ln/2});
+  // lichamen
+  const eosB = omhul(ASSET.eos, 0.5), evB = omhul(ASSET.ev, 0.3), pvB = omhul(ASSET.pv, 0.35), nsaB = omhul(ASSET.nsa, 0.3), zvkB = omhul(ASSET.zvk, 0.5);
+  // zones (dia 35: EOS 7575 × 4070; dia 43: DC-unit 3900 × 2980; dia 46: PV 6450 × 3200)
+  const zE = zone((eosB.s0 + eosB.s1)/2, (eosB.n0 + eosB.n1)/2 + (1.65 - 1.0)/2, 7.575, 4.07);
+  const zD = zone((evB.s0 + evB.s1)/2, (evB.n0 + evB.n1)/2 + 0.6, 2.98, 3.9);
+  const zP = zone((pvB.s0 + pvB.s1)/2, (pvB.n0 + pvB.n1)/2, 3.2, 6.45);
+  rect(zE, 0x2e9e4f); rect(zD, 0x1f7cc4); rect(zP, 0xd4a017);
+  lab('EOS-zone 7575 × 4070', (zE.s0 + zE.s1)/2, zE.n0 + 0.35, '#2e9e4f'); lab('DC-unit-zone 2980 × 3900', (zD.s0 + zD.s1)/2, zD.n0 + 0.35, '#1f7cc4'); lab('PV-zone 3200 × 6450', (zP.s0 + zP.s1)/2, zP.n0 + 0.4, '#d4a017');
+  // hekgrenzen (zie hekwerk): rokershokzijde s 0,95, trailerzijde n 10,3, wegzijde s = 18,35 − 0,025·n
+  const hS0 = 0.95, hN1 = 10.3, hSE = n => 18.35 - 0.025*n;
+  const C = [], ok = (t, v) => C.push((v ? '✅ ' : '❌ ') + t);
+  const mm = d => Math.round(d*1000) + ' mm';
+  // EOS: afstanden lichaam → zone (eis 700 opzij, 1000 achter, 1650 voor), en vrij van andere lichamen
+  const eV = eosB.n1 - zE.n1 < 0 ? zE.n1 - eosB.n1 : 0;
+  ok(`EOS opzij ${mm(eosB.s0 - zE.s0)} / ${mm(zE.s1 - eosB.s1)} (eis ≥ 700)`, eosB.s0 - zE.s0 > 0.69 && zE.s1 - eosB.s1 > 0.69);
+  ok(`EOS achter (gevelzijde) ${mm(eosB.n0 - zE.n0)} (eis ≥ 1000)`, eosB.n0 - zE.n0 > 0.99);
+  ok(`EOS voor (deuren) ${mm(zE.n1 - eosB.n1)} (eis ≥ 1650 incl. deur)`, zE.n1 - eosB.n1 > 1.0);
+  const over = (a, b) => Math.min(a.s1, b.s1) - Math.max(a.s0, b.s0) > 0.02 && Math.min(a.n1, b.n1) - Math.max(a.n0, b.n0) > 0.02;
+  ok('EOS-zone vrij van ZVK / NSA / PV / DC-unit', ![zvkB, nsaB, pvB, evB].some(b => over(zE, b)));
+  ok('DC-unit-zone vrij van ZVK / EOS / NSA', ![zvkB, eosB, nsaB].some(b => over(zD, b)));
+  ok('PV-zone vrij van NSA / ZVK / EOS', ![nsaB, zvkB, eosB].some(b => over(zP, b)));
+  ok(`EOS-zone binnen het hek (trailerzijde ${mm(hN1 - zE.n1)})`, zE.n1 <= hN1 + 0.01 && zE.s0 >= hS0);
+  ok(`DC-unit-zone binnen het hek (wegzijde ${mm(hSE(zD.n1) - zD.s1)}, trailerzijde ${mm(hN1 - zD.n1)})`, zD.s1 <= hSE(zD.n1) + 0.01 && zD.n1 <= hN1 + 0.01);
+  ok(`PV-zone binnen het hek (rokershokzijde ${mm(zP.s0 - hS0)})`, zP.s0 >= hS0 - 0.01);
+  const gevel = WN; ok(`looproute PV-zone ↔ gevel ${mm(zP.n0 - gevel)} (dia 46: 2000)`, zP.n0 - gevel > 1.95);
+  ok(`EOS-zone ↔ DC-unit-zone: overlap ${mm(Math.max(0, zE.s1 - zD.s0))} (dia 43: vrije ruimtes mogen ± 1 m gecombineerd)`, zE.s1 - zD.s0 < 1.05);
+  // maatlijnen
+  maat(zE.s0, zE.n1 + 0.3, zE.s1, zE.n1 + 0.3, '#2e9e4f'); maat(zE.s0 - 0.3, zE.n0, zE.s0 - 0.3, zE.n1, '#2e9e4f');
+  maat((eosB.s0 + eosB.s1)/2, eosB.n1, (eosB.s0 + eosB.s1)/2, zE.n1, '#c0281f'); maat((eosB.s0 + eosB.s1)/2, zE.n0, (eosB.s0 + eosB.s1)/2, eosB.n0, '#c0281f');
+  maat(zP.s0, zP.n0 - 0.0, zP.s0, gevel, '#c0281f'); maat(zD.s1, (zD.n0 + zD.n1)/2, hSE((zD.n0 + zD.n1)/2), (zD.n0 + zD.n1)/2, '#c0281f');
+  maat(eosB.s1, (eosB.n0 + eosB.n1)/2, zvkB.s0 > eosB.s1 ? zvkB.s0 : evB.s0, (eosB.n0 + eosB.n1)/2, '#c0281f');
+  maat(hSE(20) - 4.6, 20, hSE(20) - 0.3, 20, '#d4a017'); lab('brandweerstrook', hSE(20) - 2.4, 22, '#b8860b', 0.36);
+  let el = $t('maatInfo'); if(!el){ el = document.createElement('div'); el.id = 'maatInfo'; el.className = 'cfgInfo'; $t('tVrij').closest('label').after(el); }
+  el.innerHTML = '<b>Controle veiligheidsafstanden</b><br>' + C.join('<br>'); renderer.shadowMap.needsUpdate = true; vuil(3); }
 
 // ---------- camera + bediening ----------
 const target = V(0, 0, 0); let theta = 0, phi = 1.0, radius = 80;
@@ -698,7 +744,7 @@ $t('tPvDak').addEventListener('change', e => { PVDAK.visible = e.target.checked;
 $t('tBag').addEventListener('change', e => { BAG.visible = e.target.checked; renderer.shadowMap.needsUpdate = true; vuil(3); });
 $t('tBagT').addEventListener('change', zetBagT);
 $t('tLabel').addEventListener('change', e => { LABELS.forEach(l => l.visible = e.target.checked && l !== VRIJ.userData.t); if(VRIJ.visible) VRIJ.userData.t.visible = e.target.checked; vuil(3); });
-$t('tVrij').addEventListener('change', e => { VRIJ.visible = e.target.checked; VRIJ.userData.t.visible = e.target.checked && $t('tLabel').checked; vuil(3); });
+$t('tVrij').addEventListener('change', e => { if(e.target.checked){ try{ bouwMaat(); }catch(er){ console.warn('maat', er); } } else { const el = $t('maatInfo'); if(el) el.remove(); } VRIJ.visible = e.target.checked; vuil(3); });
 $t('tTruck').addEventListener('change', e => { TRUCK.visible = e.target.checked; scene.children.forEach(o => { if(o.userData.truck) o.visible = e.target.checked; }); renderer.shadowMap.needsUpdate = true; vuil(3); });
 function resize(){ const w = wrap.clientWidth, h = wrap.clientHeight; renderer.setSize(w, h); renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5)); camera.aspect = w/h; camera.updateProjectionMatrix(); vuil(3); }
 window.addEventListener('resize', resize); resize();
@@ -709,7 +755,7 @@ let tPrev = performance.now(); const camVorig = new THREE.Matrix4();
   if(up) target.y = Math.max(-3, Math.min(150, target.y + up*Math.max(2, Math.min(40, radius*0.15))*dt*sp));
   updateCam(); camera.updateMatrixWorld(); const veranderd = !camVorig.equals(camera.matrixWorld); camVorig.copy(camera.matrixWorld);
   if(veranderd || VUIL > 0){ VUIL = Math.max(0, VUIL - 1); renderer.render(scene, camera); } })();
-window.__hema = {scene, ASSET, VIEWS, U, N, YAW};
+window.__hema = {scene, ASSET, VIEWS, U, N, YAW, bouwMaat: () => bouwMaat()};
 
 </script>
 </body>
