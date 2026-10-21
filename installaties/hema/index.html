@@ -214,7 +214,7 @@ function inPoly(x, y, r){ let ok = false; for(let i = 0, j = r.length - 1; i < r
       m.userData.info = m.userData.tekst + '<br>hoogte ' + h + ' m (aangenomen)'; BAG.add(m); KLIK.push(m); n++;
       (PER[p.identificatie] = PER[p.identificatie] || []).push(m);
       if(inPoly(132690, 457850, r) && !PVRING) PVRING = {poly: r.map(([x, y]) => rdL(x, y)), h, id: p.identificatie}; }); });
-  VR.bag = true; VR.probeer(); try{ hemaLetters(12); }catch(e){ console.warn('letters', e); }
+  VR.bag = true; VR.probeer(); try{ bouwPvDak(PVRING ? PVRING.poly : PVNOOD(), 12); }catch(e){ console.warn('PV-dak', e); } try{ hemaLetters(12); }catch(e){ console.warn('letters', e); }   // direct, daarna opnieuw met de 3DBAG-hoogte
   info.innerHTML = `${n} BAG-panden geladen (PDOK) · hoogtes uit 3DBAG laden…`; zetBagT(); renderer.shadowMap.needsUpdate = true; vuil(6);
   let nh = 0, url = `https://api.3dbag.nl/collections/pand/items?bbox=${bb3}&limit=100`, pag = 0;
   try{ while(url && pag++ < 25){ const j = await fetch(url).then(r => r.json());
@@ -431,7 +431,8 @@ function wandN(poly){ const O = V(GA[0], 0, GA[1]); let best = null;
 // gevel per plek opzoeken met een straal vanaf het terrein naar de BAG-gebouwen (−N richting): inverters en ladder komen exact tegen de muur
 function wandOp(sx){ BAG.updateMatrixWorld(true); const rc = new THREE.Raycaster(wp(sx, 8).add(V(0, 1.4, 0)), N.clone().negate(), 0, 20);
   const hit = rc.intersectObjects(BAG.children, false)[0]; return hit ? 8 - hit.distance : null; }
-function bouwPvDak(poly, h){ WN = wandN(poly); const wl = wandOp(8.7); if(wl !== null) WN = wl;
+let PVSPR = null;
+function bouwPvDak(poly, h){ while(PVDAK.children.length) PVDAK.remove(PVDAK.children[0]); if(PVSPR){ scene.remove(PVSPR); PVSPR = null; } WN = wandN(poly); const wl = wandOp(8.7); if(wl !== null) WN = wl;
   (ASSET.pv.userData.wand || []).forEach(ig => { const w = wandOp(ig.position.x); ig.position.z = (w !== null ? w : WN) + 0.25; });                                                          // poly = pand-ring in lokale coördinaten [[x, z], ...]
   const inP = (x, z) => { let ok = false; for(let i = 0, j = poly.length - 1; i < poly.length; j = i++){ const [xi, zi] = poly[i], [xj, zj] = poly[j]; if(((zi > z) !== (zj > z)) && (x < (xj - xi)*(z - zi)/(zj - zi) + xi)) ok = !ok; } return ok; };
   const B0 = V(GB[0], 0, GB[1]), W = N.clone().negate();                               // W = de dakrichting (van de gevel het pand in)
@@ -456,8 +457,8 @@ function bouwPvDak(poly, h){ WN = wandN(poly); const wl = wandOp(8.7); if(wl !==
   const yv = 1.95, hv = h + 0.3 - yv;   // over de looproute heen (vrije hoogte ± 1,95 m)
   box(LG, 0.5, hv, 0.12, lad, 0, yv + hv/2, 0.1); box(LG, 0.55, hv, 0.03, M(0x9aa3a8, {metalness: 0.6}), 0, yv + hv/2, 0.18);   // verticaal langs de gevel tot goothoogte van de skid
   box(LG, 0.5, 0.12, 2.2, lad, 0, h + 0.35, -1.0); { const lz = Math.max(0.4, (PVS.n - 2.525) - wLad + 0.4); box(LG, 0.36, 0.08, lz, lad, 0, yv, lz/2); box(LG, 0.38, 0.02, lz, M(0x9aa3a8, {metalness: 0.6}), 0, yv + 0.06, lz/2); }   // horizontaal de skid in (dia: DC op ± 0,9 m)
-  sprite('PV op dak · ' + pos.length + ' × 535 Wp', B0.clone().addScaledVector(U, -25).addScaledVector(W, 20).add(V(0, h + 3, 0)), 0.8, '#d4a017');
-  $t('bagInfo').innerHTML += `<br>PV-dak: ${pos.length} panelen geplaatst`; renderer.shadowMap.needsUpdate = true; vuil(6); }
+  PVSPR = sprite('PV op dak · ' + pos.length + ' × 535 Wp', B0.clone().addScaledVector(U, -25).addScaledVector(W, 20).add(V(0, h + 3, 0)), 0.8, '#d4a017');
+  { let sp = $t('pvInfo'); if(!sp){ sp = document.createElement('div'); sp.id = 'pvInfo'; $t('bagInfo').after(sp); sp.className = 'cfgInfo'; } sp.textContent = `PV-dak: ${pos.length} panelen geplaatst`; } renderer.shadowMap.needsUpdate = true; vuil(6); }
 
 // ---------- hekwerk langs de Nucleonenweg (schets/luchtfoto: langs de rand van de verharding) + haag ----------
 const HEK = new THREE.Group(); scene.add(HEK);
