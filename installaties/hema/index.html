@@ -149,13 +149,18 @@ const matRal7035 = M(0xd4d7d1, {roughness: 0.55}), matAntr = M(0x3a3e43, {roughn
 const GROOT = {x0: 132200, y0: 457450, x1: 133100, y1: 458150}, DETAIL = {x0: 132460, y0: 457680, x1: 132760, y1: 457930};
 const grondM = M(0x9aa58f, {roughness: 1}); const grond = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000), grondM); grond.rotation.x = -Math.PI/2; grond.position.y = -0.02; grond.receiveShadow = true; scene.add(grond);
 const FOTO = new THREE.Group(); scene.add(FOTO);
-function fotoVlak(bb, px, y, cb){ const w = bb.x1 - bb.x0, h = bb.y1 - bb.y0, [cx, cz] = rdL((bb.x0 + bb.x1)/2, (bb.y0 + bb.y1)/2);
-  const pw = Math.round(px*Math.min(1, w/h)), ph = Math.round(px*Math.min(1, h/w));
-  const url = `https://service.pdok.nl/hwh/luchtfotorgb/wms/v1_0?service=WMS&version=1.3.0&request=GetMap&layers=Actueel_orthoHR&styles=&crs=EPSG:28992&bbox=${bb.x0},${bb.y0},${bb.x1},${bb.y1}&width=${pw}&height=${ph}&format=image/jpeg`;
-  const m = new THREE.MeshStandardMaterial({color: 0xffffff, roughness: 1, metalness: 0, polygonOffset: true, polygonOffsetFactor: y > 0.01 ? -2 : -1});
-  const o = new THREE.Mesh(new THREE.PlaneGeometry(w, h), m); o.rotation.x = -Math.PI/2; o.position.set(cx, y, cz); o.receiveShadow = true; o.visible = false; FOTO.add(o);
-  new THREE.TextureLoader().setCrossOrigin('anonymous').load(url, t => { t.encoding = THREE.sRGBEncoding; t.anisotropy = 8; m.map = t; m.needsUpdate = true; if(cb) cb(t.image, bb); o.visible = true; renderer.shadowMap.needsUpdate = true; vuil(6); },
-    undefined, () => { $t('bagInfo').innerHTML += '<br>luchtfoto kon niet geladen worden (geen internet of geblokkeerd in deze weergave)'; }); }
+// PDOK levert maximaal ± 2048 px per beeld: het gebied wordt in tegels opgehaald (anders kwam er 'image size too large' terug en bleef de onderlegger leeg)
+function fotoVlak(bb, px, y, cb){ const w = bb.x1 - bb.x0, h = bb.y1 - bb.y0;
+  const pw = Math.round(px*Math.min(1, w/h)), ph = Math.round(px*Math.min(1, h/w)), nx = Math.ceil(pw/2000), ny = Math.ceil(ph/2000), tw = Math.round(pw/nx), th = Math.round(ph/ny);
+  const imgs = [], cv = document.createElement('canvas'); cv.width = tw*nx; cv.height = th*ny; let n = 0, fout = false;
+  for(let i = 0; i < nx; i++) for(let j = 0; j < ny; j++){
+    const t = {x0: bb.x0 + w*i/nx, x1: bb.x0 + w*(i + 1)/nx, y1: bb.y1 - h*j/ny, y0: bb.y1 - h*(j + 1)/ny}, [cx, cz] = rdL((t.x0 + t.x1)/2, (t.y0 + t.y1)/2);
+    const url = `https://service.pdok.nl/hwh/luchtfotorgb/wms/v1_0?service=WMS&version=1.3.0&request=GetMap&layers=Actueel_orthoHR&styles=&crs=EPSG:28992&bbox=${t.x0},${t.y0},${t.x1},${t.y1}&width=${tw}&height=${th}&format=image/jpeg`;
+    const m = new THREE.MeshStandardMaterial({color: 0xffffff, roughness: 1, metalness: 0, polygonOffset: true, polygonOffsetFactor: y > 0.01 ? -2 : -1});
+    const o = new THREE.Mesh(new THREE.PlaneGeometry(t.x1 - t.x0, t.y1 - t.y0), m); o.rotation.x = -Math.PI/2; o.position.set(cx, y, cz); o.receiveShadow = true; o.visible = false; FOTO.add(o);
+    new THREE.TextureLoader().setCrossOrigin('anonymous').load(url, tx => { tx.encoding = THREE.sRGBEncoding; tx.anisotropy = 8; m.map = tx; m.needsUpdate = true; o.visible = true; renderer.shadowMap.needsUpdate = true; vuil(6);
+        if(cb){ try{ cv.getContext('2d').drawImage(tx.image, i*tw, j*th, tw, th); }catch(e){} if(++n === nx*ny && !fout) cb(cv, bb); } },
+      undefined, () => { if(!fout) $t('bagInfo').innerHTML += '<br>luchtfoto (PDOK) kon niet geladen worden'; fout = true; }); } }
 fotoVlak(GROOT, 4000, 0.0); fotoVlak(DETAIL, 4000, 0.01, (img, bb) => { VR.img = img; VR.bb = bb; VR.probeer(); });
 // ---------- alternatieve onderlegger: Esri World Imagery (satelliet), tegels via WGS84 → RD (Schreutelkamp & Strang van Hees) ----------
 function wgsRd(lat, lon){ const p = 0.36*(lat - 52.15517440), l = 0.36*(lon - 5.38720621);
