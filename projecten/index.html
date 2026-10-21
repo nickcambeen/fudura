@@ -253,11 +253,11 @@ const ACT_ST={open:"Open",bezig:"Bezig",geblokkeerd:"Geblokkeerd",afgerond:"Afge
 const TYPES=["BESS","Laadinfra","MS-installatie","LS-installatie","PV","Data / IT","Overig"];
 const ROLES=["Projectleider","Sales engineer","Detailengineer","Tekenaar","Accountmanager","Werkvoorbereider","Planner","Inkoop","Aannemer","Klant","Netbeheerder"];
 const TEMPLATE={
-  0:[["Aanvraag registreren","Sales engineer"],["Contact opnemen met klant","Sales engineer"],["Schouw op locatie","Sales engineer"],
+  0:[["Aanvraag registreren","Sales engineer"],["Schouw op locatie","Sales engineer"],
      ["Projectplan opstellen","Sales engineer","s"],["Calculatie opstellen","Sales engineer","s"],
      ["Projectplan en calculatie in Salesforce doorzetten naar accountmanager","Sales engineer","s"],
      ["Offerte opstellen","Accountmanager","s"],["Offerte getekend door klant","Klant","sg"]],
-  1:[["Uitgangspunten en programma van eisen vastleggen","Projectleider"],["Projectteam samenstellen","Projectleider","s"],
+  1:[["Eerste contact met klant: kennismaking en verwachtingen afstemmen","Projectleider"],["Uitgangspunten en programma van eisen vastleggen","Projectleider","s"],["Projectteam samenstellen","Projectleider","s"],
      ["Overdrachtsmoment inplannen (sales engineer, projectleider, tekenaar, detailengineer)","Projectleider","s"],
      ["Netaanvraag / aansluiting bij netbeheerder","Detailengineer"],["Eendraadschema (SLD) opstellen","Tekenaar"],["Kabelberekening NEN 1010","Detailengineer"],["Beveiliging en selectiviteit","Detailengineer"],["Review ontwerp (IV'er)","Detailengineer"],["Ontwerp vrijgeven","Projectleider"]],
   2:[["Materiaal met lange levertijd bestellen","Inkoop"],["Aannemer contracteren","Werkvoorbereider"],["V&G-plan en TRA","Werkvoorbereider"],["Schakelafspraken netbeheerder","Werkvoorbereider"],["Uitvoeringsplanning vastleggen","Planner"],["Kick-off met aannemer","Projectleider"]],
@@ -270,7 +270,7 @@ const flagsOf=f=>({seq:(f||"").includes("s"),gate:(f||"").includes("g")});
 function templateActs(){const out=[];for(const ph in TEMPLATE)TEMPLATE[ph].forEach(([t,r,f])=>out.push({id:newActId(),phase:+ph,title:t,role:r,owner:"",status:"open",doneAt:"",...flagsOf(f)}));return out}
 const ALIASES={"uitgangspunten en uitsluitingen uit projectplan controleren":"uitgangspunten en programma van eisen vastleggen"};
 /* oude standaardstappen die niet meer in de werkwijze zitten: weg bij bijwerken zolang ze onaangeroerd zijn */
-const RETIRED=["projectteam en fasering vastleggen"];
+const RETIRED=["projectteam en fasering vastleggen","contact opnemen met klant"];
 const normT=t=>{t=(t||"").toLowerCase();return ALIASES[t]||t};
 /* zet de activiteiten van één fase in de standaardvolgorde; bestaande (zelfde titel) blijven met hun status, eigen extra's komen erachter */
 function syncPhase(p,ph){
