@@ -439,8 +439,25 @@ const intakeEnd=p=>addDays(intakeStart(p),INTAKE_WEKEN*7);
 const akkoordDate=p=>p.akkoord||(p.phase===0?(intakeEnd(p)>todayStr()?intakeEnd(p):todayStr()):"");
 const prepEnd=p=>addDays(akkoordDate(p),VOORBEREIDING_WEKEN*7);
 function phaseTarget(p,ph){if(ph===0)return intakeEnd(p);if(ph===1||ph===2)return prepEnd(p);return""}
-/* deadline van een taak: zelf ingevuld, anders de standaard van de fase */
-function effDue(p,a){return a.due||phaseTarget(p,a.phase)}
+/* standaardplanning per taak: dagen na start intake (fase 0) of na akkoord klant (fase 1 en 2) */
+const DUE_DAYS={
+  "aanvraag registreren":1,"schouw op locatie":5,"projectplan opstellen":8,"calculatie opstellen":10,
+  "projectplan en calculatie in salesforce doorzetten naar accountmanager":11,"offerte opstellen":13,"offerte getekend door klant":14,
+  "eerste contact met klant: kennismaking en verwachtingen afstemmen":3,"uitgangspunten en programma van eisen vastleggen":7,"projectteam samenstellen":7,
+  "overdrachtsmoment inplannen (sales engineer, projectleider, tekenaar, detailengineer)":10,"contact opnemen met onderaannemer: afspraken maken":14,
+  "projecttekening maken":18,"eendraadschema (sld) opstellen":23,"kabelberekening nen 1010":28,"review ontwerp (iv'er)":33,"ontwerp vrijgeven":35,
+  "materiaal met lange levertijd bestellen":38,"aannemer contracteren":42,"v&g-plan en tra":47,"uitvoeringsplanning vastleggen":50,"kick-off met aannemer":56
+};
+/* valt een standaarddeadline in het weekend, dan wordt het de vrijdag ervoor */
+function workday(d){if(!d)return d;const w=new Date(d+"T12:00:00").getDay();return w===6?addDays(d,-1):w===0?addDays(d,-2):d}
+/* deadline van een taak: zelf ingevuld, anders de standaard uit de planning, anders het einde van de fase */
+function effDue(p,a){
+  if(a.due)return a.due;
+  const d=DUE_DAYS[(a.title||"").toLowerCase()];
+  if(d!=null&&a.phase===0)return workday(addDays(intakeStart(p),d));
+  if(d!=null&&(a.phase===1||a.phase===2))return workday(addDays(akkoordDate(p),d));
+  return workday(phaseTarget(p,a.phase));
+}
 const isStdDue=a=>!a.due;
 function toast(m){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,2400)}
 const get=(st,k)=>{try{return st.getItem(k)}catch(e){return null}};
