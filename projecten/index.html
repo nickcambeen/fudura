@@ -572,7 +572,7 @@ const TEMPLATE={
      ["Overdrachtsmoment inplannen (sales engineer, projectleider, tekenaar, detailengineer)","Projectleider","s"],
      ["Contact opnemen met onderaannemer: afspraken maken","Projectleider","s"],
      ["Projecttekening maken","Tekenaar"],["Eendraadschema (SLD) opstellen","Tekenaar","s"],["Kabelberekening NEN 1010","Detailengineer"],["Review ontwerp (IV'er)","Detailengineer"],["Ontwerp vrijgeven","Projectleider","a"],["Doorzetten naar Werkvoorbereiding","Projectleider","at"]],
-  2:[["Materiaal met lange levertijd bestellen","Werkvoorbereider"],["Aannemer contracteren","Werkvoorbereider"],["V&G-plan en TRA","Werkvoorbereider"],["Uitvoeringsplanning vastleggen","Werkvoorbereider"],["Kick-off met aannemer","Projectleider"],["Doorzetten naar Realisatie","Projectleider","at"]],
+  2:[["Materiaal met lange levertijd bestellen","Werkvoorbereider"],["Aannemer contracteren","Werkvoorbereider"],["PGS 37-1 analyse","Detailengineer"],["V&G-plan en TRA","Werkvoorbereider"],["Uitvoeringsplanning vastleggen","Werkvoorbereider"],["SAT-formulier voorbereiden","Projectleider"],["Kick-off met aannemer","Projectleider"],["Doorzetten naar Realisatie","Projectleider","at"]],
   3:[["Start uitvoering op locatie","Aannemer"],["Montage installatie","Aannemer"],["Kabels leggen en aansluiten","Aannemer"],["Voortgangscontrole","Uitvoerder"],["Meerwerk registreren","Projectleider"],["Doorzetten naar Oplevering","Projectleider","at"]],
   4:[["Eerste inspectie NEN 1010 / NEN 3140","Aannemer"],["Inbedrijfname en schakelen","Werkvoorbereider"],["SAT uitvoeren","Detailengineer"],["Opleverdossier aannemer aanleveren (inmeetgegevens en meetrapporten)","Aannemer"],["Revisie uit de uitvoering verwerken in tekeningen en SLD","Tekenaar","s"],["Opleverdossier samenstellen","Projectleider","s"],["Overdracht aan klant","Projectleider"],["Doorzetten naar Afronding","Projectleider","at"]],
   5:[["Nacalculatie","Projectleider"],["Evaluatie / lessons learned","Projectleider"],["Project administratief sluiten","Projectleider"]]
@@ -629,7 +629,7 @@ const DUE_DAYS={
   "overdrachtsmoment inplannen (sales engineer, projectleider, tekenaar, detailengineer)":10,"contact opnemen met onderaannemer: afspraken maken":14,
   "projecttekening maken":18,"eendraadschema (sld) opstellen":23,"kabelberekening nen 1010":28,"review ontwerp (iv'er)":33,"ontwerp vrijgeven":35,
   "doorzetten naar engineering":14,"doorzetten naar werkvoorbereiding":36,"doorzetten naar realisatie":56,
-  "materiaal met lange levertijd bestellen":38,"aannemer contracteren":42,"v&g-plan en tra":47,"uitvoeringsplanning vastleggen":50,"kick-off met aannemer":56
+  "materiaal met lange levertijd bestellen":38,"pgs 37-1 analyse":45,"sat-formulier voorbereiden":52,"aannemer contracteren":42,"v&g-plan en tra":47,"uitvoeringsplanning vastleggen":50,"kick-off met aannemer":56
 };
 /* valt een standaarddeadline in het weekend, dan wordt het de vrijdag ervoor */
 function workday(d){if(!d)return d;const w=new Date(d+"T12:00:00").getDay();return w===6?addDays(d,-1):w===0?addDays(d,-2):d}
@@ -1105,7 +1105,8 @@ const DEFAULT_CHK={
   "opleverdossier aannemer aanleveren (inmeetgegevens en meetrapporten)":["Meetrapporten (NEN 1010 / NEN 3140)","Inmeetgegevens kabeltracé","Revisie-aantekeningen","Foto's van de installatie","Verklaringen en certificaten"],
   "opleverdossier samenstellen":["Revisietekeningen en SLD","Meetrapporten","Inspectierapport","SAT-rapport","Handleidingen en datasheets"],
   "v&g-plan en tra":["V&G-plan opgesteld","TRA opgesteld","Besproken met aannemer"],
-  "sat uitvoeren":["SAT-protocol opgesteld","SAT uitgevoerd","SAT-rapport getekend"],
+  "sat uitvoeren":["SAT uitgevoerd volgens het voorbereide formulier","SAT-rapport getekend"],
+  "sat-formulier voorbereiden":["Testpunten per installatiedeel","Verwachte waarden en grenzen","Rolverdeling tijdens de SAT","Afgestemd met klant en aannemer"],
   "eerste inspectie nen 1010 / nen 3140":["Visuele inspectie","Metingen uitgevoerd","Inspectierapport aangeleverd"]
 };
 function effChk(a){return Array.isArray(a.checklist)?a.checklist:(DEFAULT_CHK[(a.title||"").toLowerCase()]||[]).map((t,i)=>({id:"d"+i,text:t,done:false}))}
