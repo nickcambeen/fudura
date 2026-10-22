@@ -637,6 +637,7 @@ function bouwAIO(i){
   { const x0 = 4.15; box(B, 1.0, 2.0, 0.8, wit, x0, 3.98, zPf - 0.4); for(let k = 0; k < 3; k++){ box(B, 0.2, 0.75, 0.3, matBlauw, x0 - 0.35 + k*0.21, 4.25, zPf + 0.15); box(B, 0.1, 0.18, 0.08, wit, x0 - 0.35 + k*0.21, 4.35, zPf + 0.32); }
     box(B, 0.3, 0.62, 0.25, M(0xe4e7e5), x0 + 0.33, 4.25, zPf + 0.12); plak(B, 0.24, 0.22, texMeter, x0 + 0.33, 4.35, zPf + 0.26);
     kabel(B, [[x0 - 0.6, 3.15, zPf + 0.2], [x0 - 0.7, 3.4, zPf + 0.3], [x0 - 0.7, 4.8, zPf + 0.3], [x0 - 0.6, 4.95, zPf + 0.2]], 0.05, M(0xc8cdd0, {metalness: 0.8, roughness: 0.25}), 0.1); }
+  const nB0 = B.children.length;
   // ===== (12) besturingskast linksonder: J1..J8, Power/Fault, AC/DC Power-automaten, PE-bout; IO-extender + switch op de linkerwand =====
   const texC2 = ctex(410, 140, (g, w, h) => { g.fillStyle = '#e6e8e7'; g.fillRect(0, 0, w, h); g.strokeStyle = '#a3a8ab'; g.lineWidth = 3; g.strokeRect(2, 2, w - 4, h - 4);
     g.fillStyle = '#333'; g.font = 'bold 11px Arial'; [['J7', 22], ['J2', 82], ['J8', 132]].forEach(([t, x]) => g.fillText(t, x, 16)); [['J3', 22], ['J4', 66], ['J5', 112], ['J6', 158]].forEach(([t, x]) => g.fillText(t, x, 132));
@@ -654,6 +655,7 @@ function bouwAIO(i){
   for(const [x, n] of [[30, 3], [74, 2], [120, 2], [166, 2], [90, 2]]) for(let k = 0; k < n; k++) kabel(B, [[cxC(x) + (k - 0.5)*0.08, cyC(x === 90 ? 36 : 100) - 0.2, zPf + 0.35], [cxC(x) + (k - 0.5)*0.1, CY0 - 0.15, zPf + 0.45], [cxC(x) + 0.3 + k*0.05, 1.05, zPf + 0.35]], 0.035, k % 2 ? matZwart : M(0x5d6266), 0.15);
   { const texDuct = ctex(256, 32, (g, w, h) => { g.fillStyle = '#7a8085'; g.fillRect(0, 0, w, h); g.fillStyle = '#3c4044'; for(let x = 4; x < w; x += 12) g.fillRect(x, 0, 5, 22); }, [4, 1]);
     box(B, 4.0, 0.45, 0.5, [M(0x7a8085), M(0x7a8085), M(0x5a6065), M(0x5a6065), M(0xffffff, {map: texDuct, roughness: 0.5}), M(0x7a8085)], CX0 + 2.05, 1.18, zPf + 0.15); }
+  const CTRL = B.children.slice(nB0);                                            // besturingskast: in het MCCB-aanzicht tijdelijk weg (zicht op de netzijde)
   // rijgklemmen (Control / Aux) op DIN-rail achter de goot, comm-wartelplaat met 5 wartels in de bodem
   box(B, 2.6, 0.12, 0.06, matZink, -3.2, 1.35, zPf - 0.45); for(let k = 0; k < 16; k++) box(B, 0.12, 0.42, 0.45, k % 4 === 3 ? matBlauw : M(0x2e3134), -4.4 + k*0.16, 1.4, zPf - 0.3);
   box(B, 2.0, 0.06, 1.4, grijsD, -2.6, yB + 0.15, zPf - 0.3); for(const [dx, dz] of [[-0.5, 0.2], [-0.15, 0.2], [0.2, 0.2], [-0.32, -0.25], [0.02, -0.25]]){ cyl(B, 0.15, 0.12, M(0xd8dadb), -2.2 + dx, yB + 0.22, zPf - 0.3 + dz, null, 14); cyl(B, 0.08, 0.13, matZwart, -2.2 + dx, yB + 0.24, zPf - 0.3 + dz, null, 10); }
@@ -674,38 +676,46 @@ function bouwAIO(i){
     g.fillStyle = '#ddd'; g.font = 'bold 13px Arial'; g.fillText('CE', 196, 32); });
   plak(B, 2.55, 1.4, texN, MC.x, MC.y, MC.z + 0.505);
   const hendel = box(B, 0.5, 0.22, 0.3, M(0x1d1f22), MC.x + 0.25, MC.y - 0.05, MC.z + 0.62); box(B, 0.12, 0.2, 0.32, M(0xeeeeea), MC.x + 0.42, MC.y - 0.05, MC.z + 0.64);
-  const schot = M(0x1c1e21, {roughness: 0.5});
+  const schot = M(0x1c1e21, {roughness: 0.5, transparent: true, opacity: 0.55, depthWrite: false});   // fasenschotten (doorschijnend in het model, anders verdwijnt de netzijde)
   for(let k = 0; k < 5; k++){ const y = MC.y + 0.7 - k*0.35; for(const [x, sx] of [[mL, -1], [mR, 1]]){ box(B, 0.75, 0.05, 1.1, schot, x + sx*0.3, y, MC.z, false);                     // fasenschotten (lang, kamvormig — foto)
       for(const dz of [-0.42, 0.42]) box(B, 0.75, 0.12, 0.05, schot, x + sx*0.3, y + (k < 4 ? -0.06 : 0.06), MC.z + dz, false); } }
   for(const [x, sx] of [[mL, -1], [mR, 1]]) box(B, 0.75, 1.45, 0.05, schot, x + sx*0.3, MC.y, MC.z - 0.52, false);                         // achterwand van het kamstuk
   const POLY = {N: MC.y + 0.525, L3: MC.y + 0.175, L2: MC.y - 0.175, L1: MC.y - 0.525};
-  // netzijde links: koperen aansluitvlaggen M10, getrapt (N/L3 lang naar achter/voor, L2/L1 kort), kabelschoen onder de vlag
+  // netzijde links in de smalle ruimte (± 90 mm) tussen besturingskast en MCCB: vlaggen getrapt in breedte én diepte, zodat de vier aders
+  // van voren gezien naast elkaar staan in de volgorde van de polen: N · L3 · L2 · L1 (links → rechts); L3/L1 voor, N/L2 achter
   const klem = {}, gat = {};
-  const VLAG = {N: {tip: -0.65, dz: -0.27}, L3: {tip: -0.65, dz: 0.27}, L2: {tip: 0.0, dz: -0.27}, L1: {tip: 0.0, dz: 0.27}};
-  Object.entries(VLAG).forEach(([f, v]) => { const y = POLY[f], z = MC.z + v.dz, t = MC.x + v.tip - 1.275 + 0.2;
+  const FX = {L1: mL - 0.25, L2: mL - 0.43, L3: mL - 0.62, N: mL - 0.8}, FZ = {L1: MC.z + 0.24, L3: MC.z + 0.24, L2: MC.z - 0.2, N: MC.z - 0.2}, zV = MC.z;
+  const VLAG = {}; Object.keys(FX).forEach(f => VLAG[f] = {tip: FX[f] - MC.x + 1.075, dz: FZ[f] - MC.z});
+  const kleurF = {L1: ['#7a4a22', '#fff'], L2: ['#1c1c1c', '#fff'], L3: ['#8e9397', '#111'], N: ['#1f5fbf', '#fff']}, persM = M(0x9aa0a4, {metalness: 0.9, roughness: 0.3});
+  Object.keys(FX).forEach(f => { const y = POLY[f], t = FX[f], z = FZ[f];
     box(B, 0.35, 0.08, 0.95, matKoper, mL - 0.12, y, MC.z);                                                                  // klemblok aan de pool
-    const x0 = mL - 0.3, x1 = t - 0.25; box(B, x0 - x1, 0.08, 0.42, matKoper, (x0 + x1)/2, y, z);                            // vlag
-    cyl(B, 0.13, 0.025, matTin, t, y + 0.055, z, null, 18); cyl(B, 0.11, 0.08, matZink, t, y + 0.11, z, null, 6); cyl(B, 0.055, 0.12, matZink, t, y + 0.2, z, null, 10);   // ring + zeskantmoer M10 + draadeind
-    cyl(B, 0.13, 0.025, matTin, t, y - 0.055, z, null, 18); cyl(B, 0.11, 0.07, matZink, t, y - 0.1, z, null, 6);                                       // onderring + moer
-    box(B, 0.34, 0.05, 0.36, matTin, t, y - 0.155, z); const pk = box(B, 0.34, 0.05, 0.2, matTin, t, y - 0.2, z + (v.dz > 0 ? 0.13 : -0.13)); pk.rotation.x = (v.dz > 0 ? -0.6 : 0.6);   // kabelschoen-palm, gezet
-    cyl(B, 0.12, 0.34, matTin, t, y - 0.38, z, null, 16); for(const yy of [-0.31, -0.43]) cyl(B, 0.127, 0.03, M(0x9aa0a4, {metalness: 0.9, roughness: 0.3}), t, y + yy, z, null, 16);   // kabelschoen 95 mm² + persindrukken
-    KABDEEL.push(cyl(B, 0.13, 0.22, ader[f], t, y - 0.64, z, null, 14));                                   // krimpkous
-    { const kl = {L1: ['#7a4a22', '#fff'], L2: ['#1c1c1c', '#fff'], L3: ['#8e9397', '#111'], N: ['#1f5fbf', '#fff']}[f];          // adermarkering (kabelmerker) aan de netzijde, leesbaar van links en van voren
-      cyl(B, 0.14, 0.2, M(0xf4f4f0, {roughness: 0.6}), t, y - 0.92, z, null, 16);
-      plak(B, 0.24, 0.17, lbl(f, 64, 46, kl[0], kl[1], 'bold 30px Arial'), t - 0.142, y - 0.92, z, -Math.PI/2);
-      plak(B, 0.24, 0.17, lbl(f, 64, 46, kl[0], kl[1], 'bold 30px Arial'), t, y - 0.92, z + 0.142); }
+    const x0 = mL - 0.3, x1 = t - 0.2; box(B, x0 - x1, 0.08, 0.3, matKoper, (x0 + x1)/2, y, z);                             // vlag (Cu 30 × 8)
+    box(B, 0.04, 0.09, 0.3, M(0xb07a4c, {metalness: 0.8, roughness: 0.35}), x1 + 0.02, y, z);                                 // afgeronde kop
+    // boven: ring + zeskantmoer M10 + draadeind (met verfmarkering: aangehaald)
+    cyl(B, 0.11, 0.025, matTin, t, y + 0.055, z, null, 18); cyl(B, 0.095, 0.08, matZink, t, y + 0.11, z, null, 6); cyl(B, 0.05, 0.14, matZink, t, y + 0.21, z, null, 10);
+    box(B, 0.03, 0.09, 0.12, M(0xd8231b), t + 0.1, y + 0.11, z + 0.02, false);
+    // onder: kabelschoen-palm tegen de vlag, ring, moer — schoen hangt recht omlaag
+    box(B, 0.24, 0.045, 0.24, matTin, t, y - 0.065, z); cyl(B, 0.11, 0.02, matTin, t, y - 0.1, z, null, 18);
+    box(B, 0.16, 0.18, 0.12, matTin, t, y - 0.2, z);                                                                          // overgang palm → bus
+    cyl(B, 0.085, 0.36, matTin, t, y - 0.45, z, null, 16); for(const yy of [-0.38, -0.52]) cyl(B, 0.09, 0.035, persM, t, y + yy, z, null, 16);   // persbus + 2 persindrukken
+    KABDEEL.push(cyl(B, 0.095, 0.26, ader[f], t, y - 0.74, z, null, 16));                                                     // krimpkous in fasekleur
+    { const kl = kleurF[f]; cyl(B, 0.1, 0.22, M(0xf4f4f0, {roughness: 0.6}), t, y - 1.0, z, null, 16);                      // kabelmerker
+      plak(B, 0.17, 0.15, lbl(f, 64, 56, kl[0], kl[1], 'bold 34px Arial'), t, y - 1.0, z + 0.102);
+      plak(B, 0.17, 0.15, lbl(f, 64, 56, kl[0], kl[1], 'bold 34px Arial'), t - 0.102, y - 1.0, z, -Math.PI/2); }
     plak(B, 0.22, 0.3, lbl(f, 40, 56, '#f2d200', '#111111', 'bold 26px Arial'), MC.x - 0.95, y, MC.z + 0.512);                       // gele poolmarkering op het front (foto)
-    klem[f] = V(XA(i) + t, SKY + y - 0.55, AZ + z); gat[f] = V(XA(i) + t, SKY + yB, AZ + z); });
-  // PE: aparte koperen aardrail links naast het aansluitvak
-  box(B, 0.35, 1.3, 0.12, matKoper, mL - 1.55, 2.0, MC.z - 0.3); box(B, 0.4, 0.2, 0.03, ader.PE, mL - 1.55, 2.75, MC.z - 0.23, false);
-  for(let k = 0; k < 4; k++) cyl(B, 0.06, 0.16, matZink, mL - 1.55, 1.55 + k*0.3, MC.z - 0.2, 'z', 6);
-  klem.PE = V(XA(i) + mL - 1.55, SKY + 1.5, AZ + MC.z - 0.1); gat.PE = V(XA(i) + mL - 0.6 - 0.45, SKY + yB, AZ + MC.z);
-  // wartelplaat netzijde (fig. 5-38): 4 grote wartels + middelste voor PE, 4 x M5
-  { const gx = MC.x - 1.275 + 0.2 - 0.325; box(B, 1.7, 0.05, 1.45, M(0xd4b21c, {roughness: 0.25, metalness: 0.05}), gx, yB + 0.15, MC.z);      // gele epoxy wartelplaat (foto)
+    { const pm = plak(B, 0.2, 0.2, lbl(f, 40, 40, '#f2d200', '#111111', 'bold 24px Arial'), (x0 + x1)/2, y + 0.045, z); pm.rotation.x = -Math.PI/2; }   // poolmarkering bovenop de vlag
+    klem[f] = V(XA(i) + t, SKY + y - 0.6, AZ + z); gat[f] = V(XA(i) + t, SKY + yB, AZ + z); });
+  // PE: aparte koperen aardrail links van de trap
+  const xPE = mL - 1.55;
+  box(B, 0.35, 1.3, 0.12, matKoper, xPE, 2.0, MC.z - 0.3); plak(B, 0.4, 0.22, lbl('PE', 48, 26, '#3fa34d', '#fff', 'bold 20px Arial'), xPE, 2.78, MC.z - 0.235);
+  for(let k = 0; k < 4; k++) cyl(B, 0.06, 0.16, matZink, xPE, 1.55 + k*0.3, MC.z - 0.2, 'z', 6);
+  klem.PE = V(XA(i) + xPE, SKY + 1.5, AZ + MC.z - 0.1); gat.PE = V(XA(i) + xPE + 0.5, SKY + yB, AZ + MC.z);
+  // wartelplaat netzijde (fig. 5-38): gele epoxy plaat onder de trap; 4 kegelwartels recht onder de vlaggen (of 1 grote bij een 4-aderige kabel) + kleine voor PE
+  { const gx = mL - 0.5; box(B, 1.7, 0.05, 1.45, M(0xd4b21c, {roughness: 0.25, metalness: 0.05}), gx, yB + 0.15, MC.z);
     for(const [dx, dz] of [[-0.75, -0.63], [0.75, -0.63], [-0.75, 0.63], [0.75, 0.63]]){ cyl(B, 0.05, 0.03, matZink, gx + dx, yB + 0.19, MC.z + dz, null, 6); cyl(B, 0.075, 0.01, matTin, gx + dx, yB + 0.177, MC.z + dz, null, 12); }
     const rub = M(0x8a9196, {roughness: 0.85}), kegel = (x, z, r) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(r*0.62, r, 0.2, 22), rub); o.position.set(x, yB + 0.275, z); o.castShadow = true; B.add(o);
       const t2 = new THREE.Mesh(new THREE.CylinderGeometry(r*0.62, r*0.62, 0.02, 22), M(0x9aa1a6, {roughness: 0.8})); t2.position.set(x, yB + 0.385, z); B.add(t2); cyl(B, r*0.32, 0.025, M(0x7f878c), x, yB + 0.39, z, null, 16); };
-    if(NO_JB) kegel(MC.x - 0.325 - 1.075, MC.z, 0.4); else { Object.values(VLAG).forEach(v => kegel(MC.x + v.tip - 1.075, MC.z + v.dz, 0.22)); kegel(gx, MC.z, 0.16); } }   // NO_JB: één grote wartel voor de 4-aderige kabel                           // 4 grote + 1 kleine kegelwartel (grijs rubber)
+    if(NO_JB) kegel(gx, zV, 0.4); else Object.keys(FX).forEach(f => kegel(FX[f], FZ[f], 0.15)); kegel(gx + 0.55, MC.z + 0.55, 0.11); }
   // uitgang rechts: 4 vlaggen gestaffeld in de diepte, dikke kabels van de PCS-stekers erop
   const ZR = {L1: 0.38, L2: 0.13, L3: -0.13, N: -0.38};
   ['N', 'L3', 'L2', 'L1'].forEach(f => { const y = POLY[f], z = MC.z + ZR[f], t = mR + 0.34;
@@ -759,7 +769,7 @@ function bouwAIO(i){
   const zone = new THREE.Mesh(new THREE.BoxGeometry(W - 0.4, yP0 + 5*dP - 9.0 + 1.0, pD), new THREE.MeshStandardMaterial({color: 0x2e9e4f, transparent: true, opacity: 0.16, depthWrite: false}));
   zone.position.set(0, (9.0 + yP0 + 5*dP)/2, zF + pD/2 + 0.2); zone.visible = false; G.add(zone);
   const zEdge = new THREE.LineSegments(new THREE.EdgesGeometry(zone.geometry), new THREE.LineBasicMaterial({color: 0x2e9e4f})); zone.add(zEdge);
-  const o = {MCl: {MC, mL, mR, POLY, VLAG, ZR}, G, i, B, fan, lampen: L, strobe, soc: 40 + i*9, p: 0, klem, gat, MC, PK, KB, zone, pD, uit: 0, uitDoel: 0}; AIO.push(o); return o;
+  const o = {MCl: {MC, mL, mR, POLY, VLAG, ZR}, CTRL, G, i, B, fan, lampen: L, strobe, soc: 40 + i*9, p: 0, klem, gat, MC, PK, KB, zone, pD, uit: 0, uitDoel: 0}; AIO.push(o); return o;
 }
 for(let i = 0; i < N_AIO; i++){ HMI.push(hmiTex(i)); BASES.push(bouwBase(i)); bouwAIO(i); }
 
@@ -2009,7 +2019,7 @@ const VIEWS = {
   bGebouw: () => { const p = HVK.HG.localToWorld(V(-30, 14, 14)); target.copy(p); const q = HVK.HG.localToWorld(V(-30, 14, 74)); theta = Math.atan2(q.x - p.x, q.z - p.z); phi = 1.2; radius = 150; $t('tTR').checked = false; HVK.zetTR(false); },
   bHvk: () => { const p = W(V(SLOTS[2].x, 12, HVK.hz)); target.set(p.x, 10, p.z); theta = Math.PI/2; phi = 1.25; radius = 60; $t('tTR').checked = true; HVK.zetTR(true); },
   bKast: () => { $t('tHekA').checked = false; HEKA.visible = false; target.set(KXW, KS + 7, KZW); theta = -Math.PI/2 - 0.1; phi = 1.47; radius = 22; },
-  bMccb: () => { $t('tHekA').checked = false; HEKA.visible = false; const a = AIO[0], p = a.klem.L2; target.set(p.x - 1.6, p.y + 0.1, p.z + 0.4); theta = -0.5; phi = 1.55; radius = 6.2; doors.forEach(d => { if(!d.strook && !d.kast && d.naam === 'kast #1') d.doel = d.open; }); },
+  bMccb: () => { $t('tHekA').checked = false; HEKA.visible = false; const a = AIO[0], p = a.klem.L2; target.set(p.x - 0.9, p.y + 0.45, p.z); theta = 0.0; phi = 1.32; radius = 4.6; doors.forEach(d => { if(!d.strook && !d.kast && d.naam === 'kast #1') d.doel = d.open; }); },
   bAio: () => { target.set(XA(0), SKY + 11, AZ); theta = 0.25; phi = 1.42; radius = 40; },
   bSkidBoven: () => { $t('tHekA').checked = false; HEKA.visible = false; target.set((SX0 + SXE)/2, PL_H, (KAN_Z0 + zKan(6))/2); theta = 0; phi = 0.02; radius = 34 + 11*N_AIO; $t('tAioUit').checked = true; zetAioUit(true); GOOTLBL.visible = true; $t('tSkid').checked = true; zetSkid(true); },
   bSkid: () => { $t('tHekA').checked = false; HEKA.visible = false; target.set((SX0 + SX1)/2, PL_H + 1.2, 4); theta = 0.35; phi = 1.2; radius = 42; $t('tSkid').checked = true; zetSkid(true); },
@@ -2043,9 +2053,9 @@ const MUITLEG = new THREE.Group(); MUITLEG.visible = false; scene.add(MUITLEG);
   call(6, 'uitgang RECHTS → PCS (fabriek)', Wp(mR + 0.34, POLY.L1, MC.z + ZR.L1), Wp(MC.x + 2.6, 2.4, zf));
   call(7, 'PE-aardrail', Wp(mL - 1.55, 2.3, MC.z - 0.24), Wp(MC.x - 3.6, 0.45, zf)); }
 { const d = document.createElement('div'); d.id = 'mccbKaart'; d.style.cssText = 'position:fixed;left:14px;top:14px;z-index:25;max-width:min(380px,calc(100vw - 28px));background:rgba(255,255,255,.96);border-left:4px solid #d4202a;border-radius:8px;padding:10px 12px;font:12.5px/1.45 system-ui,Arial;color:#17212a;box-shadow:0 3px 14px rgba(0,0,0,.2);display:none';
-  d.innerHTML = '<b>MCCB QF0 aansluiten (per AIO)</b><ol style="margin:6px 0 0 18px;padding:0"><li>Spanningsloos: ' + (NO_JB ? 'SL2-groep in de HVK' : 'JB-groep') + ' van deze AIO uit + vergrendelen, MCCB uit</li><li>Beschermkap (4 × M5) eraf</li>' + (NO_JB ? '<li>' + AIOKAB.txt + ' door de grote wartel in de gele wartelplaat omhoog, mantel net boven de wartel afstrippen, 4 aders uitwaaieren</li>' : '<li>4 × 1×70 mm² Cu (L1 L2 L3 N) door de kegelwartels in de gele wartelplaat omhoog</li>') + '<li>Op lengte, kabelschoen ' + (NO_JB ? AIOKAB.mm : 70) + ' mm² / M10 persen, krimpkous in fasekleur</li><li>Kabelschoen onder de juiste vlag: van boven N · L3 · L2 · L1 (gele markering op het front)</li><li>Bout M10 + ring + moer, aanhalen volgens Nader en markeren</li><li>PE/vereffening op de Cu-aardrail links</li><li>Wartels dicht, kap terug, draaiveld controleren</li></ol><div style="margin-top:6px;color:#6b7680">Uitgang rechts naar de PCS is fabrieksbedrading.</div>';
+  d.innerHTML = '<b>MCCB QF0 aansluiten (per AIO)</b><ol style="margin:6px 0 0 18px;padding:0"><li>Spanningsloos: ' + (NO_JB ? 'SL2-groep in de HVK' : 'JB-groep') + ' van deze AIO uit + vergrendelen, MCCB uit</li><li>Beschermkap (4 × M5) eraf</li>' + (NO_JB ? '<li>' + AIOKAB.txt + ' door de grote wartel in de gele wartelplaat omhoog, mantel net boven de wartel afstrippen, 4 aders uitwaaieren</li>' : '<li>4 × 1×70 mm² Cu (L1 L2 L3 N) door de kegelwartels in de gele wartelplaat omhoog</li>') + '<li>Op lengte, kabelschoen ' + (NO_JB ? AIOKAB.mm : 70) + ' mm² / M10 persen, krimpkous in fasekleur</li><li>Kabelschoen onder de juiste vlag — van links naar rechts N · L3 · L2 · L1 (N en L2 achter, L3 en L1 voor); gele poolmarkering op vlag en front, kabelmerker op de ader</li><li>Bout M10 + ring + moer, aanhalen volgens Nader en markeren</li><li>PE/vereffening op de groene Cu-aardrail uiterst links</li><li>Wartels dicht, kap terug, draaiveld controleren</li></ol><div style="margin-top:6px;color:#6b7680">Uitgang rechts naar de PCS is fabrieksbedrading.</div>';
   document.body.appendChild(d); }
-const zetMuitleg = v => { MUITLEG.visible = false; /* callouts uit (losse labels in de ruimte) — alleen de stappenkaart */ document.getElementById('mccbKaart').style.display = v ? 'block' : 'none'; if(v){ KAP_MCCB.forEach(k => k.visible = false); const c = document.getElementById('tKapM'); if(c) c.checked = false; } };
+const zetMuitleg = v => { MUITLEG.visible = false; AIO[0].CTRL.forEach(o => o.visible = !v); /* callouts uit (losse labels in de ruimte) — alleen de stappenkaart */ document.getElementById('mccbKaart').style.display = v ? 'block' : 'none'; if(v){ KAP_MCCB.forEach(k => k.visible = false); const c = document.getElementById('tKapM'); if(c) c.checked = false; } };
 Object.keys(VIEWS).forEach(id => document.getElementById(id).addEventListener('click', () => { if(FP.aan) zetFP(false); zetMuitleg(id === 'bMccb'); VIEWS[id](); }));
 VIEWS.bOverzicht();
 const ray = new THREE.Raycaster();
