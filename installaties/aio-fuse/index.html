@@ -1751,21 +1751,43 @@ const EMSV = (function(){
   return {G, K2, zet: v => { G.visible = v; K2.visible = v; }};
 })();
 
+// ---------- vrije zone (dia 35): 700 rondom; JB-zijde eerst de deurzwaai (700), EMS-zijde eerst de deurzwaai (785); achter 1000; voor deur 953 + 700 = 1650 ----------
+const ZN = {x0: SX0 - 7.0 - 7.0, x1: SXE + 7.85 + 7.0, z0: AZ - AD/2 - 10, z1: AZ + AD/2 + 16.5}; ZN.hx0 = ZN.x0 - 3; ZN.hx1 = ZN.x1 + 3; ZN.hz0 = ZN.z0 - 3; ZN.hz1 = ZN.z1 + 3;
 // ---------- maatvoering ----------
 { const mL = new THREE.LineBasicMaterial({color: 0x1a4f9c, depthTest: false, transparent: true});
   const maat = (a, b, off, txt) => { const g = new THREE.Group(); const a2 = a.clone().add(off), b2 = b.clone().add(off);
     [[a, a2], [b, b2], [a2, b2]].forEach(([p, q]) => { const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([p, q]), mL); l.renderOrder = 9; g.add(l); });
     g.add(sprite(txt, a2.clone().add(b2).multiplyScalar(0.5).add(off.clone().normalize().multiplyScalar(1.6)), 0.6)); g.visible = false; scene.add(g); MAAT.push(g); };
-  maat(V(PX0, PL_H, PL/2), V(PX1, PL_H, PL/2), V(0, 0, 6), 'stelconplaten ' + PLW.map(w => Math.round(w*100)).join(' + ') + ' = ' + Math.round(PL_TOT*100) + ' (speling ' + Math.round((PL_TOT - (SXE - SX0))*100) + ')');
-  maat(V(XA(0) - AW/2, SKY, AD/2), V(XA(N_AIO - 1) + AW/2, SKY, AD/2), V(0, 0, 3.5), N_AIO + ' × metal base 1020 = ' + N_AIO*1020);
-  maat(V(XA(N_AIO - 1) - CW/2, SKY + AH, AD/2), V(XA(N_AIO - 1) + CW/2, SKY + AH, AD/2), V(0, 3, 0), 'kast 1000');
-  maat(V(SX1, SKY + AH, -AD/2), V(SX1, SKY + AH, AD/2), V(3, 3, 0), '1420');
-  maat(V(SX1, SKY, AD/2), V(SX1, SKY + AH, AD/2), V(3, 0, 3), '2250');
-  maat(V(SX1, PL_H, -AD/2), V(SX1, SKY, -AD/2), V(3, 0, -2), 'metal base 220');
-  maat(V(KXW - KD/2, KT, KZW + KW/2), V(KXW - KD/2, KT, KZW - KW/2), V(-3, 3, 0), 'junction box 1400');
-  maat(V(KXW - KD/2, KT, KZW + KW/2), V(KXW + KD/2, KT, KZW + KW/2), V(0, 3, 2), '355 (kap 375)');
-  maat(V(KXW - KD/2, PL_H, KZW + KW/2), V(KXW - KD/2, KT, KZW + KW/2), V(-3, 0, 2), '220 + 1315 + 35 = 1570');
-  maat(V(XA(0) - 4, SKY + 1, AD/2), V(XA(0) - 4, SKY + 1, AD/2 + 30), V(-2, 0, 0), 'vrije ruimte voor ≥ 3000');
+  const mm = d => Math.round(d*100);
+  const KT2 = PL_H + KP + KH + 0.35, EH = 13.9;                                                                  // JB-bovenkant incl. kap · EMS-kast ± 1390 hoog (model)
+  // 1 AIO (de eerste) — l × b × h
+  maat(V(XA(0) - AW/2, PL_H, AZ + AD/2), V(XA(0) + AW/2, PL_H, AZ + AD/2), V(0, 0, 4), 'AIO: 1020');
+  maat(V(XA(0) - AW/2, PL_H, AZ + AD/2), V(XA(0) - AW/2, SKY + AH, AD/2 + AZ), V(-2.5, 0, 2), 'AIO: 2470 (base 220 + kast 2250)');
+  // alle AIO's
+  maat(V(XA(0) - AW/2, SKY + AH, AZ + AD/2), V(XA(N_AIO - 1) + AW/2, SKY + AH, AZ + AD/2), V(0, 4, 0), N_AIO + ' × AIO: ' + N_AIO*1020 + ' × 1420 × 2470');
+  maat(V(XA(N_AIO - 1) + AW/2, SKY + AH, AZ - AD/2), V(XA(N_AIO - 1) + AW/2, SKY + AH, AZ + AD/2), V(3, 3, 0), '1420');
+  // junction box
+  maat(V(KXW - KD/2, KT2, KZW - KW/2), V(KXW - KD/2, KT2, KZW + KW/2), V(-3, 3, 0), 'JB: 1400 × 375 × 1570');
+  // EMS-kast
+  maat(V(SXE, PL_H + EH, AZ - 3.925), V(SXE, PL_H + EH, AZ + 3.925), V(3, 3, 0), 'EMS: 785 × 472 × 1390');
+  // stelconrij
+  maat(V(PX0, PL_H, PL/2), V(PX1, PL_H, PL/2), V(0, 0, 8), 'stelcon ' + PLW.map(w => mm(w)).join(' + ') + ' = ' + mm(PL_TOT));
+  // hekwerk
+  maat(V(ZN.hx0, 0, ZN.hz1), V(ZN.hx1, 0, ZN.hz1), V(0, 0, 5), 'hekwerk: ' + mm(ZN.hx1 - ZN.hx0) + ' × ' + mm(ZN.hz1 - ZN.hz0) + ' × 2000');
+  maat(V(ZN.hx1, 0, ZN.hz0), V(ZN.hx1, 0, ZN.hz1), V(5, 0, 0), mm(ZN.hz1 - ZN.hz0) + '');
+  // overzichtskaart
+  const rij = (n, l, b, h, extra) => `<tr><td>${n}</td><td>${l}</td><td>${b}</td><td>${h}</td><td style="color:#6b7680">${extra || ''}</td></tr>`;
+  const kaart = document.createElement('div'); kaart.id = 'maatKaart'; kaart.style.cssText = 'position:fixed;left:14px;bottom:14px;z-index:25;background:rgba(255,255,255,.96);border-left:4px solid #1a4f9c;border-radius:8px;padding:9px 12px;font:12.5px/1.4 system-ui,Arial;color:#17212a;box-shadow:0 3px 14px rgba(0,0,0,.2);display:none;max-width:calc(100vw - 28px);overflow:auto';
+  kaart.innerHTML = '<b>Maatvoering (mm) — l × b × h</b><table style="border-collapse:collapse;margin-top:4px"><tr style="color:#6b7680"><td style="padding-right:12px"></td><td style="padding-right:10px">l</td><td style="padding-right:10px">b</td><td style="padding-right:10px">h</td><td></td></tr>'
+    + rij('AIO (per stuk)', 1020, 1420, 2470, 'kast 1000 × 1420 × 2250 op base 220')
+    + rij(N_AIO + ' × AIO', N_AIO*1020, 1420, 2470, '')
+    + rij('Junction box', 1400, 375, 1570, 'plint 220 + romp 1315 + kap 35')
+    + rij('EMS-kast', 785, 472, 1390, 'Pegeo KVSP1-413')
+    + rij('Stelconrij', mm(PL_TOT), 2000, 140, PLW.map(w => mm(w)).join(' + '))
+    + rij('Vrije zone', mm(ZN.x1 - ZN.x0), mm(ZN.z1 - ZN.z0), '', '700 rondom (na deurzwaai JB/EMS) · achter 1000 · voor 1650')
+    + rij('Hekwerk', mm(ZN.hx1 - ZN.hx0), mm(ZN.hz1 - ZN.hz0), 2000, '300 buiten de vrije zone')
+    + '</table>';
+  kaart.querySelectorAll('td').forEach(td => td.style.padding = '1px 10px 1px 0'); document.body.appendChild(kaart);
 }
 
 // ---------- referentiepersoon ----------
@@ -1813,7 +1835,7 @@ function updateCam(){ camera.position.set(target.x + radius*Math.sin(phi)*Math.s
 // ---------- veiligheidsafstanden (Delta-handleiding / dia 35): 700 opzij, 1000 achter, 1650 voor (deurzwaai 953 + 700) — rond JB · AIO's · EMS ----------
 const ZONEA = new THREE.Group(); ZONEA.visible = false; scene.add(ZONEA);
 const HEKA = new THREE.Group(); scene.add(HEKA);
-{ const zx0 = SX0 - 7, zx1 = SXE + 7, zz0 = AZ - AD/2 - 10, zz1 = AZ + AD/2 + 16.5, y = PL_H + 0.05;
+{ const zx0 = ZN.x0, zx1 = ZN.x1, zz0 = ZN.z0, zz1 = ZN.z1, y = PL_H + 0.05;
   const lm = new THREE.LineBasicMaterial({color: 0x2e9e4f, depthTest: false}), streep = new THREE.LineDashedMaterial({color: 0x2e9e4f, dashSize: 1.2, gapSize: 0.8, depthTest: false});
   const rand = new THREE.Line(new THREE.BufferGeometry().setFromPoints([V(zx0, y, zz0), V(zx1, y, zz0), V(zx1, y, zz1), V(zx0, y, zz1), V(zx0, y, zz0)]), streep); rand.computeLineDistances(); rand.renderOrder = 9; ZONEA.add(rand);
   const vlak = new THREE.Mesh(new THREE.PlaneGeometry(zx1 - zx0, zz1 - zz0), new THREE.MeshBasicMaterial({color: 0x2e9e4f, transparent: true, opacity: 0.12, depthWrite: false})); vlak.rotation.x = -Math.PI/2; vlak.position.set((zx0 + zx1)/2, y, (zz0 + zz1)/2); ZONEA.add(vlak);
@@ -1824,7 +1846,7 @@ const HEKA = new THREE.Group(); scene.add(HEKA);
   zm(V(zx1, y, zz0), V(zx1, y, zz1), V(3, 0, 0), mm(zz1 - zz0) + ' mm');
   zm(V(XA(0), y, AZ + AD/2), V(XA(0), y, zz1), V(0, 0, 0), 'voor ' + mm(zz1 - AZ - AD/2) + ' (deur 953 + 700)');
   zm(V(XA(0), y, zz0), V(XA(0), y, AZ - AD/2), V(0, 0, 0), 'achter ' + mm(AZ - AD/2 - zz0));
-  zm(V(zx0, y, AZ), V(SX0, y, AZ), V(0, 0, 0), '700'); zm(V(SXE, y, AZ), V(zx1, y, AZ), V(0, 0, 0), '700');
+  zm(V(zx0, y, AZ), V(SX0, y, AZ), V(0, 0, 0), 'deur JB 700 + 700'); zm(V(SXE, y, AZ), V(zx1, y, AZ), V(0, 0, 0), 'deur EMS 785 + 700');
   // hekwerk: verzinkt dubbelstaafmat 2,0 m, 300 mm buiten de vrije zone; dubbele poort 2 × 1,5 m voor de AIO-deuren, vluchtdeur 1,1 m achter (draait naar buiten, panieksluiting)
   const hx0 = zx0 - 3, hx1 = zx1 + 3, hz0 = zz0 - 3, hz1 = zz1 + 3, H = 20, gx = (XA(0) + XA(N_AIO - 1))/2, vx = gx;
   const gaas = ctex(256, 512, (c, Wc, Hc) => { c.clearRect(0, 0, Wc, Hc); c.fillStyle = '#9aa1a5'; for(let x = 0; x < Wc; x += 13) c.fillRect(x, 0, 3, Hc); for(let y2 = 6; y2 < Hc; y2 += 51){ c.fillRect(0, y2, Wc, 3); c.fillRect(0, y2 + 5, Wc, 3); } });
@@ -1937,7 +1959,7 @@ $t('tKapM').addEventListener('change', e => KAP_MCCB.forEach(k => k.visible = e.
 $t('tKapS').addEventListener('change', e => KAP_SL.forEach(k => k.visible = e.target.checked));
 $t('tKabel').addEventListener('change', e => { KAB.visible = KABK.visible = e.target.checked; KABDEEL.forEach(o => o.visible = e.target.checked); });
 $t('tLabel').addEventListener('change', e => LABELS.forEach(l => l.visible = e.target.checked));
-$t('tMaat').addEventListener('change', e => MAAT.forEach(g => g.visible = e.target.checked));
+$t('tMaat').addEventListener('change', e => { MAAT.forEach(g => g.visible = e.target.checked); document.getElementById('maatKaart').style.display = e.target.checked ? 'block' : 'none'; });
 // ---- rondlopen ----
 const FP = {aan: false, pos: new THREE.Vector3(), yaw: 0, pitch: 0, oog: 17, keys: {}, step: false, tuk: false, v: 0};
 function zetFP(aan){
