@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Projectplan generator · Fudura</title>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Afgeschermde schil: de generator zelf staat in de database en wordt pas na een geldige code geladen. */
+:root{--navy:#0b2a4a;--navy-2:#123a63;--sky:#36b0e2;--sky-soft:#e4f4fb;--bg:#f3f7fa;--surface:#fff;--line:#d8e3eb;--fg:#0f2233;--muted:#5b6e7d;--bad:#b3362c;
+  --f-display:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;--f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:light}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font:14px/1.4 var(--f-body)}
+body{display:flex;flex-direction:column}
+[hidden]{display:none!important}
+header{background:var(--navy);color:#fff;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:8px max(14px,env(safe-area-inset-right,0px)) 8px max(14px,env(safe-area-inset-left,0px));padding-top:calc(8px + env(safe-area-inset-top,0px));border-bottom:2px solid var(--sky)}
+header .brand{font:600 11px var(--f-display);letter-spacing:.14em;color:var(--sky)}
+header h1{font:700 19px var(--f-display);margin:0}
+header .sp{flex:1}
+header a,header button{color:#fff;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.25);border-radius:7px;padding:5px 10px;font:500 13px var(--f-body);text-decoration:none;cursor:pointer}
+header a:hover,header button:hover{background:rgba(255,255,255,.16)}
+.info{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--sky-soft);border-bottom:1px solid #bfe3f3;font-size:13px;
+  padding:6px max(14px,env(safe-area-inset-right,0px)) 6px max(14px,env(safe-area-inset-left,0px))}
+.info b{color:var(--navy)}
+.info button{border:1px solid var(--navy);background:var(--navy);color:#fff;border-radius:6px;padding:3px 10px;font:600 12px var(--f-body);cursor:pointer}
+main{flex:1;display:flex;min-height:0}
+iframe{flex:1;border:0;width:100%;min-height:70vh;background:#fff}
+.center{flex:1;display:grid;place-items:center;padding:24px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px))}
+.box{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--sky);border-radius:10px;padding:22px;width:min(400px,100%);display:flex;flex-direction:column;gap:12px;box-shadow:0 4px 14px rgba(11,42,74,.08)}
+.box h2{font:700 22px var(--f-display);margin:0;color:var(--navy)}
+.box p{margin:0;color:var(--muted)}
+.box input{border:1px solid var(--line);border-radius:6px;padding:9px 10px;font:22px var(--f-body);letter-spacing:.35em;text-align:center;width:100%}
+.box .btn{background:var(--navy);color:#fff;border:0;border-radius:7px;padding:9px 12px;font:600 14px var(--f-body);cursor:pointer}
+.box .btn[disabled]{opacity:.5;cursor:default}
+.err{color:var(--bad);font-size:13px;min-height:1.2em}
+.small{font-size:12px;color:var(--muted)}
+:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
+</style>
+</head>
+<body>
+<header>
+  <span class="brand">FUDURA</span><h1>Projectplan generator</h1><span class="sp"></span>
+  <span class="small" id="ver" style="color:#a9cfe6"></span>
+  <button type="button" id="upBtn" hidden>Nieuwe versie uploaden</button>
+  <input type="file" id="upFile" accept=".html,.htm,text/html" hidden>
+  <a href="/projecten/">Projectmanagement systeem</a>
+  <button type="button" id="outBtn" hidden>Afmelden</button>
+</header>
+<div class="info" id="info" hidden></div>
+<main id="main"><div class="center"><div class="box"><h2>Laden…</h2></div></div></main>
+
+<script>
+const ADMIN_ONLY=true; /* gelijk aan het projectmanagement systeem: nu alleen de beheerderscode */
+const SB_URL="https://mamiqenxpnjfwfcpuixv.supabase.co",SB_KEY="sb_publishable_GLADcv4OMUnr0rkODpa7cw_R-GGcr4g",ASSET="projectplan-generator";
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const get=(st,k)=>{try{return st.getItem(k)}catch(e){return null}},put=(st,k,v)=>{try{v==null?st.removeItem(k):st.setItem(k,v)}catch(e){}};
+async function rpc(fn,args){const r=await fetch(SB_URL+"/rest/v1/rpc/"+fn,{method:"POST",headers:{apikey:SB_KEY,"Content-Type":"application/json"},body:JSON.stringify(args)});
+  if(!r.ok)throw{code:"server",status:r.status};const j=await r.json();if(j&&j.error)throw{code:j.error};return j}
+let code=null,role="";
+
+function loginView(msg){
+  $("#outBtn").hidden=true;$("#upBtn").hidden=true;$("#info").hidden=true;$("#ver").textContent="";
+  $("#main").innerHTML=`<div class="center"><form class="box" id="lf" autocomplete="off">
+    <h2>Afgeschermd</h2><p>Voer de toegangscode van het projectmanagement systeem in.</p>
+    <label for="lc" class="small">Toegangscode</label><input id="lc" inputmode="numeric" maxlength="12" autocomplete="one-time-code">
+    <div class="err" role="alert">${esc(msg||"")}</div><button class="btn" type="submit" id="lb">Openen</button></form></div>`;
+  $("#lc").focus();
+  $("#lf").addEventListener("submit",async e=>{e.preventDefault();const c=$("#lc").value.trim();if(!c)return;$("#lb").disabled=true;
+    try{const j=await rpc("pb_check",{p_code:c});if(ADMIN_ONLY&&j.role!=="Beheerder")throw{code:"bad"};code=c;role=j.role||"";put(sessionStorage,"pb-code",c);open()}
+    catch(err){$("#lb").disabled=false;$(".err").textContent=err.code==="bad"?"Onjuiste code.":err.code==="locked"?"Te veel foute pogingen. Probeer het over 15 minuten opnieuw.":"De server is niet bereikbaar."}});
+}
+
+async function showProject(){
+  const id=(location.hash||"").replace(/^#p-/,"");if(!id||id===location.hash)return;
+  try{const j=await rpc("pb_list",{p_code:code});const p=(j.projects||[]).find(x=>x.id===id);if(!p)return;
+    const f=(d)=>{if(!d)return"";const x=new Date(d.slice(0,10)+"T12:00:00");return isNaN(x)?"":x.toLocaleDateString("nl-NL",{day:"2-digit",month:"2-digit",year:"numeric"})};
+    const L=[["Projectnummer",p.nr],["Projectnaam",p.name],["Klant",p.client],["Contactpersoon",p.contact],["Locatie",p.loc],["EAN-code",p.ean],["Batterij",p.power],["Aantal AIO's",p.units],
+      ["Projectleider",p.owner],["Sales engineer",p.engineer],["Detailengineer",p.detail],["Tekenaar",p.drafter],["Werkvoorbereider",p.wvb],["Aannemer",p.contractor],["Gewenste oplevering",f(p.due)]].filter(x=>x[1]);
+    const txt=L.map(([k,v])=>k+": "+v).join("\n");
+    $("#info").innerHTML=`<span>Voor project <b>${esc((p.nr?p.nr+" – ":"")+p.name)}</b>${p.client?" · "+esc(p.client):""}${p.loc?", "+esc(p.loc):""}</span><button type="button" id="cp">Kopieer projectgegevens</button>`;
+    $("#info").hidden=false;
+    $("#cp").onclick=async()=>{try{await navigator.clipboard.writeText(txt);$("#cp").textContent="Gekopieerd"}catch(e){const t=document.createElement("textarea");t.value=txt;document.body.appendChild(t);t.select();try{document.execCommand("copy")}catch(_){}t.remove();$("#cp").textContent="Gekopieerd"}setTimeout(()=>$("#cp").textContent="Kopieer projectgegevens",1800)};
+  }catch(e){}
+}
+
+async function open(){
+  $("#outBtn").hidden=false;$("#upBtn").hidden=role!=="Beheerder";
+  $("#main").innerHTML=`<div class="center"><div class="box"><h2>Generator laden…</h2></div></div>`;
+  showProject();
+  try{
+    const j=await rpc("pb_asset_get",{p_code:code,p_name:ASSET});
+    $("#ver").textContent=j.updatedAt?"versie "+new Date(j.updatedAt).toLocaleString("nl-NL",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}):"";
+    $("#main").innerHTML="";const fr=document.createElement("iframe");fr.title="Projectplan generator";
+    fr.setAttribute("sandbox","allow-scripts allow-downloads allow-popups allow-modals allow-forms allow-same-origin");
+    fr.srcdoc=j.html;$("#main").appendChild(fr);
+  }catch(e){
+    if(e.code==="bad"){put(sessionStorage,"pb-code",null);put(localStorage,"pb-code",null);code=null;loginView("De code is niet (meer) geldig.");return}
+    const nf=e.code==="not_found";
+    $("#main").innerHTML=`<div class="center"><div class="box"><h2>${nf?"Nog geen generator geüpload":"Laden lukte niet"}</h2>
+      <p>${nf?(role==="Beheerder"?"Exporteer de generator uit Claude Design als HTML-bestand en upload hem met de knop rechtsboven.":"De beheerder moet de generator nog uploaden."):"Controleer je verbinding en herlaad de pagina."}</p></div></div>`;
+  }
+}
+
+$("#outBtn").onclick=()=>{put(sessionStorage,"pb-code",null);put(localStorage,"pb-code",null);code=null;loginView()};
+$("#upBtn").onclick=()=>$("#upFile").click();
+$("#upFile").onchange=async()=>{const f=$("#upFile").files[0];$("#upFile").value="";if(!f)return;
+  if(f.size>8e6){alertBox("Het bestand is groter dan 8 MB.");return}
+  const html=await f.text();$("#upBtn").disabled=true;$("#upBtn").textContent="Uploaden…";
+  try{await rpc("pb_asset_put",{p_code:code,p_name:ASSET,p_html:html,p_by:get(localStorage,"pb-naam")||"Beheerder"});$("#upBtn").textContent="Geüpload";open()}
+  catch(e){$("#upBtn").textContent=e.code==="forbidden"?"Alleen de beheerder kan uploaden":"Upload mislukt"}
+  setTimeout(()=>{$("#upBtn").disabled=false;$("#upBtn").textContent="Nieuwe versie uploaden"},2500)};
+function alertBox(m){$("#ver").textContent=m}
+
+(async()=>{
+  const saved=get(sessionStorage,"pb-code")||get(localStorage,"pb-code");
+  if(saved){try{const j=await rpc("pb_check",{p_code:saved});if(ADMIN_ONLY&&j.role!=="Beheerder")throw 0;code=saved;role=j.role||"";open();return}catch(e){}}
+  loginView();
+})();
+window.addEventListener("hashchange",()=>{if(code)showProject()});
+</script>
+</body>
+</html>

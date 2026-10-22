@@ -821,7 +821,7 @@ function inboxHTML(){
       </button>
       ${open?`<div class="ib-body">${actsOf(p,p.phase).filter(a=>isMine(a,p)).map(a=>{const w=waitsOn(p,a),done=isClosed(a),ed=effDue(p,a),late2=ed&&ed<todayStr()&&!done;return `<label class="taskrow ${done?"done":""} ${w&&!done?"waiting":""}">
         <input type="checkbox" data-done="${a.id}" data-proj="${esc(p.id)}" ${a.status==="afgerond"?"checked":""} ${a.status==="nvt"||!canDo(p,a)?"disabled":""}>
-        <span class="tr-title">${esc(a.title)}${toolFor(a)&&!done?` <a class="toollink" href="${esc(toolFor(a).url)}" target="_blank" rel="noopener" title="${esc(toolFor(a).label)}">${esc(toolFor(a).label)} ↗</a>`:""}${w&&!done?` <span class="wait" title="Wacht op: ${esc(w.title)}">⊘ wacht op vorige stap</span>`:""}</span>
+        <span class="tr-title">${esc(a.title)}${toolFor(a)&&!done?` <a class="toollink" href="${esc(toolUrl(p,toolFor(a)))}" target="_blank" ${toolRel(toolFor(a))} title="${esc(toolFor(a).label)}">${esc(toolFor(a).label)} ↗</a>`:""}${w&&!done?` <span class="wait" title="Wacht op: ${esc(w.title)}">⊘ wacht op vorige stap</span>`:""}</span>
         <span class="tr-due ${late2?"late":""}" title="${isStdDue(a)?"Standaarddeadline":"Deadline"}">${done&&a.doneAt?"✓ "+fmtDate(a.doneAt):ed?fmtDate(ed):"—"}</span></label>`}).join("")}
         <div class="ib-actions"><button class="btn" type="button" data-open="${esc(p.id)}">Project openen →</button>${canEditHead()&&p.phase<5?(()=>{const open=actsOf(p,p.phase).filter(a=>!isClosed(a)&&!a.trans).length,blk=gateOpen(p);
           return `<button class="btn ${open||blk?"":"primary"}" type="button" data-movefrom="${esc(p.id)}" ${blk?`disabled title="Eerst afronden: ${esc(blk.title)}"`:""}>Toewijzen fase ${esc(PHASES[p.phase+1].label)} →</button>${open?`<span class="small">${open} open in deze fase</span>`:""}`})():""}</div></div>`:""}
@@ -954,8 +954,11 @@ function actBadges(a){const c=effChk(a),b=[];
   if((a.comments||[]).length)b.push(`<span class="abadge" title="Opmerkingen">✎ ${a.comments.length}</span>`);
   return b.length?`<span class="abadges">${b.join("")}</span>`:"";}
 const DEFAULT_TOOLS={
-  "projectplan opstellen":{label:"Projectplan maken",url:"https://claude.ai/design/p/93e1b5c1-a9d7-481c-b4d4-803d90ed9241?file=Projectplan+Configurator.dc.html"}
+  "projectplan opstellen":{label:"Projectplan maken",url:"/projectplan/"}
 };
+/* interne hulpmiddelen krijgen het project mee, zodat de gegevens daar klaarstaan */
+function toolUrl(p,t){return t.url.startsWith("/")?t.url+"#p-"+p.id:t.url}
+const toolRel=t=>t.url.startsWith("/")?"":'rel="noopener"';
 function toolFor(a){const k=(a.title||"").toLowerCase(),t=S.team&&S.team.tools&&S.team.tools[k];return t&&t.url?t:(t&&t.off?null:DEFAULT_TOOLS[k]||null)}
 function projectInfoText(p){
   const L=[["Projectnummer",p.nr],["Projectnaam",p.name],["Klant",p.client],["Contactpersoon",p.contact],["Locatie",p.loc],["EAN-code",p.ean],
@@ -972,7 +975,7 @@ async function saveTool(title,tool){
 }
 function toolHTML(p,a){
   const t=toolFor(a);
-  return `<div class="tool">${t?`<a class="btn primary" href="${esc(t.url)}" target="_blank" rel="noopener">${esc(t.label||"Openen")} ↗</a>`:""}
+  return `<div class="tool">${t?`<a class="btn primary" href="${esc(toolUrl(p,t))}" target="_blank" ${toolRel(t)}>${esc(t.label||"Openen")} ↗</a>`:""}
     <button class="btn" type="button" data-copyinfo="${esc(p.id)}">Kopieer projectgegevens</button>
     ${isAdmin()?(S.editTool===a.id?`<form class="adform" data-form="tool" data-aid="${a.id}"><input name="tl" value="${esc(t?t.label:"")}" placeholder="Knoptekst, bv. Projectplan maken"><input name="tu" value="${esc(t?t.url:"")}" placeholder="https://… (leeg = geen knop)"><button class="btn" type="submit">Opslaan</button></form>`
       :`<button class="btn ghost" type="button" data-edittool="${a.id}">${t?"Koppeling wijzigen":"Hulpmiddel koppelen"}</button>`):""}
@@ -1011,7 +1014,7 @@ function dashHTML(p){
   const actRows=acts.map(a=>{const w=waitsOn(p,a),edd=effDue(p,a),late=edd&&edd<t&&!isClosed(a),std=!a.due;return `<tr data-aid="${a.id}" class="${a.status==="afgerond"?"is-done":""} ${a.status==="nvt"?"is-nvt":""}">
     <td>${canDo(p,a)?`<select class="st-sel st-${a.status}" data-af="status" aria-label="Status" ${a.doneAt?`title="Afgerond op ${fmtDate(a.doneAt)}"`:""}>${Object.entries(ACT_ST).map(([k,v])=>`<option value="${k}" ${a.status===k?"selected":""}>${v}</option>`).join("")}</select>`
       :`<span class="stpill st-${a.status}" title="${a.doneAt?"Afgerond op "+fmtDate(a.doneAt):"Alleen "+esc(effOwner(p,a)||"de "+a.role.toLowerCase())+" kan deze taak afronden"}">${ACT_ST[a.status]}</span>`}</td>
-    <td class="desc"><button type="button" class="actname" data-openact="${a.id}" aria-expanded="${S.openAct===a.id}"><span class="chev">▸</span> ${esc(a.title)}</button>${toolFor(a)?` <a class="toollink" href="${esc(toolFor(a).url)}" target="_blank" rel="noopener" title="${esc(toolFor(a).label)}">↗</a>`:""}${w?` <span class="wait" title="Wacht op: ${esc(w.title)}">⊘ wacht</span>`:""}${actBadges(a)}</td>
+    <td class="desc"><button type="button" class="actname" data-openact="${a.id}" aria-expanded="${S.openAct===a.id}"><span class="chev">▸</span> ${esc(a.title)}</button>${toolFor(a)?` <a class="toollink" href="${esc(toolUrl(p,toolFor(a)))}" target="_blank" ${toolRel(toolFor(a))} title="${esc(toolFor(a).label)}">↗</a>`:""}${w?` <span class="wait" title="Wacht op: ${esc(w.title)}">⊘ wacht</span>`:""}${actBadges(a)}</td>
     <td>${canEditHead()?`<select data-af="owner" aria-label="Behandelaar" class="ownersel">${personOptions(a.role,a.owner||"",teamDefault(p,a)?teamDefault(p,a):"Iedere "+(a.role||"collega").toLowerCase())}</select>`:`<span>${esc(effOwner(p,a)||"Iedere "+(a.role||"collega").toLowerCase())}</span>`}</td>
     <td>${S.editDue===a.id?`<input type="date" data-af="due" id="dueEdit" value="${esc(a.due||edd||"")}" aria-label="Deadline">`
       :canEditHead()?`<button type="button" class="duebtn ${late?"late":""} ${std?"std":""}" data-editdue="${a.id}" title="${std?"Standaarddeadline · klik om aan te passen":"Klik om aan te passen"}">${edd?fmtDate(edd):"—"}</button>`
