@@ -1787,7 +1787,9 @@ const ZN = {x0: SX0 - 7.0 - (NO_JB ? 0 : 7.0), x1: SXE + 7.85 + 7.0, z0: AZ - AD
   maat(V(KXW - KD/2 - 0.2, KT2, KZW + KW/2), V(KXW + KD/2, KT2, KZW + KW/2), V(0, 3, 3), 'JB b: 375');
   maat(V(KXW - KD/2, PL_H, KZW + KW/2), V(KXW - KD/2, KT2, KZW + KW/2), V(-3, 0, 3), 'JB h: 1570'); }
   // EMS-kast
-  maat(V(SXE, PL_H + EH, AZ - 3.925), V(SXE, PL_H + EH, AZ + 3.925), V(3, 3, 0), 'EMS: 785 × 472 × 1390');
+  maat(V(SXE, PL_H + EH, AZ - 3.925), V(SXE, PL_H + EH, AZ + 3.925), V(3, 3, 0), 'EMS l: 785');
+  maat(V(SXE - 4.72, PL_H + EH, AZ + 3.925), V(SXE, PL_H + EH, AZ + 3.925), V(0, 3, 3), 'EMS b: 472');
+  maat(V(SXE, PL_H, AZ + 3.925), V(SXE, PL_H + EH, AZ + 3.925), V(3, 0, 3), 'EMS h: 1390');
   // stelconrij
   maat(V(PX0, PL_H, PL/2), V(PX1, PL_H, PL/2), V(0, 0, 8), 'stelcon ' + PLW.map(w => mm(w)).join(' + ') + ' = ' + mm(PL_TOT));
   // hekwerk
