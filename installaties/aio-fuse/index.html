@@ -82,7 +82,7 @@
     <div class="grp">Algemeen</div>
     <label>Kabels <input type="checkbox" id="tKabel" checked></label>
     <label>Grond doorzichtig <input type="checkbox" id="tGrond" checked></label>
-    <label>Kabelgeul dichtgooien <input type="checkbox" id="tGeul"></label>
+    <label>Kabelgeul dicht (backfillzand) <input type="checkbox" id="tGeul"></label>
     <label>Labels <input type="checkbox" id="tLabel"></label>
     <label>Maatvoering <input type="checkbox" id="tMaat"></label>
     <div class="grp">AIO's</div>
@@ -1678,15 +1678,14 @@ CAT = 'data';
   for(const x of [xa - 0.3, xb + 0.3]) box(SG, 0.6, -yb, L, grondM, x, yb/2, zc);                                                     // sleufwanden
   for(const z of [T.z0 - 0.3, T.z1 + 0.3]) box(SG, xb - xa + 1.2, -yb, 0.6, grondM, (xa + xb)/2, yb/2, z);
   for(let z = T.z0 + 6; z < T.z1 - 3; z += 12) for(const x of [xa - 0.62, xb + 0.62]) box(SG, 0.1, 0.4, 3, M(0x7b6a52, {roughness: 1}), x, -0.6 - Math.random()*3, z, false);
-  // geul dicht (knop): zand tot 100 mm boven de kabels, rood afdeklint, aanvulgrond en graszode — doorzichtig mee met "Grond doorzichtig"
+  // geul dicht (knop): volledig backfillzand (ρ ≤ 1 K·m/W), rood afdeklint, graszode — doorzichtig mee met "Grond doorzichtig"
   { const F = new THREE.Group(); F.visible = false; SG.add(F); GEULDICHT = F; const cc = CAT; CAT = null;
-    const zandV = M(0xd9c08a, {roughness: 1}), grondV = M(0x6b5a44, {roughness: 1}); GRONDMAT.push(zandV, grondV);
+    const zandV = M(0xcbb994, {roughness: 1}); GRONDMAT.push(zandV);
     const yZ = T.yT + 1.0, yLint = -3.0;
-    box(F, xb - xa, yZ - (yb + 0.6), L, zandV, (xa + xb)/2, (yZ + yb + 0.6)/2, zc, false);
-    box(F, xb - xa, -0.3 - yZ, L, grondV, (xa + xb)/2, (yZ - 0.3)/2, zc, false);
+    box(F, xb - xa, -0.3 - (yb + 0.6), L, zandV, (xa + xb)/2, (-0.3 + yb + 0.6)/2, zc, false);                                    // volledig backfillzand (geen aanvulgrond): voorwaarde voor ρ = 1 K·m/W (cs 1,5)
     box(F, xb - xa + 1.2, 0.3, L + 1.2, matGras, (xa + xb)/2, -0.15, zc, false);
     box(F, Math.min(3.0, xb - xa - 0.4), 0.04, L, M(0xd8231b, {roughness: 0.6}), (xa + xb)/2 - 0.8, yLint, zc, false);
-    const td = sprite('geul dicht: zandbed tot 100 mm boven de kabels · rood afdeklint op ± 300 mm · aanvulgrond + graszode', W(V((xa + xb)/2, 2.5, zc)), 0.6, '#6b5a44'); F.add(td); LABELS.push(td); td.visible = false; CAT = cc; }
+    const td = sprite('geul dicht met thermisch backfillzand (ρ ≤ 1 K·m/W, verdicht) tot onder de graszode · rood afdeklint op ± 300 mm — voorwaarde voor cs 1,5 in de kabelberekening', W(V((xa + xb)/2, 2.5, zc)), 0.6, '#6b5a44'); F.add(td); LABELS.push(td); td.visible = false; CAT = cc; }
   const t = sprite('kabelsleuf: 4 ketens (L1 L2 L3 N, 4 × 1×240) · 1 × De tussen de ketens · sleuf ≈ 1,15 m · 600 mm diep · rechts: 230 V JB en data (telkens 200 mm)', W(V((xa + xb)/2, 2.5, zc)), 0.6, '#6b5a44'); scene.add(t); LABELS.push(t);
   // grasvlak met een uitsparing boven de sleuf (wereld: KG is −90° gedraaid → x_w = KXW − z, z_w = KZW + x)
   const S = new THREE.Shape(); S.moveTo(-2000, -2000); S.lineTo(2000, -2000); S.lineTo(2000, 2000); S.lineTo(-2000, 2000); S.closePath();
