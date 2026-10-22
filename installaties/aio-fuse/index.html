@@ -82,6 +82,7 @@
     <div class="grp">Algemeen</div>
     <label>Kabels <input type="checkbox" id="tKabel" checked></label>
     <label>Grond doorzichtig <input type="checkbox" id="tGrond" checked></label>
+    <label>Kabelgeul dichtgooien <input type="checkbox" id="tGeul"></label>
     <label>Labels <input type="checkbox" id="tLabel"></label>
     <label>Maatvoering <input type="checkbox" id="tMaat"></label>
     <div class="grp">AIO's</div>
@@ -1065,7 +1066,7 @@ for(const [y, txt, zc, xa] of [[yNr, 'N', 76, [126, 827]], [yPEr, 'PE', 66, [127
 // NH-lastscheiderstroken Jean Müller: SL2 #1 (x 124–224), SL2 #2 (224–324), SL3-3x6/1250/HA (324–524), SL2 #3..#5 (524–824); railvoorkant 108 mm
 const JMZ = JZ(108);
 const JMR = new THREE.Group(); JMR.scale.setScalar(0.01); JMR.position.set(0, yRail[1], JMZ); KG.add(JMR);
-const TRENCH = {};                                                                                     // open kabelsleuf JB → gebouw (wordt bij de SL3 ingevuld)
+const TRENCH = {}; let GEULDICHT = null;                                                                                     // open kabelsleuf JB → gebouw (wordt bij de SL3 ingevuld)
 const SLOTS = [{t: 'SL2', c: 174, naar: 0}, {t: 'SL2', c: 274, naar: 1}, {t: 'SL3', c: 424, naar: -1}, {t: 'SL2', c: 574, naar: 2}, {t: 'SL2', c: 674, naar: 3}, {t: 'SL2', c: 774, naar: 4}];
 const matBlauwKap = new THREE.MeshStandardMaterial({color: 0x0a5fa8, roughness: 0.35, transparent: true, opacity: 0.88});
 SLOTS.forEach((s, n) => { const groot = s.t === 'SL3'; s.x = JX(s.c);
@@ -1677,6 +1678,15 @@ CAT = 'data';
   for(const x of [xa - 0.3, xb + 0.3]) box(SG, 0.6, -yb, L, grondM, x, yb/2, zc);                                                     // sleufwanden
   for(const z of [T.z0 - 0.3, T.z1 + 0.3]) box(SG, xb - xa + 1.2, -yb, 0.6, grondM, (xa + xb)/2, yb/2, z);
   for(let z = T.z0 + 6; z < T.z1 - 3; z += 12) for(const x of [xa - 0.62, xb + 0.62]) box(SG, 0.1, 0.4, 3, M(0x7b6a52, {roughness: 1}), x, -0.6 - Math.random()*3, z, false);
+  // geul dicht (knop): zand tot 100 mm boven de kabels, rood afdeklint, aanvulgrond en graszode — doorzichtig mee met "Grond doorzichtig"
+  { const F = new THREE.Group(); F.visible = false; SG.add(F); GEULDICHT = F; const cc = CAT; CAT = null;
+    const zandV = M(0xd9c08a, {roughness: 1}), grondV = M(0x6b5a44, {roughness: 1}); GRONDMAT.push(zandV, grondV);
+    const yZ = T.yT + 1.0, yLint = -3.0;
+    box(F, xb - xa, yZ - (yb + 0.6), L, zandV, (xa + xb)/2, (yZ + yb + 0.6)/2, zc, false);
+    box(F, xb - xa, -0.3 - yZ, L, grondV, (xa + xb)/2, (yZ - 0.3)/2, zc, false);
+    box(F, xb - xa + 1.2, 0.3, L + 1.2, matGras, (xa + xb)/2, -0.15, zc, false);
+    box(F, Math.min(3.0, xb - xa - 0.4), 0.04, L, M(0xd8231b, {roughness: 0.6}), (xa + xb)/2 - 0.8, yLint, zc, false);
+    const td = sprite('geul dicht: zandbed tot 100 mm boven de kabels · rood afdeklint op ± 300 mm · aanvulgrond + graszode', W(V((xa + xb)/2, 2.5, zc)), 0.6, '#6b5a44'); F.add(td); LABELS.push(td); td.visible = false; CAT = cc; }
   const t = sprite('kabelsleuf: 4 ketens (L1 L2 L3 N, 4 × 1×240) · 1 × De tussen de ketens · sleuf ≈ 1,15 m · 600 mm diep · rechts: 230 V JB en data (telkens 200 mm)', W(V((xa + xb)/2, 2.5, zc)), 0.6, '#6b5a44'); scene.add(t); LABELS.push(t);
   // grasvlak met een uitsparing boven de sleuf (wereld: KG is −90° gedraaid → x_w = KXW − z, z_w = KZW + x)
   const S = new THREE.Shape(); S.moveTo(-2000, -2000); S.lineTo(2000, -2000); S.lineTo(2000, 2000); S.lineTo(-2000, 2000); S.closePath();
@@ -1983,6 +1993,7 @@ $t('tDeurGeb').addEventListener('change', e => zetDeuren('geb', e.target.checked
 $t('tStrook').addEventListener('change', e => STROKEN.forEach(d => d.doel = e.target.checked ? d.open : d.dicht));
 $t('tGrond').addEventListener('change', e => { GRONDMAT.forEach(m => { m.transparent = e.target.checked; m.opacity = e.target.checked ? 0.35 : 1; m.depthWrite = !e.target.checked; m.needsUpdate = true; }); });
 $t('tGrond').dispatchEvent(new Event('change'));
+$t('tGeul').addEventListener('change', e => { if(GEULDICHT) GEULDICHT.visible = e.target.checked; });
 function zetSkid(a){ SKMAT.forEach(m => { m.transparent = a; m.opacity = a ? 0.18 : 1; m.depthWrite = !a; m.needsUpdate = true; }); }
 $t('tSkid').addEventListener('change', e => zetSkid(e.target.checked));
 $t('tTR').addEventListener('change', e => HVK.zetTR(e.target.checked));
