@@ -63,18 +63,20 @@
 <button class="pKnop" id="pOpen" title="Paneel openen" aria-label="Paneel openen">‹</button>
 <div id="paneel">
   <div id="pKop"><h3 id="titel"><a href="../../" style="color:#1b4f8a;text-decoration:none" title="Hoofdmenu">‹ menu</a> &nbsp;AIO + FUSE kast</h3><button class="pKnop" id="pDicht" title="Paneel inklappen" aria-label="Paneel inklappen">›</button></div>
-  <details open><summary>Bekijken</summary>
-    <div class="grp">Opstelling</div><div class="knoprij"><button id="bOverzicht">overzicht</button><button id="bBoven">boven</button><button id="bAchter">achterzijde</button><button id="bSkid">kabelbanen</button></div>
-    <div class="grp">AIO's</div><div class="knoprij"><button id="bAio">AIO 1</button><button id="bMccb">MCCB</button></div>
-    <div class="grp">Junction box</div><div class="knoprij"><button id="bKast">junction box</button></div>
-    <div class="grp">Gebouw</div><div class="knoprij"><button id="bGebouw">gebouw</button><button id="bHvk">HVK</button><button id="bMeter">meterkast</button><button id="bKelder">kelder</button></div>
-    <label>Rondlopen <small>P</small><input type="checkbox" id="tFP"></label>
-    <label>Elektrische step <small>F</small><input type="checkbox" id="tStep"></label>
-  </details>
   <details open><summary>Configuratie</summary>
     <div class="cfgKop">Aantal AIO's (DELTerra C 125 kW)</div>
     <div class="knoprij" id="cfgN"></div>
     <div class="cfgInfo" id="cfgInfo"></div>
+  </details>
+  <details open><summary>Bekijken</summary>
+    <div class="grp">Opstelling</div><div class="knoprij"><button id="bOverzicht">overzicht</button><button id="bBoven">boven</button><button id="bAchter">achterzijde</button><button id="bSkid">kabelbanen</button><button id="bSkidBoven">skid van boven</button></div>
+    <div class="grp">AIO's</div><div class="knoprij"><button id="bAio">AIO 1</button><button id="bMccb">MCCB</button></div>
+    <div class="grp">Junction box</div><div class="knoprij"><button id="bKast">junction box</button></div>
+    <div class="grp">Gebouw</div><div class="knoprij"><button id="bGebouw">gebouw</button><button id="bHvk">HVK</button><button id="bMeter">meterkast</button><button id="bKelder">kelder</button></div>
+    <div class="grp">Bewegen</div>
+    <label>Rondlopen <small>P</small><input type="checkbox" id="tFP"></label>
+    <label>Elektrische step <small>F</small><input type="checkbox" id="tStep"></label>
+    <label>Tuktuk <small>T</small><input type="checkbox" id="tTuk"></label>
   </details>
   <details open><summary>Weergave</summary>
     <div class="grp">Algemeen</div>
@@ -92,6 +94,10 @@
     <label>NH-stroken uitgeklapt <input type="checkbox" id="tStrook"></label>
     <label>Afdekkappen Jean Müller-stroken <input type="checkbox" id="tKapS" checked></label>
     <label>MetCom MCS301 per AIO (ERE-meting, optie) <input type="checkbox" id="tMet"></label>
+    <div class="grp">Hekwerk + veiligheid</div>
+    <label>Hekwerk met poort en vluchtdeur <input type="checkbox" id="tHekA" checked></label>
+    <label>Veiligheidsafstanden (zone 700 / 1000 / 1650) <input type="checkbox" id="tZoneA"></label>
+    <label>AIO-kasten verbergen (kabelbanen van boven) <input type="checkbox" id="tAioUit"></label>
     <div class="grp">EMS-buitenkast</div>
     <label>Tonen <input type="checkbox" id="tEMS" checked></label>
     <label>Deur open <input type="checkbox" id="tDeurEMS"></label>
@@ -108,7 +114,7 @@
       <li>Junction box Fudura/O&amp;K OFK252082 C03a (uit STEP): romp 1400 × 355 × 1315, kap 375 diep, RVS-plint 220, montageplaat 1290 × 1275; 2 × SL2-3x3/3A, SL3-3x6/1250/HA met 6 × TM-3, 3 × SL2 op Cu-rails 60 × 10; N- en PE-rail 40 × 10 × 750; VMS64 + VMS43 met S203-B10 3P+N, DS201 B16 30 mA, 2 × wcd; kastverlichting en deurschakelaar</li>
       <li>Per AIO 4 singles 95 mm² (L1 L2 L3 N, geen PE) door baan AC #n naar de MCCB-aansluitvlaggen links; kasten onderling via de aardpunten doorverbonden en vanaf #1 naar de PE-rail (vereffening)</li>
       <li>Voeding SL3 met 3F + N + PE (4 × 240 mm² per fase), door de sparing in de stelconplaat en een kort stuk door de grond</li>
-      <li>Alles op stelconplaten 2000 × 2000 × 140</li>
+      <li>Alles op stelconplaten 2000 × 2000 × 140; onder de junction box en de EMS-kast 1000 × 2000 × 140</li>
     </ul>
   </details>
   <details><summary>Bediening</summary>
@@ -118,6 +124,7 @@
       <li>Vrij kijken: WASD of pijltjes = schuiven, spatie/E = stijgen, C/Q = dalen, shift = sneller (geen Ctrl: Ctrl+W sluit het tabblad)</li>
       <li>Rondlopen (P): WASD of pijltjes, muis = kijken, shift = rennen, Q/C = bukken, E/spatie = opstaan</li>
       <li>Elektrische step (F): W = gas, S = remmen/achteruit, A/D = sturen, shift = turbo (± 50 km/h)</li>
+      <li>Tuktuk (T): zelfde besturing, sneller en je zit voorin achter de voorruit</li>
       <li>Telefoon: 1 vinger draaien, 2 vingers zoomen/schuiven, knoppen om te lopen</li>
     </ul>
   </details>
@@ -206,15 +213,18 @@ const KW = 14.0, KD = 3.55, KH = 13.15, KP = 2.2;                               
 const XA = i => i*AW;
 const KXW = XA(0) - AW/2 - 0.05 - KD/2, KZW = AZ;                                       // junction box 90° gedraaid tegen de zijkant van #1, deuren naar buiten (-x)
 const SX0 = KXW - KD/2, SX1 = XA(N_AIO - 1) + AW/2;
-const SXE = SX1 + 0.35 + 4.72, N_PL = Math.ceil((SXE - SX0 + 2)/PL), PX0 = (SX0 + SXE)/2 - N_PL*PL/2;     // systeem (JB · AIO's · EMS) midden op de plaatrij
-const XP = k => PX0 + PL/2 + k*PL;
+const SXE = SX1 + 0.35 + 4.72;
+// plaatrij: 1 m-plaat (1000 × 2000) onder de junction box, 2 m-platen onder de AIO's, 1 m-plaat onder de EMS-kast; systeem midden op de rij
+const PLW = (() => { const k = Math.max(0, Math.ceil((SXE - SX0 + 0.6 - PL)/PL)); return [PL/2, ...Array(k).fill(PL), PL/2]; })();
+const PL_TOT = PLW.reduce((a, b) => a + b, 0), N_PL = PLW.length, PX0 = (SX0 + SXE)/2 - PL_TOT/2, PX1 = PX0 + PL_TOT;
+const PLX = PLW.map((w, k) => PX0 + PLW.slice(0, k).reduce((a, b) => a + b, 0) + w/2), XP = k => PLX[k];
 const KABDEEL = [], KLIK = [], doors = [], LABELS = [], MAAT = [], KABELS = [], STROKEN = [], HMI = [], KAPPEN = [], KAP_MCCB = [], KAP_SL = [];
 
 // stelconplaat 2000 x 2000 x 140: beton met 4 hijsankers
-function stelcon(x, z){
+function stelcon(x, z, w){ w = w || PL;
   const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g);
-  box(g, PL - 0.06, PL_H, PL - 0.06, matBeton, 0, PL_H/2, 0);
-  for(const [a, b] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]){ box(g, 1.1, 0.06, 0.6, matDonker, a*(PL/2 - 2.2), PL_H + 0.005, b*(PL/2 - 2.2), false); cyl(g, 0.12, 0.08, matZink, a*(PL/2 - 2.2), PL_H + 0.03, b*(PL/2 - 2.2), null, 10); }
+  box(g, w - 0.06, PL_H, PL - 0.06, matBeton, 0, PL_H/2, 0);
+  for(const [a, b] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]){ box(g, 1.1, 0.06, 0.6, matDonker, a*(w/2 - 2.2), PL_H + 0.005, b*(PL/2 - 2.2), false); cyl(g, 0.12, 0.08, matZink, a*(w/2 - 2.2), PL_H + 0.03, b*(PL/2 - 2.2), null, 10); }
   return g;
 }
 // ---------- ABB SystemPro M-apparaten 1-op-1 uit de EMS-kast (mm; ZF = voorvlak DIN-rail) ----------
@@ -413,7 +423,7 @@ const DETM = (() => {
   return {mcs301};
 })();
 const PLATEN = [], BASES = [];
-for(let k = 0; k < N_PL; k++) PLATEN.push(stelcon(XP(k), 0));
+for(let k = 0; k < N_PL; k++) PLATEN.push(stelcon(XP(k), 0, PLW[k]));
 
 // ---------- texturen ----------
 const texWaarsch = ctex(128, 112, (g, w, h) => { g.fillStyle = 'rgba(0,0,0,0)'; g.clearRect(0, 0, w, h); g.fillStyle = '#f2c400'; g.beginPath(); g.moveTo(64, 8); g.lineTo(120, 100); g.lineTo(8, 100); g.closePath(); g.fill(); g.strokeStyle = '#111'; g.lineWidth = 6; g.stroke();
@@ -425,7 +435,7 @@ const texPerfR = ctex(256, 256, (g, w, h) => { g.fillStyle = '#2a2d30'; g.fillRe
 const matPerfR = M(0xffffff, {map: texPerfR, roughness: 0.6, metalness: 0.3});
 const matKast = M(0xe4e6e3, {roughness: 0.45, metalness: 0.2}), matKastB = M(0xd2d5d3, {roughness: 0.55, metalness: 0.2});
 const matKanaal = M(0x3a3e42, {roughness: 0.55, metalness: 0.35});
-const matBase = M(0xc2c6c5, {roughness: 0.5, metalness: 0.5}), matBaseD = M(0x9ea3a4, {roughness: 0.5, metalness: 0.55});
+const matBase = M(0x3a4045, {roughness: 0.32, metalness: 0.35}), matBaseD = M(0x33383c, {roughness: 0.35, metalness: 0.4});   // antraciet poedercoat (foto skid)
 const SKMAT = [matBase, matBaseD];
 const matPack = M(0xc9cdd1, {roughness: 0.45, metalness: 0.45}), matHV = M(0xe2520c, {roughness: 0.45}), matHVz = M(0x1d1f22, {roughness: 0.5});
 const matBlauw = M(0x2f6fd0, {roughness: 0.45}), matRood = M(0xc8322a, {roughness: 0.45}), matCyaan = M(0x26c6da, {roughness: 0.5}), matGrijsK = M(0x8d9499, {roughness: 0.55});
@@ -472,7 +482,7 @@ const zKan = k => KAN_Z0 + (k + 0.5)*KAN_DZ;
 // DATA (CAT 6A S/FTP) mag in een lege goot; geen aparte hulpvoeding (AIO voedt zichzelf). Max. 3 AIO-bundels in de skid (goot 1, 4, 7); AIO #4 en #5 direct door de grond (geen mantelbuis).
 const KAN_AIO = [0, 3, 6], KAN_DATA = 1, N_SKID = Math.min(N_AIO, 3);
 const kanAio = i => i < 3 ? KAN_AIO[i] : -1;
-const KAN_NAAM = [...Array(7)].map((_, k) => { const i = KAN_AIO.indexOf(k); return i >= 0 && i < N_AIO ? 'AIO' + (i + 1) : k === KAN_DATA ? 'DATA' : '–'; });
+const KAN_NAAM = [...Array(7)].map((_, k) => { const i = KAN_AIO.indexOf(k); return i >= 0 && i < N_AIO ? 'AIO' + (i + 1) : k === KAN_DATA ? 'DATA' : (k === 4 && N_AIO <= 2) ? '230V EMS' : '–'; });
 function bouwBase(i){
   const G = new THREE.Group(); G.position.set(XA(i), PL_H, AZ); scene.add(G);
   const W = AW, D = AD, H = SKH, t = 0.06;
@@ -489,7 +499,10 @@ function bouwBase(i){
   for(const z of [-3.4, 1.2]) { box(G, W - 0.2, 0.6, 0.6, matBaseD, 0, H - 0.3, z); }
   box(G, W - 0.2, 0.06, D - 0.2, matBaseD, 0, 0.03, 0);                                                     // bodem
   // kabelbaanzone: bodemplaat + 8 schotten (lamellen) langs x
-  for(let k = 0; k <= 7; k++) box(G, W - 0.14, H - 0.35, 0.025, matBaseD, 0, (H - 0.35)/2 + 0.06, KAN_Z0 + k*KAN_DZ, false);
+  for(let k = 0; k <= 7; k++){ box(G, W - 0.14, H - 0.35, 0.025, matBaseD, 0, (H - 0.35)/2 + 0.06, KAN_Z0 + k*KAN_DZ, false);
+    box(G, W - 0.14, 0.025, 0.09, matBaseD, 0, H - 0.29, KAN_Z0 + k*KAN_DZ + (k % 2 ? -0.045 : 0.045), false); }                       // omgezette bovenrand (foto)
+  for(let k = 0; k < 7; k++) box(G, W - 0.14, 0.025, KAN_DZ - 0.03, matBaseD, 0, 0.09, zKan(k), false);                                 // U-goot bodem
+  cyl(G, 0.42, 0.07, matZwart, -W/2 + 0.7, H + 0.005, -D/2 + 0.7, null, 20);                                                            // ronde doorvoer in de bovenflens
   // hijsgaten en verankering M16 op de 4 hoeken, aanslagen voor de kast
   for(const sx of [-1, 1]) for(const sz of [-1, 1]){ cyl(G, 0.22, 0.05, matZwart, sx*(W/2 - 0.45), H + 0.005, sz*(D/2 - 0.45), null, 14);
     cyl(G, 0.14, 0.18, matZink, sx*(W/2 - 0.79), 0.15, sz*(D/2 - 0.79), null, 6); }
@@ -644,10 +657,15 @@ function bouwAIO(i){
     g.fillStyle = '#e8e8e4'; g.fillRect(52, 12, 74, 32); g.fillStyle = '#333'; g.font = 'bold 9px Arial'; g.fillText('NDM3-250  4P', 56, 26); g.fillText('In 250A  Icu 50kA', 56, 38);
     g.fillStyle = '#4a4f55'; g.fillRect(140, 46, 78, 48); g.fillStyle = '#1d1f22'; g.fillRect(150, 58, 58, 24);
     g.save(); g.translate(60, 108); g.fillStyle = '#d9d9d9'; g.font = 'bold 15px Arial'; g.fillText('Nader', 0, 0); g.restore();
-    g.fillStyle = '#2f6fd0'; g.beginPath(); g.arc(226, 22, 6, 0, 7); g.fill(); g.fillStyle = '#aaa'; g.font = '9px Arial'; g.fillText('QF0', 205, 128); });
+    g.fillStyle = '#2f6fd0'; g.beginPath(); g.arc(226, 22, 6, 0, 7); g.fill(); g.fillStyle = '#aaa'; g.font = '9px Arial'; g.fillText('QF0', 205, 128);
+    g.fillStyle = '#f2f2ee'; g.fillRect(150, 10, 34, 34); let sd = 11; for(let a = 0; a < 8; a++) for(let b = 0; b < 8; b++){ sd = (sd*16807) % 2147483647; if(sd % 3 === 0 || (a < 2 && b < 2) || (a > 5 && b < 2) || (a < 2 && b > 5)){ g.fillStyle = '#111'; g.fillRect(152 + a*3.8, 12 + b*3.8, 3.8, 3.8); } }
+    g.fillStyle = '#ddd'; g.font = 'bold 13px Arial'; g.fillText('CE', 196, 32); });
   plak(B, 2.55, 1.4, texN, MC.x, MC.y, MC.z + 0.505);
   const hendel = box(B, 0.5, 0.22, 0.3, M(0x1d1f22), MC.x + 0.25, MC.y - 0.05, MC.z + 0.62); box(B, 0.12, 0.2, 0.32, M(0xeeeeea), MC.x + 0.42, MC.y - 0.05, MC.z + 0.64);
-  for(let k = 0; k < 5; k++){ const y = MC.y + 0.7 - k*0.35; box(B, 0.4, 0.04, 1.05, M(0x222427), mL + 0.2, y, MC.z, false); box(B, 0.4, 0.04, 1.05, M(0x222427), mR - 0.2, y, MC.z, false); }   // fasenschotten
+  const schot = M(0x1c1e21, {roughness: 0.5});
+  for(let k = 0; k < 5; k++){ const y = MC.y + 0.7 - k*0.35; for(const [x, sx] of [[mL, -1], [mR, 1]]){ box(B, 0.75, 0.05, 1.1, schot, x + sx*0.3, y, MC.z, false);                     // fasenschotten (lang, kamvormig — foto)
+      for(const dz of [-0.42, 0.42]) box(B, 0.75, 0.12, 0.05, schot, x + sx*0.3, y + (k < 4 ? -0.06 : 0.06), MC.z + dz, false); } }
+  for(const [x, sx] of [[mL, -1], [mR, 1]]) box(B, 0.75, 1.45, 0.05, schot, x + sx*0.3, MC.y, MC.z - 0.52, false);                         // achterwand van het kamstuk
   const POLY = {N: MC.y + 0.525, L3: MC.y + 0.175, L2: MC.y - 0.175, L1: MC.y - 0.525};
   // netzijde links: koperen aansluitvlaggen M10, getrapt (N/L3 lang naar achter/voor, L2/L1 kort), kabelschoen onder de vlag
   const klem = {}, gat = {};
@@ -655,20 +673,23 @@ function bouwAIO(i){
   Object.entries(VLAG).forEach(([f, v]) => { const y = POLY[f], z = MC.z + v.dz, t = MC.x + v.tip - 1.275 + 0.2;
     box(B, 0.35, 0.08, 0.95, matKoper, mL - 0.12, y, MC.z);                                                                  // klemblok aan de pool
     const x0 = mL - 0.3, x1 = t - 0.25; box(B, x0 - x1, 0.08, 0.42, matKoper, (x0 + x1)/2, y, z);                            // vlag
-    cyl(B, 0.08, 0.2, matZink, t, y + 0.08, z, null, 6); cyl(B, 0.12, 0.03, matTin, t, y + 0.055, z, null, 16);              // bout + ring
-    box(B, 0.34, 0.05, 0.34, matTin, t, y - 0.065, z); cyl(B, 0.12, 0.32, matTin, t, y - 0.25, z, null, 14);                 // kabelschoen 95 mm²
-    KABDEEL.push(cyl(B, 0.125, 0.18, f === 'N' ? M(0x1f5fbf) : M(0x111111), t, y - 0.47, z, null, 14));                                   // krimpkous
-    plak(B, 0.3, 0.17, lbl(f, 64, 36, '#2aa3e0', '#ffffff', 'bold 24px Arial'), mL - 0.12, y + 0.13, MC.z + 0.49);
+    cyl(B, 0.13, 0.025, matTin, t, y + 0.055, z, null, 18); cyl(B, 0.11, 0.08, matZink, t, y + 0.11, z, null, 6); cyl(B, 0.055, 0.12, matZink, t, y + 0.2, z, null, 10);   // ring + zeskantmoer M10 + draadeind
+    cyl(B, 0.13, 0.025, matTin, t, y - 0.055, z, null, 18); cyl(B, 0.11, 0.07, matZink, t, y - 0.1, z, null, 6);                                       // onderring + moer
+    box(B, 0.34, 0.05, 0.36, matTin, t, y - 0.155, z); const pk = box(B, 0.34, 0.05, 0.2, matTin, t, y - 0.2, z + (v.dz > 0 ? 0.13 : -0.13)); pk.rotation.x = (v.dz > 0 ? -0.6 : 0.6);   // kabelschoen-palm, gezet
+    cyl(B, 0.12, 0.34, matTin, t, y - 0.38, z, null, 16); for(const yy of [-0.31, -0.43]) cyl(B, 0.127, 0.03, M(0x9aa0a4, {metalness: 0.9, roughness: 0.3}), t, y + yy, z, null, 16);   // kabelschoen 95 mm² + persindrukken
+    KABDEEL.push(cyl(B, 0.125, 0.18, f === 'N' ? M(0x1f5fbf) : M(0x111111), t, y - 0.62, z, null, 14));                                   // krimpkous
+    plak(B, 0.22, 0.3, lbl(f, 40, 56, '#f2d200', '#111111', 'bold 26px Arial'), MC.x - 0.95, y, MC.z + 0.512);                       // gele poolmarkering op het front (foto)
     klem[f] = V(XA(i) + t, SKY + y - 0.55, AZ + z); gat[f] = V(XA(i) + t, SKY + yB, AZ + z); });
   // PE: aparte koperen aardrail links naast het aansluitvak
   box(B, 0.35, 1.3, 0.12, matKoper, mL - 1.55, 2.0, MC.z - 0.3); box(B, 0.4, 0.2, 0.03, ader.PE, mL - 1.55, 2.75, MC.z - 0.23, false);
   for(let k = 0; k < 4; k++) cyl(B, 0.06, 0.16, matZink, mL - 1.55, 1.55 + k*0.3, MC.z - 0.2, 'z', 6);
   klem.PE = V(XA(i) + mL - 1.55, SKY + 1.5, AZ + MC.z - 0.1); gat.PE = V(XA(i) + mL - 0.6 - 0.45, SKY + yB, AZ + MC.z);
   // wartelplaat netzijde (fig. 5-38): 4 grote wartels + middelste voor PE, 4 x M5
-  { const gx = MC.x - 1.275 + 0.2 - 0.325; box(B, 1.5, 0.06, 1.3, grijsD, gx, yB + 0.15, MC.z);
-    for(const [dx, dz] of [[-0.6, -0.55], [0.6, -0.55], [-0.6, 0.55], [0.6, 0.55]]) cyl(B, 0.05, 0.04, matZink, gx + dx, yB + 0.2, MC.z + dz, null, 6);
-    Object.values(VLAG).forEach(v => { const x = MC.x + v.tip - 1.075, z = MC.z + v.dz; cyl(B, 0.2, 0.14, M(0xd8dadb), x, yB + 0.24, z, null, 18); cyl(B, 0.13, 0.22, M(0xcfd2d4), x, yB + 0.35, z, null, 16); });
-    cyl(B, 0.17, 0.14, M(0xd8dadb), gx, yB + 0.24, MC.z, null, 16); }
+  { const gx = MC.x - 1.275 + 0.2 - 0.325; box(B, 1.7, 0.05, 1.45, M(0xd4b21c, {roughness: 0.25, metalness: 0.05}), gx, yB + 0.15, MC.z);      // gele epoxy wartelplaat (foto)
+    for(const [dx, dz] of [[-0.75, -0.63], [0.75, -0.63], [-0.75, 0.63], [0.75, 0.63]]){ cyl(B, 0.05, 0.03, matZink, gx + dx, yB + 0.19, MC.z + dz, null, 6); cyl(B, 0.075, 0.01, matTin, gx + dx, yB + 0.177, MC.z + dz, null, 12); }
+    const rub = M(0x8a9196, {roughness: 0.85}), kegel = (x, z, r) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(r*0.62, r, 0.2, 22), rub); o.position.set(x, yB + 0.275, z); o.castShadow = true; B.add(o);
+      const t2 = new THREE.Mesh(new THREE.CylinderGeometry(r*0.62, r*0.62, 0.02, 22), M(0x9aa1a6, {roughness: 0.8})); t2.position.set(x, yB + 0.385, z); B.add(t2); cyl(B, r*0.32, 0.025, M(0x7f878c), x, yB + 0.39, z, null, 16); };
+    Object.values(VLAG).forEach(v => kegel(MC.x + v.tip - 1.075, MC.z + v.dz, 0.22)); kegel(gx, MC.z, 0.16); }                           // 4 grote + 1 kleine kegelwartel (grijs rubber)
   // uitgang rechts: 4 vlaggen gestaffeld in de diepte, dikke kabels van de PCS-stekers erop
   const ZR = {L1: 0.38, L2: 0.13, L3: -0.13, N: -0.38};
   ['N', 'L3', 'L2', 'L1'].forEach(f => { const y = POLY[f], z = MC.z + ZR[f], t = mR + 0.34;
@@ -1547,7 +1568,7 @@ function grondRoute(s, a, kn){
   const gs = ['L1', 'L2', 'L3', 'N'].map(f => a.gat[f]), gx = gs.reduce((q, g) => q + g.x, 0)/4, zg = gs.reduce((q, g) => q + g.z, 0)/4;
   const zr = zg - 1.6 - (kn - 3)*1.3, yb = -3.4, P = W(V(s.x, -0.6, zF1)), x0 = P.x + 3.0;
   box(K, 1.5, PL_H + 0.04, 1.3, matSpar, s.x, PL_H/2, zF1, false); box(K, 1.8, 0.04, 1.6, M(0x6f7273, {roughness: 0.9}), s.x, PL_H + 0.01, zF1, false);
-  const kp = Math.max(0, Math.min(N_PL - 1, Math.floor((gx - PX0)/PL))), pl = PLATEN[kp];
+  let kp = PLX.findIndex((x, k) => gx >= x - PLW[k]/2 && gx < x + PLW[k]/2); if(kp < 0) kp = gx < PX0 ? 0 : N_PL - 1; const pl = PLATEN[kp];
   box(pl, 1.6, PL_H + 0.04, 1.6, matSpar, gx - XP(kp), PL_H/2, zg, false); box(pl, 1.9, 0.04, 1.9, M(0x6f7273, {roughness: 0.9}), gx - XP(kp), PL_H + 0.01, zg, false);
   box(BASES[kn], 1.5, 0.02, 1.5, matSpar, gx - XA(kn), 0.075, zg - AZ, false);
   const t = sprite('AIO #' + (kn + 1) + ': 4 × 95 mm² direct door de grond (skid vol)', V((x0 + gx)/2, -1.5, zr), 0.55, '#e06a1a'); scene.add(t); LABELS.push(t);
@@ -1621,6 +1642,7 @@ CAT = 'voeding';
   { const p = A.fase[0]; kabel(KAB, [A.onder, V(p.x, A.onder.y + 0.3, p.z), p].map(W), 0.04, ader.L1, 0.1, 6); }
   kabel(KAB, [A.onder, V(A.nul.x, A.nul.y - 0.4, A.nul.z), A.nul].map(W), 0.04, ader.N, 0.1, 6);
   kabel(KAB, [A.onder, V(A.pe.x, A.pe.y - 0.4, A.pe.z), A.pe].map(W), 0.04, ader.PE, 0.1, 6); }
+let DATA_HVK_PTS = [];                                                              // CAT 6A HVK → EMS-kast: tracé tot naast de rij, verder getekend in het EMS-blok
 CAT = 'data';
 { const zc = zKan(KAN_DATA), y0 = PL_H + 0.3;
   const ent = i => V(XA(i) - 2.2, SKY + 1.0, AZ + AIO[i].MC.z + 0.2);
@@ -1629,8 +1651,9 @@ CAT = 'data';
   const gap = 2.0 + 0.07, dX1 = TRENCH.x1 + 2.0 + 0.065 + gap, dX = Math.max(dX1, xMaxT + gap), yD = TRENCH.yT, hz = HVK.hz;    // 200 mm hart-op-rand van de buitenste voedingskabel
   const dHvk = W(V(dX, HVK.P + 1.3, hz + 0.8));
   box(KAB, 0.9, 1.2, 0.5, M(0x9aa0a4, {roughness: 0.5}), dHvk.x, dHvk.y + 0.5, dHvk.z);                     // data-aansluitdoos (patch) in de HVK
-  { const t = sprite('data CAT 6A S/FTP · 200 mm naast voedingstracé', W(V(dX + 1.0, -1.0, hz/2)), 0.55, '#1aa3b8'); scene.add(t); LABELS.push(t); }
-  kabel(KAB, [dHvk, ...[V(dX, -1.2, hz + 0.8), V(dX, yD, hz - 1.0), V(dX, yD, hz - 5.0), V(dX1, yD, hz - 9.6), V(dX1, yD, 3.2)].map(W), V(KXW - 4, yD, zc), V(SX0 + 0.2, PL_H + 0.5, zc), V(XA(0) - AW/2 + 0.4, y0, zc), V(XA(0) - 3.4, y0, zc), V(XA(0) - 2.2, y0 + 0.4, zc), V(XA(0) - 2.2, SKY + 0.3, ent(0).z), ent(0)], 0.07, matCyaan, 0.6);
+  { const t = sprite('data CAT 6A S/FTP HVK → EMS-kast · 200 mm naast voedingstracé', W(V(dX + 1.0, -1.0, hz/2)), 0.55, '#1aa3b8'); scene.add(t); LABELS.push(t); }
+  DATA_HVK_PTS = [dHvk, ...[V(dX, -1.2, hz + 0.8), V(dX, yD, hz - 1.0), V(dX, yD, hz - 5.0), V(dX1, yD, hz - 9.6), V(dX1, yD, 3.2)].map(W)];
+  // daisy chain: AIO #1 (master, data van de EMS-kast) → #2 → … in kanaal DATA
   for(let i = 0; i < N_AIO - 1; i++) [[matCyaan, -0.08], [matGrijsK, 0.08]].forEach(([m, dz]) => kabel(KAB, [ent(i).clone().add(V(0.2, 0, dz)), V(XA(i) - 2.0, y0 + 0.3, zc + dz), V(XA(i + 1) - 2.4, y0 + 0.3, zc + dz), ent(i + 1).clone().add(V(-0.2, 0, dz))], 0.06, m, 0.6));
 }
 // ---------- open kabelsleuf JB → gebouw: zandbed, wanden van grond, kabels zichtbaar; gat in het grasvlak ----------
@@ -1711,12 +1734,18 @@ const EMSV = (function(){
   const wO = V(ex - 0.2, PL_H - 6.5, ez + 1.6), dO = V(ex - 0.2, PL_H - 6.5, ez + 0.7), zT = AD/2 + 3.0;
   box(K2, 1.6, PL_H + 0.04, 2.6, M(0x0b0c0d, {roughness: 0.9}), ex - 0.2, PL_H/2, ez + 1.15, false);                                  // sparing in de stelconplaat onder de kabelinvoer                            // kabels van de EMS-pagina eindigen 650 mm onder maaiveld
   // 230 V vanaf de JB (onderste VMS-kast, -F1) door de plint omlaag, door de grond naar de veldkast
-  const jbUit = W(V(JX(1100), KS + 0.3, zF2)), jbG = W(V(JX(1100), -0.6, zF2));
-  kabel(K2, [W(V(JX(1100), JB(187) - 0.2, KZ0 + 0.7)), jbUit, jbG, V(jbG.x, -6.5, jbG.z), V(jbG.x, -6.5, zT), V(wO.x, -6.5, zT), V(wO.x, -6.5, wO.z), wO], 0.065, M(0x1d1e20, {roughness: 0.65}), 0.6, 8);
+  const jbUit = W(V(JX(1100), KS + 0.3, zF2)), jbG = W(V(JX(1100), -0.6, zF2)), m230 = M(0x1d1e20, {roughness: 0.65});
+  if(N_AIO <= 2){ const zL = zKan(4), yL = PL_H + 0.3;                                                        // ≤ 2 AIO's: 230 V door een lege goot van de skid (goot 5) i.p.v. door de grond
+    kabel(K2, [W(V(JX(1100), JB(187) - 0.2, KZ0 + 0.7)), jbUit, V(jbUit.x, yL + 0.2, jbUit.z), V(XA(0) - AW/2 - 0.3, yL, zL), V(XA(N_AIO - 1) + AW/2 + 0.1, yL, zL), V(wO.x, yL, zL), V(wO.x, yL, wO.z), V(wO.x, PL_H - 0.6, wO.z), wO], 0.065, m230, 0.6, 8);
+    const t = sprite('230 V YMvK 3G2,5 JB -F1 → EMS-kast door goot 5 van de skid', V((XA(0) + XA(N_AIO - 1))/2, PL_H + 3.0, zL), 0.5, '#333'); scene.add(t); LABELS.push(t); }
+  else kabel(K2, [W(V(JX(1100), JB(187) - 0.2, KZ0 + 0.7)), jbUit, jbG, V(jbG.x, -6.5, jbG.z), V(jbG.x, -6.5, zT), V(wO.x, -6.5, zT), V(wO.x, -6.5, wO.z), wO], 0.065, m230, 0.6, 8);
+  // CAT 6A S/FTP (cyaan) vanuit de HVK naar de EMS-kast: tracé uit de HVK, dan door de grond langs de rij naar de kabelinvoer van de veldkast
+  if(DATA_HVK_PTS.length){ const p = DATA_HVK_PTS[DATA_HVK_PTS.length - 1], d2 = V(dO.x - 0.35, dO.y, dO.z), zD = zT + 0.8;
+    kabel(K2, [...DATA_HVK_PTS, V(p.x, -6.5, zD), V(d2.x, -6.5, zD), V(d2.x, -6.5, d2.z), d2], 0.07, matCyaan, 0.6, 8); }
   // CAT 6A S/FTP (paars) naar AIO #1 (master): door de grond, onder de metal base in kanaal DATA naar de controller
   const a0 = AIO[0], tgt = V(XA(0) - 2.2, SKY + 1.0, AZ + a0.MC.z + 0.2), zc = zKan(KAN_DATA);
   kabel(K2, [dO, V(dO.x, -6.5, dO.z), V(dO.x, -6.5, zT + 0.4), V(XA(0) - AW/2 + 1.0, -6.5, zT + 0.4), V(XA(0) - AW/2 + 1.0, -5.2, AD/2 + 2.0), V(XA(0) - AW/2 + 1.0, -0.6, zc), V(XA(0) - AW/2 + 1.0, PL_H + 0.45, zc), V(XA(0) - 2.2, PL_H + 0.45, zc), V(tgt.x, SKY + 0.3, tgt.z), tgt], 0.07, M(0x7a3fbf, {roughness: 0.45}), 0.6, 8);
-  { const t = sprite('EMS-buitenkast (Pegeo KVSP1-413, EMS Groot — zelfde model als de EMS-pagina) · 230 V vanaf JB -F1 · CAT 6A S/FTP naar AIO #1', V(ex, 16.5, ez), 0.6, '#7a3fbf'); scene.add(t); LABELS.push(t); }
+  { const t = sprite('EMS-buitenkast (Pegeo KVSP1-413, EMS Groot — zelfde model als de EMS-pagina) · 230 V vanaf JB -F1 · CAT 6A S/FTP vanuit de HVK · CAT 6A S/FTP naar AIO #1 (master), AIO’s onderling gedaisychained', V(ex, 16.5, ez), 0.6, '#7a3fbf'); scene.add(t); LABELS.push(t); }
   return {G, K2, zet: v => { G.visible = v; K2.visible = v; }};
 })();
 
@@ -1725,7 +1754,7 @@ const EMSV = (function(){
   const maat = (a, b, off, txt) => { const g = new THREE.Group(); const a2 = a.clone().add(off), b2 = b.clone().add(off);
     [[a, a2], [b, b2], [a2, b2]].forEach(([p, q]) => { const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([p, q]), mL); l.renderOrder = 9; g.add(l); });
     g.add(sprite(txt, a2.clone().add(b2).multiplyScalar(0.5).add(off.clone().normalize().multiplyScalar(1.6)), 0.6)); g.visible = false; scene.add(g); MAAT.push(g); };
-  maat(V(XP(0) - PL/2, PL_H, PL/2), V(XP(N_PL - 1) + PL/2, PL_H, PL/2), V(0, 0, 6), N_PL + ' stelconplaten × 2000 = ' + N_PL*2000);
+  maat(V(PX0, PL_H, PL/2), V(PX1, PL_H, PL/2), V(0, 0, 6), 'stelconplaten 1000 + ' + (N_PL - 2) + ' × 2000 + 1000 = ' + Math.round(PL_TOT*100));
   maat(V(XA(0) - AW/2, SKY, AD/2), V(XA(N_AIO - 1) + AW/2, SKY, AD/2), V(0, 0, 3.5), N_AIO + ' × metal base 1020 = ' + N_AIO*1020);
   maat(V(XA(N_AIO - 1) - CW/2, SKY + AH, AD/2), V(XA(N_AIO - 1) + CW/2, SKY + AH, AD/2), V(0, 3, 0), 'kast 1000');
   maat(V(SX1, SKY + AH, -AD/2), V(SX1, SKY + AH, AD/2), V(3, 3, 0), '1420');
@@ -1779,6 +1808,48 @@ LABELS.forEach(l => l.visible = false); KAP_MCCB.forEach(k => k.visible = false)
 const target = new THREE.Vector3(16, 9, 0);
 let theta = 0.6, phi = 1.18, radius = 105, auto = false;
 function updateCam(){ camera.position.set(target.x + radius*Math.sin(phi)*Math.sin(theta), target.y + radius*Math.cos(phi), target.z + radius*Math.sin(phi)*Math.cos(theta)); camera.lookAt(target); }
+// ---------- veiligheidsafstanden (Delta-handleiding / dia 35): 700 opzij, 1000 achter, 1650 voor (deurzwaai 953 + 700) — rond JB · AIO's · EMS ----------
+const ZONEA = new THREE.Group(); ZONEA.visible = false; scene.add(ZONEA);
+const HEKA = new THREE.Group(); scene.add(HEKA);
+{ const zx0 = SX0 - 7, zx1 = SXE + 7, zz0 = AZ - AD/2 - 10, zz1 = AZ + AD/2 + 16.5, y = PL_H + 0.05;
+  const lm = new THREE.LineBasicMaterial({color: 0x2e9e4f, depthTest: false}), streep = new THREE.LineDashedMaterial({color: 0x2e9e4f, dashSize: 1.2, gapSize: 0.8, depthTest: false});
+  const rand = new THREE.Line(new THREE.BufferGeometry().setFromPoints([V(zx0, y, zz0), V(zx1, y, zz0), V(zx1, y, zz1), V(zx0, y, zz1), V(zx0, y, zz0)]), streep); rand.computeLineDistances(); rand.renderOrder = 9; ZONEA.add(rand);
+  const vlak = new THREE.Mesh(new THREE.PlaneGeometry(zx1 - zx0, zz1 - zz0), new THREE.MeshBasicMaterial({color: 0x2e9e4f, transparent: true, opacity: 0.12, depthWrite: false})); vlak.rotation.x = -Math.PI/2; vlak.position.set((zx0 + zx1)/2, y, (zz0 + zz1)/2); ZONEA.add(vlak);
+  const zm = (a, b, off, txt) => { const g = new THREE.Group(), a2 = a.clone().add(off), b2 = b.clone().add(off); [[a, a2], [b, b2], [a2, b2]].forEach(([p, q]) => { const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([p, q]), lm); l.renderOrder = 9; g.add(l); });
+    const t = sprite(txt, a2.clone().add(b2).multiplyScalar(0.5).add(V(0, 1.2, 0)), 0.5, '#2e9e4f'); const k = LABELS.indexOf(t); if(k >= 0) LABELS.splice(k, 1); g.add(t); ZONEA.add(g); };
+  const mm = d => Math.round(d*100) + '';
+  zm(V(zx0, y, zz1), V(zx1, y, zz1), V(0, 0, 3), 'vrije zone ' + mm(zx1 - zx0) + ' mm');
+  zm(V(zx1, y, zz0), V(zx1, y, zz1), V(3, 0, 0), mm(zz1 - zz0) + ' mm');
+  zm(V(XA(0), y, AZ + AD/2), V(XA(0), y, zz1), V(0, 0, 0), 'voor ' + mm(zz1 - AZ - AD/2) + ' (deur 953 + 700)');
+  zm(V(XA(0), y, zz0), V(XA(0), y, AZ - AD/2), V(0, 0, 0), 'achter ' + mm(AZ - AD/2 - zz0));
+  zm(V(zx0, y, AZ), V(SX0, y, AZ), V(0, 0, 0), '700'); zm(V(SXE, y, AZ), V(zx1, y, AZ), V(0, 0, 0), '700');
+  // hekwerk: verzinkt dubbelstaafmat 2,0 m, 300 mm buiten de vrije zone; dubbele poort 2 × 1,5 m voor de AIO-deuren, vluchtdeur 1,1 m achter (draait naar buiten, panieksluiting)
+  const hx0 = zx0 - 3, hx1 = zx1 + 3, hz0 = zz0 - 3, hz1 = zz1 + 3, H = 20, gx = (XA(0) + XA(N_AIO - 1))/2, vx = gx;
+  const gaas = ctex(256, 512, (c, Wc, Hc) => { c.clearRect(0, 0, Wc, Hc); c.fillStyle = '#9aa1a5'; for(let x = 0; x < Wc; x += 13) c.fillRect(x, 0, 3, Hc); for(let y2 = 6; y2 < Hc; y2 += 51){ c.fillRect(0, y2, Wc, 3); c.fillRect(0, y2 + 5, Wc, 3); } });
+  const seg = (a, b) => { const d = b.clone().sub(a), L = d.length(); if(L < 0.5) return; const t = gaas.clone(); t.needsUpdate = true; t.wrapS = THREE.RepeatWrapping; t.repeat.set(L/25, 1);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(L, H), new THREE.MeshStandardMaterial({map: t, transparent: true, alphaTest: 0.35, side: THREE.DoubleSide, roughness: 0.5, metalness: 0.4}));
+    m.position.copy(a.clone().lerp(b, 0.5)).setY(H/2 + 0.5); m.rotation.y = -Math.atan2(d.z, d.x); m.castShadow = true; HEKA.add(m);
+    const n = Math.max(1, Math.round(L/25)); for(let k = 0; k <= n; k++){ const p = a.clone().lerp(b, k/n); box(HEKA, 0.6, H + 1.0, 0.6, matZink, p.x, (H + 1)/2, p.z); } };
+  const P = (x, z) => V(x, 0, z);
+  seg(P(hx0, hz0), P(vx - 5.5, hz0)); seg(P(vx + 5.5, hz0), P(hx1, hz0)); seg(P(hx1, hz0), P(hx1, hz1)); seg(P(hx1, hz1), P(gx + 15, hz1)); seg(P(gx - 15, hz1), P(hx0, hz1)); seg(P(hx0, hz1), P(hx0, hz0));
+  // poort (2 vleugels) en vluchtdeur
+  const vleugel = (x0, x1, z) => { const t = gaas.clone(); t.needsUpdate = true; t.wrapS = THREE.RepeatWrapping; t.repeat.set(0.55, 1); const L = Math.abs(x1 - x0);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(L - 0.6, H - 1.5), new THREE.MeshStandardMaterial({map: t, transparent: true, alphaTest: 0.35, side: THREE.DoubleSide, roughness: 0.5, metalness: 0.4})); m.position.set((x0 + x1)/2, H/2 + 0.6, z); HEKA.add(m);
+    for(const y2 of [1.0, H]) box(HEKA, L, 0.5, 0.5, matZink, (x0 + x1)/2, y2, z); for(const x of [x0 + 0.25, x1 - 0.25]) box(HEKA, 0.5, H - 0.5, 0.5, matZink, x, H/2 + 0.6, z); };
+  vleugel(gx - 15, gx, hz1); vleugel(gx, gx + 15, hz1); for(const x of [gx - 15, gx + 15]) box(HEKA, 1.0, H + 2, 1.0, matZink, x, (H + 2)/2, hz1);
+  vleugel(vx - 5.5, vx + 5.5, hz0); box(HEKA, 7.0, 0.4, 0.4, M(0xc8102e), vx, 10, hz0 + 0.8);
+  { const b = ctex(384, 96, (c, Wc, Hc) => { c.fillStyle = '#169b48'; c.fillRect(0, 0, Wc, Hc); c.fillStyle = '#fff'; c.font = 'bold 52px Arial'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('NOODUITGANG', Wc/2, Hc/2 + 2); });
+    for(const s2 of [-1, 1]){ const m = new THREE.Mesh(new THREE.PlaneGeometry(6, 1.5), new THREE.MeshBasicMaterial({map: b})); m.position.set(vx, H + 2.2, hz0 + s2*0.3); if(s2 < 0) m.rotation.y = Math.PI; HEKA.add(m); } }
+  { const t = sprite('hekwerk 2,0 m · poort 2 × 1500 · vluchtdeur 1100 (panieksluiting)', V(hx1, H + 4, hz1), 0.5, '#555'); scene.add(t); LABELS.push(t); }
+}
+document.getElementById('tHekA').addEventListener('change', e => { HEKA.visible = e.target.checked; });
+document.getElementById('tZoneA').addEventListener('change', e => { ZONEA.visible = e.target.checked; });
+const zetAioUit = a => { AIO.forEach(o => o.G.visible = !a); };
+document.getElementById('tAioUit').addEventListener('change', e => zetAioUit(e.target.checked));
+// labels van de skid-goten (alleen zichtbaar als de AIO-kasten verborgen zijn)
+const GOOTLBL = new THREE.Group(); GOOTLBL.visible = false; scene.add(GOOTLBL);
+{ const t = sprite('goten skid (achter → voor): ' + KAN_NAAM.map((nm, k) => (k + 1) + ' ' + nm).join(' · '), V((SX0 + SXE)/2, PL_H + 3, AZ - AD/2 - 4), 0.42, '#1b4f8a'); const i = LABELS.indexOf(t); if(i >= 0) LABELS.splice(i, 1); scene.remove(t); GOOTLBL.add(t); }
+document.getElementById('tAioUit').addEventListener('change', e => { GOOTLBL.visible = e.target.checked; });
 const VIEWS = {
   bOverzicht: () => { target.set((SX0 + SX1)/2 - 3, 9, 0); theta = 0.6; phi = 1.18; radius = 72 + 6.6*N_AIO; },
   bMeter: () => { const p = HVK.HG.localToWorld(HVK.mkLocal.clone()); target.copy(p); const q = HVK.HG.localToWorld(HVK.mkLocal.clone().add(V(0, 0, 10))); theta = Math.atan2(q.x - p.x, q.z - p.z); phi = 1.5; radius = 16; $t('tTR').checked = true; HVK.zetTR(true); doors.forEach(d => { if(d.naam === 'meterkast') d.doel = d.open; }); },
@@ -1788,7 +1859,8 @@ const VIEWS = {
   bKast: () => { target.set(KXW, KS + 7, KZW); theta = -Math.PI/2 - 0.1; phi = 1.47; radius = 22; },
   bMccb: () => { const a = AIO[0], p = a.klem.L2; target.set(p.x + 0.6, p.y + 0.2, p.z + 0.2); theta = 0.15; phi = 1.32; radius = 7.5; doors.forEach(d => { if(!d.strook && !d.kast && d.naam === 'kast #1') d.doel = d.open; }); },
   bAio: () => { target.set(XA(0), SKY + 11, AZ); theta = 0.25; phi = 1.42; radius = 40; },
-  bSkid: () => { target.set((SX0 + SX1)/2, PL_H + 1.2, 4); theta = 0.35; phi = 1.2; radius = 42; $t('tSkid').checked = true; zetSkid(true); },
+  bSkidBoven: () => { $t('tHekA').checked = false; HEKA.visible = false; target.set((SX0 + SXE)/2, PL_H, (KAN_Z0 + zKan(6))/2); theta = 0; phi = 0.02; radius = 34 + 11*N_AIO; $t('tAioUit').checked = true; zetAioUit(true); GOOTLBL.visible = true; $t('tSkid').checked = true; zetSkid(true); },
+  bSkid: () => { $t('tHekA').checked = false; HEKA.visible = false; target.set((SX0 + SX1)/2, PL_H + 1.2, 4); theta = 0.35; phi = 1.2; radius = 42; $t('tSkid').checked = true; zetSkid(true); },
   bBoven: () => { target.set((SX0 + SX1)/2, 0, 0); theta = 0; phi = 0.04; radius = 65 + 9*N_AIO; },
   bAchter: () => { target.set((SX0 + SX1)/2, 9, 0); theta = Math.PI - 0.45; phi = 1.2; radius = 45 + 5*N_AIO; },
 };
@@ -1846,9 +1918,9 @@ $t('tKabel').addEventListener('change', e => { KAB.visible = KABK.visible = e.ta
 $t('tLabel').addEventListener('change', e => LABELS.forEach(l => l.visible = e.target.checked));
 $t('tMaat').addEventListener('change', e => MAAT.forEach(g => g.visible = e.target.checked));
 // ---- rondlopen ----
-const FP = {aan: false, pos: new THREE.Vector3(), yaw: 0, pitch: 0, oog: 17, keys: {}, step: false, v: 0};
+const FP = {aan: false, pos: new THREE.Vector3(), yaw: 0, pitch: 0, oog: 17, keys: {}, step: false, tuk: false, v: 0};
 function zetFP(aan){
-  if(aan === FP.aan) return; FP.aan = aan; $t('tFP').checked = aan; if(!aan && FP.step){ FP.step = false; FP.v = 0; $t('tStep').checked = false; STEP.g.visible = false; camera.fov = 42; camera.updateProjectionMatrix(); } $t('fpHud').style.display = aan ? 'block' : 'none';
+  if(aan === FP.aan) return; FP.aan = aan; $t('tFP').checked = aan; if(!aan && FP.step){ FP.step = false; FP.tuk = false; FP.v = 0; $t('tStep').checked = false; $t('tTuk').checked = false; STEP.g.visible = false; TUK.g.visible = false; camera.fov = 42; camera.updateProjectionMatrix(); } $t('fpHud').style.display = aan ? 'block' : 'none';
   if(aan){ const h = new THREE.Vector3(camera.position.x - target.x, 0, camera.position.z - target.z); const L = h.length() || 1; h.multiplyScalar(Math.min(L, 40)/L); FP.pos.set(target.x + h.x, 0, target.z + h.z); FP.yaw = Math.atan2(h.x, h.z); FP.pitch = -0.05; FP.oog = 17; camera.near = 0.3; }
   else { target.set(FP.pos.x - Math.sin(FP.yaw)*30, 8, FP.pos.z - Math.cos(FP.yaw)*30); radius = 60; theta = FP.yaw; phi = 1.25; camera.near = 1.0; }
   camera.updateProjectionMatrix(); }
@@ -1859,7 +1931,8 @@ window.addEventListener('keydown', e => {
   if(e.target.tagName === 'INPUT' && e.target.type !== 'checkbox' && e.target.type !== 'range') return;
   FP.keys[e.key.toLowerCase()] = true; if(e.key === 'Shift') FP.keys.shift = true;
   if(e.key === 'p' || e.key === 'P'){ zetFP(!FP.aan); return; }
-  if(e.key === 'f' || e.key === 'F'){ zetStep(!FP.step); return; }
+  if(e.key === 'f' || e.key === 'F'){ zetStep(!(FP.step && !FP.tuk)); return; }
+  if(e.key === 't' || e.key === 'T'){ zetTuk(!FP.tuk); return; }
   if(FP.aan && ['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' ', 'c'].includes(e.key.toLowerCase())) e.preventDefault();
   if(!FP.aan && (e.key === '+' || e.key === '=')) radius = Math.max(4, radius*0.85);
   if(!FP.aan && e.key === '-') radius = Math.min(900, radius*1.18);
@@ -1880,14 +1953,35 @@ const STEP = (() => { const g = new THREE.Group(); g.visible = false; scene.add(
   let kmh = -1; const zetKmh = v => { const n = Math.round(Math.abs(v)*0.36); if(n === kmh) return; kmh = n; const c = disp.image.getContext('2d'); c.fillStyle = '#05080a'; c.fillRect(0, 0, 128, 64);
     c.fillStyle = '#6fe3ff'; c.font = 'bold 30px monospace'; c.fillText(String(n), 12, 40); c.font = '12px Arial'; c.fillText('km/h', 70, 40); c.fillStyle = '#3fd36b'; c.fillRect(12, 50, 90, 6); disp.needsUpdate = true; };
   return {g, wv, wa, zetKmh}; })();
-function zetStep(v){ FP.step = !!v; FP.v = 0; $t('tStep').checked = FP.step; if(FP.step && !FP.aan) zetFP(true); STEP.g.visible = FP.step && FP.aan;
+// ---- tuktuk (driewieler): je zit voorin, zelfde besturing als de step maar sneller ----
+const TUK = (() => { const g = new THREE.Group(); g.visible = false; scene.add(g);
+  const geel = M(0xf2c21b, {roughness: 0.35, metalness: 0.2}), groen = M(0x1e8a4a, {roughness: 0.4}), zwart = M(0x151618, {roughness: 0.6}), rub = M(0x111213, {roughness: 0.85}), chroom = M(0xd9dde0, {metalness: 0.9, roughness: 0.2}), glas = M(0x9fc6d8, {transparent: true, opacity: 0.25, roughness: 0.05});
+  const wiel = (x, z) => { const w = new THREE.Group(); w.position.set(x, 2.1, z); g.add(w); cyl(w, 2.1, 1.2, rub, 0, 0, 0, 'x', 22); cyl(w, 1.2, 1.3, chroom, 0, 0, 0, 'x', 10); return w; };
+  const wv = wiel(0, -10), wa1 = wiel(-5.2, 8), wa2 = wiel(5.2, 8);
+  box(g, 11, 0.8, 20, zwart, 0, 3.0, 1.5);                                                                     // bodem
+  box(g, 4.0, 6.5, 4.5, groen, 0, 6.0, -9.0); box(g, 3.0, 1.0, 1.5, chroom, 0, 5.5, -11.4);                     // neus + bumper
+  cyl(g, 0.7, 0.4, M(0xfff3cf, {emissive: 0xfff3cf, emissiveIntensity: 0.9}), 0, 9.0, -11.3, 'z', 16);        // koplamp
+  box(g, 11.4, 5.0, 0.4, groen, 0, 6.0, -6.6); box(g, 11.2, 7.0, 0.15, glas, 0, 12.0, -6.6, false);           // dashboard + voorruit
+  for(const sx of [-1, 1]){ box(g, 0.4, 7.5, 0.4, zwart, sx*5.6, 12.3, -6.6); box(g, 0.4, 13.5, 0.4, zwart, sx*5.6, 9.5, 11.2); box(g, 0.3, 4.5, 15, geel, sx*5.6, 5.3, 2.5); }
+  box(g, 12.4, 0.6, 19.5, geel, 0, 16.3, 2.3); box(g, 12.6, 0.3, 19.8, zwart, 0, 16.6, 2.3);                   // dak
+  box(g, 11, 5.5, 0.6, geel, 0, 6.5, 11.4); box(g, 10, 1.6, 4, M(0x7a1f2b, {roughness: 0.7}), 0, 6.2, 8.2); box(g, 10, 4.5, 1.0, M(0x7a1f2b, {roughness: 0.7}), 0, 8.8, 10.4);   // achterkant + bank
+  box(g, 3.5, 1.2, 3.0, zwart, 0, 6.0, -2.0);                                                                  // bestuurdersstoel
+  const st = new THREE.Group(); st.position.set(0, 10.0, -5.6); g.add(st); cyl(st, 0.18, 7.5, chroom, 0, 0, 0, 'x', 10); for(const s2 of [-1, 1]) cyl(st, 0.3, 1.6, rub, s2*3.7, 0, 0, 'x', 10);
+  plak(g, 3.0, 0.8, lbl('FUDURA', 240, 64, '#1e8a4a', '#ffffff', 'bold 40px Arial'), 0, 15.6, -6.45, 0);
+  return {g, wv, wa: [wa1, wa2], st}; })();
+function zetTuk(v){ if(v){ FP.tuk = true; if(!FP.step) zetStep(true); else { STEP.g.visible = false; } $t('tTuk').checked = true; $t('tStep').checked = false; FP.pitch = -0.12; camera.fov = 66; camera.updateProjectionMatrix();
+    meld('Tuktuk: W = gas · S = remmen/achteruit · A/D = sturen · shift = turbo · T = uitstappen'); }
+  else { FP.tuk = false; $t('tTuk').checked = false; TUK.g.visible = false; zetStep(false); } }
+$t('tTuk').addEventListener('change', e => zetTuk(e.target.checked));
+function zetStep(v){ FP.step = !!v; FP.v = 0; if(!FP.step){ FP.tuk = false; $t('tTuk').checked = false; TUK.g.visible = false; } else if(FP.tuk === undefined) FP.tuk = false;
+  $t('tStep').checked = FP.step && !FP.tuk; if(FP.step && !FP.aan) zetFP(true); STEP.g.visible = FP.step && FP.aan && !FP.tuk;
   camera.fov = FP.step ? 62 : 42; camera.updateProjectionMatrix(); if(FP.step) FP.pitch = -0.45;
-  if(FP.step) meld('Elektrische step: W = gas · S = remmen/achteruit · A/D = sturen · shift = turbo · F = afstappen'); }
-$t('tStep').addEventListener('change', e => zetStep(e.target.checked));
+  if(FP.step && !FP.tuk) meld('Elektrische step: W = gas · S = remmen/achteruit · A/D = sturen · shift = turbo · F = afstappen'); }
+$t('tStep').addEventListener('change', e => { if(e.target.checked && FP.tuk){ FP.tuk = false; TUK.g.visible = false; $t('tTuk').checked = false; STEP.g.visible = FP.aan; return; } zetStep(e.target.checked); });
 function stapFP(dt){
   const k = FP.keys, v = (k.shift ? 45 : 18)*dt, f = new THREE.Vector3(-Math.sin(FP.yaw), 0, -Math.cos(FP.yaw)), rt = new THREE.Vector3(-f.z, 0, f.x);
   let stuur = 0;
-  if(FP.step){ const gas = (k.w || k.arrowup) ? 1 : 0, rem = (k.s || k.arrowdown) ? 1 : 0, vmax = k.shift ? 140 : 70;
+  if(FP.step){ const gas = (k.w || k.arrowup) ? 1 : 0, rem = (k.s || k.arrowdown) ? 1 : 0, vmax = FP.tuk ? (k.shift ? 220 : 130) : (k.shift ? 140 : 70);
     if(rem && FP.v > 0.5) FP.v = Math.max(0, FP.v - 90*dt); else if(rem) FP.v += (-12 - FP.v)*Math.min(1, dt*1.5);
     else if(gas) FP.v += (vmax - FP.v)*Math.min(1, dt*(k.shift ? 0.9 : 1.3)); else FP.v *= Math.max(0, 1 - dt*0.6);
     stuur = ((k.a || k.arrowleft) ? 1 : 0) - ((k.d || k.arrowright) ? 1 : 0); FP.yaw += stuur*dt*(1.6 - 0.7*Math.min(1, Math.abs(FP.v)/100));
@@ -1896,9 +1990,10 @@ function stapFP(dt){
   if(k.w || k.arrowup) FP.pos.addScaledVector(f, v); if(k.s || k.arrowdown) FP.pos.addScaledVector(f, -v);
   if(k.d || k.arrowright) FP.pos.addScaledVector(rt, v); if(k.a || k.arrowleft) FP.pos.addScaledVector(rt, -v); }
   if(k.q || k.c) FP.oog = Math.max(6, FP.oog - 20*dt); if(k.e || k[' ']) FP.oog = Math.min(17, FP.oog + 20*dt);
-  const yv = Math.abs(FP.pos.z) < PL/2 + 0.3 && FP.pos.x > XP(0) - PL/2 && FP.pos.x < XP(N_PL - 1) + PL/2 ? PL_H : 0;      // op de stelconplaten 14 cm hoger
-  const oog = FP.oog + yv + (FP.step ? 1.2 : 0); STEP.g.visible = !!FP.step;
-  if(FP.step){ STEP.g.position.set(FP.pos.x - Math.sin(FP.yaw)*3.0, yv, FP.pos.z - Math.cos(FP.yaw)*3.0); STEP.g.rotation.set(0, FP.yaw, 0); STEP.g.rotateZ(stuur*0.14*Math.min(1, Math.abs(FP.v)/50)); const rw = FP.v*dt/1.0; STEP.wv.rotation.x -= rw; STEP.wa.rotation.x -= rw; STEP.zetKmh(FP.v); }
+  const yv = Math.abs(FP.pos.z) < PL/2 + 0.3 && FP.pos.x > PX0 && FP.pos.x < PX1 ? PL_H : 0;      // op de stelconplaten 14 cm hoger
+  const oog = FP.tuk ? 12.5 + yv : FP.oog + yv + (FP.step ? 1.2 : 0); STEP.g.visible = !!FP.step && !FP.tuk; TUK.g.visible = !!FP.tuk;
+  if(FP.tuk){ TUK.g.position.set(FP.pos.x - Math.sin(FP.yaw)*2.0, yv, FP.pos.z - Math.cos(FP.yaw)*2.0); TUK.g.rotation.set(0, FP.yaw, 0); TUK.g.rotateZ(stuur*0.05*Math.min(1, Math.abs(FP.v)/80)); const rw = FP.v*dt/2.1; TUK.wv.rotation.x -= rw; TUK.wa.forEach(w => w.rotation.x -= rw); TUK.st.rotation.y = stuur*0.35; }
+  else if(FP.step){ STEP.g.position.set(FP.pos.x - Math.sin(FP.yaw)*3.0, yv, FP.pos.z - Math.cos(FP.yaw)*3.0); STEP.g.rotation.set(0, FP.yaw, 0); STEP.g.rotateZ(stuur*0.14*Math.min(1, Math.abs(FP.v)/50)); const rw = FP.v*dt/1.0; STEP.wv.rotation.x -= rw; STEP.wa.rotation.x -= rw; STEP.zetKmh(FP.v); }
   camera.position.set(FP.pos.x, oog, FP.pos.z);
   camera.lookAt(FP.pos.x - Math.sin(FP.yaw)*Math.cos(FP.pitch), oog + Math.sin(FP.pitch), FP.pos.z - Math.cos(FP.yaw)*Math.cos(FP.pitch)); }
 function resize(){ const w = wrap.clientWidth, h = wrap.clientHeight; renderer.setSize(w, h); renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5)); camera.aspect = w/h; camera.updateProjectionMatrix(); }
