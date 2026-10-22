@@ -95,7 +95,7 @@
     <label>Afdekkappen Jean Müller-stroken <input type="checkbox" id="tKapS" checked></label>
     <label>MetCom MCS301 per AIO (ERE-meting, optie) <input type="checkbox" id="tMet"></label>
     <div class="grp">Hekwerk + veiligheid</div>
-    <label>Hekwerk met poort en vluchtdeur <input type="checkbox" id="tHekA" checked></label>
+    <label>Hekwerk met 2 vluchtdeuren <input type="checkbox" id="tHekA" checked></label>
     <label>Veiligheidsafstanden (deuren open + 700) <input type="checkbox" id="tZoneA"></label>
     <label>AIO-kasten verbergen (kabelbanen van boven) <input type="checkbox" id="tAioUit"></label>
     <div class="grp">EMS-buitenkast</div>
@@ -1873,16 +1873,17 @@ const HEKA = new THREE.Group(); scene.add(HEKA);
     m.position.copy(a.clone().lerp(b, 0.5)).setY(H/2 + 0.5); m.rotation.y = -Math.atan2(d.z, d.x); m.castShadow = true; HEKA.add(m);
     const n = Math.max(1, Math.round(L/25)); for(let k = 0; k <= n; k++){ const p = a.clone().lerp(b, k/n); box(HEKA, 0.6, H + 1.0, 0.6, matZink, p.x, (H + 1)/2, p.z); } };
   const P = (x, z) => V(x, 0, z);
-  seg(P(hx0, hz0), P(vx - 5.5, hz0)); seg(P(vx + 5.5, hz0), P(hx1, hz0)); seg(P(hx1, hz0), P(hx1, hz1)); seg(P(hx1, hz1), P(gx + 15, hz1)); seg(P(gx - 15, hz1), P(hx0, hz1)); seg(P(hx0, hz1), P(hx0, hz0));
-  // poort (2 vleugels) en vluchtdeur
+  // geen poort; 2 vluchtdeuren 1100 diagonaal: achter-links en voor-rechts (Nick), draaien naar buiten, panieksluiting binnen
+  const va = hx0 + 1.0, vb = hx1 - 1.0 - 11;                                                         // linkerstijl van elke deur
+  seg(P(hx0, hz0), P(va, hz0)); seg(P(va + 11, hz0), P(hx1, hz0)); seg(P(hx1, hz0), P(hx1, hz1)); seg(P(hx1, hz1), P(vb + 11, hz1)); seg(P(vb, hz1), P(hx0, hz1)); seg(P(hx0, hz1), P(hx0, hz0));
   const vleugel = (x0, x1, z) => { const t = gaas.clone(); t.needsUpdate = true; t.wrapS = THREE.RepeatWrapping; t.repeat.set(0.55, 1); const L = Math.abs(x1 - x0);
     const m = new THREE.Mesh(new THREE.PlaneGeometry(L - 0.6, H - 1.5), new THREE.MeshStandardMaterial({map: t, transparent: true, alphaTest: 0.35, side: THREE.DoubleSide, roughness: 0.5, metalness: 0.4})); m.position.set((x0 + x1)/2, H/2 + 0.6, z); HEKA.add(m);
     for(const y2 of [1.0, H]) box(HEKA, L, 0.5, 0.5, matZink, (x0 + x1)/2, y2, z); for(const x of [x0 + 0.25, x1 - 0.25]) box(HEKA, 0.5, H - 0.5, 0.5, matZink, x, H/2 + 0.6, z); };
-  vleugel(gx - 15, gx, hz1); vleugel(gx, gx + 15, hz1); for(const x of [gx - 15, gx + 15]) box(HEKA, 1.0, H + 2, 1.0, matZink, x, (H + 2)/2, hz1);
-  vleugel(vx - 5.5, vx + 5.5, hz0); box(HEKA, 7.0, 0.4, 0.4, M(0xc8102e), vx, 10, hz0 + 0.8);
-  { const b = ctex(384, 96, (c, Wc, Hc) => { c.fillStyle = '#169b48'; c.fillRect(0, 0, Wc, Hc); c.fillStyle = '#fff'; c.font = 'bold 52px Arial'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('NOODUITGANG', Wc/2, Hc/2 + 2); });
-    for(const s2 of [-1, 1]){ const m = new THREE.Mesh(new THREE.PlaneGeometry(6, 1.5), new THREE.MeshBasicMaterial({map: b})); m.position.set(vx, H + 2.2, hz0 + s2*0.3); if(s2 < 0) m.rotation.y = Math.PI; HEKA.add(m); } }
-  { const t = sprite('hekwerk 2,0 m · poort 2 × 1500 · vluchtdeur 1100 (panieksluiting)', V(hx1, H + 4, hz1), 0.5, '#555'); scene.add(t); LABELS.push(t); }
+  const b = ctex(384, 96, (c, Wc, Hc) => { c.fillStyle = '#169b48'; c.fillRect(0, 0, Wc, Hc); c.fillStyle = '#fff'; c.font = 'bold 52px Arial'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('NOODUITGANG', Wc/2, Hc/2 + 2); });
+  for(const [x0, z, zin] of [[va, hz0, 1], [vb, hz1, -1]]){ vleugel(x0, x0 + 11, z); for(const x of [x0, x0 + 11]) box(HEKA, 0.9, H + 3, 0.9, matZink, x, (H + 3)/2, z);
+    box(HEKA, 7.0, 0.4, 0.4, M(0xc8102e), x0 + 5.5, 10, z + zin*0.8);                                                                  // panieksluiting (binnenzijde)
+    for(const s2 of [-1, 1]){ const m = new THREE.Mesh(new THREE.PlaneGeometry(6, 1.5), new THREE.MeshBasicMaterial({map: b})); m.position.set(x0 + 5.5, H + 2.2, z + s2*0.3); if(s2 < 0) m.rotation.y = Math.PI; HEKA.add(m); } }
+  { const t = sprite('hekwerk 2,0 m · 2 vluchtdeuren 1100 (panieksluiting)', V(hx1, H + 4, hz1), 0.5, '#555'); scene.add(t); LABELS.push(t); }
 }
 document.getElementById('tHekA').addEventListener('change', e => { HEKA.visible = e.target.checked; });
 document.getElementById('tZoneA').addEventListener('change', e => { const v = e.target.checked; ZONEA.visible = v;
