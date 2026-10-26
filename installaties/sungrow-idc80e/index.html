@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sungrow IDC80E · Fudura</title>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #dfe6e8; font: 13px/1.4 system-ui, Arial, sans-serif; color: #17212a; }
+  canvas { display: block; }
+  #paneel { position: fixed; top: 12px; right: 12px; width: 270px; max-height: calc(100% - 24px); overflow: auto; background: rgba(255,255,255,.96); border-radius: 10px; box-shadow: 0 3px 16px rgba(0,0,0,.18); padding: 10px 12px; z-index: 10; }
+  #paneel.dicht { width: auto; } #paneel.dicht > :not(#pKop) { display: none; }
+  #pKop { display: flex; align-items: center; gap: 6px; } #pKop h3 { margin: 0; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; flex: 1; }
+  #pKop a { color: #1b4f8a; text-decoration: none; }
+  .pKnop { border: 1px solid #c9d1d5; background: #fff; border-radius: 6px; width: 26px; height: 26px; cursor: pointer; }
+  summary { font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: #4a5860; margin: 10px 0 4px; cursor: pointer; }
+  .rij { display: flex; flex-wrap: wrap; gap: 5px; margin: 4px 0; }
+  .rij button { border: 1px solid #c9d1d5; background: #fff; border-radius: 6px; padding: 5px 9px; font: 600 12px system-ui, Arial; cursor: pointer; color: #243038; }
+  .rij button.aan { background: #1b4f8a; border-color: #1b4f8a; color: #fff; }
+  label.t { display: flex; justify-content: space-between; align-items: center; padding: 3px 0; cursor: pointer; }
+  .grp { color: #8a959c; font-size: 11px; margin-top: 6px; }
+  table.info { border-collapse: collapse; width: 100%; margin-top: 4px; } table.info td { padding: 2px 0; vertical-align: top; } table.info td:first-child { color: #8a959c; padding-right: 10px; white-space: nowrap; }
+  #kaart { position: fixed; inset: 0; background: rgba(20,26,32,.55); display: none; align-items: center; justify-content: center; padding: 14px; z-index: 30; }
+  #kaart > div { background: #fff; border-radius: 10px; max-width: 920px; width: 100%; max-height: 100%; overflow: auto; box-shadow: 0 8px 30px rgba(0,0,0,.35); }
+  #kaart h4 { margin: 14px 0 6px; } #kaart table { border-collapse: collapse; width: 100%; } #kaart td, #kaart th { text-align: left; padding: 5px 8px 5px 0; border-bottom: 1px solid #edf0f1; vertical-align: top; }
+  .r3 { color: #c0281f; font-weight: 700; } .r2 { color: #e06a1a; font-weight: 700; } .r1 { color: #1f8a4c; font-weight: 700; }
+  #tip { position: fixed; left: 12px; bottom: 12px; background: rgba(255,255,255,.95); border-radius: 8px; padding: 8px 10px; max-width: 360px; box-shadow: 0 2px 10px rgba(0,0,0,.15); display: none; z-index: 9; }
+</style>
+</head>
+<body>
+<div id="paneel">
+  <div id="pKop"><h3><a href="../../">‹ menu</a> Sungrow IDC80E</h3><button class="pKnop" id="pReset" title="Reset (R)">⟲</button><button class="pKnop" id="pDicht">›</button></div>
+  <details open><summary>Configuratie</summary>
+    <div class="grp" id="cfgNkop">Aantal</div>
+    <div class="rij" id="cfgN"></div>
+    <div id="cfgInfo"></div>
+    <div class="rij" style="margin-top:6px"><button id="bRisico">Aandachtspunten / risico's</button></div>
+  </details>
+  <details open><summary>Bekijken</summary>
+    <div class="rij"><button id="vOver">overzicht</button><button id="vBoven">boven</button><button id="vUnit">laadunit</button><button id="vKabel">aansluitruimte</button></div>
+  </details>
+  <details open><summary>Weergave</summary>
+    <label class="t">Vrije ruimte (Sungrow) <input type="checkbox" id="tZone" checked></label>
+    <label class="t">Maatvoering <input type="checkbox" id="tMaat"></label>
+    <label class="t">Kabels in de grond <input type="checkbox" id="tKabel" checked></label>
+    <label class="t">Grond doorzichtig <input type="checkbox" id="tGrond"></label>
+    <label class="t">Deuren open <input type="checkbox" id="tDeur"></label>
+    <label class="t">Auto's <input type="checkbox" id="tAuto" checked></label>
+    <label class="t">Labels <input type="checkbox" id="tLabel" checked></label>
+  </details>
+</div>
+<div id="tip"></div>
+<div id="kaart"><div>
+  <div style="display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid #e3e6e8"><b style="margin-right:auto;font-size:14px" id="kTitel">Aandachtspunten</b><button id="kX">Sluiten</button></div>
+  <div style="padding:6px 14px 14px" id="kBody"></div>
+</div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+// =====================================================================================================
+// Sungrow laadinfra — IDC80E (alles-in-één DC-lader 80 kW op voet) en CDC1000E ChargeStack (power cabinet 2 × 500 kW + dispensers)
+// bron: Sungrow productsheets (v2/v3 2026) en installatiehandleidingen; eenheid 1 = 1 m
+// =====================================================================================================
+const Q = new URLSearchParams(location.search), PROD = 'idc';
+const N = Math.max(1, Math.min(PROD === 'cdc' ? 6 : 4, parseInt(Q.get('n')) || (PROD === 'cdc' ? 4 : 2)));
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const renderer = new THREE.WebGLRenderer({antialias: true}); renderer.setPixelRatio(Math.min(2, devicePixelRatio)); renderer.shadowMap.enabled = true; renderer.outputEncoding = THREE.sRGBEncoding;
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0xdfe6e8); scene.fog = new THREE.Fog(0xdfe6e8, 60, 140);
+const camera = new THREE.PerspectiveCamera(40, 1, 0.05, 400);
+const ctl = new THREE.OrbitControls(camera, renderer.domElement); ctl.enableDamping = true; ctl.maxPolarAngle = Math.PI*0.495;
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8a9188, 0.75));
+const zon = new THREE.DirectionalLight(0xffffff, 0.85); zon.position.set(-14, 22, 12); zon.castShadow = true; zon.shadow.mapSize.set(2048, 2048); Object.assign(zon.shadow.camera, {left: -20, right: 20, top: 20, bottom: -20}); scene.add(zon);
+const M = (c, o) => new THREE.MeshStandardMaterial(Object.assign({color: c, roughness: 0.55, metalness: 0.1}, o || {}));
+const LABELS = [], MAAT = [], ZONE = [], KABEL = [], DEUREN = [], AUTOS = [], GRONDM = [], KLIK = [];
+function schil(p, w, h, d, m, x, y, z){ const t = 0.015; box(p, w, h, t, m, x, y, z - d/2 + t/2); box(p, t, h, d, m, x - w/2 + t/2, y, z); box(p, t, h, d, m, x + w/2 - t/2, y, z); box(p, w, t, d, m, x, y + h/2 - t/2, z); box(p, w, t, d, m, x, y - h/2 + t/2, z); }   // open kast (voorzijde = deur)
+function box(p, w, h, d, m, x, y, z, sch){ const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); if(sch !== false){ o.castShadow = true; o.receiveShadow = true; } p.add(o); return o; }
+function cyl(p, r, h, m, x, y, z, as, seg){ const o = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, seg || 16), m); o.position.set(x, y, z); if(as === 'x') o.rotation.z = Math.PI/2; if(as === 'z') o.rotation.x = Math.PI/2; o.castShadow = true; p.add(o); return o; }
+function ctex(w, h, f){ const c = document.createElement('canvas'); c.width = w; c.height = h; f(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = 4; return t; }
+function plak(p, w, h, t, x, y, z, ry){ const o = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({map: t, roughness: 0.5, transparent: true})); o.position.set(x, y, z); o.rotation.y = ry || 0; p.add(o); return o; }
+function sprite(txt, pos, s, kleur, lijst){ const c = document.createElement('canvas'), g = c.getContext('2d'); g.font = 'bold 40px system-ui, Arial'; const tw = Math.ceil(g.measureText(txt).width + 40), W = Math.max(256, tw + 20);
+  c.width = W; c.height = 96; const k = c.getContext('2d'); k.font = 'bold 40px system-ui, Arial'; k.fillStyle = 'rgba(255,255,255,.94)'; k.beginPath(); k.roundRect ? k.roundRect((W - tw)/2, 10, tw, 76, 14) : k.rect((W - tw)/2, 10, tw, 76); k.fill(); k.lineWidth = 4; k.strokeStyle = kleur || '#1b4f8a'; k.stroke();
+  k.fillStyle = '#1d2b33'; k.textAlign = 'center'; k.fillText(txt, W/2, 62); const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({map: t, depthTest: false, transparent: true})); sp.scale.set(0.9*(s || 1)*W/96, 0.9*(s || 1), 1); sp.position.copy(pos); sp.renderOrder = 10; scene.add(sp); (lijst || LABELS).push(sp); return sp; }
+function kabel(p, pts, r, m){ const c = new THREE.CatmullRomCurve3(pts, false, 'centripetal', 0.2); const o = new THREE.Mesh(new THREE.TubeGeometry(c, pts.length*20, r, 8, false), m); o.castShadow = true; p.add(o); return o; }
+const lbl = (txt, w, h, bg, fg, font) => ctex(w, h, (g, W, H) => { g.fillStyle = bg; g.fillRect(0, 0, W, H); g.fillStyle = fg; g.font = font || 'bold 28px Arial'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(txt, W/2, H/2 + 1); });
+
+// ---------- materialen ----------
+const wit = M(0xf1f2f0, {roughness: 0.4}), grijs = M(0xb9bec2, {roughness: 0.45, metalness: 0.3}), donker = M(0x2d3237, {roughness: 0.5}), zwart = M(0x16181b, {roughness: 0.6}),
+  beton = M(0xb5b3ad, {roughness: 0.95}), oranje = M(0xf08c1e, {roughness: 0.45}), glas = M(0x1a2733, {roughness: 0.15, metalness: 0.3}), kabelM = M(0x1d1e20, {roughness: 0.6});
+const asfalt = M(0x5c6064, {roughness: 0.95}), gras = M(0x7c9a5a, {roughness: 1}); GRONDM.push(gras, asfalt);
+{ const g = box(scene, 120, 0.1, 120, gras, 0, -0.05, 0, false); g.receiveShadow = true; }
+
+// ---------- bouwstenen ----------
+// IDC80E: kast 660 × 1050 × 390 op voet; totaal 1780 hoog (zonder kabelbeugels), met beugels 2032; fundering 840 × 726, 200 boven maaiveld
+function idc80(x, z, nr){ const G = new THREE.Group(); G.position.set(x, 0, z); scene.add(G);
+  box(G, 0.84, 0.2, 0.726, beton, 0, 0.1, 0);                                                      // fundering (boven maaiveld)
+  const y0 = 0.2; box(G, 0.5, 0.75, 0.32, grijs, 0, y0 + 0.375, -0.03);                           // voet (post)
+  box(G, 0.56, 0.06, 0.38, donker, 0, y0 + 0.03, -0.03);
+  const kast = new THREE.Group(); kast.position.set(0, y0 + 0.73, 0); G.add(kast);
+  schil(kast, 0.66, 1.05, 0.39, wit, 0, 0.525, 0);
+  box(kast, 0.055, 0.98, 0.12, donker, -0.355, 0.53, 0); box(kast, 0.055, 0.98, 0.12, donker, 0.355, 0.53, 0);   // kabelbeugels (CMS) zijkant
+  const front = ctex(330, 525, (g, W, H) => { g.fillStyle = '#f4f5f3'; g.fillRect(0, 0, W, H); g.fillStyle = '#1f2a33'; g.fillRect(55, 110, 220, 120); g.fillStyle = '#5fb0e8'; g.fillRect(62, 117, 206, 106);
+    g.strokeStyle = '#29b6f6'; g.lineWidth = 6; g.beginPath(); g.arc(165, 60, 24, 0, 7); g.stroke(); g.fillStyle = '#d32222'; g.beginPath(); g.arc(285, 165, 16, 0, 7); g.fill();
+    g.fillStyle = '#2a2e33'; g.fillRect(40, 300, 70, 120); g.fillRect(220, 300, 70, 120); g.fillStyle = '#e8eaeb'; g.fillRect(132, 315, 66, 90); g.fillStyle = '#333'; g.font = 'bold 22px Arial'; g.textAlign = 'center'; g.fillText('SUNGROW', 165, 490); g.font = '16px Arial'; g.fillText('IDC80E', 165, 465); });
+  // twee CCS2-stekers in holsters + kabels naar de bovenkant van de beugels
+  for(const s of [-1, 1]){ box(kast, 0.08, 0.16, 0.1, zwart, s*0.22, 0.3, 0.25); const k = kabel(kast, [V(s*0.36, 0.95, 0.04), V(s*0.48, 1.25, 0.1), V(s*0.62, 0.9, 0.25), V(s*0.6, 0.15, 0.32), V(s*0.4, -0.25, 0.4), V(s*0.26, 0.05, 0.36), V(s*0.22, 0.22, 0.3)], 0.017, zwart); }
+  // deur (scharnier links) en binnenwerk
+  const piv = new THREE.Group(); piv.position.set(-0.33, 0, 0.196); kast.add(piv);
+  const deur = box(piv, 0.66, 1.05, 0.02, wit, 0.33, 0.525, 0.01); plak(piv, 0.66, 1.05, front, 0.33, 0.525, 0.0205);
+  box(kast, 0.6, 0.98, 0.02, M(0xd7dcdc), 0, 0.525, -0.17);
+  for(const [y, c] of [[0.85, 0x5c7a5a], [0.62, 0x9aa1a5], [0.4, 0x2e6fd0], [0.2, 0x9aa1a5]]) box(kast, 0.48, 0.12, 0.1, M(c), 0, y, -0.1);
+  box(kast, 0.16, 0.2, 0.12, M(0x34383d), -0.17, 0.2, -0.08); cyl(kast, 0.012, 0.04, oranje, -0.17, 0.2, -0.01, 'z');   // MCCB
+  for(const [k, f] of [[0, 0x7a4a22], [1, 0x1c1c1c], [2, 0x8e9397], [3, 0x1f5fbf], [4, 0x3fa34d]]) box(kast, 0.03, 0.05, 0.02, M(f), 0.06 + k*0.05, 0.06, -0.12);   // aansluitbusbars L1 L2 L3 N PE
+  DEUREN.push({piv, open: -1.9});
+  const t = sprite('IDC80E #' + nr + ' · 80 kW · 2 × CCS2', V(x, 2.55, z), 0.45);
+  return G; }
+
+// CDC1000E power cabinet: 1600 × 2200 × 1126 (hoofd- + nevenkast, elk 800 breed, 500 kW); fundering 1800 × 1300 (randbalk 200, ±0 = 200 boven maaiveld)
+function cdcKast(x, z){ const G = new THREE.Group(); G.position.set(x, 0, z); scene.add(G);
+  box(G, 1.8, 0.2, 1.3, beton, 0, 0.1, 0);
+  const y0 = 0.2; box(G, 1.6, 0.1, 1.126, donker, 0, y0 + 0.05, 0);
+  const deurT = ctex(400, 1000, (g, W, H) => { g.fillStyle = '#f2f3f1'; g.fillRect(0, 0, W, H); g.fillStyle = '#5a6168'; for(const y0 of [330, 560]) for(let k = 0; k < 9; k++) g.fillRect(70, y0 + k*20, 260, 10);
+    g.fillStyle = '#3d4247'; g.fillRect(30, 40, 340, 6); g.fillStyle = '#2a8de0'; g.fillRect(150, 90, 100, 14); g.fillStyle = '#c8c8c8'; g.fillRect(345, 450, 14, 90); });
+  for(const s of [-1, 1]){ schil(G, 0.8, 2.1, 1.126, wit, s*0.4, y0 + 0.1 + 1.05, 0);
+    const piv = new THREE.Group(); piv.position.set(s*0.4 - 0.4*(s < 0 ? 1 : -1) * 0 + (s < 0 ? -0.8 : 0), 0, 0.563); G.add(piv);
+    const d = box(piv, 0.79, 2.08, 0.025, wit, 0.395, y0 + 1.15, 0.0125); plak(piv, 0.79, 2.08, deurT, 0.395, y0 + 1.15, 0.026); DEUREN.push({piv, open: -1.8});
+    if(s < 0){ cyl(piv, 0.05, 0.04, M(0xd32222), 0.395, y0 + 0.75, 0.05, 'z'); cyl(piv, 0.065, 0.02, M(0xf2c400), 0.395, y0 + 0.75, 0.03, 'z'); }   // noodstop hoofdkast
+    // binnenwerk: power modules boven, MCCB + AC-aansluitruimte onder
+    for(let k = 0; k < 4; k++) box(G, 0.7, 0.24, 0.6, M(0xd9dcdb), s*0.4, y0 + 1.45 + k*0.26, -0.1);
+    box(G, 0.7, 0.18, 0.4, M(0x34383d), s*0.4, y0 + 0.95, 0.05);
+    for(let k = 0; k < 6; k++) box(G, 0.04, 0.22, 0.06, M([0x7a4a22, 0x1c1c1c, 0x8e9397, 0x1f5fbf, 0x3fa34d, 0x1f5fbf][k]), s*0.4 - 0.28 + k*0.11, y0 + 0.45, 0.2);   // L1 L2 L3 N PE N
+  }
+  box(G, 0.02, 2.1, 1.13, M(0xdfe2e1), 0, y0 + 1.15, 0);
+  for(const s of [-1, 1]) cyl(G, 0.04, 0.05, grijs, s*0.7, y0 + 2.23, 0.4);                         // hijsogen
+  sprite('CDC1000E power cabinet · 2 × 500 kW', V(x, 3.0, z), 0.5);
+  return G; }
+
+// CCS-dispenser (vloeistofgekoeld): 703 × 2204 × 850, 2 × CCS2
+function dispenser(x, z, nr){ const G = new THREE.Group(); G.position.set(x, 0, z); scene.add(G);
+  box(G, 0.9, 0.2, 1.0, beton, 0, 0.1, 0); const y0 = 0.2;
+  box(G, 0.703, 2.0, 0.85, wit, 0, y0 + 1.0, 0); box(G, 0.72, 0.2, 0.87, M(0x2d3237), 0, y0 + 2.1, 0);
+  const f = ctex(352, 1000, (g, W, H) => { g.fillStyle = '#f4f5f3'; g.fillRect(0, 0, W, H); g.fillStyle = '#1f2a33'; g.fillRect(60, 160, 232, 150); g.fillStyle = '#5fb0e8'; g.fillRect(68, 168, 216, 134);
+    g.fillStyle = '#2a2e33'; g.fillRect(40, 420, 80, 140); g.fillRect(232, 420, 80, 140); g.fillStyle = '#d32222'; g.beginPath(); g.arc(176, 380, 18, 0, 7); g.fill();
+    g.fillStyle = '#29b6f6'; g.fillRect(0, 60, W, 12); g.fillStyle = '#333'; g.font = 'bold 28px Arial'; g.textAlign = 'center'; g.fillText('SUNGROW', 176, 900); });
+  plak(G, 0.703, 2.0, f, 0, y0 + 1.0, 0.426);
+  for(const s of [-1, 1]) kabel(G, [V(s*0.25, y0 + 2.0, 0.2), V(s*0.45, y0 + 2.25, 0.5), V(s*0.5, y0 + 1.2, 0.75), V(s*0.3, y0 + 0.7, 0.65), V(s*0.2, y0 + 1.2, 0.46)], 0.024, zwart);
+  sprite('dispenser #' + nr + ' · 2 × CCS2', V(x, 2.95, z), 0.42);
+  return G; }
+
+function auto(x, z, ry){ const G = new THREE.Group(); G.position.set(x, 0, z); G.rotation.y = ry || 0; scene.add(G); AUTOS.push(G);
+  const k = [0x3a6ea5, 0xb8bcc0, 0x8a2b2b, 0x2d3237][AUTOS.length % 4];
+  box(G, 1.85, 0.62, 4.6, M(k, {roughness: 0.3, metalness: 0.5}), 0, 0.55, 0); box(G, 1.62, 0.46, 2.3, glas, 0, 1.08, 0.2); box(G, 1.5, 0.05, 2.0, M(k, {roughness: 0.3, metalness: 0.5}), 0, 1.33, 0.25);
+  for(const [a, b] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) cyl(G, 0.33, 0.22, zwart, a*0.86, 0.33, b*1.45, 'x', 18);
+  return G; }
+
+// vrije ruimte (zone op de grond) en maatlijnen
+function zone(x0, z0, x1, z1, txt){ const g = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0), new THREE.MeshBasicMaterial({color: 0x3fa34d, transparent: true, opacity: 0.22, depthWrite: false}));
+  g.rotation.x = -Math.PI/2; g.position.set((x0 + x1)/2, 0.012, (z0 + z1)/2); scene.add(g); ZONE.push(g);
+  const l = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(x1 - x0, 0.001, z1 - z0)), new THREE.LineDashedMaterial({color: 0x1f8a4c, dashSize: 0.15, gapSize: 0.1}));
+  l.computeLineDistances(); l.position.copy(g.position); scene.add(l); ZONE.push(l); if(txt) sprite(txt, V((x0 + x1)/2, 0.3, z1 + 0.15), 0.3, '#1f8a4c', ZONE); }
+const mL = new THREE.LineBasicMaterial({color: 0x1a4f9c, depthTest: false, transparent: true});
+function maat(a, b, off, txt){ const g = new THREE.Group(), a2 = a.clone().add(off), b2 = b.clone().add(off);
+  for(const [p, q] of [[a, a2], [b, b2], [a2, b2]]){ const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([p, q]), mL); l.renderOrder = 9; g.add(l); }
+  scene.add(g); MAAT.push(g); const sp = sprite(txt, a2.clone().lerp(b2, 0.5).add(V(0, 0.18, 0)), 0.3, '#1a4f9c', MAAT); g.visible = false; sp.visible = false; }
+
+// ---------- opstelling ----------
+const KAST = {x: -6, z: -3};                                                       // verdeelkast / aansluitpunt (netzijde)
+let INFO = {}, FOCUS = V(0, 1, 0);
+{ const vk = new THREE.Group(); vk.position.set(KAST.x, 0, KAST.z); scene.add(vk); box(vk, 1.2, 0.2, 0.6, beton, 0, 0.1, 0); box(vk, 1.0, 1.5, 0.45, M(0x9aa3a8, {metalness: 0.4}), 0, 0.95, 0);
+  plak(vk, 0.5, 0.2, lbl('VERDEELKAST', 260, 90, '#f2c400', '#111', 'bold 30px Arial'), 0, 1.5, 0.226);
+  sprite(PROD === 'idc' ? 'verdeelkast / HVK (netzijde)' : 'trafo / HVK (netzijde)', V(KAST.x, 2.1, KAST.z), 0.4); }
+const asf = (x0, z0, x1, z1) => { const o = box(scene, x1 - x0, 0.02, z1 - z0, asfalt, (x0 + x1)/2, 0.01, (z0 + z1)/2, false); o.receiveShadow = true; };
+const kab = (pts, r) => { const o = kabel(scene, pts, r || 0.03, kabelM); KABEL.push(o); return o; };
+if(PROD === 'idc'){
+  const P = 2.66;                                                                    // h.o.h.: 0,66 kast + 2,0 m vrij (Sungrow 3.1.2)
+  const x0 = -(N - 1)*P/2;
+  asf(x0 - 2.5, 0.6, x0 + (N - 1)*P + 2.5, 6.2);
+  for(let i = 0; i < N; i++){ const x = x0 + i*P; idc80(x, 0, i + 1);
+    // auto's links en rechts van elke lader (2 laadpunten per lader)
+    // vrije ruimte: 1500 zijkant, 300 boven, 800-1200 voor, 200 achter
+    zone(x - 0.33 - (i === 0 ? 1.5 : 1.0), -0.2 - 0.2, x + 0.33 + (i === N - 1 ? 1.5 : 1.0), 0.2 + 1.2, i === 0 ? 'vrije ruimte Sungrow: zijkant 1500 · tussen laders 2000 · voor 800–1200' : null);
+    kab([V(KAST.x + 0.2, 0.1, KAST.z), V(KAST.x + 0.2, -0.6, KAST.z + 0.3), V(KAST.x + 0.6, -0.6, -1.2 - i*0.12), V(x, -0.6, -1.2 - i*0.12), V(x, -0.6, -0.1), V(x, 0.3, -0.05), V(x, 0.95, -0.05)], 0.022);
+    maat(V(x - 0.33, 0.93, 0.25), V(x + 0.33, 0.93, 0.25), V(0, 0, 0.6), '660');
+  }
+  for(let k = 0; k <= N; k++) auto(x0 - P/2 + k*P, 3.6, 0);                       // 1 parkeervak tussen/naast elke lader: elke lader bedient 2 vakken
+  maat(V(x0 - 0.42, 0.2, 0.363), V(x0 + 0.42, 0.2, 0.363), V(0, 0, 0.9), 'fundering 840 × 726');
+  maat(V(x0 + 0.42, 0, -0.363), V(x0 + 0.42, 1.98, -0.363), V(0.5, 0, 0), 'h 1780 (+200 fundering)');
+  if(N > 1) maat(V(x0 + 0.33, 0.6, 0.6), V(x0 + P - 0.33, 0.6, 0.6), V(0, 0, 0.2), '2000 vrij');
+  FOCUS = V(0, 1, 1);
+  INFO = {Product: 'Sungrow IDC80E (alles-in-één)', Vermogen: N + ' × 80 kW = ' + N*80 + ' kW', Laadpunten: N*2 + ' × CCS2 (2 × 40 kW gelijktijdig)', 'AC per lader': '3/N/PE 400 V · 125 A', 'AC totaal': N + ' × 125 A = ' + N*125 + ' A', 'Kabel per lader': '4×50 + 25 Cu (handleiding) · max 95 mm² (sheet)', Afmeting: '660 × 1050 × 390 (op voet 1780 h)'};
+} else {
+  const cx = 0, cz = -2.2; cdcKast(cx, cz);
+  zone(cx - 0.8 - 0.5, cz - 0.563 - 1.0, cx + 0.8 + 0.5, cz + 0.563 + 1.0, 'vrije ruimte: voor/achter ≥ 1000 · zijkant ≥ 500');
+  kab([V(KAST.x + 0.2, 0.1, KAST.z), V(KAST.x + 0.2, -0.7, KAST.z + 0.2), V(cx - 0.4, -0.7, cz - 0.1), V(cx - 0.4, 0.4, cz + 0.2)], 0.045);
+  kab([V(KAST.x + 0.35, 0.1, KAST.z), V(KAST.x + 0.35, -0.75, KAST.z + 0.2), V(cx + 0.4, -0.75, cz - 0.3), V(cx + 0.4, 0.4, cz + 0.2)], 0.045);
+  const P = 5.4, x0 = -(N - 1)*P/2, dz = 3.2;
+  asf(x0 - 2.5, dz - 1.0, x0 + (N - 1)*P + 2.5, dz + 6.0);
+  for(let i = 0; i < N; i++){ const x = x0 + i*P; dispenser(x, dz, i + 1); auto(x - 1.3, dz + 3.3, 0); auto(x + 1.3, dz + 3.3, 0);
+    kab([V(cx + 0.1*(i - N/2), 0.3, cz + 0.2), V(cx + 0.1*(i - N/2), -0.6, cz + 0.6), V(x, -0.6, dz - 1.2), V(x, -0.6, dz - 0.1), V(x, 0.4, dz)], 0.03); }
+  maat(V(cx - 0.8, 2.3, cz + 0.563), V(cx + 0.8, 2.3, cz + 0.563), V(0, 0.4, 0), '1600');
+  maat(V(cx + 0.8, 0.2, cz - 0.563), V(cx + 0.8, 0.2, cz + 0.563), V(0.6, 0, 0), '1126');
+  maat(V(cx + 0.8, 0.2, cz + 0.563), V(cx + 0.8, 2.4, cz + 0.563), V(0.6, 0, 0.3), 'h 2200 (+200)');
+  maat(V(cx - 0.9, 0.2, cz + 0.65), V(cx + 0.9, 0.2, cz + 0.65), V(0, 0, 1.2), 'fundering 1800 × 1300');
+  maat(V(x0 - 0.35, 2.4, dz + 0.425), V(x0 + 0.35, 2.4, dz + 0.425), V(0, 0.3, 0), '703 × 850 × 2204');
+  FOCUS = V(0, 1, 1.5);
+  INFO = {Product: 'Sungrow CDC1000E ChargeStack', Vermogen: '1000 kW (2 × 500 kW), max. 12 uitgangen', Dispensers: N + ' × CCS (2 × CCS2, 500 A / boost 800 A)', 'AC-aansluiting': '2 circuits × (3 × 185 Cu + N 185 + PE 95)', 'AC-stroom': '≈ 2 × 760 A (1 MW / 400 V / 0,97)', Afmeting: 'cabinet 1600 × 2200 × 1126 · ≤ 1600 kg'};
+}
+sprite('kabels in de grond (600 mm)', V(KAST.x + 1.5, 0.35, KAST.z + 0.6), 0.3, '#5d6b73', KABEL);
+
+// ---------- paneel ----------
+const $ = id => document.getElementById(id);
+$('cfgNkop').textContent = PROD === 'idc' ? "Aantal laders" : 'Aantal dispensers';
+for(let n = 1; n <= (PROD === 'cdc' ? 6 : 4); n++){ const b = document.createElement('button'); b.textContent = n; if(n === N) b.classList.add('aan'); b.onclick = () => { if(n !== N) location.search = '?n=' + n; }; $('cfgN').appendChild(b); }
+$('cfgInfo').innerHTML = '<table class="info">' + Object.entries(INFO).map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('') + '</table>';
+$('pDicht').onclick = () => { $('paneel').classList.toggle('dicht'); $('pDicht').textContent = $('paneel').classList.contains('dicht') ? '‹' : '›'; };
+const reset = () => { location.search = '?n=' + N; }; $('pReset').onclick = reset;
+const zet = (lijst, v) => lijst.forEach(o => o.visible = v);
+$('tZone').onchange = e => zet(ZONE, e.target.checked); $('tMaat').onchange = e => zet(MAAT, e.target.checked); $('tKabel').onchange = e => zet(KABEL, e.target.checked);
+$('tAuto').onchange = e => zet(AUTOS, e.target.checked); $('tLabel').onchange = e => zet(LABELS, e.target.checked);
+$('tGrond').onchange = e => GRONDM.forEach(m => { m.transparent = e.target.checked; m.opacity = e.target.checked ? 0.35 : 1; m.depthWrite = !e.target.checked; m.needsUpdate = true; });
+let deurDoel = 0; $('tDeur').onchange = e => deurDoel = e.target.checked ? 1 : 0; let deurT = 0;
+const VIEW = (t, th, ph, r) => () => { ctl.target.copy(t); const p = V(Math.sin(ph)*Math.sin(th), Math.cos(ph), Math.sin(ph)*Math.cos(th)).multiplyScalar(r).add(t); camera.position.copy(p); };
+const vOver = VIEW(FOCUS, -0.55, 0.95, PROD === 'idc' ? 9 + N*1.6 : 16 + N*2.4);
+$('vOver').onclick = vOver; $('vBoven').onclick = VIEW(FOCUS, 0, 0.02, PROD === 'idc' ? 10 + N*2.2 : 20 + N*1.5);
+$('vUnit').onclick = PROD === 'idc' ? VIEW(V(-(N - 1)*1.33, 1.4, 0), 0.35, 1.3, 3.6) : VIEW(V(0, 1.3, -2.2), 0.4, 1.25, 6);
+$('vKabel').onclick = () => { $('tDeur').checked = true; deurDoel = 1; (PROD === 'idc' ? VIEW(V(-(N - 1)*1.33, 1.0, 0), 0.2, 1.35, 2.2) : VIEW(V(0, 0.7, -2.2), 0.15, 1.3, 3.6))(); };
+vOver();
+window.addEventListener('keydown', e => { if(e.key === 'r' || e.key === 'R') reset(); });
+// ---------- risico's / aandachtspunten ----------
+const FILTER = a => !(['Kabelaansluiting CDC1000E']).includes(a);
+const RIS = [
+  ['r3', 'Kabelaansluiting CDC1000E', 'Per 500 kW-circuit staan klemmen voor <b>1 × 185 mm² Cu (of 300 Al) per fase</b>, en per kast 2 circuits. Bij 500 kW is de AC-stroom ≈ 760 A per circuit — dat kan niet met één 185 mm²-kabel per fase. Uit de tekening (L1 L2 L3 · N PE N · L1 L2 L3) lijken er 2 aansluitsets per circuit te zijn = <b>2 × 185 per fase</b> (≈ 380 A per kabel). In de grond bij Sww 1,5 en groepering haalt 185 Cu dat niet; <b>vraag Sungrow om max. aantal en doorsnede per fase en klemtype</b> (bijv. 2 × 240 / 4 × 185 per fase).'],
+  ['r3', 'Kortsluitvastheid onbekend', 'Geen Icc / Icw / voorwaardelijke kortsluitstroom in sheets of handleidingen. Bij een HVK met 25–30 kA moet de interne MCCB / zekering dat aankunnen (NEN 1010 § 434.5). <b>Opvragen bij Sungrow.</b>'],
+  ['r3', 'Aardlekbeveiliging (NEN 1010 § 722.531.3)', 'Handleiding: "3P MCCB zonder aardlek of 3P+N MCCB met aardlek" (vertaling onduidelijk). NEN 1010 eist per aansluitpunt aardlek (type B of A + 6 mA DC-detectie), tenzij elektrische scheiding. De IDC80E heeft een IMD (IT aan DC-zijde) → <b>verklaring van Sungrow dat de DC-uitgang galvanisch gescheiden is</b>, anders is een type-B RCD per lader nodig.'],
+  ['r2', 'Kabeldoorsnede IDC80E', 'Handleiding: 4 × 50 + PE 25 mm² Cu (vaste kabelschoen SC50-8, M8). Sheet: "max. 95 mm²". Bij 125 A en lengtes > ± 60 m of in de grond met groepering wil je 70–95 mm². <b>Bevestigen dat 95 mm² (SC95-8) op de busbars en door de bodeminvoer past</b>; maximale kabeldiameter / wartel wordt nergens genoemd (open bodeminvoer met brandwerende kit).'],
+  ['r2', 'Netbeheerder / netcode', 'THDi < 5 % alleen "bij vol vermogen" — bij deellast kan het hoger zijn. CDC1000E: cos φ 0,9 cap – 0,9 ind en "reactive power regulation" → afstemmen met netbeheerder (Q-regeling, blindvermogen, flicker, EN 61000-3-12). Certificaten CDC1000E alleen <b>CE / CB</b> (geen KEMA/DEKRA/TÜV-rapport genoemd).'],
+  ['r2', 'AFIR (EU 2023/1804)', 'Publieke laders ≥ 50 kW moeten een <b>betaalautomaat (pinpas / creditcard)</b> hebben — bij beide producten "optioneel". OCPP 2.0.1 "coming soon / ready for". Meetcertificaat: IDC80E MID/Eichrecht, CDC-dispensers MID optioneel.'],
+  ['r2', 'Nieuw product', 'IDC80E: "Available in June" (2026) → beperkte praktijkervaring, documentatie op onderdelen inconsistent (kabeltabel vs. sheet, vertaling upstream-beveiliging). Garantie 3 jaar standaard.'],
+  ['r1', 'Stelsel / spanning', 'TN-C, TN-S, TN-C-S en TT toegestaan · 400 V (323–440 V) · 50 Hz → past op het Nederlandse net.'],
+  ['r1', 'Omgeving', 'IDC80E IP65, C5, IK10, −30…60 °C (derating > 50 °C). CDC1000E IP55, −35…55 °C. Hoogte ≤ 2000 m. Geluid ≤ 60/65 dB(A) op 1 m — toetsen aan Activiteitenbesluit bij woningen.'],
+  ['r1', 'Ruimte & fundering', 'IDC80E: 1500 zijkant, 2000 tussen laders, 800–1200 voor, fundering 840 × 726 × 600 (200 boven mv). CDC1000E: voor/achter ≥ 1000, zijkant ≥ 500, fundering 1800 × 1300, ≤ 1600 kg (heftruck ≥ 1,5 t).'],
+  ['r2', 'Cyber / cloud', 'OTA-updates en beheer via Sungrow iEnergyCharge (4G/WiFi/Ethernet). Afstemmen met IT-beleid (externe toegang, NIS2) en of beheer via eigen CSMS (OCPP) zonder Sungrow-cloud kan.']];
+$('kBody').innerHTML = '<p style="color:#5d6b73;margin:8px 0">Eerste screening op basis van productsheets en installatiehandleidingen (versie 2026). <span class="r3">●</span> blokkerend / opvragen · <span class="r2">●</span> aandacht · <span class="r1">●</span> akkoord</p><table><tr><th></th><th>Onderwerp</th><th>Bevinding / actie</th></tr>'
+  + RIS.filter(([k, a]) => FILTER(a)).map(([k, a, b]) => `<tr><td class="${k}">●</td><td style="white-space:nowrap;font-weight:600">${a}</td><td>${b}</td></tr>`).join('') + '</table>';
+$('bRisico').onclick = () => $('kaart').style.display = 'flex'; $('kX').onclick = () => $('kaart').style.display = 'none'; $('kaart').onclick = e => { if(e.target === $('kaart')) $('kaart').style.display = 'none'; };
+// ---------- render ----------
+function maatvoer(){ const w = innerWidth, h = innerHeight; renderer.setSize(w, h); camera.aspect = w/h; camera.updateProjectionMatrix(); }
+addEventListener('resize', maatvoer); maatvoer();
+(function loop(){ requestAnimationFrame(loop); deurT += (deurDoel - deurT)*0.12; DEUREN.forEach(d => d.piv.rotation.y = d.open*deurT); ctl.update(); renderer.render(scene, camera); })();
+window.__sg = {scene, camera, ctl, VIEW};
+</script>
+</body>
+</html>
