@@ -456,7 +456,7 @@ function frontCdc(G, cx, s){ const H = h => 0.2 + h;
       for(let p = 0; p < 3; p++){ const xp = x - 0.06 + p*0.06; box(G, 0.04, 0.012, 0.05, cuM, xp, y + ys*0.185, 0.1); bouten(G, [[xp, y + ys*0.192, 0.1]], 'y'); } }
     // AC-kabels 185 mm² van de rail achter (door de montageplaat) naar de bovenklemmen
     for(let p = 0; p < 3; p++){ const xp = x - 0.06 + p*0.06, m = ader[['L1', 'L2', 'L3'][p]];
-      box(G, 0.026, 0.03, 0.005, tinM, xp, y + 0.195, 0.1); kabel(G, [V(xp, y + 0.215, 0.1), V(xp, H(0.93), 0.08), V(xp, H(0.935), -0.12), V(xp, H(0.86), -0.27), V(xp, H(0.8), -0.305)], 0.012, kabelZw);
+      box(G, 0.026, 0.03, 0.005, tinM, xp, y + 0.195, 0.1); const sg = ox < 0 ? -1 : 1, xs = cx + sg*(0.338 + (sg < 0 ? 2 - p : p)*0.016); kabel(G, [V(xp, y + 0.215, 0.1), V(xp, H(0.915) - p*0.012, 0.12), V(xs - sg*0.03, H(0.915) - p*0.012, 0.14), V(xs, H(0.88) - p*0.012, 0.15), V(xs, H(0.78), 0.15), V(xs, H(0.75), 0.05), V(xs, H(0.72), -0.2), V(xs, H(0.69), -0.305)], 0.012, m); marker(G, xs, H(0.82), 0.15, 0.012, ['L1', 'L2', 'L3'][p] + '·' + (ox < 0 ? '1' : '2'));   // 185 mm² van de AC-klemmen achter → MCCB
       cyl(G, 0.0135, 0.03, m, xp, y + 0.235, 0.1, null, 14);
       // flexibele koperbanden onderklem → 3-fase verdeelrail
       box(G, 0.03, 0.05, 0.006, cuM, xp, y - 0.21, 0.1); }
