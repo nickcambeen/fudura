@@ -73,7 +73,7 @@
     <div class="cfgInfo" id="cfgInfo"></div>
   </details>
   <details open><summary>Bekijken</summary>
-    <div class="grp">Opstelling</div><div class="knoprij"><button id="bOverzicht">overzicht</button><button id="bBoven">boven</button><button id="bAchter">achterzijde</button><button id="bSkid">kabelbanen</button><button id="bSkidBoven">skid van boven</button></div>
+    <div class="grp">Opstelling</div><div class="knoprij"><button id="bOverzicht">overzicht</button><button id="bBoven">boven</button><button id="bAchter">achterzijde</button><button id="bSkid">kabelbanen</button><button id="bSkidBoven">skid van boven</button><button id="b2D" title="Bovenaanzicht met alle maten — download als DXF, SVG of PDF">2D-tekening (DXF/PDF)</button></div>
     <div class="grp">AIO's</div><div class="knoprij"><button id="bAio">AIO 1</button><button id="bMccb">MCCB</button></div>
     <div class="grp">Junction box</div><div class="knoprij"><button id="bKast">junction box</button></div>
     <div class="grp">Gebouw</div><div class="knoprij"><button id="bGebouw">gebouw</button><button id="bHvk">HVK</button><button id="bMeter">meterkast</button><button id="bKelder">kelder</button></div>
@@ -2113,6 +2113,106 @@ $t('tFP').addEventListener('change', e => zetFP(e.target.checked));
 // reset: pagina opnieuw laden met dezelfde configuratie (aantal AIO's, backfill) — alle knoppen, deuren en camera terug naar de beginstand
 function resetView(){ const u = new URL(location.href), q = new URLSearchParams(); ['n', 'bf'].forEach(k => { if(u.searchParams.get(k) !== null) q.set(k, u.searchParams.get(k)); }); u.search = q.toString(); location.replace(u.toString()); }
 document.getElementById('pReset').addEventListener('click', resetView);
+// ---------- 2D-tekening (bovenaanzicht) met alle maten: weergave als SVG + download DXF / SVG / afdrukken (PDF) ----------
+const TEKEN2D = (() => {
+  // wereld (1 = 100 mm) → tekening (mm): oorsprong = hek linksvoor, X naar rechts, Y naar achteren (voorkant onderaan)
+  const X = x => Math.round((x - ZN.hx0)*1000)/10, Y = z => Math.round((ZN.hz1 - z)*1000)/10, mm = d => Math.round(Math.abs(d)*100);
+  function verzamel(){
+    const E = [];                                                                         // {t:'L'|'T'|'R', laag, ...}
+    const L = (laag, x1, y1, x2, y2, stijl) => E.push({t: 'L', laag, x1, y1, x2, y2, stijl});
+    const R = (laag, xa, ya, xb, yb, stijl) => { L(laag, xa, ya, xb, ya, stijl); L(laag, xb, ya, xb, yb, stijl); L(laag, xb, yb, xa, yb, stijl); L(laag, xa, yb, xa, ya, stijl); };
+    const T = (laag, x, y, txt, h, rot, kleur) => E.push({t: 'T', laag, x, y, txt, h: h || 90, rot: rot || 0, kleur});
+    const RW = (laag, x0, z0, x1, z1, stijl) => R(laag, X(x0), Y(z0), X(x1), Y(z1), stijl);       // rechthoek in wereldmaten
+    // maatlijn tussen twee punten (horizontaal 'h' of verticaal 'v') op afstand pos (tekening-mm), tekst = gemeten waarde
+    const maat = (r, a, b, pos, txt) => { const v = Math.abs(b - a); if(v < 1) return; const t = txt || String(Math.round(v)), k = 60;
+      if(r === 'h'){ L('MAAT', a, pos, b, pos); for(const q of [a, b]){ L('MAAT', q, pos - 120, q, pos + 120); L('MAAT', q - k, pos - k, q + k, pos + k); } T('MAAT', (a + b)/2, pos + 40, t, 80); }
+      else { L('MAAT', pos, a, pos, b); for(const q of [a, b]){ L('MAAT', pos - 120, q, pos + 120, q); L('MAAT', pos - k, q - k, pos + k, q + k); } T('MAAT', pos - 40, (a + b)/2, t, 80, 90); } };
+    const keten = (r, pts, pos) => { const s = [...new Set(pts.map(q => Math.round(q*10)/10))].sort((p, q) => p - q); for(let i = 0; i < s.length - 1; i++) maat(r, s[i], s[i + 1], pos); };
+    // stelconplaten
+    PLATEN.forEach((g, k) => { const w = PLW[k]; RW('STELCON', g.position.x - w/2, -PL/2, g.position.x + w/2, PL/2); T('STELCON', X(g.position.x), Y(-PL/2) - 160, 'stelcon ' + mm(w) + ' x ' + mm(PL), 70); });
+    // AIO's (metal base 1020 x 1420) met kast 1000 x 1420
+    for(let i = 0; i < N_AIO; i++){ RW('AIO', XA(i) - AW/2, AZ - AD/2, XA(i) + AW/2, AZ + AD/2); RW('AIO', XA(i) - AW/2 + 0.1, AZ - AD/2, XA(i) + AW/2 - 0.1, AZ + AD/2, 'stip');
+      T('AIO', X(XA(i)), Y(AZ) + 60, 'AIO #' + (i + 1) + (i === 0 ? ' (master)' : ''), 110); T('AIO', X(XA(i)), Y(AZ) - 110, 'DELTerra C 125 kW / 261 kWh', 60); T('AIO', X(XA(i)), Y(AZ + AD/2) + 60, 'voorkant (deur)', 55); }
+    // junction box
+    if(!NO_JB){ RW('JB', KXW - KD/2, KZW - KW/2, KXW + KD/2, KZW + KW/2); T('JB', X(KXW), Y(KZW), 'JB', 90, 90); }
+    // EMS-kast (met de rug tegen de laatste AIO, deur naar +x)
+    RW('EMS', SXE - 4.72, AZ - 3.925, SXE, AZ + 3.925); T('EMS', X(SXE - 1.0), Y(AZ - 1.2), 'EMS-kast 785 x 472', 60, 90);
+    // vrije zone + hekwerk met vluchtdeuren
+    RW('ZONE', ZN.x0, ZN.z0, ZN.x1, ZN.z1, 'streep'); T('ZONE', X(ZN.x0) + 600, Y(ZN.z0) - 120, 'vrije zone (700 na deurzwaai)', 60);
+    const va = ZN.hx0 + 1.0, vb = ZN.hx1 - 1.0 - 11;
+    L('HEKWERK', X(ZN.hx0), Y(ZN.hz0), X(va), Y(ZN.hz0)); L('HEKWERK', X(va + 11), Y(ZN.hz0), X(ZN.hx1), Y(ZN.hz0)); L('HEKWERK', X(ZN.hx1), Y(ZN.hz0), X(ZN.hx1), Y(ZN.hz1));
+    L('HEKWERK', X(ZN.hx1), Y(ZN.hz1), X(vb + 11), Y(ZN.hz1)); L('HEKWERK', X(vb), Y(ZN.hz1), X(ZN.hx0), Y(ZN.hz1)); L('HEKWERK', X(ZN.hx0), Y(ZN.hz1), X(ZN.hx0), Y(ZN.hz0));
+    for(const [x0, z, s] of [[va, ZN.hz0, 1], [vb, ZN.hz1, -1]]){ const a = X(x0), b = X(x0 + 11), y = Y(z); L('VLUCHTDEUR', a, y, a, y + s*1100); for(let k = 0; k <= 16; k++){ const f0 = k/16*Math.PI/2, f1 = (k + 1)/16*Math.PI/2; if(k < 16) L('VLUCHTDEUR', a + 1100*Math.cos(f0), y + s*1100*Math.sin(f0), a + 1100*Math.cos(f1), y + s*1100*Math.sin(f1), 'stip'); }
+      T('VLUCHTDEUR', (a + b)/2, y + s*1250, 'vluchtdeur 1100 (naar buiten)', 60); }
+    T('HEKWERK', X(ZN.hx0) + 200, Y(ZN.hz1) + 120, 'hekwerk h = 2000', 70, 0);
+    // sparingen in de stelconplaten
+    scene.updateMatrixWorld(true); const sp = [];
+    scene.traverse(o => { if(!o.isMesh || !o.geometry || o.geometry.type !== 'BoxGeometry' || !o.material || !o.material.color || o.material.color.getHex() !== 0x0b0c0d) return; const pr = o.geometry.parameters;
+      if(Math.abs(pr.height - (PL_H + 0.04)) > 0.01) return; const v = new THREE.Vector3(); o.getWorldPosition(v); if(!o.visible || !o.parent.visible) return; sp.push({x: v.x, z: v.z, w: pr.width, d: pr.depth}); });
+    sp.forEach(q => { RW('SPARING', q.x - q.w/2, q.z - q.d/2, q.x + q.w/2, q.z + q.d/2); L('SPARING', X(q.x - q.w/2), Y(q.z - q.d/2), X(q.x + q.w/2), Y(q.z + q.d/2)); L('SPARING', X(q.x - q.w/2), Y(q.z + q.d/2), X(q.x + q.w/2), Y(q.z - q.d/2)); });
+    // kabelsleuf (deel binnen de tekening + richting HVK)
+    if(TRENCH && TRENCH.x0 !== undefined){ const c = [V(TRENCH.x0 - 1.0, 0, TRENCH.z0), V(TRENCH.xData + 0.6, 0, TRENCH.z0), V(TRENCH.xData + 0.6, 0, TRENCH.z1), V(TRENCH.x0 - 1.0, 0, TRENCH.z1)].map(p => W(p));
+      const xmin = Math.min(...c.map(p => p.x)), xmax = Math.max(...c.map(p => p.x)), zmin = Math.min(...c.map(p => p.z)), zmax = Math.max(...c.map(p => p.z)), xk = Math.max(xmin, ZN.hx0 - 25);   // ingekort: 2 m buiten het hek, rest → HVK
+      L('KABELSLEUF', X(xk), Y(zmin), X(xmax), Y(zmin), 'streep'); L('KABELSLEUF', X(xk), Y(zmax), X(xmax), Y(zmax), 'streep'); L('KABELSLEUF', X(xmax), Y(zmin), X(xmax), Y(zmax), 'streep');
+      if(xk > xmin){ const yb0 = Y(zmin), yb1 = Y(zmax), xb = X(xk); L('KABELSLEUF', xb, yb0 - 150, xb + 120, (yb0 + yb1)/2 + 80); L('KABELSLEUF', xb + 120, (yb0 + yb1)/2 + 80, xb - 120, (yb0 + yb1)/2 - 80); L('KABELSLEUF', xb - 120, (yb0 + yb1)/2 - 80, xb, yb1 + 150);
+        T('KABELSLEUF', xb + 150, Math.max(yb0, yb1) + 260, '← naar HVK (sleuf totaal ' + mm(xmax - xmin) + ')', 65, 0, 'links'); }
+      const m = V(Math.max(Math.min(...c.map(p => p.x)), ZN.hx0 - 25) + 1.5, 0, Math.min(...c.map(p => p.z))); T('KABELSLEUF', X(m.x), Y(m.z) - 140, 'kabelsleuf b ' + mm(TRENCH.xData + 0.6 - TRENCH.x0 + 1.0) + ' / diepte ' + mm(-(TRENCH.yT - 1.1)), 65, 0, 'links'); }
+    // ---- maatketens ----
+    const yV = Y(ZN.hz1) - 700, yV2 = Y(ZN.hz1) - 1100, yV3 = Y(ZN.hz1) - 1500, yA = Y(ZN.hz0) + 700, yA2 = Y(ZN.hz0) + 1100;
+    const xs = [X(ZN.hx0), X(SX0), ...Array.from({length: N_AIO + 1}, (_, i) => X(XA(0) - AW/2 + i*AW)), X(SXE - 4.72), X(SXE), X(ZN.hx1)];
+    if(!NO_JB) xs.push(X(KXW + KD/2));
+    keten('h', xs, yV);                                                                                                     // hek – JB – AIO's – EMS – hek
+    keten('h', [X(ZN.hx0), X(va), X(va + 11), X(vb), X(vb + 11), X(ZN.hx1)], yV2);                                            // vluchtdeuren
+    maat('h', X(ZN.hx0), X(ZN.hx1), yV3, 'hekwerk ' + mm(ZN.hx1 - ZN.hx0));
+    keten('h', [X(ZN.hx0), ...PLATEN.map((g, k) => X(g.position.x - PLW[k]/2)), X(PX1), X(ZN.hx1)], yA);                     // stelconplaten
+    maat('h', X(PX0), X(PX1), yA2, 'stelcon totaal ' + mm(PX1 - PX0));
+    const xL = X(ZN.hx0) - 700, xL2 = X(ZN.hx0) - 1100, xR = X(ZN.hx1) + 700, xR2 = X(ZN.hx1) + 1100;
+    keten('v', [Y(ZN.hz1), Y(AZ + AD/2), Y(AZ - AD/2), Y(ZN.hz0)], xL);                                                         // hek voor – AIO – hek achter
+    maat('v', Y(ZN.hz1), Y(ZN.hz0), xL2, 'hekwerk ' + mm(ZN.hz1 - ZN.hz0));
+    keten('v', [Y(ZN.hz1), Y(PL/2), Y(AZ + 3.925), Y(AZ - 3.925), Y(-PL/2), Y(ZN.hz0)], xR);                                    // plaat + EMS
+    if(!NO_JB) keten('v', [Y(KZW + KW/2), Y(KZW - KW/2)], X(KXW - KD/2) - 400);
+    // voedingsgat AIO #1 (Delta fig. 5-3) apart bemaat
+    const g1 = sp.filter(q => q.w > 1.55 && q.w < 1.65 && Math.abs(q.x - XA(0)) < AW/2).sort((p, q) => p.x - q.x)[0];
+    if(g1){ maat('h', X(XA(0) - AW/2), X(g1.x), Y(AZ - AD/2) + 300, mm(g1.x - (XA(0) - AW/2)) + ' (hart gat)'); maat('v', Y(AZ + AD/2), Y(g1.z), X(g1.x) - 450, mm(AZ + AD/2 - g1.z)); T('SPARING', X(g1.x) + 900, Y(g1.z) + 200, 'voedingsgat ' + mm(g1.w) + ' x ' + mm(g1.d), 60); }
+    // titel
+    const tx = X(ZN.hx0), ty = Y(ZN.hz1) - 2300;
+    T('TEKST', tx, ty, 'AIO + FUSE kast - ' + N_AIO + ' x DELTerra C 125 kW - bovenaanzicht - maten in mm', 150, 0, 'links');
+    T('TEKST', tx, ty - 230, (NO_JB ? 'zonder junction box: per AIO ' + AIOKAB.txt + ' vanuit HVK' : 'junction box, voeding ' + VKAB.n + ' x ' + VKAB.txt + ' (gG ' + VKAB.gG + ')') + ' - sleuf: ' + (BF ? 'backfillzand' : 'gebiedseigen grond') + ' - Fudura ' + new Date().toLocaleDateString('nl-NL'), 90, 0, 'links');
+    return E; }
+  const KLR = {HEKWERK: '#3c4650', VLUCHTDEUR: '#169b48', ZONE: '#d4202a', STELCON: '#8a8f93', AIO: '#1b4f8a', JB: '#7a4a22', EMS: '#6b3fa0', SPARING: '#111', KABELSLEUF: '#9a7b4f', MAAT: '#1a4f9c', TEKST: '#17212a'};
+  const ACI = {HEKWERK: 8, VLUCHTDEUR: 3, ZONE: 1, STELCON: 9, AIO: 5, JB: 30, EMS: 6, SPARING: 7, KABELSLEUF: 40, MAAT: 150, TEKST: 7};
+  function svg(E){ let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; E.forEach(e => { const pts = e.t === 'L' ? [[e.x1, e.y1], [e.x2, e.y2]] : [[e.x, e.y]]; pts.forEach(([x, y]) => { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }); });
+    const m = 400; x0 -= m; y0 -= m; x1 += m; y1 += m; const H = y1 + y0;                       // SVG: y omlaag → spiegelen
+    const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    let o = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x0} ${y0} ${x1 - x0} ${y1 - y0}" font-family="Arial, sans-serif"><rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}" fill="#fff"/>`;
+    E.forEach(e => { if(e.t === 'L'){ const d = e.stijl === 'streep' ? ' stroke-dasharray="120 60"' : e.stijl === 'stip' ? ' stroke-dasharray="30 30"' : '';
+        o += `<line x1="${e.x1}" y1="${H - e.y1}" x2="${e.x2}" y2="${H - e.y2}" stroke="${KLR[e.laag]}" stroke-width="${e.laag === 'MAAT' ? 8 : e.laag === 'HEKWERK' ? 30 : 14}"${d}/>`; }
+      else { const a = e.kleur === 'links' ? 'start' : e.kleur === 'eind' ? 'end' : 'middle'; o += `<text x="${e.x}" y="${H - e.y}" font-size="${e.h}" fill="${KLR[e.laag]}" text-anchor="${a}"${e.rot ? ` transform="rotate(${-e.rot} ${e.x} ${H - e.y})"` : ''}>${esc(e.txt)}</text>`; } });
+    return o + '</svg>'; }
+  function dxf(E){ const out = [], w = (...a) => { for(let i = 0; i < a.length; i += 2) out.push(String(a[i]), String(a[i + 1])); }, asc = s => String(s).replace(/×/g, 'x').replace(/→/g, '->').replace(/[^\x20-\x7E]/g, '-');
+    w(0, 'SECTION', 2, 'HEADER', 9, '$ACADVER', 1, 'AC1009', 9, '$INSUNITS', 70, 4, 0, 'ENDSEC');
+    w(0, 'SECTION', 2, 'TABLES', 0, 'TABLE', 2, 'LTYPE', 70, 2, 0, 'LTYPE', 2, 'CONTINUOUS', 70, 0, 3, 'Solid', 72, 65, 73, 0, 40, 0, 0, 'LTYPE', 2, 'DASHED', 70, 0, 3, '__ __', 72, 65, 73, 2, 40, 180, 49, 120, 49, -60, 0, 'ENDTAB');
+    w(0, 'TABLE', 2, 'LAYER', 70, Object.keys(ACI).length); for(const [k, c] of Object.entries(ACI)) w(0, 'LAYER', 2, k, 70, 0, 62, c, 6, k === 'ZONE' || k === 'KABELSLEUF' ? 'DASHED' : 'CONTINUOUS'); w(0, 'ENDTAB', 0, 'ENDSEC');
+    w(0, 'SECTION', 2, 'ENTITIES');
+    E.forEach(e => { if(e.t === 'L') w(0, 'LINE', 8, e.laag, 10, e.x1, 20, e.y1, 30, 0, 11, e.x2, 21, e.y2, 31, 0);
+      else { const lk = e.kleur === 'links'; w(0, 'TEXT', 8, e.laag, 10, e.x, 20, e.y, 30, 0, 40, e.h, 1, asc(e.txt), 50, e.rot || 0); if(!lk) w(72, e.kleur === 'eind' ? 2 : 1, 11, e.x, 21, e.y, 31, 0); } });
+    w(0, 'ENDSEC', 0, 'EOF'); return out.join('\r\n'); }
+  const bestand = (inhoud, naam, type) => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([inhoud], {type})); a.download = naam; document.body.appendChild(a); a.click(); a.remove(); };
+  const naam = () => 'AIO-FUSE_' + N_AIO + 'xAIO_' + (BF ? 'backfill' : 'grond') + '_2D';
+  function open(){ const E = verzamel(), s = svg(E); let d = document.getElementById('t2d');
+    if(!d){ d = document.createElement('div'); d.id = 't2d'; d.style.cssText = 'position:fixed;inset:0;z-index:60;background:rgba(20,26,32,.55);display:flex;align-items:center;justify-content:center;padding:14px';
+      d.innerHTML = '<div style="background:#fff;border-radius:10px;max-width:1400px;width:100%;max-height:100%;display:flex;flex-direction:column;box-shadow:0 8px 30px rgba(0,0,0,.35)"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid #e3e6e8;font:13px system-ui,Arial"><b style="margin-right:auto">2D-tekening · bovenaanzicht · maten in mm</b><button id="t2dDxf">Download DXF</button><button id="t2dSvg">Download SVG</button><button id="t2dPdf">Afdrukken / PDF</button><button id="t2dX">Sluiten</button></div><div id="t2dBody" style="overflow:auto;padding:8px;flex:1"></div></div>';
+      document.body.appendChild(d); d.addEventListener('click', e => { if(e.target === d) d.style.display = 'none'; }); ['keydown', 'keyup'].forEach(ev => d.addEventListener(ev, e => e.stopPropagation()));
+      d.querySelector('#t2dX').onclick = () => d.style.display = 'none'; }
+    d.querySelector('#t2dBody').innerHTML = s; const sv = d.querySelector('#t2dBody svg'); sv.style.width = '100%'; sv.style.height = 'auto'; sv.style.maxHeight = 'calc(100vh - 120px)';
+    d.querySelector('#t2dDxf').onclick = () => bestand(dxf(E), naam() + '.dxf', 'application/dxf');
+    d.querySelector('#t2dSvg').onclick = () => bestand(s, naam() + '.svg', 'image/svg+xml');
+    d.querySelector('#t2dPdf').onclick = () => { const w = window.open('', '_blank'); if(!w) return; w.document.write('<!doctype html><title>' + naam() + '</title><style>@page{size:A3 landscape;margin:10mm}html,body{margin:0}svg{width:100%;height:auto}</style>' + s + '<script>setTimeout(()=>print(),300)<\/script>'); w.document.close(); };
+    d.style.display = 'flex'; }
+  return {open, verzamel, svg, dxf};
+})();
+document.getElementById('b2D').addEventListener('click', () => TEKEN2D.open());
+
 window.addEventListener('keyup', e => { FP.keys[e.key.toLowerCase()] = false; if(e.key === 'Shift') FP.keys.shift = false; });
 window.addEventListener('blur', () => FP.keys = {});
 window.addEventListener('keydown', e => {
