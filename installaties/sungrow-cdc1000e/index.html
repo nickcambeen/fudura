@@ -84,6 +84,7 @@ const zon = new THREE.DirectionalLight(0xffffff, 0.85); zon.position.set(-14, 22
 const M = (c, o) => new THREE.MeshStandardMaterial(Object.assign({color: c, roughness: 0.55, metalness: 0.1}, o || {}));
 const LABELS = [], MAAT = [], ZONE = [], KABEL = [], DEUREN = [], AUTOS = [], GRONDM = [], KLIK = [];
 function schil(p, w, h, d, m, x, y, z){ const t = 0.015; box(p, w, h, t, m, x, y, z - d/2 + t/2); box(p, t, h, d, m, x - w/2 + t/2, y, z); box(p, t, h, d, m, x + w/2 - t/2, y, z); box(p, w, t, d, m, x, y + h/2 - t/2, z); box(p, w, t, d, m, x, y - h/2 + t/2, z); }   // open kast (voorzijde = deur)
+function schilOpen(p, w, h, d, m, x, y, z){ const t = 0.015; box(p, t, h, d, m, x - w/2 + t/2, y, z); box(p, t, h, d, m, x + w/2 - t/2, y, z); box(p, w, t, d, m, x, y + h/2 - t/2, z); box(p, w, t, d, m, x, y - h/2 + t/2, z); }   // kast open aan voor- én achterzijde
 function box(p, w, h, d, m, x, y, z, sch){ const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); if(sch !== false){ o.castShadow = true; o.receiveShadow = true; } p.add(o); return o; }
 function cyl(p, r, h, m, x, y, z, as, seg){ const o = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, seg || 16), m); o.position.set(x, y, z); if(as === 'x') o.rotation.z = Math.PI/2; if(as === 'z') o.rotation.x = Math.PI/2; o.castShadow = true; p.add(o); return o; }
 function ctex(w, h, f){ const c = document.createElement('canvas'); c.width = w; c.height = h; f(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = 4; return t; }
@@ -223,10 +224,10 @@ function cdcKast(x, z){ const G = new THREE.Group(); G.position.set(x, 0, z); sc
   box(G, 1.6, Hb, Dk - 0.04, plint, 0, y0 + Hb/2, 0); for(const s of [-1, 1]) for(const t of [-1, 1]) box(G, 0.12, 0.06, 0.04, M(0x2b2d30), s*0.6, y0 + 0.06, t*(Dk/2 - 0.02));   // plint + heftruckgaten
   box(G, 1.61, 0.03, Dk + 0.01, M(0x2d3237), 0, y0 + Hb + Hk + 0.015, 0); box(G, 1.6, 0.012, Dk, M(0x3d4247), 0, y0 + Hb + Hk + 0.036, 0);   // donkere dakkap (foto)
   const grill = perfo(256, 160, '#e9ebea', '#8f969b', 7), y1 = y0 + Hb;
-  for(const s of [-1, 1]){ const cx = s*0.4; schil(G, 0.8, Hk, Dk, wit, cx, y1 + Hk/2, 0);
+  for(const s of [-1, 1]){ const cx = s*0.4; schilOpen(G, 0.8, Hk, Dk, wit, cx, y1 + Hk/2, 0);
     for(const yy of [0.1, Hk - 0.1]) cyl(G, 0.035, 0.05, rvs, cx + s*0.25, y1 + Hk + 0.06, 0, null, 12);                                   // hijsogen
     // binnenwerk (quick guide fig. 3): power modules (SiC, 40 kW) bovenin, PDU, TCU+RCU, MCCB, AC-contactor, voedings- en SPD-automaten, DC-rails, AC-aansluitruimte, switch
-    box(G, 0.74, Hk - 0.1, 0.01, M(0xe4e6e5), cx, y1 + Hk/2, -Dk/2 + 0.04);
+    box(G, 0.74, Hk - 1.0, 0.01, M(0xe4e6e5), cx, y1 + 1.5, -0.5);                                      // achterwand modulerek (aansluitruimte eronder blijft vrij)
     for(let k = 0; k < 7; k++){ const yy = y1 + 1.12 + k*0.12; box(G, 0.62, 0.105, 0.72, M(0xd9dcdb, {metalness: 0.3}), cx, yy, -0.12);
       box(G, 0.62, 0.105, 0.005, M(0xc3c8cb, {metalness: 0.5}), cx, yy, 0.243); for(let f = 0; f < 3; f++){ cyl(G, 0.035, 0.008, M(0x2b2d30), cx - 0.2 + f*0.2, yy, 0.248, 'z', 18); }
       box(G, 0.03, 0.01, 0.004, M(0x22d06a, {emissive: 0x22d06a, emissiveIntensity: 0.7}), cx + 0.27, yy + 0.03, 0.247); box(G, 0.06, 0.02, 0.01, M(0x8e9498), cx + 0.26, yy - 0.03, 0.25); }
@@ -236,13 +237,7 @@ function cdcKast(x, z){ const G = new THREE.Group(); G.position.set(x, 0, z); sc
     box(G, 0.7, 0.012, 0.02, zink, cx, y1 + 0.72, 0.1); din(G, cx - 0.32, y1 + 0.72, 0.13, 6, 0.018); din(G, cx - 0.2, y1 + 0.72, 0.13, 4, 0.022, 0x3a3d41, 0xf2c400);   // voedings-/fan-automaten + SPD
     box(G, 0.22, 0.28, 0.16, M(0x2b2d30), cx + 0.18, y1 + 0.66, 0.08); box(G, 0.05, 0.07, 0.05, M(0x1b1c1e), cx + 0.18, y1 + 0.68, 0.18); box(G, 0.012, 0.05, 0.03, geel, cx + 0.18, y1 + 0.71, 0.2);   // MCCB 800 A
     box(G, 0.2, 0.18, 0.15, M(0x5a6066), cx + 0.18, y1 + 0.42, 0.05); for(let k = 0; k < 3; k++) cyl(G, 0.018, 0.02, M(0x1b1c1e), cx + 0.12 + k*0.06, y1 + 0.42, 0.13, 'z', 8);   // AC-contactor
-    // DC-uitgangsrails + / − (M1..M6)
-    for(const [yy, kl] of [[y1 + 0.32, 0xc0281f], [y1 + 0.26, 0x1f5fbf]]){ box(R, 0.66, 0.025, 0.006, koper, cx, yy, 0.22); for(let k = 0; k < 6; k++){ cyl(R, 0.008, 0.02, zink, cx - 0.27 + k*0.108, yy, 0.228, 'z', 6); box(R, 0.02, 0.012, 0.004, M(kl), cx - 0.27 + k*0.108, yy + 0.02, 0.225); } }
     // AC-aansluitruimte: L1 L2 L3 · N PE N · L1 L2 L3 (2 × 185 mm² per fase) + aangesloten kabels van onderen
-    const KL = [['L1', -0.3], ['L2', -0.25], ['L3', -0.2], ['N', -0.08], ['PE', 0], ['N', 0.08], ['L1', 0.2], ['L2', 0.25], ['L3', 0.3]];
-    KL.forEach(([f, dx]) => { const xx = cx + dx; box(R, 0.035, 0.12, 0.008, f === 'PE' ? M(0x3fa34d, {metalness: 0.4}) : koper, xx, y1 + 0.13, 0.12); cyl(R, 0.01, 0.025, zink, xx, y1 + 0.11, 0.13, 'z', 6);
-      box(R, 0.03, 0.035, 0.005, tin, xx, y1 + 0.105, 0.127); kabel(R, [V(xx, y1 + 0.09, 0.13), V(xx, y1 + 0.03, 0.14), V(xx, y1 - 0.05, 0.1), V(xx, y1 - 0.3, 0.05)], f === 'PE' ? 0.011 : 0.016, ader[f]);
-      plak(R, 0.03, 0.02, lbl(f, 60, 40, f === 'PE' ? '#3fa34d' : '#f2d200', '#111', 'bold 24px Arial'), xx, y1 + 0.2, 0.125); });
     box(G, 0.12, 0.05, 0.08, M(0x2b2d30), cx - 0.25, y1 + 0.98, -0.33); for(let k = 0; k < 6; k++) box(G, 0.01, 0.008, 0.004, M(0x22d06a, {emissive: 0x22d06a}), cx - 0.29 + k*0.015, y1 + 0.99, -0.29);   // netwerkswitch
     // voordeur: logo, blauwe LED-balk, 2 geperforeerde ventilatievlakken, noodstop, hendel; scharnier buitenkant
     const piv = new THREE.Group(); piv.position.set(cx + s*0.4, y1, Dk/2 + 0.002); G.add(piv); const dirx = s < 0 ? 1 : -1;   // scharnier aan de buitenkant, deur naar het midden
@@ -323,7 +318,67 @@ function scharnier(p, x, y, z){ cyl(p, 0.011, 0.11, M(0x2b2d30, {metalness: 0.5}
 function kabelschoen(p, x, y, z, rAder, m){ box(p, 0.028, 0.03, 0.005, tin, x, y, z); cyl(p, rAder*1.15, 0.05, tin, x, y - 0.04, z, null, 12); cyl(p, rAder*1.2, 0.006, hexM, x, y - 0.03, z, null, 12); cyl(p, rAder*1.25, 0.035, m, x, y - 0.075, z, null, 12); cyl(p, 0.01, 0.012, hexM, x, y + 0.005, z + 0.006, 'z', 6); }
 
 // ---------- CDC1000E ----------
-function detailCdc(G, deuren){ const y1 = 0.36, Hk = 2.04, Dk = 1.126, R = G.userData.R;
+// =====================================================================================================
+// aansluitcompartiment achterzijde CDC1000E (quick guide p. 10–11): DC+ rail met M1+..M6+ vlaggen, DC− rail met M1−..M6−,
+// daaronder AC-klemmen L1 L2 L3 · N PE N · L1 L2 L3 per 500 kW-helft; kabels van onderen via wartels in de bodemplaat
+// =====================================================================================================
+const cuM = M(0xd38f5c, {roughness: 0.28, metalness: 0.9}), tinM = M(0xd9dde0, {roughness: 0.22, metalness: 0.95}), staalM = M(0xaab0b5, {roughness: 0.3, metalness: 0.9}),
+  verfRood = M(0xd8231b, {roughness: 0.5}), isoM = M(0x3a3d41, {roughness: 0.6}), isoR = M(0xb8322a, {roughness: 0.5}), kabelZw = M(0x17181a, {roughness: 0.55});
+const hexG = r => new THREE.CylinderGeometry(r, r, 1, 6);
+// kabelschoen (DIN 46235-achtig, vertind Cu) op een verticale vlag; palm tegen de vlag (normaal +z), bus naar beneden
+// d = buitendiameter geleider (m), bout M10/M12; kleur = krimpkous; tekent ook bout, sluitring, veerring, moer, verfmerk
+function schoen(p, x, y, z, d, kleur, bout){ const g = new THREE.Group(); g.position.set(x, y, z); p.add(g); const b = bout || 0.01, rb = d/2 + 0.0035;
+  // palm (afgerond, met boutgat) + overgang + bus
+  rbox(g, rb*2.2, 0.036, 0.0045, 0.008, tinM, 0, 0, 0.0025); cyl(g, b*0.55, 0.006, M(0x0d0e0f), 0, 0.004, 0.0026, 'z', 18);
+  const hals = new THREE.Mesh(new THREE.CylinderGeometry(rb, rb*1.05, 0.016, 20, 1, false), tinM); hals.position.set(0, -0.026, 0.0025 + rb*0.55); hals.scale.set(1, 1, 0.7); g.add(hals);
+  cyl(g, rb, 0.05, tinM, 0, -0.058, 0.0025 + rb*0.6, null, 22);
+  for(const yy of [-0.048, -0.068]){ const h = new THREE.Mesh(hexG(rb*0.97), M(0xbfc5c9, {metalness: 0.9, roughness: 0.35})); h.scale.y = 0.008; h.position.set(0, yy, 0.0025 + rb*0.6); g.add(h); }   // 2 zeskant-persindrukken
+  plak(g, rb*1.4, 0.008, lbl((d > 0.02 ? '185' : d > 0.015 ? '120' : '95') + '-10', 80, 20, '#d9dde0', '#333', 'bold 14px Arial'), 0, -0.04, 0.0026 + rb*1.6);   // ingeslagen maat
+  // krimpkous in aderkleur over bus en kabel, dan de geïsoleerde kabel
+  cyl(g, rb + 0.0018, 0.045, kleur, 0, -0.096, 0.0025 + rb*0.6, null, 22);
+  // boutverbinding: zeskantkop achter de vlag, sluitringen, veerring, moer, draadeind, verfmerk
+  const zb = -0.008; const kop = new THREE.Mesh(hexG(b*0.95), staalM); kop.rotation.x = Math.PI/2; kop.scale.y = 0.007; kop.position.set(0, 0.004, zb - 0.004); g.add(kop);
+  cyl(g, b*1.05, 0.002, staalM, 0, 0.004, 0.0062, 'z', 20); const vr = new THREE.Mesh(new THREE.TorusGeometry(b*0.75, 0.0012, 6, 18), staalM); vr.position.set(0, 0.004, 0.0078); g.add(vr);
+  const moer = new THREE.Mesh(hexG(b*0.9), staalM); moer.rotation.x = Math.PI/2; moer.scale.y = 0.008; moer.position.set(0, 0.004, 0.0125); g.add(moer);
+  cyl(g, b*0.5, 0.008, staalM, 0, 0.004, 0.02, 'z', 12); box(g, 0.0035, 0.012, 0.004, verfRood, b*0.55, 0.004, 0.0165, false);
+  return V(x, y - 0.118, z + 0.0025 + rb*0.6); }
+function vlag(p, x, y, z, w, h){ box(p, w, h, 0.006, cuM, x, y, z); cyl(p, 0.0055, 0.0075, M(0x0d0e0f), x, y + h/2 - 0.022, z, 'z', 16); }
+function aansluitCdc(R0){ const y1 = 0.36, R = new THREE.Group(); R.position.z = 0.25; R0.add(R);   // compartiment vlak achter de achterdeur
+  for(const s of [-1, 1]){ const cx = s*0.4;
+    box(R, 0.72, 0.86, 0.006, M(0xd9dcdb), cx, y1 + 0.47, 0.06);                                                    // montageplaat
+    // ---- DC+ en DC− verzamelrails op isolatoren, met 6 neerhangende vlaggen ----
+    const XK = k => cx - 0.27 + k*0.108;
+    [[y1 + 0.78, 'DC+', M(0xc0281f), 1], [y1 + 0.6, 'DC−', M(0x1f4fbf), -1]].forEach(([yr, naam, km, pol]) => {
+      box(R, 0.66, 0.04, 0.01, cuM, cx, yr, 0.14); for(const dx of [-0.31, 0, 0.31]){ cyl(R, 0.014, 0.07, isoR, cx + dx, yr, 0.1, 'z', 6); }
+      plak(R, 0.07, 0.022, lbl(naam + ' rail', 140, 44, pol > 0 ? '#c0281f' : '#1f4fbf', '#fff', 'bold 24px Arial'), cx - 0.24, yr + 0.035, 0.146);
+      for(let k = 0; k < 6; k++){ const x = XK(k) + pol*0.014; vlag(R, x, yr - 0.06, 0.15, 0.034, 0.09); bouten(R, [[x, yr, 0.146]], 'z');
+        plak(R, 0.032, 0.014, lbl('M' + (k + 1) + (pol > 0 ? '+' : '−'), 64, 28, '#ffffff', pol > 0 ? '#c0281f' : '#1f4fbf', 'bold 20px Arial'), x, yr - 0.115, 0.1535);
+        const e = schoen(R, x, yr - 0.07, 0.153, 0.0125, km, 0.01);                                                       // 1 × 120 mm² (snelladen)
+        kabel(R, [e, V(e.x, e.y - 0.05, e.z), V(e.x, y1 + 0.02, 0.22 + (pol > 0 ? 0 : 0.03)), V(e.x, y1 - 0.06, 0.22 + (pol > 0 ? 0 : 0.03)), V(e.x, y1 - 0.4, 0.2)], 0.0085, km); } });
+    // ---- AC-aansluitruimte: isolatorblok, 9 koperen klemvlaggen, fasescheidingen, polycarbonaat afdekking ----
+    const KL = [['L1', -0.3], ['L2', -0.25], ['L3', -0.2], ['N', -0.11], ['PE', -0.055], ['N', 0.0], ['L1', 0.2], ['L2', 0.25], ['L3', 0.3]].map(([f, dx]) => [f, dx + (dx > 0.1 ? 0 : 0)]);
+    box(R, 0.68, 0.05, 0.05, isoM, cx, y1 + 0.38, 0.1); plak(R, 0.12, 0.022, lbl('AC IN · 2 × 185 mm²/fase', 260, 46, '#f2c400', '#111', 'bold 20px Arial'), cx, y1 + 0.47, 0.1265);
+    KL.forEach(([f, dx], j) => { const x = cx + dx, pe = f === 'PE'; vlag(R, x, y1 + 0.31, 0.13, pe ? 0.032 : 0.04, 0.11);
+      if(j < 8) box(R, 0.004, 0.13, 0.07, M(0x24272b), x + (KL[j + 1][1] - dx)/2, y1 + 0.31, 0.15, false);                   // fasescheidingsschot
+      plak(R, 0.028, 0.018, lbl(f, 56, 36, pe ? '#3fa34d' : f === 'N' ? '#1f5fbf' : '#f2d200', pe || f === 'N' ? '#fff' : '#111', 'bold 24px Arial'), x, y1 + 0.385, 0.1265);
+      const e = schoen(R, x, y1 + 0.33, 0.133, pe ? 0.0115 : 0.0158, ader[f], 0.01);                                       // 185 mm² (PE 95)
+      const rK = pe ? 0.0085 : 0.012;
+      kabel(R, [e, V(e.x, e.y - 0.05, e.z), V(e.x, y1 + 0.03, e.z + 0.01), V(e.x, y1 - 0.06, e.z + 0.01), V(e.x, y1 - 0.4, e.z - 0.02)], rK, pe ? ader.PE : kabelZw);
+      cyl(R, rK + 0.001, 0.03, ader[f], e.x, e.y - 0.07, e.z, null, 14);                                                     // aderkleur-markering op de mantel
+      // wartel in de bodemplaat
+      cyl(R, rK + 0.008, 0.022, M(0x2b2d30), e.x, y1 + 0.02, e.z + 0.01, null, 6); cyl(R, rK + 0.006, 0.016, rubber, e.x, y1 + 0.038, e.z + 0.01, null, 18); });
+    for(let k = 0; k < 6; k++) for(const pol of [1, -1]){ const x = XK(k) + pol*0.014, zz = 0.22 + (pol > 0 ? 0 : 0.03); cyl(R, 0.016, 0.022, M(0x2b2d30), x, y1 + 0.02, zz, null, 6); cyl(R, 0.0125, 0.016, rubber, x, y1 + 0.038, zz, null, 18); }
+    // C-profiel met kabelklemmen (trekontlasting) + bodemplaat + transparante afdekking AC
+    box(R, 0.7, 0.025, 0.02, zink, cx, y1 + 0.1, 0.27); box(R, 0.7, 0.012, 0.36, M(0x5a6066), cx, y1 + 0.006, 0.17);
+    for(const [f, dx] of KL){ box(R, 0.03, 0.014, 0.02, M(0x2b2d30), cx + dx, y1 + 0.1, 0.258); }
+    box(R, 0.69, 0.17, 0.004, polyc, cx, y1 + 0.32, 0.215); bouten(R, [[cx - 0.33, y1 + 0.39, 0.217], [cx + 0.33, y1 + 0.39, 0.217], [cx - 0.33, y1 + 0.25, 0.217], [cx + 0.33, y1 + 0.25, 0.217]], 'z');
+    plak(R, 0.05, 0.044, waarsch, cx + 0.28, y1 + 0.38, 0.218);
+    // aardrail met PE-verbindingen en uitleg
+    box(R, 0.5, 0.025, 0.008, cuM, cx, y1 + 0.05, 0.04); bouten(R, Array.from({length: 8}, (_, j) => [cx - 0.21 + j*0.06, y1 + 0.05, 0.045]), 'z');
+  }
+  sprite('AC: kabelschoen 185-10 (PE 95-8) · bout M10 + sluitringen + veerring · DC: 120-10 op vlag M1–M6', V(0, y1 + 1.1, 0.0).applyMatrix4(new THREE.Matrix4().makeRotationY(Math.PI)), 0.0001).visible = false; }
+
+function detailCdc(G, deuren){ const y1 = 0.36, Hk = 2.04, Dk = 1.126, R = G.userData.R; aansluitCdc(R);
   // boutrijen zijwanden + achterwand, lamellenroosters, aardklem met GN/GE-kabel
   for(const s of [-1, 1]){ const xs = s*0.8; const pts = []; for(let y = y1 + 0.08; y < y1 + Hk; y += 0.22) for(const z of [-Dk/2 + 0.025, Dk/2 - 0.025]) pts.push([xs + s*0.001, y, z]); bouten(G, pts, 'x');
     for(const yc of [y1 + 0.45, y1 + 1.55]) lamellen(G, xs, s, yc, 0, 0.32, 0.62, 14);
@@ -351,16 +406,6 @@ function detailCdc(G, deuren){ const y1 = 0.36, Hk = 2.04, Dk = 1.126, R = G.use
     goot(G, cx - 0.355, y1 + 0.6, 0.0, 0.045, 0.7, 0.06, true); goot(G, cx + 0.355, y1 + 0.6, 0.0, 0.045, 0.7, 0.06, true); goot(G, cx, y1 + 1.03, -0.05, 0.66, 0.045, 0.06, false);
     box(G, 0.6, 0.01, 0.015, zink, cx, y1 + 0.58, 0.12); { const kl = []; for(let j = 0; j < 26; j++) kl.push(j); kl.forEach(j => box(G, 0.0085, 0.05, 0.045, M(j % 9 === 8 ? 0x3fa34d : j % 9 === 7 ? 0x2f6fd0 : 0x9aa0a4), cx - 0.11 + j*0.009, y1 + 0.58, 0.14, false)); }
     for(let j = 0; j < 6; j++){ const c = [0x2e8bd0, 0xe2701c, 0x3fa34d, 0xd8d8d8, 0x2e8bd0, 0xf2c400][j]; kabel(G, [V(cx - 0.29 + j*0.015, y1 + 0.99, -0.28), V(cx - 0.29 + j*0.015, y1 + 0.96, -0.24), V(cx - 0.34, y1 + 0.9, -0.05), V(cx - 0.355, y1 + 0.6, 0.0)], 0.0035, M(c)); }
-    // AC-rails: isolatoren, polycarbonaat afdekking met waarschuwing, kabelschoenen en wartels in de bodemplaat
-    for(const dx of [-0.3, -0.25, -0.2, -0.08, 0, 0.08, 0.2, 0.25, 0.3]){ cyl(R, 0.011, 0.04, M(0xc0281f), cx + dx, y1 + 0.17, 0.1, 'z', 10); cyl(R, 0.011, 0.04, M(0xc0281f), cx + dx, y1 + 0.08, 0.1, 'z', 10);
-      kabelschoen(R, cx + dx, y1 + 0.105, 0.128, 0.013, dx === 0 ? ader.PE : Math.abs(dx) === 0.08 ? ader.N : [ader.L1, ader.L2, ader.L3][Math.round((Math.abs(dx) - 0.2)/0.05)]);
-      cyl(R, 0.024, 0.03, rubber, cx + dx, y1 + 0.012, 0.13, null, 18); cyl(R, 0.028, 0.008, M(0x2b2d30), cx + dx, y1 + 0.03, 0.13, null, 6); }
-    box(R, 0.7, 0.012, 0.3, M(0x5a6066), cx, y1 + 0.006, 0.1); box(R, 0.68, 0.22, 0.004, polyc, cx, y1 + 0.15, 0.175);
-    plak(R, 0.05, 0.044, waarsch, cx - 0.28, y1 + 0.23, 0.178); plak(R, 0.16, 0.03, lbl('AC IN 400 V · 800 A', 260, 48, '#f2c400', '#111', 'bold 22px Arial'), cx, y1 + 0.235, 0.178);
-    // DC-uitgangen: NH-zekeringen per uitgang, shunt, kabelschoenen
-    for(let k = 0; k < 6; k++){ const x = cx - 0.27 + k*0.108; box(R, 0.05, 0.03, 0.04, M(0x2b2d30), x, y1 + 0.4, 0.2); cyl(R, 0.012, 0.055, M(0xefe9dc), x, y1 + 0.425, 0.205, 'x', 14); for(const e of [-1, 1]) cyl(R, 0.013, 0.006, tin, x + e*0.028, y1 + 0.425, 0.205, 'x', 14);
-      kabelschoen(R, x, y1 + 0.305, 0.232, 0.012, M(0xc0281f)); kabelschoen(R, x + 0.045, y1 + 0.245, 0.232, 0.012, M(0x1f4fbf)); }
-    box(R, 0.12, 0.03, 0.02, koper, cx + 0.3, y1 + 0.47, 0.2); plak(R, 0.07, 0.016, lbl('SHUNT MID', 140, 32, '#c48a52', '#111', 'bold 18px Arial'), cx + 0.3, y1 + 0.47, 0.211);
     // aardrail onderin + binnenverlichting + deurschakelaar
     box(G, 0.6, 0.025, 0.008, koper, cx, y1 + 0.06, -0.5); bouten(G, Array.from({length: 10}, (_, j) => [cx - 0.27 + j*0.06, y1 + 0.06, -0.495]), 'z');
     box(G, 0.6, 0.012, 0.03, ledW, cx, y1 + Hk - 0.03, 0.3); box(G, 0.03, 0.05, 0.03, M(0x2b2d30), cx + s*0.36, y1 + Hk - 0.2, 0.52); }
@@ -465,16 +510,16 @@ if(PROD === 'idc'){
   const cx = 0, cz = -2.2; cdcKast(cx, cz);
   zone(cx - 0.8 - 0.5, cz - 0.563 - 1.0, cx + 0.8 + 0.5, cz + 0.563 + 1.0, 'vrije ruimte: voor/achter ≥ 1000 · zijkant ≥ 500');
   for(let c = 0; c < 2; c++) for(let k = 0; k < 3; k++){ const dz = (c*3 + k)*0.12, xk = cx + (c ? 0.4 : -0.4) + (k - 1)*0.1;     // 2 circuits × 3 × YMvKas 4×240/120, 600 mm diep
-    kab([V(KAST.x, -0.6, KAST.z + dz), V(cx - 2, -0.6, KAST.z + dz), V(xk, -0.6, cz - 0.3), V(xk, 0.4, cz - 0.1)], 0.03); }
+    kab([V(KAST.x, -0.6, KAST.z + dz), V(cx - 2, -0.6, KAST.z + dz), V(xk, -0.6, cz - 0.3), V(xk, -0.6, cz - 0.4), V(xk, 0.3, cz - 0.4)], 0.03); }
   const P = 5.4, x0 = -(N - 1)*P/2, dz = 3.2;
   const dcPlus = M(0xc0281f, {roughness: 0.5}), dcMin = M(0x1f4fbf, {roughness: 0.5}), trM = new THREE.MeshBasicMaterial({color: 0xb08a55, transparent: true, opacity: 0.55, depthWrite: false});
   asf(x0 - 2.5, dz - 1.0, x0 + (N - 1)*P + 2.5, dz + 6.0);
   for(let i = 0; i < N; i++){ const x = x0 + i*P; dispenser(x, dz, i + 1); auto(x - 1.3, dz + 3.3, 0); auto(x + 1.3, dz + 3.3, 0);
     // DC-kabels per dispenser: uitgang M(k)+ / M(k)− van de DC-rails in de kast (helft = i % 2), door de plint de grond in, naar de dispenser; + CAN/Ethernet
-    const h = i % 2 ? 1 : -1, k = Math.floor(i/2), xr = cx + h*0.4 + 0.27 - k*0.108, zr = cz - 0.228, zc = cz + 0.75 + i*0.07;
-    [[0.68, dcPlus, 0], [0.62, dcMin, 0.045]].forEach(([yr, m, o]) => { const xa = xr - o;
-      const c = kabel(scene, [V(xa, yr, zr), V(xa, yr - 0.08, zr - 0.06), V(xa, 0.42, zr - 0.08), V(xa, 0.1, zr - 0.1), V(xa, -0.6, zr - 0.35), V(xa, -0.6, zc), V(x + o - 0.03, -0.6, zc), V(x + o - 0.03, -0.6, dz - 0.15), V(x + o - 0.03, 0.15, dz - 0.05), V(x + o - 0.03, 0.45, dz)], 0.013, m); KABEL.push(c); });
-    { const c = kabel(scene, [V(xr - 0.09, 1.25, zr + 0.1), V(xr - 0.09, 0.42, zr - 0.1), V(xr - 0.09, -0.55, zr - 0.35), V(xr - 0.09, -0.55, zc + 0.03), V(x + 0.06, -0.55, zc + 0.03), V(x + 0.06, -0.55, dz - 0.15), V(x + 0.06, 0.45, dz)], 0.005, M(0x2e8bd0)); KABEL.push(c); }
+    const h = i % 2 ? 1 : -1, k = Math.floor(i/2), xr = cx + h*0.4 + 0.27 - k*0.108, zr = cz - 0.47, zc = cz + 0.75 + i*0.07;
+    [[0.0, dcPlus, -0.014, 0], [0.0, dcMin, 0.014, 0.03]].forEach(([yr, m, o, dz]) => { const xa = xr + o; const zr2 = zr - dz;
+      const c = kabel(scene, [V(xa, 0.0, zr2), V(xa, -0.3, zr2), V(xa, -0.6, zr2 - 0.25), V(xa, -0.6, zc), V(x + o - 0.03, -0.6, zc), V(x + o - 0.03, -0.6, dz - 0.15), V(x + o - 0.03, 0.15, dz - 0.05), V(x + o - 0.03, 0.45, dz)], 0.013, m); KABEL.push(c); });
+    { const c = kabel(scene, [V(xr - 0.05, 0.0, zr), V(xr - 0.05, -0.3, zr), V(xr - 0.05, -0.55, zr - 0.25), V(xr - 0.09, -0.55, zc + 0.03), V(x + 0.06, -0.55, zc + 0.03), V(x + 0.06, -0.55, dz - 0.15), V(x + 0.06, 0.45, dz)], 0.005, M(0x2e8bd0)); KABEL.push(c); }
     // tracé zichtbaar op maaiveld (zandstrook)
     for(const [a, b] of [[V(xr, 0, zr - 0.35), V(xr, 0, zc)], [V(xr, 0, zc), V(x, 0, zc)], [V(x, 0, zc), V(x, 0, dz - 0.45)]]){ const L = a.distanceTo(b) + 0.25, st = new THREE.Mesh(new THREE.PlaneGeometry(0.25, L), trM);
       st.rotation.x = -Math.PI/2; st.rotation.z = Math.atan2(b.x - a.x, b.z - a.z); st.position.set((a.x + b.x)/2, 0.008 + i*0.0005, (a.z + b.z)/2); scene.add(st); KABEL.push(st); }
@@ -512,7 +557,7 @@ const VIEW = (t, th, ph, r) => () => { if(window.__fpAan) zetFP(false); ctl.targ
 const vOver = VIEW(FOCUS, -0.55, 0.95, PROD === 'idc' ? 9 + N*1.6 : 16 + N*2.4);
 $('vOver').onclick = vOver; $('vBoven').onclick = VIEW(FOCUS, 0, 0.02, PROD === 'idc' ? 10 + N*2.2 : 20 + N*1.5);
 $('vUnit').onclick = PROD === 'idc' ? VIEW(V(-(N - 1)*1.33, 1.4, 0), 0.35, 1.3, 3.6) : VIEW(V(0, 1.3, -2.2), 0.4, 1.25, 6);
-$('vKabel').onclick = () => { $('tDeur').checked = true; DEUREN.forEach(d => d.doel = 1); (PROD === 'idc' ? VIEW(V(-(N - 1)*1.33, 1.0, 0), 0.2, 1.35, 2.2) : VIEW(V(0, 0.7, -2.2), Math.PI + 0.15, 1.3, 3.6))(); };
+$('vKabel').onclick = () => { $('tDeur').checked = true; DEUREN.forEach(d => d.doel = 1); (PROD === 'idc' ? VIEW(V(-(N - 1)*1.33, 1.0, 0), 0.2, 1.35, 2.2) : VIEW(V(0, 0.75, -2.55), Math.PI + 0.12, 1.4, 2.6))(); };
 vOver();
 window.addEventListener('keydown', e => { if((e.key === 'r' || e.key === 'R') && !FP.aan) reset(); });
 // ---------- risico's / aandachtspunten ----------
@@ -579,8 +624,10 @@ function vrij(dt){ const k = FP.keys, fw = ((k.w || k.arrowup) ? 1 : 0) - ((k.s 
   const f = V(ctl.target.x - camera.position.x, 0, ctl.target.z - camera.position.z).normalize(), rt = V(-f.z, 0, f.x);
   const d = f.multiplyScalar(fw*v).addScaledVector(rt, sd*v); d.y = up*v*0.7; if(ctl.target.y + d.y < 0) d.y = -ctl.target.y; ctl.target.add(d); camera.position.add(d); }
 addEventListener('keydown', e => { if(!FP.aan && !(e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) && ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(e.key.toLowerCase())) e.preventDefault(); });
+// labels vervagen als je er dichtbij staat (anders dekken ze het detail af)
+function fadeLabels(){ scene.traverse(o => { if(o.isSprite){ const d = o.getWorldPosition(new THREE.Vector3()).distanceTo(camera.position); o.material.opacity = Math.max(0, Math.min(1, (d - 3.0)/2.5)); } }); }
 let tPrev = performance.now();
-(function loop(){ requestAnimationFrame(loop); const nu = performance.now(), dt = Math.min(0.05, (nu - tPrev)/1000); tPrev = nu; DEUREN.forEach(d => { d.t += (d.doel - d.t)*0.12; d.piv.rotation.y = d.open*d.t; }); if(FP.aan) stapFP(dt); else { vrij(dt); ctl.update(); } renderer.render(scene, camera); })();
+(function loop(){ requestAnimationFrame(loop); const nu = performance.now(), dt = Math.min(0.05, (nu - tPrev)/1000); tPrev = nu; DEUREN.forEach(d => { d.t += (d.doel - d.t)*0.12; d.piv.rotation.y = d.open*d.t; }); if(FP.aan) stapFP(dt); else { vrij(dt); ctl.update(); } fadeLabels(); renderer.render(scene, camera); })();
 window.__sg = {scene, camera, ctl, VIEW};
 </script>
 </body>
