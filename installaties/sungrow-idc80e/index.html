@@ -94,60 +94,191 @@ const asfalt = M(0x5c6064, {roughness: 0.95}), gras = M(0x7c9a5a, {roughness: 1}
 { const g = box(scene, 120, 0.1, 120, gras, 0, -0.05, 0, false); g.receiveShadow = true; }
 
 // ---------- bouwstenen ----------
-// IDC80E: kast 660 × 1050 × 390 op voet; totaal 1780 hoog (zonder kabelbeugels), met beugels 2032; fundering 840 × 726, 200 boven maaiveld
+// =====================================================================================================
+// gedetailleerde assets (naar productfoto's, maatschetsen fig. 2-4/2-5 IDC80E en quick guide CDC1000E)
+// =====================================================================================================
+const alu = M(0xe3e6e8, {roughness: 0.32, metalness: 0.55}), aluD = M(0xc9ced2, {roughness: 0.35, metalness: 0.6}), antr = M(0x4a4f55, {roughness: 0.5, metalness: 0.35}),
+  rvs = M(0xcfd3d6, {roughness: 0.22, metalness: 0.9}), koper = M(0xd99a6c, {roughness: 0.3, metalness: 0.85}), tin = M(0xd6d9db, {roughness: 0.25, metalness: 0.95}),
+  pcb = M(0x2f7d46, {roughness: 0.6}), rubber = M(0x1b1c1e, {roughness: 0.85}), blauwLed = new THREE.MeshStandardMaterial({color: 0x29a8ff, emissive: 0x1a8cff, emissiveIntensity: 0.9, roughness: 0.3}),
+  geel = M(0xf2c400, {roughness: 0.4}), rood = M(0xd32222, {roughness: 0.35}), zink = M(0xb7bcc0, {roughness: 0.38, metalness: 0.85}), plint = M(0x3b4045, {roughness: 0.6});
+const ader = {L1: M(0x7a4a22), L2: M(0x1c1c1c), L3: M(0x8e9397), N: M(0x1f5fbf), PE: M(0x3fa34d)};
+// afgeronde kast (bevel) — w × h × d, hoekstraal r
+function rbox(p, w, h, d, r, m, x, y, z){ const s = new THREE.Shape(), a = w/2 - r, b = h/2 - r;
+  s.moveTo(-a, -h/2); s.lineTo(a, -h/2); s.quadraticCurveTo(w/2, -h/2, w/2, -b); s.lineTo(w/2, b); s.quadraticCurveTo(w/2, h/2, a, h/2); s.lineTo(-a, h/2); s.quadraticCurveTo(-w/2, h/2, -w/2, b); s.lineTo(-w/2, -b); s.quadraticCurveTo(-w/2, -h/2, -a, -h/2);
+  const g = new THREE.ExtrudeGeometry(s, {depth: d - 0.01, bevelEnabled: true, bevelThickness: 0.005, bevelSize: 0.005, bevelSegments: 2, curveSegments: 6}); g.translate(0, 0, -(d - 0.01)/2);
+  const o = new THREE.Mesh(g, m); o.position.set(x, y, z); o.castShadow = true; o.receiveShadow = true; p.add(o); return o; }
+// geperforeerd rooster (hexagonaal) als textuur
+const perfo = (w, h, bg, gat, n) => ctex(w, h, (g, W, H) => { g.fillStyle = bg; g.fillRect(0, 0, W, H); g.fillStyle = gat; const s = n || 9;
+  for(let y = s/2, r = 0; y < H; y += s*0.87, r++) for(let x = (r % 2 ? s/2 : 0) + s/2; x < W; x += s){ g.beginPath(); for(let k = 0; k < 6; k++){ const a = k*Math.PI/3 + Math.PI/6; g.lineTo(x + Math.cos(a)*s*0.36, y + Math.sin(a)*s*0.36); } g.fill(); } });
+// laadscherm (UI)
+const scherm = (w, h) => ctex(w, h, (g, W, H) => { const gr = g.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, '#0d2e4f'); gr.addColorStop(1, '#0a1c30'); g.fillStyle = gr; g.fillRect(0, 0, W, H);
+  g.fillStyle = '#e8f1fb'; g.font = `bold ${H*0.09}px Arial`; g.fillText('SUNGROW', W*0.05, H*0.13); g.font = `${H*0.07}px Arial`; g.fillStyle = '#9fc4e8'; g.fillText('12:30', W*0.82, H*0.13);
+  g.fillStyle = '#e8f1fb'; g.font = `bold ${H*0.1}px Arial`; g.textAlign = 'center'; g.fillText('Welcome · plug in to charge', W/2, H*0.34); g.textAlign = 'left';
+  for(let k = 0; k < 3; k++){ const x = W*0.12 + k*W*0.27; g.fillStyle = '#123f6b'; g.fillRect(x, H*0.45, W*0.22, H*0.38); g.strokeStyle = '#2b8be0'; g.lineWidth = 2; g.strokeRect(x, H*0.45, W*0.22, H*0.38);
+    g.fillStyle = '#6fc0ff'; g.font = `${H*0.07}px Arial`; g.textAlign = 'center'; g.fillText(['RFID', 'QR', 'Auto'][k], x + W*0.11, H*0.75); g.fillRect(x + W*0.08, H*0.52, W*0.06, H*0.1); g.textAlign = 'left'; } });
+// CCS2-stekker (handgreep + kop met DC-pinnen), opgebouwd in lokale coördinaten: kop wijst naar −y (in holster)
+function ccs2(p, x, y, z, rx){ const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.x = rx || 0; p.add(g);
+  box(g, 0.075, 0.2, 0.065, M(0x202225, {roughness: 0.45}), 0, 0.06, 0); rbox(g, 0.085, 0.07, 0.075, 0.02, M(0x2a2c2f), 0, 0.17, 0);          // handgreep + achterkap
+  box(g, 0.05, 0.05, 0.012, M(0x3a3d41), 0, 0.12, 0.038); box(g, 0.02, 0.012, 0.012, M(0x29a8ff), 0, 0.1, 0.041);                             // ontgrendelknop
+  const kop = cyl(g, 0.045, 0.07, M(0x26282b), 0, -0.07, 0, null, 24); cyl(g, 0.034, 0.03, M(0x1a1b1d), 0, -0.012, 0.004, null, 20);         // CCS-kop (AC-deel + DC)
+  cyl(g, 0.03, 0.03, M(0x26282b), 0, -0.12, 0.0, null, 20); for(const s of [-1, 1]) cyl(g, 0.009, 0.032, tin, s*0.014, -0.125, 0, null, 10);  // DC+ / DC− pinnen
+  cyl(g, 0.017, 0.12, rubber, 0, 0.22, -0.01, null, 12);                                                                                        // kabeltrekontlasting
+  return g; }
+// holster (laadpistool-houder) met blauwe statusring
+function holster(p, x, y, z){ rbox(p, 0.12, 0.15, 0.05, 0.018, M(0x16181b), x, y, z); rbox(p, 0.135, 0.165, 0.03, 0.022, blauwLed, x, y, z - 0.012); box(p, 0.085, 0.11, 0.02, M(0x08090a), x, y, z + 0.022); }
+// gegolfde beschermslang (cable management) langs een curve
+function slang(p, pts, r, m){ const c = new THREE.CatmullRomCurve3(pts); const o = new THREE.Mesh(new THREE.TubeGeometry(c, pts.length*24, r, 10, false), m); o.castShadow = true; p.add(o);
+  const L = c.getLength(), n = Math.floor(L/0.03); for(let k = 0; k < n; k++){ const t = k/n, q = c.getPointAt(t), tg = c.getTangentAt(t); const ring = new THREE.Mesh(new THREE.TorusGeometry(r*1.02, r*0.12, 4, 12), m); ring.position.copy(q); ring.lookAt(q.clone().add(tg)); p.add(ring); } return c; }
+// veer (spiraal) rond een kort stuk curve
+function veer(p, c, t0, t1, r, m){ const pts = [], n = 160, w = 26; for(let k = 0; k <= n; k++){ const t = t0 + (t1 - t0)*k/n, q = c.getPointAt(t), tg = c.getTangentAt(t), a = V(0, 1, 0).cross(tg).normalize(), b = tg.clone().cross(a).normalize(), f = k/n*w*Math.PI*2;
+    pts.push(q.clone().addScaledVector(a, Math.cos(f)*r).addScaledVector(b, Math.sin(f)*r)); } kabel(p, pts, 0.0035, m); }
+// DIN-railcomponenten
+function din(p, x, y, z, n, w, kleur, hendel){ for(let k = 0; k < n; k++){ const xx = x + k*w; box(p, w*0.96, 0.09, 0.07, M(kleur || 0xeceeee), xx, y, z); box(p, w*0.5, 0.02, 0.02, M(hendel || 0x2b2d30), xx, y + 0.012, z + 0.04); } }
+function pcbBord(p, x, y, z, w, h){ box(p, w, h, 0.004, pcb, x, y, z); for(let k = 0; k < 10; k++) box(p, 0.02 + (k % 3)*0.01, 0.015, 0.012, M([0x111, 0x222, 0x333, 0xb0b0b0][k % 4]), x - w/2 + 0.03 + (k % 5)*w*0.19, y - h/2 + 0.04 + Math.floor(k/5)*h*0.45, z + 0.007);
+  box(p, 0.04, 0.04, 0.01, M(0x101010), x, y, z + 0.006); cyl(p, 0.008, 0.02, M(0x1b4f8a), x + w*0.3, y + h*0.3, z + 0.012, 'z', 10); }
+
+// ---------- IDC80E: kast 660 × 1050 × 390 op voet (1780 h, met kabelbeugels 2032); fundering 840 × 726, 200 boven maaiveld ----------
 function idc80(x, z, nr){ const G = new THREE.Group(); G.position.set(x, 0, z); scene.add(G);
-  box(G, 0.84, 0.2, 0.726, beton, 0, 0.1, 0);                                                      // fundering (boven maaiveld)
-  const y0 = 0.2; box(G, 0.5, 0.75, 0.32, grijs, 0, y0 + 0.375, -0.03);                           // voet (post)
-  box(G, 0.56, 0.06, 0.38, donker, 0, y0 + 0.03, -0.03);
-  const kast = new THREE.Group(); kast.position.set(0, y0 + 0.73, 0); G.add(kast);
-  schil(kast, 0.66, 1.05, 0.39, wit, 0, 0.525, 0);
-  box(kast, 0.055, 0.98, 0.12, donker, -0.355, 0.53, 0); box(kast, 0.055, 0.98, 0.12, donker, 0.355, 0.53, 0);   // kabelbeugels (CMS) zijkant
-  const front = ctex(330, 525, (g, W, H) => { g.fillStyle = '#f4f5f3'; g.fillRect(0, 0, W, H); g.fillStyle = '#1f2a33'; g.fillRect(55, 110, 220, 120); g.fillStyle = '#5fb0e8'; g.fillRect(62, 117, 206, 106);
-    g.strokeStyle = '#29b6f6'; g.lineWidth = 6; g.beginPath(); g.arc(165, 60, 24, 0, 7); g.stroke(); g.fillStyle = '#d32222'; g.beginPath(); g.arc(285, 165, 16, 0, 7); g.fill();
-    g.fillStyle = '#2a2e33'; g.fillRect(40, 300, 70, 120); g.fillRect(220, 300, 70, 120); g.fillStyle = '#e8eaeb'; g.fillRect(132, 315, 66, 90); g.fillStyle = '#333'; g.font = 'bold 22px Arial'; g.textAlign = 'center'; g.fillText('SUNGROW', 165, 490); g.font = '16px Arial'; g.fillText('IDC80E', 165, 465); });
-  // twee CCS2-stekers in holsters + kabels naar de bovenkant van de beugels
-  for(const s of [-1, 1]){ box(kast, 0.08, 0.16, 0.1, zwart, s*0.22, 0.3, 0.25); const k = kabel(kast, [V(s*0.36, 0.95, 0.04), V(s*0.48, 1.25, 0.1), V(s*0.62, 0.9, 0.25), V(s*0.6, 0.15, 0.32), V(s*0.4, -0.25, 0.4), V(s*0.26, 0.05, 0.36), V(s*0.22, 0.22, 0.3)], 0.017, zwart); }
-  // deur (scharnier links) en binnenwerk
-  const piv = new THREE.Group(); piv.position.set(-0.33, 0, 0.196); kast.add(piv);
-  const deur = box(piv, 0.66, 1.05, 0.02, wit, 0.33, 0.525, 0.01); plak(piv, 0.66, 1.05, front, 0.33, 0.525, 0.0205);
-  box(kast, 0.6, 0.98, 0.02, M(0xd7dcdc), 0, 0.525, -0.17);
-  for(const [y, c] of [[0.85, 0x5c7a5a], [0.62, 0x9aa1a5], [0.4, 0x2e6fd0], [0.2, 0x9aa1a5]]) box(kast, 0.48, 0.12, 0.1, M(c), 0, y, -0.1);
-  box(kast, 0.16, 0.2, 0.12, M(0x34383d), -0.17, 0.2, -0.08); cyl(kast, 0.012, 0.04, oranje, -0.17, 0.2, -0.01, 'z');   // MCCB
-  for(const [k, f] of [[0, 0x7a4a22], [1, 0x1c1c1c], [2, 0x8e9397], [3, 0x1f5fbf], [4, 0x3fa34d]]) box(kast, 0.03, 0.05, 0.02, M(f), 0.06 + k*0.05, 0.06, -0.12);   // aansluitbusbars L1 L2 L3 N PE
-  DEUREN.push({piv, open: -1.9});
-  const t = sprite('IDC80E #' + nr + ' · 80 kW · 2 × CCS2', V(x, 2.55, z), 0.45);
+  box(G, 0.84, 0.2, 0.726, beton, 0, 0.1, 0); for(const [a, b] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) cyl(G, 0.012, 0.03, rvs, a*0.2, 0.215, -0.03 + b*0.09);   // fundering + keilbouten M12
+  const y0 = 0.2;
+  // voet (post): brede voetplaat, kolom, dwarsdrager onder de kast (antraciet, foto)
+  box(G, 0.54, 0.02, 0.4, antr, 0, y0 + 0.01, -0.03); box(G, 0.44, 0.62, 0.3, antr, 0, y0 + 0.33, -0.03);
+  box(G, 0.42, 0.6, 0.005, M(0x3d4247), 0, y0 + 0.33, 0.123); for(const s of [-1, 1]) cyl(G, 0.008, 0.01, zink, s*0.18, y0 + 0.6, 0.126, 'z', 6);   // voorpaneel kolom
+  box(G, 1.0, 0.07, 0.34, antr, 0, y0 + 0.675, -0.03);                                                                                   // dwarsdrager (kabelarmen)
+  const kast = new THREE.Group(); kast.position.set(0, y0 + 0.73, 0); G.add(kast); const W = 0.66, H = 1.05, D = 0.39, zf = D/2;
+  // achterbak (alu, donkerder), zijroosters met power unit (J)
+  schil(kast, 0.6, H - 0.04, D - 0.04, aluD, 0, H/2, -0.02);
+  const zr = perfo(128, 512, '#2a2d31', '#0b0c0d', 8);
+  for(const s of [-1, 1]){ box(kast, 0.035, H - 0.1, D - 0.08, M(0x2f3337), s*(W/2 + 0.005), H/2, -0.03);
+    plak(kast, D - 0.1, H - 0.14, zr, s*(W/2 + 0.024), H/2, -0.03, s*Math.PI/2); for(const yy of [0.05, H - 0.05]) box(kast, 0.04, 0.02, D - 0.08, antr, s*(W/2 + 0.006), yy, -0.03); }
+  // zijkant rechts: noodstop (I) met beschermkap, meter-venster (H)
+  { const xs = W/2 + 0.03, yN = 0.62; cyl(kast, 0.035, 0.012, geel, xs, yN, 0.1, 'x', 24); cyl(kast, 0.022, 0.03, rood, xs + 0.018, yN, 0.1, 'x', 20); cyl(kast, 0.026, 0.008, rood, xs + 0.034, yN, 0.1, 'x', 20);
+    const kap = new THREE.Mesh(new THREE.SphereGeometry(0.04, 16, 8, 0, Math.PI*2, 0, Math.PI/2), M(0xdfe6ea, {transparent: true, opacity: 0.35, roughness: 0.1})); kap.rotation.z = -Math.PI/2; kap.position.set(xs + 0.005, yN, 0.1); kast.add(kap);
+    box(kast, 0.005, 0.07, 0.11, M(0x1a2733), xs, 0.86, 0.05); plak(kast, 0.1, 0.06, lbl('MID 123.4 kWh', 200, 110, '#9fb4a2', '#123', 'bold 22px monospace'), xs + 0.004, 0.86, 0.05, Math.PI/2); }
+  // antenne (K) bovenop
+  for(const xx of [-0.12, 0, 0.12]) rbox(kast, 0.09, 0.012, 0.05, 0.005, M(0x2a2d31), xx, H + 0.01, -0.05);
+  // onderzijde: AC-invoer (L), Ethernet/EMS (M), DLM (O), DC-uitgangen A/B (P/N) met wartels
+  box(kast, 0.6, 0.01, D - 0.04, M(0x8e9498, {metalness: 0.5}), 0, 0.005, -0.02);
+  for(const [xx, r] of [[-0.18, 0.03], [-0.05, 0.012], [0.0, 0.012], [0.07, 0.026], [0.15, 0.026]]){ cyl(kast, r, 0.03, rubber, xx, -0.012, 0.0, null, 6); cyl(kast, r*0.75, 0.02, M(0x2b2d30), xx, -0.035, 0.0, null, 16); }
+  // binnenwerk (fig. 2-5): montageplaat, CCU A/B, meter, IMD, router/switch, aux PSU, rookmelder, DIN-rail (MCB, RCBO, SPD), MCCB, busbars, zekeringen, fan
+  const zi = -0.16; box(kast, 0.56, 0.96, 0.006, M(0xe7e9e8), 0, 0.5, zi);
+  pcbBord(kast, -0.13, 0.84, zi + 0.01, 0.2, 0.17); pcbBord(kast, 0.12, 0.84, zi + 0.01, 0.2, 0.17);
+  sprite('CCU A / CCU B', V(0, 0, 0), 0.15).visible = false;
+  box(kast, 0.08, 0.06, 0.05, M(0x2b2d30), 0.0, 0.94, zi + 0.03); box(kast, 0.04, 0.02, 0.01, M(0x22d06a, {emissive: 0x22d06a, emissiveIntensity: 0.6}), 0.0, 0.94, zi + 0.056);   // IMD
+  box(kast, 0.06, 0.09, 0.05, M(0xeceeee), 0.2, 0.66, zi + 0.03); box(kast, 0.04, 0.025, 0.004, M(0x9fb4a2), 0.2, 0.68, zi + 0.057);         // meter (F) / MID-shunt
+  box(kast, 0.07, 0.05, 0.04, M(0x2b2d30), -0.2, 0.66, zi + 0.025); for(let k = 0; k < 4; k++) box(kast, 0.008, 0.006, 0.004, M(0x22d06a, {emissive: 0x22d06a}), -0.225 + k*0.015, 0.67, zi + 0.047);   // router/switch
+  box(kast, 0.1, 0.06, 0.05, M(0xd8dadb), -0.08, 0.66, zi + 0.03);                                                                          // aux PSU
+  cyl(kast, 0.025, 0.02, M(0xf4f4f2), -0.24, 0.94, zi + 0.02, 'z', 16);                                                                    // rookmelder (A)
+  box(kast, 0.5, 0.012, 0.01, zink, 0, 0.52, zi + 0.01); din(kast, -0.22, 0.52, zi + 0.045, 3, 0.018); din(kast, -0.15, 0.52, zi + 0.045, 4, 0.018, 0xeceeee, 0xd32222);   // MCB + RCBO
+  din(kast, -0.05, 0.52, zi + 0.045, 4, 0.018, 0x3a3d41, 0xf2c400); box(kast, 0.05, 0.08, 0.06, M(0x2f3337), 0.09, 0.52, zi + 0.04); box(kast, 0.03, 0.03, 0.01, M(0xd32222), 0.09, 0.52, zi + 0.072);   // SPD + onderhoudscontactdoos (G)
+  box(kast, 0.07, 0.08, 0.05, M(0x5a6066), 0.2, 0.52, zi + 0.03); cyl(kast, 0.025, 0.012, M(0x1b1c1e), 0.2, 0.52, zi + 0.06, 'z', 18);     // fan (S)
+  // MCCB (M) 4P met hendel + koperen busbars AC (N), N (O), PE (P) onderin
+  box(kast, 0.14, 0.13, 0.09, M(0x2b2d30), -0.17, 0.3, zi + 0.05); box(kast, 0.03, 0.04, 0.03, M(0x1b1c1e), -0.17, 0.31, zi + 0.11); box(kast, 0.008, 0.03, 0.02, geel, -0.17, 0.33, zi + 0.12);
+  for(const s of [-0.045, -0.015, 0.015, 0.045]){ box(kast, 0.022, 0.02, 0.06, M(0x16181b), -0.17 + s, 0.375, zi + 0.04); box(kast, 0.022, 0.02, 0.06, M(0x16181b), -0.17 + s, 0.225, zi + 0.04); }
+  const bus = {L1: -0.05, L2: 0.0, L3: 0.05, N: 0.12, PE: 0.2};
+  for(const [f, xx] of Object.entries(bus)){ box(kast, 0.025, 0.11, 0.005, f === 'PE' ? M(0x3fa34d, {metalness: 0.4}) : koper, xx, 0.15, zi + 0.04); cyl(kast, 0.008, 0.02, zink, xx, 0.12, zi + 0.05, 'z', 6);
+    plak(kast, 0.03, 0.018, lbl(f, 60, 36, f === 'PE' ? '#3fa34d' : '#f2d200', '#111', 'bold 22px Arial'), xx, 0.22, zi + 0.045); }
+  // aangesloten voedingskabel 4×50+25: aders met SC50-8 kabelschoen op de busbars, mantel uit de bodeminvoer
+  { const mx = -0.18; kabel(kast, [V(mx, -0.2, 0.0), V(mx, 0.0, 0.0), V(mx, 0.04, -0.05)], 0.018, M(0x1d1e20, {roughness: 0.6}));
+    for(const [f, xx] of Object.entries(bus)){ const t = V(xx, 0.11, zi + 0.05); kabel(kast, [V(mx + (xx - 0.07)*0.15, 0.04, -0.05), V(mx + (xx - 0.07)*0.4, 0.07, -0.08), V(xx, 0.05, zi + 0.06), t], f === 'PE' ? 0.006 : 0.0075, ader[f]);
+      box(kast, 0.02, 0.025, 0.004, tin, xx, 0.115, zi + 0.048); cyl(kast, 0.009, 0.025, ader[f], xx, 0.085, zi + 0.05, null, 10); } }
+  // DC-zekeringen (U) + DC-kabels naar de uitgangen
+  for(const s of [-1, 1]){ box(kast, 0.04, 0.07, 0.04, M(0xeceeee), 0.29*s*0.5 + 0.06, 0.32, zi + 0.03); cyl(kast, 0.012, 0.05, M(0xd6c9a5), 0.29*s*0.5 + 0.06, 0.32, zi + 0.06, 'x', 10);
+    kabel(kast, [V(0.29*s*0.5 + 0.06, 0.28, zi + 0.04), V(0.11 + 0.04*s, 0.12, -0.05), V(0.11 + 0.04*s, 0.0, 0.0)], 0.012, M(0xf08c1e)); }
+  // voorpaneel = deur (scharnier links): zilverwit, afgerond, met HMI, holsters, betaalterminal-vak, logo
+  const piv = new THREE.Group(); piv.position.set(-W/2, 0, zf); kast.add(piv); const F = new THREE.Group(); F.position.set(W/2, 0, 0); piv.add(F);
+  rbox(F, W, H, 0.05, 0.05, alu, 0, H/2, 0.0); box(F, W - 0.08, H - 0.08, 0.004, M(0xd8dcdf, {roughness: 0.6}), 0, H/2, -0.027);       // deur + binnenplaat
+  box(F, W - 0.06, 0.008, 0.008, rubber, 0, H - 0.03, -0.03); box(F, W - 0.06, 0.008, 0.008, rubber, 0, 0.03, -0.03);                       // deurrubber
+  plak(F, 0.12, 0.02, lbl('SUNGROW', 240, 40, '#e3e6e8', '#5a6066', 'bold 26px Arial'), 0, H - 0.12, 0.0265);
+  rbox(F, 0.4, 0.17, 0.02, 0.05, M(0x0e1013, {roughness: 0.2}), 0, 0.66, 0.03); plak(F, 0.21, 0.125, scherm(420, 250), -0.06, 0.66, 0.0405);   // HMI 10,1" + glas
+  cyl(F, 0.035, 0.006, M(0x0e1013), 0.12, 0.66, 0.04, 'z', 32); const ring = new THREE.Mesh(new THREE.TorusGeometry(0.03, 0.003, 6, 32), blauwLed); ring.position.set(0.12, 0.66, 0.044); F.add(ring);   // Energy Star-Ring (RFID)
+  holster(F, -0.17, 0.37, 0.04); holster(F, 0.17, 0.37, 0.04);
+  rbox(F, 0.075, 0.13, 0.02, 0.012, M(0x34383d), 0, 0.37, 0.035); box(F, 0.05, 0.065, 0.004, M(0x1a2733), 0, 0.39, 0.046); for(let k = 0; k < 3; k++) box(F, 0.05, 0.004, 0.003, M(0x55595e), 0, 0.33 - k*0.01, 0.046);   // betaalterminal
+  for(const s of [-1, 1]) for(const yy of [0.1, H - 0.1]) cyl(F, 0.006, 0.006, zink, s*(W/2 - 0.025), yy, 0.027, 'z', 6);
+  box(F, 0.02, 0.07, 0.012, M(0x8e9498, {metalness: 0.7}), W/2 - 0.03, 0.5, 0.032);                                                                   // slot
+  for(const yy of [0.15, H - 0.15]) cyl(kast, 0.012, 0.08, rvs, -W/2 - 0.005, yy, zf - 0.01, null, 10);                                               // scharnieren
+  DEUREN.push({piv, open: -1.85});
+  // stekkers in de holsters + kabelmanagement: gegolfde slang langs de zijkant omhoog → veer bovenaan → lus omlaag naar de stekker
+  for(const s of [-1, 1]){ const st = ccs2(kast, s*0.17, 0.37 + 0.03, zf + 0.06, -0.25);
+    const hx = s*(W/2 + 0.07), top = y0 + 0.73 + H + 0.45, c = slang(G, [V(s*0.47, y0 + 0.69, -0.03), V(hx, y0 + 0.9, -0.05), V(hx, y0 + 0.73 + H, -0.05), V(s*0.45, top - 0.05, -0.03), V(s*0.34, top, 0.0)], 0.022, M(0x6d7277, {metalness: 0.4, roughness: 0.4}));
+    veer(G, c, 0.8, 0.98, 0.03, rvs);
+    const kb = kabel(G, [V(s*0.34, top, 0.0), V(s*0.22, top - 0.08, 0.06), V(s*0.5, y0 + 1.25, 0.25), V(s*0.62, y0 + 0.55, 0.32), V(s*0.48, y0 + 0.28, 0.4), V(s*0.3, y0 + 0.5, 0.36), V(s*0.17, y0 + 0.73 + 0.37 + 0.27, zf + 0.06)], 0.016, M(0x1b1c1e, {roughness: 0.5})); }
+  sprite('IDC80E #' + nr + ' · 80 kW · 2 × CCS2', V(x, 2.85, z), 0.45);
   return G; }
 
-// CDC1000E power cabinet: 1600 × 2200 × 1126 (hoofd- + nevenkast, elk 800 breed, 500 kW); fundering 1800 × 1300 (randbalk 200, ±0 = 200 boven maaiveld)
+// ---------- CDC1000E power cabinet: hoofd- + nevenkast (elk 800 × 2200 × 1126, 500 kW), plint, voor- en achterdeuren ----------
 function cdcKast(x, z){ const G = new THREE.Group(); G.position.set(x, 0, z); scene.add(G);
-  box(G, 1.8, 0.2, 1.3, beton, 0, 0.1, 0);
-  const y0 = 0.2; box(G, 1.6, 0.1, 1.126, donker, 0, y0 + 0.05, 0);
-  const deurT = ctex(400, 1000, (g, W, H) => { g.fillStyle = '#f2f3f1'; g.fillRect(0, 0, W, H); g.fillStyle = '#5a6168'; for(const y0 of [330, 560]) for(let k = 0; k < 9; k++) g.fillRect(70, y0 + k*20, 260, 10);
-    g.fillStyle = '#3d4247'; g.fillRect(30, 40, 340, 6); g.fillStyle = '#2a8de0'; g.fillRect(150, 90, 100, 14); g.fillStyle = '#c8c8c8'; g.fillRect(345, 450, 14, 90); });
-  for(const s of [-1, 1]){ schil(G, 0.8, 2.1, 1.126, wit, s*0.4, y0 + 0.1 + 1.05, 0);
-    const piv = new THREE.Group(); piv.position.set(s*0.4 - 0.4*(s < 0 ? 1 : -1) * 0 + (s < 0 ? -0.8 : 0), 0, 0.563); G.add(piv);
-    const d = box(piv, 0.79, 2.08, 0.025, wit, 0.395, y0 + 1.15, 0.0125); plak(piv, 0.79, 2.08, deurT, 0.395, y0 + 1.15, 0.026); DEUREN.push({piv, open: -1.8});
-    if(s < 0){ cyl(piv, 0.05, 0.04, M(0xd32222), 0.395, y0 + 0.75, 0.05, 'z'); cyl(piv, 0.065, 0.02, M(0xf2c400), 0.395, y0 + 0.75, 0.03, 'z'); }   // noodstop hoofdkast
-    // binnenwerk: power modules boven, MCCB + AC-aansluitruimte onder
-    for(let k = 0; k < 4; k++) box(G, 0.7, 0.24, 0.6, M(0xd9dcdb), s*0.4, y0 + 1.45 + k*0.26, -0.1);
-    box(G, 0.7, 0.18, 0.4, M(0x34383d), s*0.4, y0 + 0.95, 0.05);
-    for(let k = 0; k < 6; k++) box(G, 0.04, 0.22, 0.06, M([0x7a4a22, 0x1c1c1c, 0x8e9397, 0x1f5fbf, 0x3fa34d, 0x1f5fbf][k]), s*0.4 - 0.28 + k*0.11, y0 + 0.45, 0.2);   // L1 L2 L3 N PE N
+  box(G, 1.8, 0.2, 1.3, beton, 0, 0.1, 0); const y0 = 0.2, Dk = 1.126, Hb = 0.16, Hk = 2.2 - Hb;
+  box(G, 1.6, Hb, Dk - 0.04, plint, 0, y0 + Hb/2, 0); for(const s of [-1, 1]) for(const t of [-1, 1]) box(G, 0.12, 0.06, 0.04, M(0x2b2d30), s*0.6, y0 + 0.06, t*(Dk/2 - 0.02));   // plint + heftruckgaten
+  box(G, 1.61, 0.03, Dk + 0.01, M(0x2d3237), 0, y0 + Hb + Hk + 0.015, 0); box(G, 1.6, 0.012, Dk, M(0x3d4247), 0, y0 + Hb + Hk + 0.036, 0);   // donkere dakkap (foto)
+  const grill = perfo(256, 160, '#e9ebea', '#8f969b', 7), y1 = y0 + Hb;
+  for(const s of [-1, 1]){ const cx = s*0.4; schil(G, 0.8, Hk, Dk, wit, cx, y1 + Hk/2, 0);
+    for(const yy of [0.1, Hk - 0.1]) cyl(G, 0.035, 0.05, rvs, cx + s*0.25, y1 + Hk + 0.06, 0, null, 12);                                   // hijsogen
+    // binnenwerk (quick guide fig. 3): power modules (SiC, 40 kW) bovenin, PDU, TCU+RCU, MCCB, AC-contactor, voedings- en SPD-automaten, DC-rails, AC-aansluitruimte, switch
+    box(G, 0.74, Hk - 0.1, 0.01, M(0xe4e6e5), cx, y1 + Hk/2, -Dk/2 + 0.04);
+    for(let k = 0; k < 7; k++){ const yy = y1 + 1.12 + k*0.12; box(G, 0.62, 0.105, 0.72, M(0xd9dcdb, {metalness: 0.3}), cx, yy, -0.12);
+      box(G, 0.62, 0.105, 0.005, M(0xc3c8cb, {metalness: 0.5}), cx, yy, 0.243); for(let f = 0; f < 3; f++){ cyl(G, 0.035, 0.008, M(0x2b2d30), cx - 0.2 + f*0.2, yy, 0.248, 'z', 18); }
+      box(G, 0.03, 0.01, 0.004, M(0x22d06a, {emissive: 0x22d06a, emissiveIntensity: 0.7}), cx + 0.27, yy + 0.03, 0.247); box(G, 0.06, 0.02, 0.01, M(0x8e9498), cx + 0.26, yy - 0.03, 0.25); }
+    plak(G, 0.36, 0.05, lbl('POWER MODULES 40 kW', 300, 44, '#eceeee', '#3a3d41', 'bold 22px Arial'), cx, y1 + 1.06, 0.25);
+    box(G, 0.66, 0.06, 0.35, M(0x34383d), cx, y1 + 0.98, 0.05); box(G, 0.66, 0.06, 0.35, M(0x34383d), cx, y1 + 0.84, 0.05);   // PDU
+    box(G, 0.66, 0.06, 0.3, M(0xeceeee), cx, y1 + 0.91, 0.05); plak(G, 0.2, 0.03, lbl('TCU + RCU', 200, 30, '#eceeee', '#333', 'bold 18px Arial'), cx - 0.18, y1 + 0.91, 0.201);
+    box(G, 0.7, 0.012, 0.02, zink, cx, y1 + 0.72, 0.1); din(G, cx - 0.32, y1 + 0.72, 0.13, 6, 0.018); din(G, cx - 0.2, y1 + 0.72, 0.13, 4, 0.022, 0x3a3d41, 0xf2c400);   // voedings-/fan-automaten + SPD
+    box(G, 0.22, 0.28, 0.16, M(0x2b2d30), cx + 0.18, y1 + 0.66, 0.08); box(G, 0.05, 0.07, 0.05, M(0x1b1c1e), cx + 0.18, y1 + 0.68, 0.18); box(G, 0.012, 0.05, 0.03, geel, cx + 0.18, y1 + 0.71, 0.2);   // MCCB 800 A
+    box(G, 0.2, 0.18, 0.15, M(0x5a6066), cx + 0.18, y1 + 0.42, 0.05); for(let k = 0; k < 3; k++) cyl(G, 0.018, 0.02, M(0x1b1c1e), cx + 0.12 + k*0.06, y1 + 0.42, 0.13, 'z', 8);   // AC-contactor
+    // DC-uitgangsrails + / − (M1..M6)
+    for(const [yy, kl] of [[y1 + 0.32, 0xc0281f], [y1 + 0.26, 0x1f5fbf]]){ box(G, 0.66, 0.025, 0.006, koper, cx, yy, 0.22); for(let k = 0; k < 6; k++){ cyl(G, 0.008, 0.02, zink, cx - 0.27 + k*0.108, yy, 0.228, 'z', 6); box(G, 0.02, 0.012, 0.004, M(kl), cx - 0.27 + k*0.108, yy + 0.02, 0.225); } }
+    // AC-aansluitruimte: L1 L2 L3 · N PE N · L1 L2 L3 (2 × 185 mm² per fase) + aangesloten kabels van onderen
+    const KL = [['L1', -0.3], ['L2', -0.25], ['L3', -0.2], ['N', -0.08], ['PE', 0], ['N', 0.08], ['L1', 0.2], ['L2', 0.25], ['L3', 0.3]];
+    KL.forEach(([f, dx]) => { const xx = cx + dx; box(G, 0.035, 0.12, 0.008, f === 'PE' ? M(0x3fa34d, {metalness: 0.4}) : koper, xx, y1 + 0.13, 0.12); cyl(G, 0.01, 0.025, zink, xx, y1 + 0.11, 0.13, 'z', 6);
+      box(G, 0.03, 0.035, 0.005, tin, xx, y1 + 0.105, 0.127); kabel(G, [V(xx, y1 + 0.09, 0.13), V(xx, y1 + 0.03, 0.14), V(xx, y1 - 0.05, 0.1), V(xx, y1 - 0.3, 0.05)], f === 'PE' ? 0.011 : 0.016, ader[f]);
+      plak(G, 0.03, 0.02, lbl(f, 60, 40, f === 'PE' ? '#3fa34d' : '#f2d200', '#111', 'bold 24px Arial'), xx, y1 + 0.2, 0.125); });
+    box(G, 0.12, 0.05, 0.08, M(0x2b2d30), cx - 0.25, y1 + 0.98, -0.33); for(let k = 0; k < 6; k++) box(G, 0.01, 0.008, 0.004, M(0x22d06a, {emissive: 0x22d06a}), cx - 0.29 + k*0.015, y1 + 0.99, -0.29);   // netwerkswitch
+    // voordeur: logo, blauwe LED-balk, 2 geperforeerde ventilatievlakken, noodstop, hendel; scharnier buitenkant
+    const piv = new THREE.Group(); piv.position.set(cx - s*0.4 + (s < 0 ? 0 : 0), y1, Dk/2); G.add(piv); const dirx = s < 0 ? 1 : -1;
+    const D = new THREE.Group(); D.position.set(dirx*0.395, 0, 0); piv.add(D);
+    box(D, 0.79, Hk - 0.02, 0.025, wit, 0, Hk/2, 0.0125); plak(D, 0.2, 0.035, lbl('SUNGROW', 300, 52, '#f1f2f0', '#3d4247', 'bold 34px Arial'), 0, Hk - 0.33, 0.026);
+    box(D, 0.18, 0.012, 0.006, blauwLed, 0, Hk - 0.4, 0.028);
+    for(const yy of [Hk - 0.78, 0.47]){ plak(D, 0.6, 0.38, grill, 0, yy, 0.026); box(D, 0.62, 0.4, 0.004, M(0xdfe2e1), 0, yy, 0.0255); }
+    cyl(D, 0.05, 0.01, geel, 0, Hk*0.5, 0.03, 'z', 28); cyl(D, 0.03, 0.04, rood, 0, Hk*0.5, 0.05, 'z', 24); cyl(D, 0.034, 0.012, rood, 0, Hk*0.5, 0.07, 'z', 24);
+    plak(D, 0.1, 0.02, lbl('EMERGENCY STOP', 200, 40, '#f2c400', '#111', 'bold 18px Arial'), 0, Hk*0.5 - 0.07, 0.031);
+    const hx = -dirx*0.33; box(D, 0.035, 0.22, 0.03, rvs, hx, Hk*0.5 + 0.1, 0.04); box(D, 0.02, 0.15, 0.02, M(0xb7bcc0, {metalness: 0.8}), hx, Hk*0.5 + 0.1, 0.06);
+    box(D, 0.76, 0.006, 0.006, rubber, 0, 0.03, -0.004); box(D, 0.76, 0.006, 0.006, rubber, 0, Hk - 0.05, -0.004);
+    DEUREN.push({piv, open: dirx*1.8});
+    // achterdeur (dicht, idem zonder noodstop)
+    box(G, 0.79, Hk - 0.02, 0.02, wit, cx, y1 + Hk/2, -Dk/2 - 0.01); for(const yy of [Hk - 0.78, 0.47]) plak(G, 0.6, 0.38, grill, cx, y1 + yy, -Dk/2 - 0.021, Math.PI);
   }
-  box(G, 0.02, 2.1, 1.13, M(0xdfe2e1), 0, y0 + 1.15, 0);
-  for(const s of [-1, 1]) cyl(G, 0.04, 0.05, grijs, s*0.7, y0 + 2.23, 0.4);                         // hijsogen
+  box(G, 0.02, Hk, Dk, M(0xdfe2e1), 0, y1 + Hk/2, 0);
+  // typeplaat en waarschuwingsstickers zijkant
+  plak(G, 0.18, 0.12, lbl('CDC1000E 1000 kW', 260, 160, '#eceeee', '#333', 'bold 22px Arial'), 0.801, y1 + 1.5, 0.3, Math.PI/2);
+  plak(G, 0.12, 0.1, ctex(120, 100, (g, w, h) => { g.fillStyle = '#f2c400'; g.beginPath(); g.moveTo(60, 8); g.lineTo(112, 92); g.lineTo(8, 92); g.closePath(); g.fill(); g.strokeStyle = '#111'; g.lineWidth = 6; g.stroke(); g.fillStyle = '#111'; g.font = 'bold 56px Arial'; g.textAlign = 'center'; g.fillText('⚡', 60, 84); }), 0.801, y1 + 1.3, 0.3, Math.PI/2);
   sprite('CDC1000E power cabinet · 2 × 500 kW', V(x, 3.0, z), 0.5);
   return G; }
 
-// CCS-dispenser (vloeistofgekoeld): 703 × 2204 × 850, 2 × CCS2
+// ---------- CCS-dispenser (vloeistofgekoeld, 703 × 2204 × 850): slanke kolom, lichtkap met LED, HMI, 2 holsters, kabelarmen ----------
 function dispenser(x, z, nr){ const G = new THREE.Group(); G.position.set(x, 0, z); scene.add(G);
   box(G, 0.9, 0.2, 1.0, beton, 0, 0.1, 0); const y0 = 0.2;
-  box(G, 0.703, 2.0, 0.85, wit, 0, y0 + 1.0, 0); box(G, 0.72, 0.2, 0.87, M(0x2d3237), 0, y0 + 2.1, 0);
-  const f = ctex(352, 1000, (g, W, H) => { g.fillStyle = '#f4f5f3'; g.fillRect(0, 0, W, H); g.fillStyle = '#1f2a33'; g.fillRect(60, 160, 232, 150); g.fillStyle = '#5fb0e8'; g.fillRect(68, 168, 216, 134);
-    g.fillStyle = '#2a2e33'; g.fillRect(40, 420, 80, 140); g.fillRect(232, 420, 80, 140); g.fillStyle = '#d32222'; g.beginPath(); g.arc(176, 380, 18, 0, 7); g.fill();
-    g.fillStyle = '#29b6f6'; g.fillRect(0, 60, W, 12); g.fillStyle = '#333'; g.font = 'bold 28px Arial'; g.textAlign = 'center'; g.fillText('SUNGROW', 176, 900); });
-  plak(G, 0.703, 2.0, f, 0, y0 + 1.0, 0.426);
-  for(const s of [-1, 1]) kabel(G, [V(s*0.25, y0 + 2.0, 0.2), V(s*0.45, y0 + 2.25, 0.5), V(s*0.5, y0 + 1.2, 0.75), V(s*0.3, y0 + 0.7, 0.65), V(s*0.2, y0 + 1.2, 0.46)], 0.024, zwart);
-  sprite('dispenser #' + nr + ' · 2 × CCS2', V(x, 2.95, z), 0.42);
+  box(G, 0.4, 0.12, 0.42, plint, 0, y0 + 0.06, 0);                                                                     // donkere voet
+  rbox(G, 0.36, 1.75, 0.4, 0.06, wit, 0, y0 + 0.12 + 0.875, 0);                                                         // kolom
+  box(G, 0.34, 1.6, 0.004, M(0xe9ebea), 0, y0 + 0.95, -0.203);
+  // lichtkap bovenop (overstek, 703 breed) met 2 blauwe LED-balken + statuslogo
+  rbox(G, 0.703, 0.1, 0.42, 0.04, M(0xdfe2e4, {metalness: 0.5, roughness: 0.3}), 0, y0 + 2.004 - 0.05, 0); for(const s of [-1, 1]) box(G, 0.22, 0.014, 0.006, blauwLed, s*0.16, y0 + 1.955, 0.212);
+  box(G, 0.12, 0.08, 0.1, M(0xd0d3d5), 0, y0 + 1.86, 0);
+  // kabeluitvoer: RVS plaat met 2 wartels (vloeistofgekoelde kabels)
+  box(G, 0.14, 0.12, 0.012, rvs, 0, y0 + 1.62, 0.205); for(const s of [-1, 1]){ cyl(G, 0.028, 0.04, zink, s*0.035, y0 + 1.62, 0.225, 'z', 6); cyl(G, 0.02, 0.03, rubber, s*0.035, y0 + 1.62, 0.25, 'z', 16); }
+  // kabelarmen links/rechts (zwarte beugel met draaipunt)
+  for(const s of [-1, 1]){ box(G, 0.22, 0.05, 0.06, M(0x1b1c1e), s*0.27, y0 + 1.72, 0.0); cyl(G, 0.025, 0.08, rvs, s*0.37, y0 + 1.72, 0.0, null, 12); box(G, 0.06, 0.12, 0.05, M(0x1b1c1e), s*0.37, y0 + 1.64, 0.02); }
+  // HMI: zwart paneel met 10" scherm, RFID-vak, betaalterminal
+  rbox(G, 0.3, 0.38, 0.03, 0.025, M(0x0e1013, {roughness: 0.25}), 0, y0 + 1.15, 0.2); plak(G, 0.2, 0.13, scherm(400, 260), 0, y0 + 1.25, 0.216);
+  plak(G, 0.06, 0.015, lbl('SUNGROW', 160, 40, '#0e1013', '#e3e6e8', 'bold 26px Arial'), 0, y0 + 1.33, 0.216);
+  rbox(G, 0.06, 0.09, 0.012, 0.01, M(0x2b2d30), -0.06, y0 + 1.07, 0.218); box(G, 0.045, 0.06, 0.003, M(0x1a2733), -0.06, y0 + 1.08, 0.225);
+  cyl(G, 0.03, 0.006, M(0x0e1013), 0.06, y0 + 1.07, 0.218, 'z', 28); const ring = new THREE.Mesh(new THREE.TorusGeometry(0.026, 0.003, 6, 28), blauwLed); ring.position.set(0.06, y0 + 1.07, 0.222); G.add(ring);
+  // holsters aan de zijkanten (wit hoesje met blauwe ring) + noodstop
+  for(const s of [-1, 1]){ rbox(G, 0.07, 0.17, 0.12, 0.02, wit, s*0.215, y0 + 1.1, 0.1); const hr = new THREE.Mesh(new THREE.TorusGeometry(0.045, 0.006, 8, 24), blauwLed); hr.position.set(s*0.215, y0 + 1.1, 0.165); G.add(hr); }
+  cyl(G, 0.025, 0.02, rood, 0.17, y0 + 1.42, 0.2, 'z', 18); cyl(G, 0.035, 0.006, geel, 0.17, y0 + 1.42, 0.198, 'z', 20);
+  // vloeistofgekoelde CCS2-kabels: van de arm in een lus omlaag naar de stekker in het holster
+  for(const s of [-1, 1]){ const st = ccs2(G, s*0.215, y0 + 1.16, 0.2, -0.15);
+    kabel(G, [V(s*0.37, y0 + 1.58, 0.03), V(s*0.42, y0 + 1.2, 0.12), V(s*0.45, y0 + 0.4, 0.3), V(s*0.38, y0 + 0.08, 0.42), V(s*0.3, y0 + 0.5, 0.36), V(s*0.24, y0 + 1.0, 0.28), V(s*0.215, y0 + 1.37, 0.2)], 0.022, M(0x1b1c1e, {roughness: 0.45})); }
+  sprite('dispenser #' + nr + ' · 2 × CCS2 (500 A)', V(x, 2.85, z), 0.42);
   return G; }
 
 function auto(x, z, ry){ const G = new THREE.Group(); G.position.set(x, 0, z); G.rotation.y = ry || 0; scene.add(G); AUTOS.push(G);
