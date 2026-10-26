@@ -345,10 +345,10 @@ function schoen(p, x, y, z, d, kleur, bout){ const g = new THREE.Group(); g.posi
 function vlag(p, x, y, z, w, h){ box(p, w, h, 0.006, cuM, x, y, z); cyl(p, 0.0055, 0.0075, M(0x0d0e0f), x, y + h/2 - 0.022, z, 'z', 16); }
 function aansluitCdc(R0){ const y1 = 0.36, R = new THREE.Group(); R.position.z = 0.25; R0.add(R);   // compartiment vlak achter de achterdeur
   for(const s of [-1, 1]){ const cx = s*0.4;
-    box(R, 0.72, 0.86, 0.006, M(0xd9dcdb), cx, y1 + 0.47, 0.06);                                                    // montageplaat
+    box(R, 0.72, 1.05, 0.006, M(0xd9dcdb), cx, y1 + 0.55, 0.06);                                                    // montageplaat
     // ---- DC+ en DC− verzamelrails op isolatoren, met 6 neerhangende vlaggen ----
     const XK = k => cx - 0.27 + k*0.108;
-    [[y1 + 0.78, 'DC+', M(0xc0281f), 1], [y1 + 0.6, 'DC−', M(0x1f4fbf), -1]].forEach(([yr, naam, km, pol]) => {
+    [[0.2 + 1.119 + 0.06, 'DC+', M(0xc0281f), 1], [0.2 + 0.906 + 0.06, 'DC−', M(0x1f4fbf), -1]].forEach(([yr, naam, km, pol]) => {   // UM tabel 3-1: aansluithoogte schoen 1119 / 906 mm
       box(R, 0.66, 0.04, 0.01, cuM, cx, yr, 0.14); for(const dx of [-0.31, 0, 0.31]){ cyl(R, 0.014, 0.07, isoR, cx + dx, yr, 0.1, 'z', 6); }
       plak(R, 0.07, 0.022, lbl(naam + ' rail', 140, 44, pol > 0 ? '#c0281f' : '#1f4fbf', '#fff', 'bold 24px Arial'), cx - 0.24, yr + 0.035, 0.146);
       for(let k = 0; k < 6; k++){ const x = XK(k) + pol*0.014; vlag(R, x, yr - 0.06, 0.15, 0.034, 0.09); bouten(R, [[x, yr, 0.146]], 'z');
@@ -357,11 +357,11 @@ function aansluitCdc(R0){ const y1 = 0.36, R = new THREE.Group(); R.position.z =
         kabel(R, [e, V(e.x, e.y - 0.05, e.z), V(e.x, y1 + 0.02, 0.22 + (pol > 0 ? 0 : 0.03)), V(e.x, y1 - 0.06, 0.22 + (pol > 0 ? 0 : 0.03)), V(e.x, y1 - 0.4, 0.2)], 0.0085, km); } });
     // ---- AC-aansluitruimte: isolatorblok, 9 koperen klemvlaggen, fasescheidingen, polycarbonaat afdekking ----
     const KL = [['L1', -0.3], ['L2', -0.25], ['L3', -0.2], ['N', -0.11], ['PE', -0.055], ['N', 0.0], ['L1', 0.2], ['L2', 0.25], ['L3', 0.3]].map(([f, dx]) => [f, dx + (dx > 0.1 ? 0 : 0)]);
-    box(R, 0.68, 0.05, 0.05, isoM, cx, y1 + 0.38, 0.1); plak(R, 0.12, 0.022, lbl('AC IN · 2 × 185 mm²/fase', 260, 46, '#f2c400', '#111', 'bold 20px Arial'), cx, y1 + 0.47, 0.1265);
-    KL.forEach(([f, dx], j) => { const x = cx + dx, pe = f === 'PE'; vlag(R, x, y1 + 0.31, 0.13, pe ? 0.032 : 0.04, 0.11);
-      if(j < 8) box(R, 0.004, 0.13, 0.07, M(0x24272b), x + (KL[j + 1][1] - dx)/2, y1 + 0.31, 0.15, false);                   // fasescheidingsschot
-      plak(R, 0.028, 0.018, lbl(f, 56, 36, pe ? '#3fa34d' : f === 'N' ? '#1f5fbf' : '#f2d200', pe || f === 'N' ? '#fff' : '#111', 'bold 24px Arial'), x, y1 + 0.385, 0.1265);
-      const e = schoen(R, x, y1 + 0.33, 0.133, pe ? 0.0115 : 0.0158, ader[f], 0.01);                                       // 185 mm² (PE 95)
+    const yA = 0.2 + 0.69 - (y1 + 0.33);   // UM tabel 3-1: fase/PE 690, N 740 mm box(R, 0.68, 0.05, 0.05, isoM, cx, y1 + 0.38 + yA, 0.1); plak(R, 0.16, 0.022, lbl('AC IN 2 × (4×185 + 95)', 300, 46, '#f2c400', '#111', 'bold 20px Arial'), cx, y1 + 0.47 + yA, 0.1265);
+    KL.forEach(([f, dx], j) => { const x = cx + dx, pe = f === 'PE'; vlag(R, x, y1 + 0.31 + yA + (f === 'N' ? 0.05 : 0), 0.13, pe ? 0.032 : 0.04, 0.11);
+      if(j < 8) box(R, 0.004, 0.13, 0.07, M(0x24272b), x + (KL[j + 1][1] - dx)/2, y1 + 0.31 + yA, 0.15, false);                   // fasescheidingsschot
+      plak(R, 0.028, 0.018, lbl(f, 56, 36, pe ? '#3fa34d' : f === 'N' ? '#1f5fbf' : '#f2d200', pe || f === 'N' ? '#fff' : '#111', 'bold 24px Arial'), x, y1 + 0.385 + yA + (f === 'N' ? 0.05 : 0), 0.1265);
+      const e = schoen(R, x, y1 + 0.33 + yA + (f === 'N' ? 0.05 : 0), 0.133, pe ? 0.0115 : 0.0158, ader[f], 0.01);                                       // 185 mm² (PE 95)
       const rK = pe ? 0.0085 : 0.012;
       kabel(R, [e, V(e.x, e.y - 0.05, e.z), V(e.x, y1 + 0.03, e.z + 0.01), V(e.x, y1 - 0.06, e.z + 0.01), V(e.x, y1 - 0.4, e.z - 0.02)], rK, pe ? ader.PE : kabelZw);
       cyl(R, rK + 0.001, 0.03, ader[f], e.x, e.y - 0.07, e.z, null, 14);                                                     // aderkleur-markering op de mantel
@@ -371,8 +371,11 @@ function aansluitCdc(R0){ const y1 = 0.36, R = new THREE.Group(); R.position.z =
     // C-profiel met kabelklemmen (trekontlasting) + bodemplaat + transparante afdekking AC
     box(R, 0.7, 0.025, 0.02, zink, cx, y1 + 0.1, 0.27); box(R, 0.7, 0.012, 0.36, M(0x5a6066), cx, y1 + 0.006, 0.17);
     for(const [f, dx] of KL){ box(R, 0.03, 0.014, 0.02, M(0x2b2d30), cx + dx, y1 + 0.1, 0.258); }
-    box(R, 0.69, 0.17, 0.004, polyc, cx, y1 + 0.32, 0.215); bouten(R, [[cx - 0.33, y1 + 0.39, 0.217], [cx + 0.33, y1 + 0.39, 0.217], [cx - 0.33, y1 + 0.25, 0.217], [cx + 0.33, y1 + 0.25, 0.217]], 'z');
-    plak(R, 0.05, 0.044, waarsch, cx + 0.28, y1 + 0.38, 0.218);
+    box(R, 0.69, 0.22, 0.004, polyc, cx, y1 + 0.34 + yA, 0.215); bouten(R, [[cx - 0.33, y1 + 0.43 + yA, 0.217], [cx + 0.33, y1 + 0.43 + yA, 0.217], [cx - 0.33, y1 + 0.25 + yA, 0.217], [cx + 0.33, y1 + 0.25 + yA, 0.217]], 'z');
+    plak(R, 0.05, 0.044, waarsch, cx + 0.28, y1 + 0.42 + yA, 0.218);
+    // onderzone (UM fig. 2.4): rij automaten/klemmen + netwerkswitch
+    box(R, 0.66, 0.012, 0.015, zink, cx, y1 + 0.32, 0.08); for(let j = 0; j < 22; j++) box(R, 0.025, 0.12, 0.07, M(j % 5 === 4 ? 0x2b2d30 : 0xe6e8e7), cx - 0.29 + j*0.0275, y1 + 0.32, 0.11, false);
+    if(s > 0){ box(R, 0.06, 0.16, 0.08, M(0x2b2d30), cx + 0.3, y1 + 0.15, 0.11); for(let k = 0; k < 8; k++) box(R, 0.012, 0.009, 0.004, M(0x22d06a, {emissive: 0x22d06a}), cx + 0.3, y1 + 0.09 + k*0.016, 0.152); plak(R, 0.07, 0.016, lbl('SWITCH', 140, 32, '#2b2d30', '#fff', 'bold 20px Arial'), cx + 0.3, y1 + 0.25, 0.152); }
     // aardrail met PE-verbindingen en uitleg
     box(R, 0.5, 0.025, 0.008, cuM, cx, y1 + 0.05, 0.04); bouten(R, Array.from({length: 8}, (_, j) => [cx - 0.21 + j*0.06, y1 + 0.05, 0.045]), 'z');
   }
