@@ -2041,7 +2041,6 @@ const VIEWS = {
       + r('Junction box', NO_JB ? 'nee' : 'ja')
       + r('Voeding', NO_JB ? N_AIO + ' × ' + AIOKAB.txt + ' (gG 200) uit HVK' : VKAB.n + ' × ' + VKAB.txt + ' (gG ' + VKAB.gG + ') naar JB')
       + (NO_JB ? '' : r('JB → AIO', '4 × 1×70 mm² per AIO'))
-      + r('HVK-velden', N_AIO + ' in gebruik · ' + (5 - N_AIO) + ' reserve')
       + '</table>' + (!BF && !NO_JB ? '<div class="cfgLet">Voeding JB is een schatting — zie Kabelberekening</div>' : ''); }
   const h = document.getElementById('titel'); if(h) h.innerHTML = h.innerHTML.replace('AIO 5 ×', 'AIO ' + N_AIO + ' ×');
   document.querySelectorAll('.nAio').forEach(e => e.textContent = N_AIO); document.querySelectorAll('.nSlave').forEach(e => e.textContent = N_AIO > 1 ? ', #2..#' + N_AIO + ' slave' : '');
