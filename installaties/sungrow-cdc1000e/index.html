@@ -306,11 +306,9 @@ function maat(a, b, off, txt){ const g = new THREE.Group(), a2 = a.clone().add(o
   scene.add(g); MAAT.push(g); const sp = sprite(txt, a2.clone().lerp(b2, 0.5).add(V(0, 0.18, 0)), 0.3, '#1a4f9c', MAAT); g.visible = false; sp.visible = false; }
 
 // ---------- opstelling ----------
-const KAST = {x: -6, z: -3};                                                       // verdeelkast / aansluitpunt (netzijde)
+const KAST = {x: -9, z: -3};                                                       // verdeelkast / aansluitpunt (netzijde)
 let INFO = {}, FOCUS = V(0, 1, 0);
-{ const vk = new THREE.Group(); vk.position.set(KAST.x, 0, KAST.z); scene.add(vk); box(vk, 1.2, 0.2, 0.6, beton, 0, 0.1, 0); box(vk, 1.0, 1.5, 0.45, M(0x9aa3a8, {metalness: 0.4}), 0, 0.95, 0);
-  plak(vk, 0.5, 0.2, lbl('VERDEELKAST', 260, 90, '#f2c400', '#111', 'bold 30px Arial'), 0, 1.5, 0.226);
-  sprite(PROD === 'idc' ? 'verdeelkast / HVK (netzijde)' : 'trafo / HVK (netzijde)', V(KAST.x, 2.1, KAST.z), 0.4); }
+sprite('← 2 × voeding 800 A vanuit trafo / LS-verdeler (geen veldkast)', V(KAST.x + 1.6, 0.6, KAST.z + 0.3), 0.35, '#5d6b73', KABEL);
 const asf = (x0, z0, x1, z1) => { const o = box(scene, x1 - x0, 0.02, z1 - z0, asfalt, (x0 + x1)/2, 0.01, (z0 + z1)/2, false); o.receiveShadow = true; };
 const kab = (pts, r) => { const o = kabel(scene, pts, r || 0.03, kabelM); KABEL.push(o); return o; };
 if(PROD === 'idc'){
@@ -333,8 +331,8 @@ if(PROD === 'idc'){
 } else {
   const cx = 0, cz = -2.2; cdcKast(cx, cz);
   zone(cx - 0.8 - 0.5, cz - 0.563 - 1.0, cx + 0.8 + 0.5, cz + 0.563 + 1.0, 'vrije ruimte: voor/achter ≥ 1000 · zijkant ≥ 500');
-  kab([V(KAST.x + 0.2, 0.1, KAST.z), V(KAST.x + 0.2, -0.7, KAST.z + 0.2), V(cx - 0.4, -0.7, cz - 0.1), V(cx - 0.4, 0.4, cz + 0.2)], 0.045);
-  kab([V(KAST.x + 0.35, 0.1, KAST.z), V(KAST.x + 0.35, -0.75, KAST.z + 0.2), V(cx + 0.4, -0.75, cz - 0.3), V(cx + 0.4, 0.4, cz + 0.2)], 0.045);
+  for(let c = 0; c < 2; c++) for(let k = 0; k < 3; k++){ const dz = (c*3 + k)*0.12, xk = cx + (c ? 0.4 : -0.4) + (k - 1)*0.1;     // 2 circuits × 3 × YMvKas 4×240/120, 600 mm diep
+    kab([V(KAST.x, -0.6, KAST.z + dz), V(cx - 2, -0.6, KAST.z + dz), V(xk, -0.6, cz - 0.3), V(xk, 0.4, cz + 0.1)], 0.03); }
   const P = 5.4, x0 = -(N - 1)*P/2, dz = 3.2;
   asf(x0 - 2.5, dz - 1.0, x0 + (N - 1)*P + 2.5, dz + 6.0);
   for(let i = 0; i < N; i++){ const x = x0 + i*P; dispenser(x, dz, i + 1); auto(x - 1.3, dz + 3.3, 0); auto(x + 1.3, dz + 3.3, 0);
@@ -347,7 +345,7 @@ if(PROD === 'idc'){
   FOCUS = V(0, 1, 1.5);
   INFO = {Product: 'Sungrow CDC1000E ChargeStack', Vermogen: '1000 kW (2 × 500 kW), max. 12 uitgangen', Dispensers: N + ' × CCS (2 × CCS2, 500 A / boost 800 A)', 'AC-aansluiting': '2 circuits × (3 × 185 Cu + N 185 + PE 95)', 'AC-stroom': '≈ 2 × 760 A (1 MW / 400 V / 0,97)', Afmeting: 'cabinet 1600 × 2200 × 1126 · ≤ 1600 kg'};
 }
-sprite('kabels in de grond (600 mm)', V(KAST.x + 1.5, 0.35, KAST.z + 0.6), 0.3, '#5d6b73', KABEL);
+sprite('2 × 3 × YMvKas 4×240/120 in de grond (600 mm)', V(KAST.x + 4, 0.35, KAST.z + 1.0), 0.3, '#5d6b73', KABEL);
 
 // ---------- paneel ----------
 const $ = id => document.getElementById(id);
@@ -432,8 +430,14 @@ function stapFP(dt){ const k = FP.keys, f = V(-Math.sin(FP.yaw), 0, -Math.cos(FP
 // ---------- render ----------
 function maatvoer(){ const w = innerWidth, h = innerHeight; renderer.setSize(w, h); camera.aspect = w/h; camera.updateProjectionMatrix(); }
 addEventListener('resize', maatvoer); maatvoer();
+// vrij bewegen in de normale weergave (zoals de andere omgevingen): W/S vooruit/achteruit, A/D opzij, Q/E (of C/spatie) omlaag/omhoog, shift = sneller
+function vrij(dt){ const k = FP.keys, fw = ((k.w || k.arrowup) ? 1 : 0) - ((k.s || k.arrowdown) ? 1 : 0), sd = ((k.d || k.arrowright) ? 1 : 0) - ((k.a || k.arrowleft) ? 1 : 0), up = ((k.e || k[' ']) ? 1 : 0) - ((k.q || k.c) ? 1 : 0);
+  if(!fw && !sd && !up) return; const r = camera.position.distanceTo(ctl.target), v = Math.max(1.5, Math.min(25, r))*0.6*dt*(k.shift ? 2.5 : 1);
+  const f = V(ctl.target.x - camera.position.x, 0, ctl.target.z - camera.position.z).normalize(), rt = V(-f.z, 0, f.x);
+  const d = f.multiplyScalar(fw*v).addScaledVector(rt, sd*v); d.y = up*v*0.7; if(ctl.target.y + d.y < 0) d.y = -ctl.target.y; ctl.target.add(d); camera.position.add(d); }
+addEventListener('keydown', e => { if(!FP.aan && !(e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) && ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(e.key.toLowerCase())) e.preventDefault(); });
 let tPrev = performance.now();
-(function loop(){ requestAnimationFrame(loop); const nu = performance.now(), dt = Math.min(0.05, (nu - tPrev)/1000); tPrev = nu; DEUREN.forEach(d => { d.t += (d.doel - d.t)*0.12; d.piv.rotation.y = d.open*d.t; }); if(FP.aan) stapFP(dt); else ctl.update(); renderer.render(scene, camera); })();
+(function loop(){ requestAnimationFrame(loop); const nu = performance.now(), dt = Math.min(0.05, (nu - tPrev)/1000); tPrev = nu; DEUREN.forEach(d => { d.t += (d.doel - d.t)*0.12; d.piv.rotation.y = d.open*d.t; }); if(FP.aan) stapFP(dt); else { vrij(dt); ctl.update(); } renderer.render(scene, camera); })();
 window.__sg = {scene, camera, ctl, VIEW};
 </script>
 </body>
