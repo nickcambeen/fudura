@@ -41,6 +41,8 @@
   #cfgN button.aan { background: #1b4f8a; border-color: #1b4f8a; color: #fff; }
   .cfgKop { font-size: 12px; color: #3f4b52; margin-top: 2px; }
   .cfgInfo { font-size: 11.5px; color: #5d6b73; line-height: 1.4; padding: 2px 0 4px; }
+  .cfgT { border-collapse: collapse; width: 100%; margin-top: 4px; } .cfgT td { padding: 2px 0; vertical-align: top; } .cfgT td:first-child { color: #8a959c; padding-right: 10px; white-space: nowrap; } .cfgT td:last-child { color: #243038; }
+  .cfgLet { margin-top: 4px; color: #b5651d; font-size: 11px; }
   .knoprij button.aan { background: #243038; color: #fff; border-color: #243038; }
   #paneel ul { margin: 2px 0 4px; padding-left: 16px; color: #4a5258; font-size: 12px; line-height: 1.5; }
   #simInfo { font-size: 12px; color: #4a5258; padding: 2px 0 4px; font-variant-numeric: tabular-nums; }
@@ -68,8 +70,6 @@
   <details open><summary>Configuratie</summary>
     <div class="cfgKop">Aantal AIO's (DELTerra C 125 kW)</div>
     <div class="knoprij" id="cfgN"></div>
-    <div class="cfgKop" style="margin-top:8px">Kabelsleuf aanvullen met</div>
-    <div class="knoprij" id="cfgBF"><button data-bf="0">gebiedseigen grond (Sww 1,5)</button><button data-bf="1">backfillzand (Sww 1)</button></div>
     <div class="cfgInfo" id="cfgInfo"></div>
     <div class="knoprij" style="margin-top:6px"><button id="bKabelber">Kabelberekening</button></div>
   </details>
@@ -218,7 +218,7 @@ const SKH = 2.2, SD = AD, SKY = PL_H + SKH;
 const KW = 14.0, KD = 3.55, KH = 13.15, KP = 2.2;                                      // O&K C03a: romp 1400 × 355 × 1315, kap 1400 × 375 × 35 (20 mm overstek voor), plint 220
 const XA = i => i*AW;
 const KXW = XA(0) - AW/2 - 0.05 - KD/2, KZW = AZ;                                       // junction box 90° gedraaid tegen de zijkant van #1, deuren naar buiten (-x)
-const BF = (() => { try{ return new URLSearchParams(location.search).get('bf') === '1'; }catch(_){ return false; } })();   // standaard: gebiedseigen grond, Sww 1,5 K·m/W   // backfillzand ρ 1 K·m/W (cs 1,5) of gebiedseigen grond (cs 1,28)
+const BF = false;                                                                    // vast uitgangspunt: gebiedseigen grond, Sww 1,5 K·m/W (zie Kabelberekening)
 const NO_JB = N_AIO <= (BF ? 3 : 2);                                                                    // 1–3 AIO's: geen junction box, per AIO een YMvK 4×70 (1–2) / 4×95 (3) rechtstreeks vanuit de HVK (≤ 30 m, backfill ρ 1 K·m/W)
 const AIOKAB = N_AIO <= (BF ? 2 : 1) ? {txt: 'YMvK 4×70 mm²', rm: 0.21, ra: 0.075, mm: 70} : {txt: 'YMvK 4×95 mm²', rm: 0.24, ra: 0.085, mm: 95};
 // voeding HVK → junction box (30 m, D2): 3 AIO's 2 × 4×185/95 gG 630 · 4 AIO's 3 × 4×185/95 gG 800 · 5 AIO's 3 × 4×240/120 gG 1000 (met backfill; zonder backfill nog door te rekenen)
@@ -2035,7 +2035,14 @@ const VIEWS = {
   document.querySelectorAll('#cfgBF button').forEach(b => { const v = b.dataset.bf === '1'; if(v === BF) b.classList.add('aan');
     b.addEventListener('click', () => { if(v === BF) return; const u = new URL(location.href); u.searchParams.set('bf', v ? '1' : '0'); location.href = u.toString(); }); });
   const kW = N_AIO*125, kWh = N_AIO*261, In = Math.round(kW*1000/(Math.sqrt(3)*400));
-  document.getElementById('cfgInfo').innerHTML = kW + ' kW · ' + kWh + ' kWh · I<sub>n</sub> ≈ ' + In + ' A (400 V)<br>SL2 in gebruik: ' + N_AIO + ' van 5' + (N_AIO < 5 ? ' · ' + (5 - N_AIO) + ' reserve' : '') + '<br>Goten skid: ' + KAN_NAAM.join(' | ') + (N_AIO > 3 ? '<br><b style="color:#e06a1a">AIO #4' + (N_AIO > 4 ? ' en #5' : '') + ' direct door de grond</b> (geen mantelbuis; skid: max. 3 bundels met 2 lege goten ertussen)' : '') + (NO_JB ? '<br><b>Geen junction box</b> (' + (BF ? '1–3' : '1–2') + ' AIO\'s, ≤ 30 m): per AIO ' + AIOKAB.txt + ' rechtstreeks vanuit een SL2-veld in de HVK (gG 200), door de skid geboord; 230 V EMS ook vanuit de HVK' : '<br><b>Voeding junction box</b>: ' + VKAB.n + ' × ' + VKAB.txt + ' (gG ' + VKAB.gG + ', 30 m)' + (BF ? '' : ' <b style="color:#e06a1a">— Sww 1,5: schatting, nog bevestigen met Kablix</b>') + '; per AIO 4 × 1×70 mm²') + '<br>Sleuf: ' + (BF ? 'backfillzand ρ 1 K·m/W → cs 1,5' : 'gebiedseigen grond → cs 1,28');
+  { const r = (k, v) => `<tr><td>${k}</td><td>${v}</td></tr>`;
+    document.getElementById('cfgInfo').innerHTML = '<table class="cfgT">'
+      + r('Vermogen', kW + ' kW · ' + kWh + ' kWh · ' + In + ' A')
+      + r('Junction box', NO_JB ? 'nee' : 'ja')
+      + r('Voeding', NO_JB ? N_AIO + ' × ' + AIOKAB.txt + ' (gG 200) uit HVK' : VKAB.n + ' × ' + VKAB.txt + ' (gG ' + VKAB.gG + ') naar JB')
+      + (NO_JB ? '' : r('JB → AIO', '4 × 1×70 mm² per AIO'))
+      + r('HVK-velden', N_AIO + ' in gebruik · ' + (5 - N_AIO) + ' reserve')
+      + '</table>' + (!BF && !NO_JB ? '<div class="cfgLet">Voeding JB is een schatting — zie Kabelberekening</div>' : ''); }
   const h = document.getElementById('titel'); if(h) h.innerHTML = h.innerHTML.replace('AIO 5 ×', 'AIO ' + N_AIO + ' ×');
   document.querySelectorAll('.nAio').forEach(e => e.textContent = N_AIO); document.querySelectorAll('.nSlave').forEach(e => e.textContent = N_AIO > 1 ? ', #2..#' + N_AIO + ' slave' : '');
   document.title = document.title.replace('AIO 5 ×', 'AIO ' + N_AIO + ' ×'); }
@@ -2112,7 +2119,7 @@ function zetFP(aan){
   camera.updateProjectionMatrix(); }
 $t('tFP').addEventListener('change', e => zetFP(e.target.checked));
 // reset: pagina opnieuw laden met dezelfde configuratie (aantal AIO's, backfill) — alle knoppen, deuren en camera terug naar de beginstand
-function resetView(){ const u = new URL(location.href), q = new URLSearchParams(); ['n', 'bf'].forEach(k => { if(u.searchParams.get(k) !== null) q.set(k, u.searchParams.get(k)); }); u.search = q.toString(); location.replace(u.toString()); }
+function resetView(){ const u = new URL(location.href), q = new URLSearchParams(); ['n'].forEach(k => { if(u.searchParams.get(k) !== null) q.set(k, u.searchParams.get(k)); }); u.search = q.toString(); location.replace(u.toString()); }
 document.getElementById('pReset').addEventListener('click', resetView);
 // ---------- 2D-tekening (bovenaanzicht) met alle maten: weergave als SVG + download DXF / SVG / afdrukken (PDF) ----------
 const TEKEN2D = (() => {
