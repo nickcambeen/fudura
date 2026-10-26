@@ -393,14 +393,17 @@ function aansluitCdc(R0){ const H = h => 0.2 + h, y1 = 0.36, R = new THREE.Group
       plak(R, 0.03, 0.018, lbl(f, 60, 36, pe ? '#3fa34d' : f === 'N' ? '#1f5fbf' : '#f2d200', pe || f === 'N' ? '#fff' : '#111', 'bold 24px Arial'), x, yA + 0.085, 0.1185);
       const sets = pe ? [[0, 0.134, 0], [1, 0.126, Math.PI]] : [[set, 0.134, 0]];
       sets.forEach(([st, zl, ry]) => { const e = lug(R, V(x, yT, zl), ry, pe ? 0.0115 : 0.0158, ader[f], ry ? -1 : 0.01, pe ? '95-10' : '185-10'); kern[st].push([e, f]); }); });
-    [[-0.17, kern[0]], [0.17, kern[1]]].forEach(([ox, ks], st) => { const xc = cx + ox, zc = 0.15, rK = 0.033;
-      kabel(R, [V(xc, 0.05, zc - 0.01), V(xc, y1 - 0.02, zc), V(xc, H(0.31), zc)], rK, kabelZw); doorvoer(R, xc, y1 + 0.012, zc, rK);
-      cyl(R, rK + 0.002, 0.05, M(0x111214), xc, H(0.32), zc, null, 20);                                   // krimp-eindkap
-      box(R, 0.09, 0.03, 0.03, M(0x2b2d30), xc, H(0.24), zc - 0.035); box(R, 0.08, 0.012, 0.075, zink, xc, H(0.24), zc);   // kabelklem (trekontlasting)
-      plak(R, 0.07, 0.016, lbl('4×185+95 Cu', 160, 36, '#111214', '#fff', 'bold 20px Arial'), xc, H(0.2), zc + rK + 0.003);
-      ks.forEach(([e, f], c) => { const a = (c - (ks.length - 1)/2)*0.011, rr = f === 'PE' ? 0.0085 : 0.0115;
-        kabel(R, [e, V(e.x, e.y - 0.03, e.z), V((e.x + xc)/2, H(0.45), zc + (f === 'PE' && st === 0 ? -0.015 : 0.0)), V(xc + a, H(0.35), zc), V(xc + a*0.6, H(0.33), zc)], rr, ader[f]); });
+    // AC-aders: meeraderige kabel tot in de fundering gestript, aders als losse kabels recht omhoog vóór de DC-kabels (tussen de DC-kolommen door) naar de klemmen
+    const gaten = [-0.27, -0.216, -0.162, -0.108, -0.054, 0, 0.054, 0.108, 0.162, 0.216, 0.27];
+    [[-0.17, kern[0], '1'], [0.17, kern[1], '2']].forEach(([ox, ks, nr], st) => { const xc = cx + ox, zc = 0.15, rK = 0.033;
+      kabel(R, [V(xc, 0.05, zc - 0.01), V(xc, 0.23, zc)], rK, kabelZw); cyl(R, rK + 0.002, 0.04, M(0x111214), xc, 0.235, zc, null, 20);
+      ks.forEach(([e, f], c) => { const rr = f === 'PE' ? 0.0085 : 0.012, dx = e.x - cx, pe = f === 'PE';
+        const xg = cx + (pe ? (st ? 0.027 : -0.027) : gaten.reduce((a, g) => Math.abs(g - dx) < Math.abs(a - dx) ? g : a, 99)), zf = 0.272 - (pe ? 0.0 : 0);
+        const pts = [e, V(e.x, e.y - 0.03, e.z + 0.005), V(xg, e.y - 0.075, 0.165), V(xg, e.y - 0.11, zf), V(xg, H(0.2), zf), V(xg, y1 - 0.02, zf), V(xg, 0.27, zf - 0.03), V(xc + (c - 2)*0.012, 0.25, zc)];
+        kabel(R, pts, rr, ader[f]); doorvoer(R, xg, y1 + 0.012, zf, rr); bandje(R, xg, H(0.45), zf, rr);
+        marker(R, xg, H(0.33), zf, rr, f + '·' + nr); });
       CDC_AC.push(V(xc, 0.05, zc - 0.01)); });
+    box(R, 0.7, 0.026, 0.012, zink, cx, H(0.45), 0.29); plak(R, 0.2, 0.02, lbl('AC IN ' + (s > 0 ? 'master' : 'slave') + ' · 2 × (4×185 + 95) Cu', 400, 40, '#111214', '#f2c400', 'bold 20px Arial'), cx, H(0.12), 0.27);
     // polycarbonaat afdekking AC + waarschuwing
     box(R, 0.69, 0.2, 0.004, polyc, cx, yA + 0.02, 0.185); bouten(R, [[cx - 0.33, yA + 0.11, 0.187], [cx + 0.33, yA + 0.11, 0.187], [cx - 0.33, yA - 0.07, 0.187], [cx + 0.33, yA - 0.07, 0.187]], 'z');
     plak(R, 0.045, 0.04, waarsch, cx + 0.3, yA + 0.08, 0.188);
