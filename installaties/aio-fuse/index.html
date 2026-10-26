@@ -1595,7 +1595,7 @@ const matMantel = M(0xe06a1a, {roughness: 0.6, transparent: true, opacity: 0.45,
 function grondRoute(s, a, kn){
   const gs = ['L1', 'L2', 'L3', 'N'].map(f => a.gat[f]), gx = gs.reduce((q, g) => q + g.x, 0)/4, zg = gs.reduce((q, g) => q + g.z, 0)/4;
   const zr = zg - 1.6 - (kn - 3)*1.3, yb = -3.4, P = W(V(s.x, -0.6, zF1)), x0 = P.x + 3.0;
-  box(K, 1.5, PL_H + 0.04, 1.3, matSpar, s.x, PL_H/2, zF1, false); box(K, 1.8, 0.04, 1.6, M(0x6f7273, {roughness: 0.9}), s.x, PL_H + 0.01, zF1, false);
+  if(!NO_JB){ box(K, 1.5, PL_H + 0.04, 1.3, matSpar, s.x, PL_H/2, zF1, false); box(K, 1.8, 0.04, 1.6, M(0x6f7273, {roughness: 0.9}), s.x, PL_H + 0.01, zF1, false); }   // sparing onder de JB-strook (alleen met JB)
   let kp = PLX.findIndex((x, k) => gx >= x - PLW[k]/2 && gx < x + PLW[k]/2); if(kp < 0) kp = gx < PX0 ? 0 : N_PL - 1; const pl = PLATEN[kp];
   box(pl, 1.6, PL_H + 0.04, 1.6, matSpar, gx - XP(kp), PL_H/2, zg, false); box(pl, 1.9, 0.04, 1.9, M(0x6f7273, {roughness: 0.9}), gx - XP(kp), PL_H + 0.01, zg, false);
   box(BASES[kn], 1.5, 0.02, 1.5, matSpar, gx - XA(kn), 0.075, zg - AZ, false);
