@@ -69,7 +69,7 @@
     <div class="cfgKop">Aantal AIO's (DELTerra C 125 kW)</div>
     <div class="knoprij" id="cfgN"></div>
     <div class="cfgKop" style="margin-top:8px">Kabelsleuf aanvullen met</div>
-    <div class="knoprij" id="cfgBF"><button data-bf="1">backfillzand (ρ 1 K·m/W)</button><button data-bf="0">gebiedseigen grond</button></div>
+    <div class="knoprij" id="cfgBF"><button data-bf="0">gebiedseigen grond (Sww 1,5)</button><button data-bf="1">backfillzand (Sww 1)</button></div>
     <div class="cfgInfo" id="cfgInfo"></div>
   </details>
   <details open><summary>Bekijken</summary>
@@ -217,15 +217,15 @@ const SKH = 2.2, SD = AD, SKY = PL_H + SKH;
 const KW = 14.0, KD = 3.55, KH = 13.15, KP = 2.2;                                      // O&K C03a: romp 1400 × 355 × 1315, kap 1400 × 375 × 35 (20 mm overstek voor), plint 220
 const XA = i => i*AW;
 const KXW = XA(0) - AW/2 - 0.05 - KD/2, KZW = AZ;                                       // junction box 90° gedraaid tegen de zijkant van #1, deuren naar buiten (-x)
-const BF = (() => { try{ return new URLSearchParams(location.search).get('bf') !== '0'; }catch(_){ return true; } })();   // backfillzand ρ 1 K·m/W (cs 1,5) of gebiedseigen grond (cs 1,28)
+const BF = (() => { try{ return new URLSearchParams(location.search).get('bf') === '1'; }catch(_){ return false; } })();   // standaard: gebiedseigen grond, Sww 1,5 K·m/W   // backfillzand ρ 1 K·m/W (cs 1,5) of gebiedseigen grond (cs 1,28)
 const NO_JB = N_AIO <= (BF ? 3 : 2);                                                                    // 1–3 AIO's: geen junction box, per AIO een YMvK 4×70 (1–2) / 4×95 (3) rechtstreeks vanuit de HVK (≤ 30 m, backfill ρ 1 K·m/W)
 const AIOKAB = N_AIO <= (BF ? 2 : 1) ? {txt: 'YMvK 4×70 mm²', rm: 0.21, ra: 0.075, mm: 70} : {txt: 'YMvK 4×95 mm²', rm: 0.24, ra: 0.085, mm: 95};
 // voeding HVK → junction box (30 m, D2): 3 AIO's 2 × 4×185/95 gG 630 · 4 AIO's 3 × 4×185/95 gG 800 · 5 AIO's 3 × 4×240/120 gG 1000 (met backfill; zonder backfill nog door te rekenen)
 const VKAB = N_AIO >= 5 ? {n: 3, txt: 'YMvKas 4×240/120', rm: 0.33, ra: 0.105, gG: 1000} : N_AIO === 4 ? {n: 3, txt: 'YMvKas 4×185/95', rm: 0.29, ra: 0.095, gG: 800} : {n: 2, txt: 'YMvKas 4×185/95', rm: 0.29, ra: 0.095, gG: 630};
 const SX0 = NO_JB ? XA(0) - AW/2 : KXW - KD/2, SX1 = XA(N_AIO - 1) + AW/2;
 const SXE = SX1 + 0.35 + 4.72;
-// plaatrij per configuratie: kortste rij van 2 m-platen (+ evt. één 1 m-plaat aan de EMS-zijde) met ≥ 100 mm speling; systeem midden op de rij
-const PL_SPEL = 1.0, PLW = (() => { const need = SXE - SX0 + PL_SPEL; let best = null;
+// plaatrij per configuratie: kortste rij van 2 m-platen (+ evt. één 1 m-plaat) met ≥ 165 mm rand rondom (Delta 5.1.1.1: fundering ≥ 165 mm buiten de metal base); systeem midden op de rij
+const PL_SPEL = 3.3, PLW = (() => { const need = SXE - SX0 + PL_SPEL; let best = null;
   for(let k = 1; k <= 8; k++) for(const h of [0, 1]){ const L = k*PL + h*PL/2; if(L >= need && (!best || L < best.L || (L === best.L && k + h < best.n))) best = {L, k, h, n: k + h}; }
   return [...Array(best.k).fill(PL), ...(best.h ? [PL/2] : [])]; })();
 const PL_TOT = PLW.reduce((a, b) => a + b, 0), N_PL = PLW.length, PX0 = (SX0 + SXE)/2 - PL_TOT/2, PX1 = PX0 + PL_TOT;
@@ -2150,13 +2150,20 @@ const TEKEN2D = (() => {
     scene.traverse(o => { if(!o.isMesh || !o.geometry || o.geometry.type !== 'BoxGeometry' || !o.material || !o.material.color || o.material.color.getHex() !== 0x0b0c0d) return; const pr = o.geometry.parameters;
       if(Math.abs(pr.height - (PL_H + 0.04)) > 0.01) return; const v = new THREE.Vector3(); o.getWorldPosition(v); if(!o.visible || !o.parent.visible) return; sp.push({x: v.x, z: v.z, w: pr.width, d: pr.depth}); });
     sp.forEach(q => { RW('SPARING', q.x - q.w/2, q.z - q.d/2, q.x + q.w/2, q.z + q.d/2); L('SPARING', X(q.x - q.w/2), Y(q.z - q.d/2), X(q.x + q.w/2), Y(q.z + q.d/2)); L('SPARING', X(q.x - q.w/2), Y(q.z + q.d/2), X(q.x + q.w/2), Y(q.z - q.d/2)); });
-    // kabelsleuf (deel binnen de tekening + richting HVK)
-    if(TRENCH && TRENCH.x0 !== undefined){ const c = [V(TRENCH.x0 - 1.0, 0, TRENCH.z0), V(TRENCH.xData + 0.6, 0, TRENCH.z0), V(TRENCH.xData + 0.6, 0, TRENCH.z1), V(TRENCH.x0 - 1.0, 0, TRENCH.z1)].map(p => W(p));
-      const xmin = Math.min(...c.map(p => p.x)), xmax = Math.max(...c.map(p => p.x)), zmin = Math.min(...c.map(p => p.z)), zmax = Math.max(...c.map(p => p.z)), xk = Math.max(xmin, ZN.hx0 - 25);   // ingekort: 2 m buiten het hek, rest → HVK
-      L('KABELSLEUF', X(xk), Y(zmin), X(xmax), Y(zmin), 'streep'); L('KABELSLEUF', X(xk), Y(zmax), X(xmax), Y(zmax), 'streep'); L('KABELSLEUF', X(xmax), Y(zmin), X(xmax), Y(zmax), 'streep');
-      if(xk > xmin){ const yb0 = Y(zmin), yb1 = Y(zmax), xb = X(xk); L('KABELSLEUF', xb, yb0 - 150, xb + 120, (yb0 + yb1)/2 + 80); L('KABELSLEUF', xb + 120, (yb0 + yb1)/2 + 80, xb - 120, (yb0 + yb1)/2 - 80); L('KABELSLEUF', xb - 120, (yb0 + yb1)/2 - 80, xb, yb1 + 150);
-        T('KABELSLEUF', xb + 150, Math.max(yb0, yb1) + 260, '← naar HVK (sleuf totaal ' + mm(xmax - xmin) + ')', 65, 0, 'links'); }
-      const m = V(Math.max(Math.min(...c.map(p => p.x)), ZN.hx0 - 25) + 1.5, 0, Math.min(...c.map(p => p.z))); T('KABELSLEUF', X(m.x), Y(m.z) - 140, 'kabelsleuf b ' + mm(TRENCH.xData + 0.6 - TRENCH.x0 + 1.0) + ' / diepte ' + mm(-(TRENCH.yT - 1.1)), 65, 0, 'links'); }
+    // ---- openzwaaiende deuren + 700 mm vluchtruimte (dia 35) ----
+    const boog = (cx, cy, r, a0, a1) => { const n = 18; for(let k = 0; k < n; k++){ const f0 = (a0 + (a1 - a0)*k/n)*Math.PI/180, f1 = (a0 + (a1 - a0)*(k + 1)/n)*Math.PI/180; L('DEUR', cx + r*Math.cos(f0), cy + r*Math.sin(f0), cx + r*Math.cos(f1), cy + r*Math.sin(f1), 'stip'); } };
+    const deur = (cx, cy, r, aDicht, aOpen) => { boog(cx, cy, r, aDicht, aOpen); const f = aOpen*Math.PI/180; L('DEUR', cx, cy, cx + r*Math.cos(f), cy + r*Math.sin(f)); };
+    const VR = 700;
+    for(let i = 0; i < N_AIO; i++){ const hx = X(XA(i) - CW/2 + 0.04), hy = Y(AZ + AD/2); deur(hx, hy, 953, 0, -90);                  // AIO-deur 953, scharnier links, naar voren
+      L('DEUR', hx - 60, hy - 953 - VR, hx + 1020, hy - 953 - VR, 'streep'); }
+    { const hx = X(XA(0) - CW/2 + 0.04), hy = Y(AZ + AD/2); keten('v', [hy, hy - 953, hy - 953 - VR], hx + 1150);
+      T('DEUR', hx + 1230, hy - 953 - VR/2, 'vluchtruimte 700', 55, 90); T('DEUR', hx + 1230, hy - 953/2, 'deur 953', 55, 90); }
+    if(!NO_JB){ const fx = X(KXW - KD/2), yb = Y(KZW + KW/2), yo = Y(KZW - KW/2), r = KW*100/2;                                   // JB: 2 deuren van 700, naar buiten (−x)
+      deur(fx, yb, r, 90, 180); deur(fx, yo, r, 270, 180); L('DEUR', fx - r - VR, yb + 60, fx - r - VR, yo - 60, 'streep');
+      keten('h', [fx, fx - r, fx - r - VR], (yb + yo)/2 - r - 250); T('DEUR', fx - r - VR/2, (yb + yo)/2 - r - 420, 'vluchtruimte 700', 55); }
+    { const hx = X(SXE), hy = Y(AZ - 3.925), r = 785;                                                                              // EMS-kast: deur 785 naar +x
+      deur(hx, hy, r, -90, 0); L('DEUR', hx + r + VR, hy + 60, hx + r + VR, Y(AZ + 3.925) - 60, 'streep');
+      keten('h', [hx, hx + r, hx + r + VR], Y(AZ + 3.925) - 300); T('DEUR', hx + r + VR/2, Y(AZ + 3.925) - 470, 'vluchtruimte 700', 55); }
     // ---- maatketens ----
     const yV = Y(ZN.hz1) - 700, yV2 = Y(ZN.hz1) - 1100, yV3 = Y(ZN.hz1) - 1500, yA = Y(ZN.hz0) + 700, yA2 = Y(ZN.hz0) + 1100;
     const xs = [X(ZN.hx0), X(SX0), ...Array.from({length: N_AIO + 1}, (_, i) => X(XA(0) - AW/2 + i*AW)), X(SXE - 4.72), X(SXE), X(ZN.hx1)];
@@ -2173,14 +2180,14 @@ const TEKEN2D = (() => {
     if(!NO_JB) keten('v', [Y(KZW + KW/2), Y(KZW - KW/2)], X(KXW - KD/2) - 400);
     // voedingsgat AIO #1 (Delta fig. 5-3) apart bemaat
     const g1 = sp.filter(q => q.w > 1.55 && q.w < 1.65 && Math.abs(q.x - XA(0)) < AW/2).sort((p, q) => p.x - q.x)[0];
-    if(g1){ maat('h', X(XA(0) - AW/2), X(g1.x), Y(AZ - AD/2) + 300, mm(g1.x - (XA(0) - AW/2)) + ' (hart gat)'); maat('v', Y(AZ + AD/2), Y(g1.z), X(g1.x) - 450, mm(AZ + AD/2 - g1.z)); T('SPARING', X(g1.x) + 900, Y(g1.z) + 200, 'voedingsgat ' + mm(g1.w) + ' x ' + mm(g1.d), 60); }
+    if(g1){ maat('h', X(XA(0) - AW/2), X(g1.x), Y(AZ - AD/2) + 300, mm(g1.x - (XA(0) - AW/2)) + ' (hart gat)'); maat('v', Y(AZ + AD/2), Y(g1.z), X(g1.x) + 300, mm(AZ + AD/2 - g1.z)); T('SPARING', X(g1.x) + 900, Y(g1.z) + 200, 'voedingsgat ' + mm(g1.w) + ' x ' + mm(g1.d), 60); }
     // titel
     const tx = X(ZN.hx0), ty = Y(ZN.hz1) - 2300;
-    T('TEKST', tx, ty, 'AIO + FUSE kast - ' + N_AIO + ' x DELTerra C 125 kW - bovenaanzicht - maten in mm', 150, 0, 'links');
-    T('TEKST', tx, ty - 230, (NO_JB ? 'zonder junction box: per AIO ' + AIOKAB.txt + ' vanuit HVK' : 'junction box, voeding ' + VKAB.n + ' x ' + VKAB.txt + ' (gG ' + VKAB.gG + ')') + ' - sleuf: ' + (BF ? 'backfillzand' : 'gebiedseigen grond') + ' - Fudura ' + new Date().toLocaleDateString('nl-NL'), 90, 0, 'links');
+    T('TEKST', tx, ty, (NO_JB ? 'AIO-opstelling (zonder FUSE-kast)' : 'AIO + FUSE kast') + ' - ' + N_AIO + ' x DELTerra C 125 kW - bovenaanzicht - maten in mm', 150, 0, 'links');
+    T('TEKST', tx, ty - 230, (NO_JB ? 'zonder junction box: per AIO ' + AIOKAB.txt + ' vanuit HVK' : 'junction box, voeding ' + VKAB.n + ' x ' + VKAB.txt + ' (gG ' + VKAB.gG + ')') + ' - Fudura ' + new Date().toLocaleDateString('nl-NL'), 90, 0, 'links');
     return E; }
-  const KLR = {HEKWERK: '#3c4650', VLUCHTDEUR: '#169b48', ZONE: '#d4202a', STELCON: '#8a8f93', AIO: '#1b4f8a', JB: '#7a4a22', EMS: '#6b3fa0', SPARING: '#111', KABELSLEUF: '#9a7b4f', MAAT: '#1a4f9c', TEKST: '#17212a'};
-  const ACI = {HEKWERK: 8, VLUCHTDEUR: 3, ZONE: 1, STELCON: 9, AIO: 5, JB: 30, EMS: 6, SPARING: 7, KABELSLEUF: 40, MAAT: 150, TEKST: 7};
+  const KLR = {DEUR: '#e06a1a', HEKWERK: '#3c4650', VLUCHTDEUR: '#169b48', ZONE: '#d4202a', STELCON: '#8a8f93', AIO: '#1b4f8a', JB: '#7a4a22', EMS: '#6b3fa0', SPARING: '#111', KABELSLEUF: '#9a7b4f', MAAT: '#1a4f9c', TEKST: '#17212a'};
+  const ACI = {DEUR: 30, HEKWERK: 8, VLUCHTDEUR: 3, ZONE: 1, STELCON: 9, AIO: 5, JB: 30, EMS: 6, SPARING: 7, KABELSLEUF: 40, MAAT: 150, TEKST: 7};
   function svg(E){ let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; E.forEach(e => { const pts = e.t === 'L' ? [[e.x1, e.y1], [e.x2, e.y2]] : [[e.x, e.y]]; pts.forEach(([x, y]) => { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }); });
     const m = 400; x0 -= m; y0 -= m; x1 += m; y1 += m; const H = y1 + y0;                       // SVG: y omlaag → spiegelen
     const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
@@ -2192,13 +2199,13 @@ const TEKEN2D = (() => {
   function dxf(E){ const out = [], w = (...a) => { for(let i = 0; i < a.length; i += 2) out.push(String(a[i]), String(a[i + 1])); }, asc = s => String(s).replace(/×/g, 'x').replace(/→/g, '->').replace(/[^\x20-\x7E]/g, '-');
     w(0, 'SECTION', 2, 'HEADER', 9, '$ACADVER', 1, 'AC1009', 9, '$INSUNITS', 70, 4, 0, 'ENDSEC');
     w(0, 'SECTION', 2, 'TABLES', 0, 'TABLE', 2, 'LTYPE', 70, 2, 0, 'LTYPE', 2, 'CONTINUOUS', 70, 0, 3, 'Solid', 72, 65, 73, 0, 40, 0, 0, 'LTYPE', 2, 'DASHED', 70, 0, 3, '__ __', 72, 65, 73, 2, 40, 180, 49, 120, 49, -60, 0, 'ENDTAB');
-    w(0, 'TABLE', 2, 'LAYER', 70, Object.keys(ACI).length); for(const [k, c] of Object.entries(ACI)) w(0, 'LAYER', 2, k, 70, 0, 62, c, 6, k === 'ZONE' || k === 'KABELSLEUF' ? 'DASHED' : 'CONTINUOUS'); w(0, 'ENDTAB', 0, 'ENDSEC');
+    w(0, 'TABLE', 2, 'LAYER', 70, Object.keys(ACI).length); for(const [k, c] of Object.entries(ACI)) w(0, 'LAYER', 2, k, 70, 0, 62, c, 6, k === 'ZONE' || k === 'KABELSLEUF' || k === 'DEUR' ? 'DASHED' : 'CONTINUOUS'); w(0, 'ENDTAB', 0, 'ENDSEC');
     w(0, 'SECTION', 2, 'ENTITIES');
     E.forEach(e => { if(e.t === 'L') w(0, 'LINE', 8, e.laag, 10, e.x1, 20, e.y1, 30, 0, 11, e.x2, 21, e.y2, 31, 0);
       else { const lk = e.kleur === 'links'; w(0, 'TEXT', 8, e.laag, 10, e.x, 20, e.y, 30, 0, 40, e.h, 1, asc(e.txt), 50, e.rot || 0); if(!lk) w(72, e.kleur === 'eind' ? 2 : 1, 11, e.x, 21, e.y, 31, 0); } });
     w(0, 'ENDSEC', 0, 'EOF'); return out.join('\r\n'); }
   const bestand = (inhoud, naam, type) => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([inhoud], {type})); a.download = naam; document.body.appendChild(a); a.click(); a.remove(); };
-  const naam = () => 'AIO-FUSE_' + N_AIO + 'xAIO_' + (BF ? 'backfill' : 'grond') + '_2D';
+  const naam = () => (NO_JB ? 'AIO_' : 'AIO-FUSE_') + N_AIO + 'xAIO_2D';
   function open(){ const E = verzamel(), s = svg(E); let d = document.getElementById('t2d');
     if(!d){ d = document.createElement('div'); d.id = 't2d'; d.style.cssText = 'position:fixed;inset:0;z-index:60;background:rgba(20,26,32,.55);display:flex;align-items:center;justify-content:center;padding:14px';
       d.innerHTML = '<div style="background:#fff;border-radius:10px;max-width:1400px;width:100%;max-height:100%;display:flex;flex-direction:column;box-shadow:0 8px 30px rgba(0,0,0,.35)"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid #e3e6e8;font:13px system-ui,Arial"><b style="margin-right:auto">2D-tekening · bovenaanzicht · maten in mm</b><button id="t2dDxf">Download DXF</button><button id="t2dSvg">Download SVG</button><button id="t2dPdf">Afdrukken / PDF</button><button id="t2dX">Sluiten</button></div><div id="t2dBody" style="overflow:auto;padding:8px;flex:1"></div></div>';
