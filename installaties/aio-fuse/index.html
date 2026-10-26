@@ -71,6 +71,7 @@
     <div class="cfgKop" style="margin-top:8px">Kabelsleuf aanvullen met</div>
     <div class="knoprij" id="cfgBF"><button data-bf="0">gebiedseigen grond (Sww 1,5)</button><button data-bf="1">backfillzand (Sww 1)</button></div>
     <div class="cfgInfo" id="cfgInfo"></div>
+    <div class="knoprij" style="margin-top:6px"><button id="bKabelber">Kabelberekening</button></div>
   </details>
   <details open><summary>Bekijken</summary>
     <div class="grp">Opstelling</div><div class="knoprij"><button id="bOverzicht">overzicht</button><button id="bBoven">boven</button><button id="bAchter">achterzijde</button><button id="bSkid">kabelbanen</button><button id="bSkidBoven">skid van boven</button><button id="b2D" title="Bovenaanzicht met alle maten — download als DXF, SVG of PDF">2D-tekening (DXF/PDF)</button></div>
@@ -221,7 +222,7 @@ const BF = (() => { try{ return new URLSearchParams(location.search).get('bf') =
 const NO_JB = N_AIO <= (BF ? 3 : 2);                                                                    // 1–3 AIO's: geen junction box, per AIO een YMvK 4×70 (1–2) / 4×95 (3) rechtstreeks vanuit de HVK (≤ 30 m, backfill ρ 1 K·m/W)
 const AIOKAB = N_AIO <= (BF ? 2 : 1) ? {txt: 'YMvK 4×70 mm²', rm: 0.21, ra: 0.075, mm: 70} : {txt: 'YMvK 4×95 mm²', rm: 0.24, ra: 0.085, mm: 95};
 // voeding HVK → junction box (30 m, D2): 3 AIO's 2 × 4×185/95 gG 630 · 4 AIO's 3 × 4×185/95 gG 800 · 5 AIO's 3 × 4×240/120 gG 1000 (met backfill; zonder backfill nog door te rekenen)
-const VKAB = N_AIO >= 5 ? {n: 3, txt: 'YMvKas 4×240/120', rm: 0.33, ra: 0.105, gG: 1000} : N_AIO === 4 ? {n: 3, txt: 'YMvKas 4×185/95', rm: 0.29, ra: 0.095, gG: 800} : {n: 2, txt: 'YMvKas 4×185/95', rm: 0.29, ra: 0.095, gG: 630};
+const VKAB = N_AIO >= 5 ? (BF ? {n: 3, txt: 'YMvKas 4×240/120', rm: 0.33, ra: 0.105, gG: 1000} : {n: 4, txt: 'YMvKas 4×185/95', rm: 0.29, ra: 0.095, gG: 1000}) : N_AIO === 4 ? {n: 3, txt: 'YMvKas 4×185/95', rm: 0.29, ra: 0.095, gG: 800} : {n: 2, txt: 'YMvKas 4×185/95', rm: 0.29, ra: 0.095, gG: 630};   // Sww 1,5: bij 5 AIO 4 × 4×185/95 (3 × 240 haalt 1000 A niet)
 const SX0 = NO_JB ? XA(0) - AW/2 : KXW - KD/2, SX1 = XA(N_AIO - 1) + AW/2;
 const SXE = SX1 + 0.35 + 4.72;
 // plaatrij per configuratie: kortste rij van 2 m-platen (+ evt. één 1 m-plaat) met ≥ 165 mm rand rondom (Delta 5.1.1.1: fundering ≥ 165 mm buiten de metal base); systeem midden op de rij
@@ -2034,7 +2035,7 @@ const VIEWS = {
   document.querySelectorAll('#cfgBF button').forEach(b => { const v = b.dataset.bf === '1'; if(v === BF) b.classList.add('aan');
     b.addEventListener('click', () => { if(v === BF) return; const u = new URL(location.href); u.searchParams.set('bf', v ? '1' : '0'); location.href = u.toString(); }); });
   const kW = N_AIO*125, kWh = N_AIO*261, In = Math.round(kW*1000/(Math.sqrt(3)*400));
-  document.getElementById('cfgInfo').innerHTML = kW + ' kW · ' + kWh + ' kWh · I<sub>n</sub> ≈ ' + In + ' A (400 V)<br>SL2 in gebruik: ' + N_AIO + ' van 5' + (N_AIO < 5 ? ' · ' + (5 - N_AIO) + ' reserve' : '') + '<br>Goten skid: ' + KAN_NAAM.join(' | ') + (N_AIO > 3 ? '<br><b style="color:#e06a1a">AIO #4' + (N_AIO > 4 ? ' en #5' : '') + ' direct door de grond</b> (geen mantelbuis; skid: max. 3 bundels met 2 lege goten ertussen)' : '') + (NO_JB ? '<br><b>Geen junction box</b> (' + (BF ? '1–3' : '1–2') + ' AIO\'s, ≤ 30 m): per AIO ' + AIOKAB.txt + ' rechtstreeks vanuit een SL2-veld in de HVK (gG 200), door de skid geboord; 230 V EMS ook vanuit de HVK' : '<br><b>Voeding junction box</b>: ' + VKAB.n + ' × ' + VKAB.txt + ' (gG ' + VKAB.gG + ', 30 m)' + (BF ? '' : ' <b style="color:#c0281f">— berekend met backfill; zonder backfill nog doorrekenen</b>') + '; per AIO 4 × 1×70 mm²') + '<br>Sleuf: ' + (BF ? 'backfillzand ρ 1 K·m/W → cs 1,5' : 'gebiedseigen grond → cs 1,28');
+  document.getElementById('cfgInfo').innerHTML = kW + ' kW · ' + kWh + ' kWh · I<sub>n</sub> ≈ ' + In + ' A (400 V)<br>SL2 in gebruik: ' + N_AIO + ' van 5' + (N_AIO < 5 ? ' · ' + (5 - N_AIO) + ' reserve' : '') + '<br>Goten skid: ' + KAN_NAAM.join(' | ') + (N_AIO > 3 ? '<br><b style="color:#e06a1a">AIO #4' + (N_AIO > 4 ? ' en #5' : '') + ' direct door de grond</b> (geen mantelbuis; skid: max. 3 bundels met 2 lege goten ertussen)' : '') + (NO_JB ? '<br><b>Geen junction box</b> (' + (BF ? '1–3' : '1–2') + ' AIO\'s, ≤ 30 m): per AIO ' + AIOKAB.txt + ' rechtstreeks vanuit een SL2-veld in de HVK (gG 200), door de skid geboord; 230 V EMS ook vanuit de HVK' : '<br><b>Voeding junction box</b>: ' + VKAB.n + ' × ' + VKAB.txt + ' (gG ' + VKAB.gG + ', 30 m)' + (BF ? '' : ' <b style="color:#e06a1a">— Sww 1,5: schatting, nog bevestigen met Kablix</b>') + '; per AIO 4 × 1×70 mm²') + '<br>Sleuf: ' + (BF ? 'backfillzand ρ 1 K·m/W → cs 1,5' : 'gebiedseigen grond → cs 1,28');
   const h = document.getElementById('titel'); if(h) h.innerHTML = h.innerHTML.replace('AIO 5 ×', 'AIO ' + N_AIO + ' ×');
   document.querySelectorAll('.nAio').forEach(e => e.textContent = N_AIO); document.querySelectorAll('.nSlave').forEach(e => e.textContent = N_AIO > 1 ? ', #2..#' + N_AIO + ' slave' : '');
   document.title = document.title.replace('AIO 5 ×', 'AIO ' + N_AIO + ' ×'); }
@@ -2219,6 +2220,35 @@ const TEKEN2D = (() => {
   return {open, verzamel, svg, dxf};
 })();
 document.getElementById('b2D').addEventListener('click', () => TEKEN2D.open());
+// ---------- kabelberekening per configuratie (uitgangspunten · resultaten · disclaimer) ----------
+{ const KB = {
+    // Sww 1 K·m/W (backfillzand, cs 1,5) — Kablix-rapporten Nick 22-10-2026
+    bf: {feed: {3: {k: '2 × YMvKas 4×185/95', gG: 630, Ib: 540, Iz: 768, du: 0.40, Ik: 23.3, t: 0.021}, 4: {k: '3 × YMvKas 4×185/95', gG: 800, Ib: 720, Iz: 991, du: 0.36, Ik: 27.2, t: 0.032}, 5: {k: '3 × YMvKas 4×240/120', gG: 1000, Ib: 900, Iz: 1148, du: 0.34, Ik: 28.2, t: 0.063}},
+         aio: {1: {k: 'YMvK 4×70', gG: 200, Ib: 180, Iz: 282, du: 0.80, Ik: 6.7}, 2: {k: 'YMvK 4×70 (2 ketens)', gG: 200, Ib: 180, Iz: 223, du: 0.80}, 3: {k: 'YMvK 4×95 (3 ketens)', gG: 200, Ib: 180, Iz: 231, du: 0.58, Ik: 7.6}}},
+    // Sww 1,5 K·m/W (gebiedseigen grond, cs 1,28)
+    gr: {feed: {3: {k: '2 × YMvKas 4×185/95', gG: 630, Ib: 540, Iz: 655, est: true}, 4: {k: '3 × YMvKas 4×185/95', gG: 800, Ib: 720, Iz: 846, est: true}, 5: {k: '4 × YMvKas 4×185/95', gG: 1000, Ib: 900, Iz: 1028, est: true}},
+         aio: {1: {k: 'YMvK 4×70', gG: 200, Ib: 180, Iz: 241, du: 0.80, Ik: 6.69, t: 0.007}, 2: {k: 'YMvK 4×95 (2 ketens)', gG: 200, Ib: 180, Iz: 229, du: 0.58, Ik: 7.63, t: 0.005}}}};
+  const set = BF ? KB.bf : KB.gr, f = (v, d, e) => v === undefined ? '<span style="color:#9aa">–</span>' : (typeof v === 'number' ? v.toLocaleString('nl-NL', {minimumFractionDigits: d || 0, maximumFractionDigits: d || 0}) : v) + (e || '');
+  const rij = (wat, r) => { const ok = r && r.Ib <= r.gG && r.gG <= r.Iz;
+    return `<tr><td>${wat}</td><td><b>${r ? r.k : '–'}</b></td><td>${r ? 'gG ' + r.gG : '–'}</td><td>${f(r && r.Ib, 0, ' A')}</td><td>${f(r && r.Iz, 0, ' A')}${r && r.est ? '*' : ''}</td><td>${r && r.Iz ? Math.round(r.Ib/r.Iz*100) + ' %' : '–'}</td><td>${f(r && r.du, 2, ' %')}</td><td>${f(r && r.Ik, 1, ' kA')}</td><td>${f(r && r.t, 3, ' s')}</td>
+      <td>${!r ? '<span style="color:#c0281f">ontbreekt</span>' : r.pending ? '<span style="color:#c0281f">nog doorrekenen (B1)</span>' : r.est ? '<span style="color:#e06a1a">schatting</span>' : ok ? '<span style="color:#1f8a4c">✓ Kablix</span>' : '<span style="color:#c0281f">✗</span>'}</td></tr>`; };
+  let rows = '';
+  if(NO_JB) rows += rij('HVK → AIO (per AIO)', set.aio[N_AIO]);
+  else { rows += rij('HVK → junction box', set.feed[N_AIO]); rows += rij('JB → AIO (skid, B1 nr. 50)', N_AIO >= 1 ? {k: '4 × 1×70 mm² Cu', gG: 200, Ib: 180, Iz: undefined, pending: true} : null); }
+  const UP = [['Stelsel', 'TN-S, 400/230 V, 50 Hz'], ['Belasting', 'Ib = n × 125 kW, cos φ 1 (Ib AIO 180 A)'], ['Kabellengte', '≤ 30 m (HVK → JB / AIO)'], ['Grond', BF ? 'backfillzand, Sww 1 K·m/W (cs 1,5)' : 'gebiedseigen grond, Sww 1,5 K·m/W (cs 1,28)'],
+    ['Temperatuur', 'grond 20 °C · lucht 30 °C'], ['Installatie', 'grond: methode 72 (D2), 600 mm diep, groepering 1d · skid: methode 50 (B1)'], ['Beveiliging', 'gG NH volgens tabel; AIO: gG 200 in SL2 / JB'], ['Spanningsverlies', '≤ 2 % tot de AIO (NEN 1010 § 525: ≤ 5 %)'], ['Kortsluiting', 'Ik op de HVK-rail uit de netberekening van het project'], ['Kabeltype', 'Cu XLPE, YMvK(as), brandklasse Dca']];
+  const d = document.createElement('div'); d.id = 'kbKaart'; d.style.cssText = 'position:fixed;inset:0;z-index:60;background:rgba(20,26,32,.55);display:none;align-items:center;justify-content:center;padding:14px';
+  d.innerHTML = `<div style="background:#fff;border-radius:10px;max-width:980px;width:100%;max-height:100%;overflow:auto;font:13px/1.45 system-ui,Arial;color:#17212a;box-shadow:0 8px 30px rgba(0,0,0,.35)">
+    <div style="display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid #e3e6e8"><b style="margin-right:auto;font-size:14px">Kabelberekening · ${N_AIO} × AIO ${NO_JB ? '(zonder junction box)' : '(met junction box)'}</b><button id="kbX">Sluiten</button></div>
+    <div style="padding:12px 14px"><div style="font-weight:600;margin-bottom:4px">1 · Uitgangspunten</div><table style="border-collapse:collapse;width:100%">${UP.map(([a, b]) => `<tr><td style="padding:2px 12px 2px 0;color:#5d6b73;white-space:nowrap">${a}</td><td style="padding:2px 0">${b}</td></tr>`).join('')}</table>
+    <div style="font-weight:600;margin:12px 0 4px">2 · Resultaat per kabel</div><div style="overflow:auto"><table id="kbRes" style="border-collapse:collapse;width:100%;white-space:nowrap"><tr style="color:#5d6b73;text-align:left"><th>Traject</th><th>Kabel</th><th>In</th><th>Ib</th><th>Iz</th><th>Belasting</th><th>ΔU</th><th>Ik eind</th><th>t uitsch.</th><th>Status</th></tr>${rows}</table></div>
+    <div style="margin-top:6px;color:#5d6b73;font-size:12px;${/schatting/.test(rows) ? '' : 'display:none'}">* schatting: zelfde kabel als bij backfill, Iz omgerekend met cs 1,28 en groepering 52.B.18 — nog bevestigen met Kablix.${!BF && N_AIO >= 5 ? ' Bij Sww 1,5 haalt 3 × 4×240/120 de 1000 A niet (Iz ≈ 979 A); daarom 4 × 4×185/95.' : ''}</div>
+    <div style="font-weight:600;margin:12px 0 4px">3 · Let op</div><div style="background:#fff7e6;border-left:4px solid #e0a21a;padding:8px 10px;border-radius:4px">Indicatieve standaardberekening voor deze configuratie. Per project toetsen aan de werkelijke kabellengte, de kortsluitstroom op de HVK-rail, de grondgesteldheid (Sww), de groepering in de sleuf en de selectiviteit met de hoofdbeveiliging.</div></div></div>`;
+  document.body.appendChild(d); ['keydown', 'keyup'].forEach(ev => d.addEventListener(ev, e => e.stopPropagation()));
+  d.querySelectorAll('#kbRes td, #kbRes th').forEach(c => c.style.padding = '3px 10px 3px 0');
+  d.addEventListener('click', e => { if(e.target === d) d.style.display = 'none'; }); d.querySelector('#kbX').onclick = () => d.style.display = 'none';
+  document.getElementById('bKabelber').addEventListener('click', () => d.style.display = 'flex'); }
+
 
 window.addEventListener('keyup', e => { FP.keys[e.key.toLowerCase()] = false; if(e.key === 'Shift') FP.keys.shift = false; });
 window.addEventListener('blur', () => FP.keys = {});
