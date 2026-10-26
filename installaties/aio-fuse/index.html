@@ -2156,7 +2156,16 @@ const TEKEN2D = (() => {
     // sparingen in de stelconplaten
     scene.updateMatrixWorld(true); const sp = [];
     scene.traverse(o => { if(!o.isMesh || !o.geometry || o.geometry.type !== 'BoxGeometry' || !o.material || !o.material.color || o.material.color.getHex() !== 0x0b0c0d) return; const pr = o.geometry.parameters;
-      if(Math.abs(pr.height - (PL_H + 0.04)) > 0.01) return; const v = new THREE.Vector3(); o.getWorldPosition(v); if(!o.visible || !o.parent.visible) return; sp.push({x: v.x, z: v.z, w: pr.width, d: pr.depth}); });
+      if(Math.abs(pr.height - (PL_H + 0.04)) > 0.01) return; if(!o.visible || !o.parent.visible) return; const bb = new THREE.Box3().setFromObject(o); sp.push({x: (bb.min.x + bb.max.x)/2, z: (bb.min.z + bb.max.z)/2, w: bb.max.x - bb.min.x, d: bb.max.z - bb.min.z}); });
+    // sparingen genummerd + tabel met maat en positie (hart) t.o.v. hoek links-voor van de stelconrij
+    sp.sort((p, q) => p.x - q.x || q.z - p.z); const SPT = [];
+    sp.forEach((q, k) => { const nr = 'S' + (k + 1), dx = mm(q.x - PX0), dy = mm(PL/2 - q.z), ai = Math.floor((q.x - (XA(0) - AW/2))/AW), wat = q.x > SXE - 4.72 - 0.2 ? 'kabelinvoer EMS-kast' : (!NO_JB && q.x < XA(0) - AW/2) ? (q.w*q.d > 3 ? 'voeding JB (YMvKas)' : q.w < 0.6 ? '230 V JB' : 'kabels AIO #4/#5 (grond) → JB') : q.w < 0.6 ? (q.x > XA(N_AIO - 1) ? 'data / 230 V naar EMS-kast' : 'data / 230 V vanuit HVK') : 'voeding AIO #' + (ai + 1);
+      T('SPARING', X(q.x + q.w/2) + 60, Y(q.z + q.d/2) + 30, nr, 70, 0, 'links'); SPT.push([nr, mm(q.w) + ' x ' + mm(q.d), dx, dy, wat]); });
+    { const tx = X(ZN.hx0), rh = 130, ty = Y(ZN.hz1) - 2900 - SPT.length*rh; T('SPARING', tx, ty + (SPT.length + 0.6)*rh, 'Sparingen stelcon — maat b x d, hart x / y vanaf 0,0 (hoek stelconrij)', 75, 0, 'links');
+      
+      SPT.forEach(([nr, m, x, y, wat], k) => T('SPARING', tx, ty + (SPT.length - 1 - k)*rh, nr + '   ' + m + '   x ' + x + '   y ' + y + '   ' + wat, 65, 0, 'links')); }
+    // hoek-referentie
+    L('SPARING', X(PX0) - 150, Y(PL/2), X(PX0) + 150, Y(PL/2)); L('SPARING', X(PX0), Y(PL/2) - 150, X(PX0), Y(PL/2) + 150); T('SPARING', X(PX0) + 60, Y(PL/2) + 80, '0,0', 55, 0, 'links');
     sp.forEach(q => { RW('SPARING', q.x - q.w/2, q.z - q.d/2, q.x + q.w/2, q.z + q.d/2); L('SPARING', X(q.x - q.w/2), Y(q.z - q.d/2), X(q.x + q.w/2), Y(q.z + q.d/2)); L('SPARING', X(q.x - q.w/2), Y(q.z + q.d/2), X(q.x + q.w/2), Y(q.z - q.d/2)); });
     // ---- openzwaaiende deuren + 700 mm vluchtruimte (dia 35) ----
     const boog = (cx, cy, r, a0, a1) => { const n = 18; for(let k = 0; k < n; k++){ const f0 = (a0 + (a1 - a0)*k/n)*Math.PI/180, f1 = (a0 + (a1 - a0)*(k + 1)/n)*Math.PI/180; L('DEUR', cx + r*Math.cos(f0), cy + r*Math.sin(f0), cx + r*Math.cos(f1), cy + r*Math.sin(f1), 'stip'); } };
@@ -2196,7 +2205,7 @@ const TEKEN2D = (() => {
     return E; }
   const KLR = {DEUR: '#e06a1a', HEKWERK: '#3c4650', VLUCHTDEUR: '#169b48', ZONE: '#d4202a', STELCON: '#8a8f93', AIO: '#1b4f8a', JB: '#7a4a22', EMS: '#6b3fa0', SPARING: '#111', KABELSLEUF: '#9a7b4f', MAAT: '#1a4f9c', TEKST: '#17212a'};
   const ACI = {DEUR: 30, HEKWERK: 8, VLUCHTDEUR: 3, ZONE: 1, STELCON: 9, AIO: 5, JB: 30, EMS: 6, SPARING: 7, KABELSLEUF: 40, MAAT: 150, TEKST: 7};
-  function svg(E){ let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; E.forEach(e => { const pts = e.t === 'L' ? [[e.x1, e.y1], [e.x2, e.y2]] : [[e.x, e.y]]; pts.forEach(([x, y]) => { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }); });
+  function svg(E){ let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; E.forEach(e => { const tw = e.t === 'T' && !e.rot ? String(e.txt).length*e.h*0.55 : 0, pts = e.t === 'L' ? [[e.x1, e.y1], [e.x2, e.y2]] : e.kleur === 'links' ? [[e.x, e.y], [e.x + tw, e.y]] : [[e.x - tw/2, e.y], [e.x + tw/2, e.y]]; pts.forEach(([x, y]) => { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }); });
     const m = 400; x0 -= m; y0 -= m; x1 += m; y1 += m; const H = y1 + y0;                       // SVG: y omlaag → spiegelen
     const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
     let o = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x0} ${y0} ${x1 - x0} ${y1 - y0}" font-family="Arial, sans-serif"><rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}" fill="#fff"/>`;
@@ -2248,11 +2257,9 @@ document.getElementById('b2D').addEventListener('click', () => TEKEN2D.open());
   d.innerHTML = `<div style="background:#fff;border-radius:10px;max-width:980px;width:100%;max-height:100%;overflow:auto;font:13px/1.45 system-ui,Arial;color:#17212a;box-shadow:0 8px 30px rgba(0,0,0,.35)">
     <div style="display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid #e3e6e8"><b style="margin-right:auto;font-size:14px">Kabelberekening · ${N_AIO} × AIO ${NO_JB ? '(zonder junction box)' : '(met junction box)'}</b><button id="kbX">Sluiten</button></div>
     <div style="padding:12px 14px"><div style="font-weight:600;margin-bottom:4px">1 · Uitgangspunten</div><table style="border-collapse:collapse;width:100%">${UP.map(([a, b]) => `<tr><td style="padding:2px 12px 2px 0;color:#5d6b73;white-space:nowrap">${a}</td><td style="padding:2px 0">${b}</td></tr>`).join('')}</table>
-    <div style="font-weight:600;margin:12px 0 4px">2 · Resultaat per kabel</div><div style="background:#eef4fb;border-left:4px solid #1b4f8a;padding:6px 10px;border-radius:4px;margin-bottom:6px"><b>Standaard kabelberekeningen volgen nog.</b> Onderstaande waarden zijn voorlopig.</div><div style="overflow:auto"><table id="kbRes" style="border-collapse:collapse;width:100%;white-space:nowrap"><tr style="color:#5d6b73;text-align:left"><th>Traject</th><th>Kabel</th><th>In</th><th>Ib</th><th>Iz</th><th>Belasting</th><th>ΔU</th><th>Ik eind</th><th>t uitsch.</th><th>Status</th></tr>${rows}</table></div>
-    <div style="margin-top:6px;color:#5d6b73;font-size:12px;${/schatting/.test(rows) ? '' : 'display:none'}">* schatting: zelfde kabel als bij backfill, Iz omgerekend met cs 1,28 en groepering 52.B.18 — nog bevestigen met Kablix.${!BF && N_AIO >= 5 ? ' Bij Sww 1,5 haalt 3 × 4×240/120 de 1000 A niet (Iz ≈ 979 A); daarom 4 × 4×185/95.' : ''}</div>
-    <div style="font-weight:600;margin:12px 0 4px">3 · Let op</div><div style="background:#fff7e6;border-left:4px solid #e0a21a;padding:8px 10px;border-radius:4px">Indicatieve standaardberekening voor deze configuratie. Per project toetsen aan de werkelijke kabellengte, de kortsluitstroom op de HVK-rail, de grondgesteldheid (Sww), de groepering in de sleuf en de selectiviteit met de hoofdbeveiliging.</div></div></div>`;
+    <div style="background:#eef4fb;border-left:4px solid #1b4f8a;padding:8px 10px;border-radius:4px;margin-top:12px"><b>Standaard kabelberekeningen volgen nog.</b></div></div></div></div>`;
   document.body.appendChild(d); ['keydown', 'keyup'].forEach(ev => d.addEventListener(ev, e => e.stopPropagation()));
-  d.querySelectorAll('#kbRes td, #kbRes th').forEach(c => c.style.padding = '3px 10px 3px 0');
+  
   d.addEventListener('click', e => { if(e.target === d) d.style.display = 'none'; }); d.querySelector('#kbX').onclick = () => d.style.display = 'none';
   document.getElementById('bKabelber').addEventListener('click', () => d.style.display = 'flex'); }
 
