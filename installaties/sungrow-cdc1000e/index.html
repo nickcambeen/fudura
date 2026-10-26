@@ -576,7 +576,8 @@ function detailCdc(G, deuren){ const y1 = 0.36, Hk = 2.04, Dk = 1.126, R = G.use
       kabel(D, [e1, V(e1.x, e1.y - 0.05, e1.z - 0.01), V((e1.x + e2.x)/2, e1.y - 0.12, -0.07), V(e2.x, e2.y - 0.05, e2.z - 0.01), e2], 0.0045, ader.PE); }
     plak(D, 0.09, 0.08, waarsch, 0, Hk*0.5 + 0.14, 0.0262); plak(D, 0.16, 0.035, lbl('Wacht 10 min na uitschakelen', 320, 70, '#ffffff', '#c0281f', 'bold 22px Arial'), 0, Hk*0.5 + 0.075, 0.0262);
     if(i === 0) plak(D, 0.16, 0.1, typeplaat('CDC1000E-500', ['3/N/PE 400 V 50 Hz · 800 A', 'DC 150–1000 V · 500 kW', 'IP55 · IK10 · −35…55 °C']), 0, 0.22, 0.0262);
-    plak(D, 0.05, 0.05, qr, dirx*0.28, 0.22, 0.0262); });
+    plak(D, 0.05, 0.05, qr, dirx*0.28, 0.22, 0.0262);
+    plak(D, 0.42, 0.11, ctex(420, 110, (g, W, Hh) => { g.fillStyle = '#f2c400'; g.fillRect(0, 0, W, Hh); g.strokeStyle = '#111'; g.lineWidth = 4; g.strokeRect(3, 3, W - 6, Hh - 6); g.fillStyle = '#111'; g.font = 'bold 24px Arial'; g.textAlign = 'center'; g.fillText('AC-VOEDING + DC-UITGANGEN', W/2, 40); g.font = '19px Arial'; g.fillText('aansluiten aan de ACHTERZIJDE (achterdeur)', W/2, 70); g.fillText('UM fig. 2.4 · knop "aansluitruimte"', W/2, 96); }), 0, 0.75, -0.003, Math.PI); });
 }
 
 // ---------- dispenser ----------
