@@ -15,7 +15,7 @@
     transition: transform .25s ease; max-height: calc(100vh - 28px); overflow-y: auto; box-sizing: border-box; }
   #paneel.dicht { transform: translateX(calc(100% + 20px)); }
   #pKop { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
-  #pKop h3 { margin: 0; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: #243038; }
+  #pKop h3 { margin: 0; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; letter-spacing: 0; text-transform: uppercase; color: #243038; }
   .pKnop { border: 1px solid #c3ccd2; background: #fff; color: #243038; border-radius: 6px; width: 26px; height: 26px; cursor: pointer; font-size: 15px; line-height: 1; padding: 0; }
   #pOpen { position: fixed; top: 14px; right: 14px; z-index: 30; width: 34px; height: 34px; font-size: 18px; box-shadow: 0 4px 16px rgba(0,0,0,.12); display: none; }
   #pOpen.toon { display: block; }
@@ -66,7 +66,7 @@
 <div id="melding"></div>
 <button class="pKnop" id="pOpen" title="Paneel openen" aria-label="Paneel openen">‹</button>
 <div id="paneel">
-  <div id="pKop"><h3 id="titel"><a href="../../" style="color:#1b4f8a;text-decoration:none" title="Hoofdmenu">‹ menu</a> &nbsp;AIO + FUSE kast</h3><button class="pKnop" id="pReset" title="Alles terugzetten naar de beginweergave (R)" aria-label="Reset weergave" style="margin-left:auto;margin-right:6px">⟲</button><button class="pKnop" id="pDicht" title="Paneel inklappen" aria-label="Paneel inklappen">›</button></div>
+  <div id="pKop"><h3 id="titel"><a href="../../" style="color:#1b4f8a;text-decoration:none" title="Hoofdmenu">‹ menu</a> AIO + FUSE kast</h3><button class="pKnop" id="pReset" title="Alles terugzetten naar de beginweergave (R)" aria-label="Reset weergave" style="margin-left:auto;margin-right:6px">⟲</button><button class="pKnop" id="pDicht" title="Paneel inklappen" aria-label="Paneel inklappen">›</button></div>
   <details open><summary>Configuratie</summary>
     <div class="cfgKop">Aantal AIO's (DELTerra C 125 kW)</div>
     <div class="knoprij" id="cfgN"></div>
@@ -2037,7 +2037,8 @@ const VIEWS = {
   const kW = N_AIO*125, kWh = N_AIO*261, In = Math.round(kW*1000/(Math.sqrt(3)*400));
   { const r = (k, v) => `<tr><td>${k}</td><td>${v}</td></tr>`;
     document.getElementById('cfgInfo').innerHTML = '<table class="cfgT">'
-      + r('Vermogen', kW + ' kW · ' + kWh + ' kWh · ' + In + ' A')
+      + r('Vermogen', kW + ' kW · ' + kWh + ' kWh')
+      + r('Stroom', N_AIO > 1 ? N_AIO + ' × 180 A = ' + N_AIO*180 + ' A' : '180 A')
       + r('Junction box', NO_JB ? 'nee' : 'ja')
       + r('Voeding', NO_JB ? N_AIO + ' × ' + AIOKAB.txt + ' (gG 200) uit HVK' : VKAB.n + ' × ' + VKAB.txt + ' (gG ' + VKAB.gG + ') naar JB')
       + (NO_JB ? '' : r('JB → AIO', '4 × 1×70 mm² per AIO'))
