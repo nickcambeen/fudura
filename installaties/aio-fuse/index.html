@@ -2818,11 +2818,12 @@ const GUN = (() => {
   let zoom = false, basisF = 0, houd = false, tAuto = 0, boemL = null; const RAKETTEN = [], DL = [], bolG = new THREE.SphereGeometry(1, 10, 8);
   const deeltje = (p, kleur, s, v, life, vuur) => { const o = new THREE.Mesh(bolG, new THREE.MeshBasicMaterial({color: kleur, transparent: true, depthWrite: false, blending: vuur ? THREE.AdditiveBlending : THREE.NormalBlending}));
     o.position.copy(p); o.scale.setScalar(s); o.userData.gun = true; scene.add(o); DL.push({o, v, t: 0, life, s, vuur}); };
-  function ontplof(p){ knal(true); knal(true); for(let i = 0; i < 26; i++) deeltje(p.clone().add(V((Math.random() - 0.5)*3, Math.random()*3, (Math.random() - 0.5)*3)), 0xff9a20, 1.2 + Math.random()*1.5, V(Math.random() - 0.5, Math.random()*0.9, Math.random() - 0.5).multiplyScalar(30), 0.7 + Math.random()*0.5, true);
+  function ontplof(p, extern){ if(!extern) MP.boem(p); knal(true); knal(true); for(let i = 0; i < 26; i++) deeltje(p.clone().add(V((Math.random() - 0.5)*3, Math.random()*3, (Math.random() - 0.5)*3)), 0xff9a20, 1.2 + Math.random()*1.5, V(Math.random() - 0.5, Math.random()*0.9, Math.random() - 0.5).multiplyScalar(30), 0.7 + Math.random()*0.5, true);
     for(let i = 0; i < 18; i++) deeltje(p.clone().add(V((Math.random() - 0.5)*5, 2 + Math.random()*5, (Math.random() - 0.5)*5)), 0x45484b, 2 + Math.random()*2, V((Math.random() - 0.5)*5, 5 + Math.random()*6, (Math.random() - 0.5)*5), 3 + Math.random()*2, false);
     if(boemL) scene.remove(boemL); boemL = new THREE.PointLight(0xffa040, 8, 300, 1.2); boemL.position.copy(p).add(V(0, 5, 0)); scene.add(boemL);
     const brand = new THREE.Mesh(new THREE.CircleGeometry(5, 24), new THREE.MeshBasicMaterial({color: 0x161616, transparent: true, opacity: 0.55, depthWrite: false})); brand.rotation.x = -Math.PI/2; brand.position.set(p.x, Math.max(0.05, p.y < 3 ? (Math.abs(p.z) < PL/2 && p.x > PX0 && p.x < PX1 ? PL_H + 0.05 : 0.05) : -99), p.z); if(brand.position.y > -50){ scene.add(brand); gaten.push(brand); }
-    let n = 0; MENSEN.forEach(m => { const d = V(m.position.x - p.x, 0, m.position.z - p.z), L = d.length(); if(L < 40){ if(FX.schot(m, (L > 0.1 ? d.normalize() : V(1, 0, 0)).multiplyScalar(2.2))) n++; } });
+    let n = 0; MENSEN.forEach(m => { const d = V(m.position.x - p.x, 0, m.position.z - p.z), L = d.length(); if(L < 40){ const r = (L > 0.1 ? d.normalize() : V(1, 0, 0)); if(!extern && m.userData.mpId) MP.raak(m.userData.mpId, r); if(FX.schot(m, r.clone().multiplyScalar(2.2))) n++; } });
+    if(extern) n = 0; { const ik = V(FP.pos.x - p.x, 0, FP.pos.z - p.z); if(extern && FP.aan && ik.length() < 40) MP.geraakt(ik.normalize(), 'een bazooka'); }
     if(n) setTimeout(au, 180);
     meld(n ? '💥 Boem! ' + n + ' collega' + (n > 1 ? '’s' : '') + ' omvergeblazen — die staan zo weer op.' : '💥 Boem!'); renderer.shadowMap.needsUpdate = true; }
   // keuzemenu (toets B): 1–6 kiezen, 0 = wapen weg, Esc = sluiten; staat niet in het zijpaneel
@@ -2856,6 +2857,7 @@ const GUN = (() => {
   function vuur(){ if(!actief()) return; const w = W(); knal(w.kogels > 1); terug = 1; w.vuur.visible = true; tFl = 0.06;
     if(!flits){ flits = new THREE.PointLight(0xffc870, 0, 40); scene.add(flits); } camera.localToWorld(flits.position.set(w.pos[0], w.pos[1] + 0.15, w.pos[2] + w.mond - 0.3)); flits.intensity = 3;
     camera.updateMatrixWorld(); let raak = false;
+    { const o = camera.localToWorld(V(w.pos[0], w.pos[1] + 0.15, w.pos[2] + w.mond)), dv = V(0, 0, -1).transformDirection(camera.matrixWorld); MP.schot(o, dv, wapen); }
     if(w.raket){ RC.setFromCamera(new THREE.Vector2(0, 0), camera); const r = new THREE.Group(), lijf = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 1.6, 10), M(0x4b5a36)); lijf.rotation.x = Math.PI/2; r.add(lijf);
       const kop = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.6, 10), M(0xb33a1e)); kop.rotation.x = -Math.PI/2; kop.position.z = -1.1; r.add(kop);
       const vl = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 6), new THREE.MeshBasicMaterial({color: 0xffb040})); vl.scale.z = 2.5; vl.position.z = 1.2; r.add(vl);
@@ -2865,7 +2867,7 @@ const GUN = (() => {
       const hits = RC.intersectObjects(scene.children, true).filter(h => h.object.isMesh && !h.object.userData.gun && !h.object.isSprite && h.distance > 0.5 && zichtbaar(h.object) &&
         !([].concat(h.object.material).every(m => (m.transparent && m.opacity < 0.6) || m.alphaTest > 0)));          // door glas en de openingen van het gaashekwerk heen
       if(!hits.length) continue; const h = hits[0], m = vanPersoon(h.object), dir = RC.ray.direction.clone();
-      if(m){ if(FX.schot(m, dir.multiplyScalar(w.kracht))) raak = true; } else kogelgat(h, dir); }
+      if(m){ if(m.userData.mpId) MP.raak(m.userData.mpId, dir); if(FX.schot(m, dir.clone().multiplyScalar(w.kracht))) raak = true; } else kogelgat(h, dir); }
     if(raak) au();
     if(raak) meld(['Raak! 🎯 Hij gaat neer — staat zo weer op.', 'Voltreffer! Gelukkig had hij z’n PBM aan 🦺', 'Au! Dat wordt een melding in het incidentregister.'][Math.floor(Math.random()*3)]); }
   function update(dt){ const zie = actief(); let bezig = false; const w0 = W();
@@ -2897,7 +2899,62 @@ const GUN = (() => {
     FP.yaw -= e.movementX*0.0022*gv; FP.pitch = Math.max(-1.3, Math.min(1.3, FP.pitch - e.movementY*0.0022*gv)); vuil(2); });
   document.addEventListener('pointerlockchange', () => { if(document.pointerLockElement !== wrap){ zoom = false; houd = false; } });
   const gevoel = () => basisF ? camera.fov/basisF : 1;
-  return {kies, volgende, toets, vuur, klik, gevoel, update, actief, aan: () => wapen >= 0}; })();
+  return {kies, volgende, toets, vuur, klik, gevoel, update, actief, aan: () => wapen >= 0, ontplof, knal, au, wapen: () => wapen}; })();
+// ============ MULTIPLAYER: collega's op dezelfde pagina zien elkaar (publieke MQTT-relay, alleen posities/schoten, geen gegevens) ============
+const MP = (() => {
+  const URL_BROKER = 'wss://broker.hivemq.com:8884/mqtt', KAMER = 'fudura-nc/aio-fuse/n' + N_AIO, ID = Math.random().toString(36).slice(2, 10);
+  const lees = k => { try{ return localStorage.getItem(k); }catch(e){ return null; } }, schrijf = (k, v) => { try{ localStorage.setItem(k, v); }catch(e){} };
+  let naam = lees('mpNaam') || ('Collega ' + Math.floor(100 + Math.random()*900)), cl = null, verbonden = false, tStuur = 0; const PEERS = {};
+  const JASSEN = [0xd2400a, 0x1f6fd0, 0x2f9e44, 0x8e44ad, 0xf2c200, 0x00a3a3];
+  // badge bovenin: aantal online + naam (klik = naam wijzigen)
+  const bad = document.createElement('div'); bad.style.cssText = 'position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:40;background:rgba(20,24,28,.78);color:#fff;border-radius:999px;padding:5px 12px;font:600 12px system-ui,sans-serif;cursor:pointer;user-select:none;display:none';
+  bad.title = 'Klik om je naam te wijzigen'; document.body.appendChild(bad);
+  const toonBadge = () => { const n = Object.keys(PEERS).length; bad.style.display = verbonden ? 'block' : 'none'; bad.textContent = '👥 ' + (n + 1) + ' online · ' + naam + (n ? ' · ' + Object.values(PEERS).map(p => p.naam).join(', ') : ''); };
+  bad.addEventListener('click', () => { const v = prompt('Je naam (zien je collega’s boven je poppetje):', naam); if(v && v.trim()){ naam = v.trim().slice(0, 24); schrijf('mpNaam', naam); stuur({t: 'st'}); toonBadge(); } });
+  function stuur(m){ if(!cl || !verbonden) return; m.id = ID; m.naam = naam; try{ cl.publish(KAMER, JSON.stringify(m), {qos: 0}); }catch(e){} }
+  function avatar(p, d){ const kleur = JASSEN[parseInt(d.id, 36) % JASSEN.length]; const g = bouwPersoon({jas: kleur}); g.userData.mpId = d.id; scene.add(g); MENSEN.push(g);
+    const t = sprite(d.naam, V(0, 0, 0), 0.55, '#' + new THREE.Color(kleur).getHexString()); scene.remove(t); t.position.set(0, 22, 0); g.add(t); p.lbl = t; return g; }
+  function naamLbl(p, n){ if(p.naam === n) return; p.naam = n; const kleur = '#' + new THREE.Color(JASSEN[parseInt(p.id, 36) % JASSEN.length]).getHexString(); p.g.remove(p.lbl); p.lbl = sprite(n, V(0, 0, 0), 0.55, kleur); scene.remove(p.lbl); p.lbl.position.set(0, 22, 0); p.g.add(p.lbl); }
+  function weg(id){ const p = PEERS[id]; if(!p) return; scene.remove(p.g); const i = MENSEN.indexOf(p.g); if(i >= 0) MENSEN.splice(i, 1); delete PEERS[id]; meld('👋 ' + p.naam + ' heeft de omgeving verlaten'); toonBadge(); }
+  const sporen = [];
+  function spoor(o, d){ const a = V(o.x, o.y, o.z), b = a.clone().addScaledVector(V(d.x, d.y, d.z), 300), geo = new THREE.BufferGeometry().setFromPoints([a, b]);
+    const l = new THREE.Line(geo, new THREE.LineBasicMaterial({color: 0xffd27a, transparent: true, opacity: 0.9})); scene.add(l); sporen.push({l, t: 0}); }
+  function ontvang(txt){ let d; try{ d = JSON.parse(txt); }catch(e){ return; } if(!d || d.id === ID) return;
+    let p = PEERS[d.id]; if(d.t === 'bye'){ weg(d.id); return; }
+    if(!p){ p = PEERS[d.id] = {id: d.id, naam: d.naam, x: d.x || 0, z: d.z || 0, yaw: d.yaw || 0, fp: false, tLaatst: performance.now()}; p.g = avatar(p, d); p.g.visible = false; meld('👷 ' + d.naam + ' is binnengekomen'); toonBadge(); }
+    p.tLaatst = performance.now(); naamLbl(p, d.naam);
+    if(d.t === 'st'){ if(d.x !== undefined){ p.x = d.x; p.z = d.z; p.yaw = d.yaw; p.y = d.y || 0; } p.fp = !!d.fp; toonBadge(); }
+    else if(d.t === 'schot'){ spoor(d.o, d.d); if(GUN) GUN.knal(d.w === 1 || d.w === 4); }
+    else if(d.t === 'boem'){ GUN.ontplof(V(d.p.x, d.p.y, d.p.z), true); }
+    else if(d.t === 'raak' && d.doel === ID){ geraakt(V(d.r.x, 0, d.r.z), d.naam); } }
+  // ik ben geraakt: rode flits, terugslag, melding
+  const rood = document.createElement('div'); rood.style.cssText = 'position:fixed;inset:0;z-index:24;pointer-events:none;background:radial-gradient(circle,transparent 40%,rgba(200,0,0,.55));opacity:0;transition:opacity .6s'; document.body.appendChild(rood);
+  function geraakt(r, door){ rood.style.transition = 'none'; rood.style.opacity = '1'; setTimeout(() => { rood.style.transition = 'opacity .8s'; rood.style.opacity = '0'; }, 60);
+    if(FP.aan){ FP.pos.addScaledVector(r.normalize(), 8); FP.pitch = Math.min(1.3, FP.pitch + 0.25); } GUN.au(); meld('🎯 Je bent geraakt door ' + door + '!'); vuil(6); }
+  function verbind(){ const go = () => { try{ cl = mqtt.connect(URL_BROKER, {clientId: 'fudura_' + ID, clean: true, reconnectPeriod: 4000, connectTimeout: 8000, keepalive: 30, will: {topic: KAMER, payload: JSON.stringify({t: 'bye', id: ID}), qos: 0}});
+      cl.on('connect', () => { verbonden = true; cl.subscribe(KAMER); stuur({t: 'st'}); toonBadge(); });
+      cl.on('close', () => { verbonden = false; toonBadge(); }); cl.on('message', (tp, buf) => ontvang(buf.toString())); }catch(e){ console.warn('MP', e); } };
+    if(window.mqtt) go(); else { const sc = document.createElement('script'); sc.src = 'https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js'; sc.onload = go; sc.onerror = () => console.warn('MP: mqtt.js niet geladen'); document.head.appendChild(sc); } }
+  window.addEventListener('beforeunload', () => { stuur({t: 'bye'}); });
+  setTimeout(verbind, 1500);
+  // status los van de tekenlus (ook als het tabblad op de achtergrond staat): lopend 10×/s, anders 1×/s
+  let tel = 0; setInterval(() => { if(!verbonden) return; tel++; if(!FP.aan && tel % 10) return; const yv = Math.abs(FP.pos.z) < PL/2 + 0.3 && FP.pos.x > PX0 && FP.pos.x < PX1 ? PL_H : 0;
+    stuur(FP.aan ? {t: 'st', fp: 1, x: +FP.pos.x.toFixed(2), z: +FP.pos.z.toFixed(2), y: yv, yaw: +FP.yaw.toFixed(3), w: GUN.wapen()} : {t: 'st', fp: 0}); }, 100);
+  function update(dt){ let bezig = false; const nu = performance.now();
+    for(const id in PEERS){ const p = PEERS[id], g = p.g, P = g.userData.P;
+      if(nu - p.tLaatst > 6000){ weg(id); continue; }
+      if(g.visible !== p.fp){ g.visible = p.fp; bezig = true; }
+      if(!p.fp) continue;
+      if(P && P.staat !== 'staat') { bezig = true; continue; }                        // ligt na een treffer: ragdoll laat hem eerst opstaan
+      const k = Math.min(1, dt*10), dx = p.x - g.position.x, dz = p.z - g.position.z;
+      if(Math.abs(dx) + Math.abs(dz) > 60){ g.position.x = p.x; g.position.z = p.z; } else { g.position.x += dx*k; g.position.z += dz*k; }
+      g.position.y += ((p.y || 0) - g.position.y)*k; let dr = (p.yaw + Math.PI) - g.rotation.y; dr = Math.atan2(Math.sin(dr), Math.cos(dr)); g.rotation.y += dr*k;
+      if(Math.abs(dx) + Math.abs(dz) > 0.02 || Math.abs(dr) > 0.01) bezig = true; }
+    for(let i = sporen.length - 1; i >= 0; i--){ const s = sporen[i]; s.t += dt; s.l.material.opacity = Math.max(0, 0.9 - s.t*6); if(s.t > 0.15){ scene.remove(s.l); s.l.geometry.dispose(); s.l.material.dispose(); sporen.splice(i, 1); } bezig = true; }
+    return bezig; }
+  return {update, raak: (id, r) => stuur({t: 'raak', doel: id, r: {x: +r.x.toFixed(3), z: +r.z.toFixed(3)}}),
+    schot: (o, d, w) => stuur({t: 'schot', w, o: {x: +o.x.toFixed(2), y: +o.y.toFixed(2), z: +o.z.toFixed(2)}, d: {x: +d.x.toFixed(4), y: +d.y.toFixed(4), z: +d.z.toFixed(4)}}),
+    boem: p => stuur({t: 'boem', p: {x: +p.x.toFixed(2), y: +p.y.toFixed(2), z: +p.z.toFixed(2)}}), geraakt, online: () => verbonden}; })();
 
 ['Graaf', 'Drone', 'Olif'].forEach((k, i) => { const c = $t('t' + k); if(c) c.addEventListener('change', ev => ev.target.checked ? RIT.inStap(['graaf', 'drone', 'olifant'][i]) : RIT.uit()); });
 function stapFP(dt){
@@ -2943,6 +3000,7 @@ function animate(){ requestAnimationFrame(animate); const t = performance.now(),
   if(FX.update(dt)){ vuil(2); FX.n = (FX.n || 0) + 1; if(FX.n % 10 === 0) renderer.shadowMap.needsUpdate = true; }   // geen schaduw-update per frame (dat gaf lag)
   if(FP.aan) stapFP(dt); else updateCam();
   if(GUN.update(dt)) vuil(2);
+  if(MP.update(dt)) vuil(2);
   camera.updateMatrixWorld(); const camVer = !camVorig.equals(camera.matrixWorld); camVorig.copy(camera.matrixWorld);
   if(beweegt || sim) renderer.shadowMap.needsUpdate = true;
   if(beweegt || sim || camVer || FP.aan || VUIL.n > 0){ VUIL.n = Math.max(0, VUIL.n - 1); renderer.render(scene, camera); } }
