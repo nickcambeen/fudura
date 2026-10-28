@@ -2448,7 +2448,7 @@ const FX = (() => {
       const hor = Math.hypot(P.v.x, P.v.z);
       if(P.hip <= clr + 1.2){ const rem = Math.min(hor, 80*dt); if(hor > 0){ P.v.x -= P.v.x/hor*rem; P.v.z -= P.v.z/hor*rem; } }
       if(P.hip <= clr){ P.hip = clr; const rem = 0; if(hor > 0){ P.v.x -= P.v.x/hor*rem; P.v.z -= P.v.z/hor*rem; }      // wrijving (glijden over het maaiveld)
-        if(P.v.y < -14){ P.v.y = -P.v.y*0.2; P.w.multiplyScalar(0.5); geluid(0.08, 300, 0.8); renderer.shadowMap.needsUpdate = true; } else if(P.v.y < 0) P.v.y = 0;
+        if(P.v.y < -14){ P.v.y = -P.v.y*0.2; P.w.multiplyScalar(0.5); geluid(0.08, 300, 0.8); } else if(P.v.y < 0) P.v.y = 0;
         P.w.y *= Math.max(0, 1 - dt*5); P.w.z *= Math.max(0, 1 - dt*5); P.w.x += (-(hor/7) - P.w.x)*Math.min(1, dt*3);                                     // rollen over de grond i.p.v. vrij tollen
         if(hor < 9) P.w.x *= Math.max(0, 1 - dt*6); }
       if((hor < 3 && P.t > 0.6 && P.hip <= clr + 0.3) || P.t > 4.5){ P.staat = 'tot'; P.t = 0; K.rotation.x = wrap(K.rotation.x); K.rotation.z = wrap(K.rotation.z); P.v.set(0, 0, 0); pose('grond'); } }
@@ -2519,7 +2519,7 @@ function animate(){ requestAnimationFrame(animate); const t = performance.now(),
   AIO.forEach(a => { if(Math.abs(a.uitDoel - a.uit) > 1e-3){ a.uit += (a.uitDoel - a.uit)*Math.min(1, dt*1.2); if(Math.abs(a.uitDoel - a.uit) < 1e-3) a.uit = a.uitDoel; beweegt = true;
     a.PK.forEach((p, k) => p.position.z = a.pD*Math.max(0, Math.min(1, a.uit*1.6 - (4 - k)*0.15))); a.KB.visible = a.uit < 0.01; a.zone.visible = a.uit > 0.01; } });
   const sim = false;
-  if(FX.update(dt)) beweegt = true;
+  if(FX.update(dt)){ vuil(2); FX.n = (FX.n || 0) + 1; if(FX.n % 10 === 0) renderer.shadowMap.needsUpdate = true; }   // geen schaduw-update per frame (dat gaf lag)
   if(FP.aan) stapFP(dt); else updateCam();
   camera.updateMatrixWorld(); const camVer = !camVorig.equals(camera.matrixWorld); camVorig.copy(camera.matrixWorld);
   if(beweegt || sim) renderer.shadowMap.needsUpdate = true;
