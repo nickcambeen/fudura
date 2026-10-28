@@ -122,7 +122,7 @@
       <li>Binnen: 5 accupacks 780 × 1160 × 240 (MSD), koelunit, PCS 680 × 850 × 240, besturingskast, MCCB QF0 4P, energiemeter, brandbeveiliging in de deur</li>
       <li>Junction box Fudura/O&amp;K OFK252082 C03a (uit STEP): romp 1400 × 355 × 1315, kap 375 diep, RVS-plint 220, montageplaat 1290 × 1275; 2 × SL2-3x3/3A, SL3-3x6/1250/HA met 6 × TM-3, 3 × SL2 op Cu-rails 60 × 10; N- en PE-rail 40 × 10 × 750; VMS64 + VMS43 met S203-B10 3P+N, DS201 B16 30 mA, 2 × wcd; kastverlichting en deurschakelaar</li>
       <li>Zonder junction box (≤ 30 m; met backfillzand 1–3 AIO's, zonder backfill 1–2): per AIO een YMvK 4×70 / 4×95 rechtstreeks vanuit de HVK, door de skid geboord; met junction box: 2–3 × YMvKas 4×185/95 of 4×240/120 vanuit de HVK en per AIO 4 × 1×70 mm² (L1 L2 L3 N) door baan AC #n naar de MCCB-aansluitvlaggen links; kasten onderling via de aardpunten doorverbonden en vanaf #1 naar de PE-rail (vereffening)</li>
-      <li>Voeding SL3 met 3F + N + PE (4 × 240 mm² per fase), door de sparing in de stelconplaat en een kort stuk door de grond</li>
+      <li>Voeding SL3 met 3F + N + PE (4 × 240 mm² per fase) via Jean Müller VS-SL3/1000 op elke M12-bout (2 per fase, elk 2 kabels tot 300 mm² of 3 × 120 mm²) met afdekking HA-SL123/10, door de sparing in de stelconplaat en een kort stuk door de grond</li>
       <li>Alles op stelconplaten 2000 × 2000 × 140, per configuratie de kortste rij met ≥ 100 mm speling (zo nodig één plaat 1000 × 2000 aan de EMS-zijde)</li>
     </ul>
   </details>
@@ -496,9 +496,10 @@ const matMeterF = M(0xffffff, {map: texMeter, roughness: 0.5});
 const KAN_Z0 = AD/2 - 0.1 - 7*0.34, KAN_DZ = 0.34;                       // 7 kabelbanen tussen 8 schotten, voorin
 const zKan = k => KAN_Z0 + (k + 0.5)*KAN_DZ;
 // goot-indeling (7 goten, van links naar rechts): tussen twee 95 mm²-bundels altijd 2 lege goten (warmte / groeperingsfactor).
-// DATA (CAT 6A S/FTP) mag in een lege goot; geen aparte hulpvoeding (AIO voedt zichzelf). Max. 3 AIO-bundels in de skid (goot 1, 4, 7); AIO #4 en #5 direct door de grond (geen mantelbuis).
+// DATA (CAT 6A S/FTP) mag in een lege goot; geen aparte hulpvoeding (AIO voedt zichzelf). Max. 3 AIO-bundels in de skid (goot 1, 4, 7); bij 4/5 AIO's gaan de linker stroken (AIO #1, #2) direct door de grond (geen mantelbuis), AIO #3..#5 door de skid.
 const KAN_AIO = [0, 3, 6], KAN_DATA = 1, N_SKID = Math.min(N_AIO, 3);
-const kanAio = i => i < 3 ? KAN_AIO[i] : -1;
+const N_GROND = Math.max(0, N_AIO - 3);                                    // 4/5 AIO's: de linker strook/stroken (AIO #1 (en #2)) direct door de grond, de rechter 3 door de skid
+const kanAio = i => i < N_GROND ? -1 : KAN_AIO[i - N_GROND];
 const KAN_NAAM = [...Array(7)].map((_, k) => { const i = KAN_AIO.indexOf(k); return i >= 0 && i < N_AIO ? 'AIO' + (i + 1) : k === KAN_DATA ? 'DATA' : (k === 4 && N_AIO <= 2) ? '230V EMS' : '–'; });
 function bouwBase(i){
   const G = new THREE.Group(); G.position.set(XA(i), PL_H, AZ); scene.add(G);
@@ -1187,13 +1188,20 @@ const AUXUIT = []; let F0 = null, METCOM = null;
   // M32-doorvoertule links in VMS43: hier komt de aparte voedingskabel vanaf de HVK binnen (zie 'hulpvoeding junction box' bij de kabels)
   cyl(K, 0.19, 0.12, matZwart, JX(849.5), JB(438), zB + 0.65, 'x', 16);
   const dw = (pts, k, r) => KABDEEL.push(kabel(K, pts, r || 0.035, k, 0.08, 6));
-  F0 = {f0, zB, zDin};
+  F0 = {f0, f1, zB, zDin};
   // -F0 (voeding van onderen) → uitgang bovenkant → -F1 ingang bovenkant (L en N); -F1 uitgang onderkant → WCD1/WCD2 (L, N) van onderen
   const yR = JB(348.5), zK = zDin + 0.27, kx = (d, k) => d.x0 + 0.089 + k*0.178;
   dw([[kx(f0, 0), yR + 0.47, zK], [kx(f0, 0), yR + 0.82, zK + 0.05], [kx(f1, 0), yR + 0.82, zK + 0.05], [kx(f1, 0), yR + 0.47, zK]], ader.L1);
   dw([[kx(f0, 3), yR + 0.47, zK], [kx(f0, 3), yR + 0.68, zK + 0.1], [kx(f1, 1), yR + 0.68, zK + 0.1], [kx(f1, 1), yR + 0.47, zK]], ader.N);
-  [w1, w2].forEach((d, n) => [0, 1].forEach(k => { const y2 = yR - 0.78 - n*0.1 - k*0.05;
-    dw([[kx(f1, k) + n*0.03, yR - 0.47, zK], [kx(f1, k) + n*0.03, y2, zK + 0.05], [d.xc - 0.12 + k*0.12, y2, zK + 0.05], [d.xc - 0.12 + k*0.12, yR - 0.47, zK - 0.03]], k ? ader.N : ader.L1); }));
+  // -F1 onderkant → rijgklemmen -X1 (PTV 4, van onderen): L op X1:1 (grijs), N op X1:4 (blauw); FBS-bruggen 1-2-3 en 4-5-6
+  const xX = k => JX(1003 + k*6.2), yXb = yR - 0.34, zX = zDin + 0.3;
+  dw([[kx(f1, 0), yR - 0.47, zK], [kx(f1, 0), yR - 0.62, zK + 0.05], [xX(0), yR - 0.62, zK + 0.05], [xX(0), yXb, zX]], ader.L1);
+  dw([[kx(f1, 1), yR - 0.47, zK], [kx(f1, 1), yR - 0.74, zK + 0.1], [xX(3), yR - 0.74, zK + 0.1], [xX(3), yXb, zX]], ader.N);
+  // -X1:2 / -X1:5 → WCD1, -X1:3 / -X1:6 → WCD2 (L en N van onderen op de wcd)
+  [w1, w2].forEach((d, n) => [0, 1].forEach(k => { const y2 = yR - 0.86 - n*0.1 - k*0.05, xs = xX(1 + n + k*3), xt = d.xc - 0.12 + k*0.12;
+    dw([[xs, yXb, zX], [xs, y2, zK + 0.05 + k*0.05], [xt, y2, zK + 0.05 + k*0.05], [xt, yR - 0.47, zK - 0.03]], k ? ader.N : ader.L1); }));
+  // adereindhulzen bij de -X1-klemmen
+  for(const k of [0, 1, 2, 3, 4, 5]) cyl(K, 0.035, 0.1, k < 3 ? M(0xe8e8e8) : M(0x2f5fbf), xX(k), yXb - 0.06, zX, null, 8);
 }
 { // kastverlichting Finder 6 W (x 961–1272, y 1227–1270) en deurschakelaar met M20-wartel rechtsboven
   box(K, 3.11, 0.43, 0.44, M(0xf1f2ef), JX(1116.5), JB(1248.5), JZ(286)); box(K, 3.0, 0.08, 0.36, M(0xffffff, {emissive: 0xfff6dd, emissiveIntensity: 0.9}), JX(1116.5), JB(1227), JZ(286));
@@ -1595,12 +1603,12 @@ const HVK = (function(){
 const KAB = new THREE.Group(); scene.add(KAB); const KABK = new THREE.Group(); KG.add(KABK); if(NO_JB) KABK.visible = false;
 const R95 = NO_JB ? 0.1 : 0.085, R240 = 0.14,                                    /* JB → AIO: 4 × 1×70 mm² (r 0.085) */ FLOW = [], zF1 = JMZ + 0.61, zF2 = KZ0 + 0.7;
 const gland = () => {};                                                               // C03a: onderzijde romp open, kabels via de plint (geen wartelplaat)
-// AIO #4 / #5: 4 × 95 mm² singles direct in de grond (zandbed, geen mantelbuis) onder de stelconplaten door, sparing onder de strook en onder de eigen metal base
+// AIO #1 / #2 (bij 4/5 AIO's): 4 × 95 mm² singles direct in de grond (zandbed, geen mantelbuis) onder de stelconplaten door, sparing onder de strook en onder de eigen metal base
 const matMantel = M(0xe06a1a, {roughness: 0.6, transparent: true, opacity: 0.45, depthWrite: false}), matSpar = M(0x0b0c0d, {roughness: 0.9});
 function grondRoute(s, a, kn){
   let gs = ['L1', 'L2', 'L3', 'N'].map(f => a.gat[f]), gx = gs.reduce((q, g) => q + g.x, 0)/4, zg = gs.reduce((q, g) => q + g.z, 0)/4;
   const DSP = {x: XA(kn) - AW/2 + 0.1 + 5.98, z: AZ + AD/2 - 2.21}; if(NO_JB){ gx = DSP.x; zg = DSP.z; }   // Delta fig. 5-3: AC-uitvoer kast hart 598 mm vanaf linkerzijde kast (608 vanaf base), 221 mm achter de voorkant
-  const zr = zg - 1.6 - (kn - 3)*1.3, yb = -3.4, P = W(V(s.x, -0.6, zF1)), x0 = P.x + 3.0;
+  const zr = zg - 1.6 - (NO_JB ? kn - 3 : kn)*1.3, yb = -3.4, P = W(V(s.x, -0.6, zF1)), x0 = P.x + 3.0;
   if(!NO_JB){ box(K, 1.5, PL_H + 0.04, 1.3, matSpar, s.x, PL_H/2, zF1, false); box(K, 1.8, 0.04, 1.6, M(0x6f7273, {roughness: 0.9}), s.x, PL_H + 0.01, zF1, false); }   // sparing onder de JB-strook (alleen met JB)
   let kp = PLX.findIndex((x, k) => gx >= x - PLW[k]/2 && gx < x + PLW[k]/2); if(kp < 0) kp = gx < PX0 ? 0 : N_PL - 1; const pl = PLATEN[kp];
   box(pl, 1.6, PL_H + 0.04, 1.6, matSpar, gx - XP(kp), PL_H/2, zg, false); box(pl, 1.9, 0.04, 1.9, M(0x6f7273, {roughness: 0.9}), gx - XP(kp), PL_H + 0.01, zg, false);
@@ -1627,17 +1635,46 @@ SLOTS.forEach(s => {
     // 3 × YMvKas (4 aders + concentrisch scherm als PE): 4 AIO's 4×185/95 (gG 800), 5 AIO's 4×240/120 (gG 1000) — kabelberekening Nick 22-10
     const VK = VKAB, mantelM = M(0x1d1e20, {roughness: 0.65});
     const nx = [-0.69, -0.345, 0.345, 0.69].map(d => s.x + d);
+    // Jean Müller VS-SL3/1000 (L8390600): verlengstuk per M12-aansluitbout van de SL3, kabelaansluiting 2 × 300 / 3 × 120 mm² (2 kabelschoenen op één M12, voor- en achterzijde)
+    // + afdekking HA-SL123/10 (L8950666, l = 100 mm) onder de strook; per fase 2 bouten → max. 4 kabels per fase
+    const matLug = M(0xd8b48a, {roughness: 0.32, metalness: 0.8}), matLugD = M(0xb08b62, {roughness: 0.45, metalness: 0.7});
+    const perskous = (par, x, yB, zP, zB, r, fk) => {                                           // DIN 46235 (vertind Cu, 240 mm², M12): palm 27 breed, 3,5 dik
+      const add = o => { KABDEEL.push(o); return o; };
+      add(cyl(par, 0.135, 0.035, matLug, x, yB, zP, 'z', 24));                                    // ronde palmkop
+      add(box(par, 0.27, 0.16, 0.035, matLug, x, yB - 0.08, zP, false));                          // palm
+      add(cyl(par, 0.068, 0.04, M(0x2a2c2e), x, yB, zP, 'z', 16));                                // boutgat M12 (schaduw)
+      const ov = new THREE.Mesh(new THREE.CylinderGeometry(r*0.55, r, 0.12, 16), matLug); ov.position.set(x, yB - 0.22, (zP + zB)/2); ov.rotation.x = (zB - zP) > 0 ? -0.35 : 0.35; par.add(ov); add(ov);   // conische overgang palm → kous
+      add(cyl(par, r, 0.42, matLug, x, yB - 0.48, zB, null, 18));                                 // perskous
+      [-0.42, -0.56].forEach(d => { const pr = new THREE.Mesh(new THREE.CylinderGeometry(r*0.93, r*0.93, 0.05, 6), matLugD); pr.position.set(x, yB + d, zB); par.add(pr); add(pr); });   // zeskant persindrukken
+      add(cyl(par, r + 0.012, 0.03, matLugD, x, yB - 0.68, zB, null, 18));                        // afgeschuinde kousrand
+      add(cyl(par, r + 0.02, 0.26, fk, x, yB - 0.8, zB, null, 18));                              // krimpkous in fasekleur
+      return V(x, yB - 0.5, zB); };
+    const matVS = M(0xd3d7da, {roughness: 0.3, metalness: 0.55});                              // vertind Cu (licht, mat-glanzend)
+    const VSK = {}, nB = Math.ceil(VK.n/2), zKit = zF1 + 0.12, rLug = VK.ra + 0.025;
+    for(let p = 0; p < 3; p++) for(let b = 0; b < nB; b++){ const P = s.fase[p][b], yT = P.y - 0.95;
+      box(K, 0.25, 1.35, 0.1, matVS, P.x, P.y - 0.475, zKit, false);                               // vertind Cu-verlengstuk 25 × 10
+      box(K, 0.25, 0.1, 0.14, matVS, P.x, P.y + 0.15, zKit - 0.07, false);                         // haakse bovenkant op de stroken-aansluitvlag
+      cyl(K, 0.1, 0.06, matZink, P.x, P.y, zKit + 0.08, 'z', 6); cyl(K, 0.12, 0.02, matZink, P.x, P.y, zKit + 0.06, 'z', 16);   // M12 moer + sluitring aan de strook
+      cyl(K, 0.06, 0.62, matZink, P.x, yT, zKit, 'z', 12);                                          // M12-aansluitbout kabelzijde
+      [-1, 1].forEach(sg => { cyl(K, 0.1, 0.07, matZink, P.x, yT, zKit + sg*0.27, 'z', 6); cyl(K, 0.12, 0.02, matZink, P.x, yT, zKit + sg*0.225, 'z', 16); });
+      for(let q = 0; q < 2; q++){ const sg = q ? -1 : 1, zP = zKit + sg*0.08, zB = zKit + sg*0.15;  // kabelschoen q0 voor, q1 achter het verlengstuk
+        if(q*1 + b*2 >= VK.n) continue;
+        perskous(K, P.x, yT, zP, zB, rLug, ader[['L1', 'L2', 'L3'][p]]);
+        VSK[p + '-' + b + '-' + q] = V(P.x, yT - 0.6, zB); } }
+    { const yK = s.fase[0][0].y, kap = box(K, s.st.TW/100 - 0.04, 1.0, 0.62, M(0x8a9196, {roughness: 0.4, transparent: true, opacity: 0.35, depthWrite: false}), s.x, yK - 0.55, zKit, false);
+      kap.userData.naam = 'Afdekking HA-SL123/10 (l = 100 mm)'; KAP_SL.push(kap);
+      const t = sprite('Jean Müller VS-SL3/1000 (2×300 / 3×120 mm²) + afdekking HA-SL123/10', W(V(s.x, yK - 0.5, KZ0 + 1.6)), 0.45, '#0a5fa8'); scene.add(t); LABELS.push(t); }
     for(let c = 0; c < VK.n; c++){ const b = c >> 1, q = c & 1, xm = s.x + (c - (VK.n - 1)/2)*0.62, zm = (zF1 + zF2)/2 + 0.1, yM0 = KS + 0.35;
       const tH = HVK.fase[1][b].clone().add(V(0, 0, q*0.3)), E = V(tH.x, HVK.P - 0.2, tH.z);
       const pts = [V(xm, yM0, zm), ...uit(xm, zm, c, 1.5, tH).slice(0, -2)];
       yStrut.forEach(y => klemB(xm, y, zm, VK.rm));
       const km = kabel(KAB, pts.map(W), VK.rm, mantelM, 0.9, 8); KABELS.push(km); if(c === 0) FLOW.push({curve: km.userData.curve, aio: -1, voeding: true});
       // JB-zijde: aders uit de mantel omhoog naar de NH-strook (fasen), N-rail en PE-rail (scherm)
-      const doel = [...fases.map((f, p) => [f, V(s.fase[p][b].x, s.fase[p][b].y, zF1 + q*0.3)]), ['N', V(nx[c], yNr - 0.45, zF2)], ['PE', V(s.x + (c - 1)*0.22, yPEr - 0.45, zF2)]];
+      const doel = [...fases.map((f, p) => [f, VSK[p + '-' + b + '-' + q]]), ['N', V(nx[c], yNr - 0.45, zF2)], ['PE', V(s.x + (c - 1)*0.22, yPEr - 0.45, zF2)]];
       railLug(nx[c], yNr, VK.ra, 'N'); railLug(s.x + (c - 1)*0.22, yPEr, VK.ra*0.8, 'PE');
       doel.forEach(([f, t], j) => { const d = (j - 2)*0.07;
         kabel(KAB, [V(xm + d, yM0, zm), V(xm + d, yM0 + 0.5, zm), V(t.x, Math.min(t.y - 0.9, yM0 + 1.4), t.z), t].map(W), f === 'PE' ? VK.ra*0.8 : VK.ra, ader[f], 0.35, 8);
-        if(f !== 'N' && f !== 'PE') KABDEEL.push(cyl(K, VK.ra + 0.02, 0.3, matTin, t.x, t.y + 0.1, t.z, null, 12)); });
+      });
       // HVK-zijde: aders uit de mantel naar de SL3-groep (fasen), N-rail en PE-rail
       const doelH = [...fases.map((f, p) => [f, HVK.fase[p][b].clone().add(V(0, 0, q*0.3))]), ['N', HVK.nul[c]], ['PE', HVK.pe]];
       doelH.forEach(([f, t], j) => { const d = (j - 2)*0.07; kabel(KAB, [V(E.x + d, E.y, E.z), V(E.x + d, E.y + 0.5, E.z), V(t.x, t.y - 0.4, t.z), t].map(W), f === 'PE' ? VK.ra*0.8 : VK.ra, ader[f], 0.3, 8); }); }
@@ -1659,7 +1696,7 @@ SLOTS.forEach(s => {
       const hp = f === 'N' ? H2.nul : H2.fase[{L1: 0, L2: 1, L3: 2}[f]];
       kabel(KAB, [V(S0.x + dx, S0.y + 0.05, S0.z + dz), V(S0.x + dx, S0.y + 0.4, S0.z + dz), W(V(hp.x, hp.y - 0.4, hp.z)), W(hp)], AIOKAB.ra, ader[f], 0.25, 8); });   // HVK: aders naar het SL2-veld
     return; }
-  const yRun = PL_H + 0.35 + kn*0.33;                                                               // plint: bundel #1 het laagst, geen kruisingen
+  const yRun = PL_H + 0.35 + (kn - N_GROND)*0.33;                                                               // plint: bundel #1 het laagst, geen kruisingen
   const bron = {L1: [s.fase[0][0], zF1], L2: [s.fase[1][0], zF1], L3: [s.fase[2][0], zF1], N: [V(s.x + 0.39, yNr - 0.45, zF2), zF2]};      // AIO: alleen 3F + N, geen PE
   if(!NO_JB) railLug(s.x + 0.39, yNr, R95, 'N');
   const XR = {L1: s.x - 0.39, L2: s.x - 0.13, L3: s.x + 0.13, N: s.x + 0.39};       // onder de strook: 4 aders naast elkaar in één rij
@@ -1709,6 +1746,13 @@ CAT = 'voeding';
   { const p = A.fase[0]; kabel(KAB, [A.onder, V(p.x, A.onder.y + 0.3, p.z), p].map(W), 0.04, ader.L1, 0.1, 6); }
   kabel(KAB, [A.onder, V(A.nul.x, A.nul.y - 0.4, A.nul.z), A.nul].map(W), 0.04, ader.N, 0.1, 6);
   kabel(KAB, [A.onder, V(A.pe.x, A.pe.y - 0.4, A.pe.z), A.pe].map(W), 0.04, ader.PE, 0.1, 6); }
+// 230 V EMS-voeding (YMvK 3G2,5) uit de VMS43: wartel M20 in de onderzijde, L en N van onderen op -F1 (DS201 B16 30 mA), PE op de N/PE-hakenrail
+if(!NO_JB){ const {f1, zB, zDin} = F0, x = JX(1100), yVb = JB(187), z = zB + 0.65, yR = JB(348.5), zK = zDin + 0.27, yS = yVb + 0.25;
+  cyl(K, 0.14, 0.05, matZwart, x, yVb - 0.03, z, null, 6); cyl(K, 0.11, 0.12, matZwart, x, yVb - 0.13, z, null, 16); cyl(K, 0.12, 0.04, matZwart, x, yVb + 0.06, z, null, 6);
+  kabel(KAB, [V(x, yVb - 0.2, z), V(x, yS, z)].map(W), 0.065, M(0x1d1e20, {roughness: 0.65}), 0.1, 8);                         // mantel tot net boven de wartel
+  [['L1', 0], ['N', 1]].forEach(([f, k], j) => { const xt = f1.x0 + 0.089 + k*0.178;
+    kabel(KAB, [V(x + (j - 0.5)*0.05, yS, z), V(x + (j - 0.5)*0.05, yS + 0.3, z), V(xt, yR - 1.07, zK + 0.12), V(xt, yR - 0.6, zK + 0.06), V(xt, yR - 0.47, zK)].map(W), 0.03, ader[f], 0.08, 6); });
+  kabel(KAB, [V(x + 0.06, yS, z), V(x + 0.06, yS + 0.15, z), V(JX(1191), JB(223.5) - 0.25, zB + 0.45), V(JX(1191), JB(223.5), zB + 0.45)].map(W), 0.03, ader.PE, 0.08, 6); }
 let DATA_HVK_PTS = [];                                                              // CAT 6A HVK → EMS-kast: tracé tot naast de rij, verder getekend in het EMS-blok
 CAT = 'data';
 { const zc = zKan(KAN_DATA), y0 = PL_H + 0.3;
@@ -1763,7 +1807,8 @@ function ringLug(par, p, n, k){ k = k || 1; const g = new THREE.Group(); g.posit
     kabel(KAB, [la, V(la.x, la.y - 0.3, la.z + 0.05), V(a.x + 0.4, a.y - 0.9, a.z + 0.3), V(b.x - 0.4, b.y - 0.9, b.z + 0.3), V(lb.x, lb.y - 0.3, lb.z + 0.05), lb], r, ader.PE, 0.2); }
   if(!NO_JB){                                                                                       // kast #1 → aardbout op de plint (skid) van de junction box; intern plint → PE-rail
     const p1 = ringLug(KAB, aard(0, -1), '+z', 1.3), zP = -KD/2 + 0.9, yP = PL_H + 1.1;                    // aardbout M10 door de RVS-plint, zijkant aan de voorzijde van de rij
-    const uit = ringLug(KG, V(KW/2 + 0.02, yP, zP), '+x', 1.3), bin = ringLug(KG, V(KW/2 - 0.05, yP, zP), '-x', 1.1);
+    const uit = ringLug(KG, V(KW/2 + 0.02, yP, zP), '+x', 1.3), bin = ringLug(KG, V(KW/2 - 0.54, yP, zP), '-x', 1.1);
+    cyl(KG, 0.05, 0.58, matZink, KW/2 - 0.25, yP, zP, 'x', 10);                                        // draadeind M10 door het zijpaneel (52 mm)
     kabel(KAB, [p1, V(p1.x, p1.y - 0.35, p1.z + 0.08), V(p1.x - 0.6, PL_H + 1.0, AZ + AD/2 + 0.35), W(V(uit.x, uit.y - 0.25, uit.z)), W(uit)], r, ader.PE, 0.3);
     const xp = SLOTS[0].x + 0.6; railLug(xp, yPEr, 0.075, 'PE');
     kabel(KAB, [W(bin), W(V(bin.x, bin.y - 0.25, bin.z)), W(V(bin.x - 0.5, KS - 0.1, zF2)), W(V(xp, KS + 0.2, zF2)), W(V(xp, yPEr - 0.45, zF2))], r, ader.PE, 0.3); }
@@ -1772,8 +1817,11 @@ function ringLug(par, p, n, k){ k = k || 1; const g = new THREE.Group(); g.posit
 { const xb = SLOTS[1].x + 0.6; railLug(xb, yPEr, 0.06, 'PE');
   const bR = W(V(-KW/2 + 0.12, KS + 1.6, KZ0 + 0.9)), bP = W(V(-KW/2 + 0.6, KS - 0.6, KD/2 + 0.02));
   kabel(KAB, [W(V(xb, yPEr - 0.4, zF2)), W(V(xb, KS + 0.6, zF2)), W(V(-KW/2 + 0.6, KS + 0.6, KZ0 + 0.9)), W(V(-KW/2 + 0.25, KS + 1.6, KZ0 + 0.9)), bR], 0.06, ader.PE, 0.25, 6);
-  { const lR = ringLug(KG, V(-KW/2 + 0.12, KS + 1.6, KZ0 + 0.9), '+x'), lP = ringLug(KG, V(-KW/2 + 0.6, KS - 0.6, KD/2 + 0.02), '+z');
-    kabel(KAB, [W(lR), W(V(-KW/2 + 0.3, KS + 0.2, KZ0 + 1.2)), W(V(-KW/2 + 0.6, KS - 0.5, KD/2 - 0.2)), W(V(lP.x, lP.y - 0.2, lP.z)), W(lP)], 0.06, ader.PE, 0.2, 6); }
+  { // aardbout M8 door de RVS-plint: kabelschoen aan de BINNENZIJDE, buiten alleen moer + draadeind; draad blijft volledig binnen (romp onderzijde open → plint)
+    const lR = ringLug(KG, V(-KW/2 + 0.12, KS + 1.6, KZ0 + 0.9), '+x'), lP = ringLug(KG, V(-KW/2 + 0.6, KS - 0.6, KD/2 - 0.42), '-z');
+    cyl(KG, 0.032, 0.5, matZink, -KW/2 + 0.6, KS - 0.6, KD/2 - 0.2, 'z', 10);
+    cyl(KG, 0.072, 0.05, matZink, -KW/2 + 0.6, KS - 0.6, KD/2 + 0.03, 'z', 6); cyl(KG, 0.032, 0.06, matZink, -KW/2 + 0.6, KS - 0.6, KD/2 + 0.07, 'z', 10);
+    kabel(KAB, [W(lR), W(V(-KW/2 + 0.3, KS + 0.9, KZ0 + 0.9)), W(V(-KW/2 + 0.35, KS - 0.1, KZ0 + 1.0)), W(V(-KW/2 + 0.6, KS - 1.2, KD/2 - 0.75)), W(V(lP.x, lP.y - 0.3, lP.z - 0.08)), W(lP)], 0.06, ader.PE, 0.2, 6); }
   doors.filter(d => d.naam === 'junction box').forEach(d => { const sx = Math.sign(d.m.position.x) || 1, y = 2.2;                   // aardband 6 mm² met kabelschoenen: deurbout ↔ aardbout romp (vlak bij het scharnier)
     const a = V(-sx*0.55, y, -0.04), b = V(sx*0.12, y, -0.32);
     const la = ringLug(d.m, a, '-z', 0.8), lb = ringLug(d.m, b, '-z', 0.8);
@@ -1789,7 +1837,7 @@ if(false){ const zc = 0, r = 0.065, mAux = M(0x6d7378, {roughness: 0.55});
     const k = kabel(KAB, [...lok.map(W), V(xe - 1.5, yl, zc + (i % 2 ? 0.06 : -0.06)), V(xe, yl + 0.1, zc), V(xe, SKY + 0.2, ze), V(xe, SKY + 1.05, ze), V(XA(i) - 3.2, SKY + 1.25, AZ + AIO[i].MC.z - 0.05)], r, mAux, 0.35, 8); KABELS.push(k); }); }
 CAT = 'pen';
 // aardpen (verkoperd, 1,5 m) in een aardput naast de junction box, aardkabel 1 x 50 mm² onder de stelconplaat door en via de sparing naar de PE-rail
-{ const px = KXW - KD/2 - 3.5, pz = KZW + 3.0;
+{ const px = PX0 - 1.6, pz = KZW + 3.0;                                          // naast de stelconrij in de grond (niet onder de plaat), aardput op maaiveld
   cyl(KAB, 0.1, 15.0, matKoper, px, -7.8, pz, null, 12); cyl(KAB, 0.16, 0.5, matZink, px, -0.6, pz, null, 10);
   const put = M(0x6d7177, {roughness: 0.7}); cyl(scene, 1.1, 0.05, put, px, 0.03, pz, null, 28); cyl(scene, 0.9, 0.06, M(0x2b2e31), px, 0.06, pz, null, 6);
   plak(scene, 1.0, 0.3, lbl('⏚ AARDE', 160, 48, '#3fa34d', '#fff', 'bold 26px Arial'), px, 0.1, pz, 0).rotation.x = -Math.PI/2;
@@ -1850,9 +1898,9 @@ const EMSV = (function(){
     kabel(K2, [...PAD230, V(xh - 2.0, e.y, zL), V(xh, e.y, zL), V(xh, -0.6, zL), V(xh, yL, zL), V(xh + 0.6, yL, zL), V(xE, yL, zL), V(xE, -1.0, zL), V(wO.x, -1.0, wO.z), wO], 0.065, m230, 0.6, 8); spar(zL);
     const t = sprite('230 V YMvK 3G2,5 HVK → EMS-kast, door de skid geboord en door goot 5', V((XA(0) + XA(N_AIO - 1))/2, PL_H + 3.0, zL), 0.5, '#333'); scene.add(t); LABELS.push(t); }
   else if(N_AIO <= 2){ const zL = zKan(4), yL = PL_H + 0.3;
-    kabel(K2, [W(V(JX(1100), JB(187) - 0.2, KZ0 + 0.7)), jbUit, V(jbUit.x, yL + 0.2, jbUit.z), V(XA(0) - AW/2 - 0.3, yL, zL), V(XA(N_AIO - 1) + AW/2 + 0.1, yL, zL), V(wO.x, yL, zL), V(wO.x, yL, wO.z), V(wO.x, PL_H - 0.6, wO.z), wO], 0.065, m230, 0.6, 8);
+    kabel(K2, [W(V(JX(1100), JB(187) - 0.2, KZ0 + 0.67)), jbUit, V(jbUit.x, yL + 0.2, jbUit.z), V(XA(0) - AW/2 - 0.3, yL, zL), V(XA(N_AIO - 1) + AW/2 + 0.1, yL, zL), V(wO.x, yL, zL), V(wO.x, yL, wO.z), V(wO.x, PL_H - 0.6, wO.z), wO], 0.065, m230, 0.6, 8);
     const t = sprite('230 V YMvK 3G2,5 JB -F1 → EMS-kast door goot 5 van de skid', V((XA(0) + XA(N_AIO - 1))/2, PL_H + 3.0, zL), 0.5, '#333'); scene.add(t); LABELS.push(t); }
-  else kabel(K2, [W(V(JX(1100), JB(187) - 0.2, KZ0 + 0.7)), jbUit, jbG, V(jbG.x, -6.5, jbG.z), V(jbG.x, -6.5, zT), V(wO.x, -6.5, zT), V(wO.x, -6.5, wO.z), wO], 0.065, m230, 0.6, 8);
+  else kabel(K2, [W(V(JX(1100), JB(187) - 0.2, KZ0 + 0.67)), jbUit, jbG, V(jbG.x, -6.5, jbG.z), V(jbG.x, -6.5, zT), V(wO.x, -6.5, zT), V(wO.x, -6.5, wO.z), wO], 0.065, m230, 0.6, 8);
   // CAT 6A S/FTP (cyaan) vanuit de HVK naar de EMS-kast: tracé uit de HVK, dan door de grond langs de rij naar de kabelinvoer van de veldkast
   // … via de skid: bij AIO #1 omhoog in goot DATA (samen met de andere datakabels), langs de rij en aan de kopse kant door de sparing omlaag naar de kabelinvoer
   const zcD = zKan(KAN_DATA), xIn = XA(0) - AW/2 + 0.6, yG = PL_H + 0.3;
