@@ -2004,8 +2004,8 @@ const MENSEN = []; POP = bouwPersoon(); MENSEN.push(POP); POP.position.set(XA(N_
     else if(k === 5){ L.H.rotation.x = 0.45; }                                                                                                        // naar de grond kijken
     else if(k === 6){ L.aL.p.rotation.set(-2.9, 0, -0.3); L.aR.p.rotation.set(-2.9, 0, 0.3); } };                                                     // zwaaien (armen omhoog)
   const zet = (x, z, y, ry) => { const m = bouwPersoon({jas: kies(JAS), helm: kies(HELM), huid: kies(HUID)}); m.position.set(x, y || 0, z); m.rotation.y = ry === undefined ? Math.random()*Math.PI*2 : ry; houding(m, Math.floor(Math.random()*7)); scene.add(m); MENSEN.push(m); return m; };
-  let n = 0, poging = 0; while(n < 16 && poging < 400){ poging++; const x = -250 + Math.random()*460, z = -110 + Math.random()*360; if(!vrij(x, z)) continue; zet(x, z); n++; }
-  for(let i = 0; i < 2; i++){ const x = PX0 + 8 + Math.random()*(PX1 - PX0 - 16), z = PL/2 + 7 + Math.random()*5; zet(x, z, PL_H*0, Math.PI + (Math.random() - 0.5)); }   // binnen het hek bij de AIO's
+  let n = 0, poging = 0; while(n < 5 && poging < 400){ poging++; const x = -250 + Math.random()*460, z = -110 + Math.random()*360; if(!vrij(x, z)) continue; zet(x, z); n++; }
+  for(let i = 0; i < 1; i++){ const x = PX0 + 8 + Math.random()*(PX1 - PX0 - 16), z = PL/2 + 7 + Math.random()*5; zet(x, z, PL_H*0, Math.PI + (Math.random() - 0.5)); }   // binnen het hek bij de AIO's
   if(hg){ const m = zet((hg.min.x + hg.max.x)/2 + 10, (hg.min.z + hg.max.z)/2, hg.max.y, Math.random()*6); houding(m, 6); }                       // op het dak van het gebouw
   // twee die samen staan te praten
   for(let p = 0; p < 30; p++){ const x = -200 + Math.random()*380, z = -80 + Math.random()*300; if(!vrij(x, z) || !vrij(x + 9, z)) continue; zet(x, z, 0, Math.PI/2); zet(x + 9, z, 0, -Math.PI/2); break; } }
