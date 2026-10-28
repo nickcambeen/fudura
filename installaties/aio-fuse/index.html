@@ -85,6 +85,7 @@
     <label>Graafmachine <small>G</small><input type="checkbox" id="tGraaf"></label>
     <label>Drone <small>Y</small><input type="checkbox" id="tDrone"></label>
     <label>Olifant <small>O</small><input type="checkbox" id="tOlif"></label>
+    <label>Pistool <small>B</small><input type="checkbox" id="tGun"></label>
   </details>
   <details open><summary>Weergave</summary>
     <div class="grp">Algemeen</div>
@@ -122,7 +123,7 @@
       <li>Binnen: 5 accupacks 780 × 1160 × 240 (MSD), koelunit, PCS 680 × 850 × 240, besturingskast, MCCB QF0 4P, energiemeter, brandbeveiliging in de deur</li>
       <li>Junction box Fudura/O&amp;K OFK252082 C03a (uit STEP): romp 1400 × 355 × 1315, kap 375 diep, RVS-plint 220, montageplaat 1290 × 1275; 2 × SL2-3x3/3A, SL3-3x6/1250/HA met 6 × TM-3, 3 × SL2 op Cu-rails 60 × 10; N- en PE-rail 40 × 10 × 750; VMS64 + VMS43 met S203-B10 3P+N, DS201 B16 30 mA, 2 × wcd; kastverlichting en deurschakelaar</li>
       <li>Zonder junction box (≤ 30 m; met backfillzand 1–3 AIO's, zonder backfill 1–2): per AIO een YMvK 4×70 / 4×95 rechtstreeks vanuit de HVK, door de skid geboord; met junction box: 2–3 × YMvKas 4×185/95 of 4×240/120 vanuit de HVK en per AIO 4 × 1×70 mm² (L1 L2 L3 N) door baan AC #n naar de MCCB-aansluitvlaggen links; kasten onderling via de aardpunten doorverbonden en vanaf #1 naar de PE-rail (vereffening)</li>
-      <li>Voeding SL3 met 3F + N + PE (4 × 240 mm² per fase) via Jean Müller VS-SL3/1000 op elke M12-bout (2 per fase, elk 2 kabels tot 300 mm² of 3 × 120 mm²) met afdekking HA-SL123/10, door de sparing in de stelconplaat en een kort stuk door de grond</li>
+      <li>Voeding SL3 met 3F + N + PE (4 × 240 mm² per fase) via Jean Müller aansluitset VS-SL123/4x240 per fase (getrapt, 4 kabelschoenen 240 mm²) met afdekking HA-SL123/10, door de sparing in de stelconplaat en een kort stuk door de grond</li>
       <li>Alles op stelconplaten 2000 × 2000 × 140, per configuratie de kortste rij met ≥ 100 mm speling (zo nodig één plaat 1000 × 2000 aan de EMS-zijde)</li>
     </ul>
   </details>
@@ -1635,8 +1636,8 @@ SLOTS.forEach(s => {
     // 3 × YMvKas (4 aders + concentrisch scherm als PE): 4 AIO's 4×185/95 (gG 800), 5 AIO's 4×240/120 (gG 1000) — kabelberekening Nick 22-10
     const VK = VKAB, mantelM = M(0x1d1e20, {roughness: 0.65});
     const nx = [-0.69, -0.345, 0.345, 0.69].map(d => s.x + d);
-    // Jean Müller VS-SL3/1000 (L8390600): verlengstuk per M12-aansluitbout van de SL3, kabelaansluiting 2 × 300 / 3 × 120 mm² (2 kabelschoenen op één M12, voor- en achterzijde)
-    // + afdekking HA-SL123/10 (L8950666, l = 100 mm) onder de strook; per fase 2 bouten → max. 4 kabels per fase
+    // Jean Müller aansluitset VS-SL123/4x240: per fase op de aansluitvlag van de SL3 (2 × M12), getrapt: achterste plaat met bovenste rij (2 × M12),
+    // voorste trap met onderste rij (2 × M12) → 4 kabelschoenen 240 mm² per fase direct in de aansluitruimte; afdekking HA-SL123/10 eroverheen
     const matLug = M(0xd8b48a, {roughness: 0.32, metalness: 0.8}), matLugD = M(0xb08b62, {roughness: 0.45, metalness: 0.7});
     const perskous = (par, x, yB, zP, zB, r, fk) => {                                           // DIN 46235 (vertind Cu, 240 mm², M12): palm 27 breed, 3,5 dik
       const add = o => { KABDEEL.push(o); return o; };
@@ -1649,21 +1650,24 @@ SLOTS.forEach(s => {
       add(cyl(par, r + 0.012, 0.03, matLugD, x, yB - 0.68, zB, null, 18));                        // afgeschuinde kousrand
       add(cyl(par, r + 0.02, 0.26, fk, x, yB - 0.8, zB, null, 18));                              // krimpkous in fasekleur
       return V(x, yB - 0.5, zB); };
-    const matVS = M(0xd3d7da, {roughness: 0.3, metalness: 0.55});                              // vertind Cu (licht, mat-glanzend)
-    const VSK = {}, nB = Math.ceil(VK.n/2), zKit = zF1 + 0.12, rLug = VK.ra + 0.025;
-    for(let p = 0; p < 3; p++) for(let b = 0; b < nB; b++){ const P = s.fase[p][b], yT = P.y - 0.95;
-      box(K, 0.25, 1.35, 0.1, matVS, P.x, P.y - 0.475, zKit, false);                               // vertind Cu-verlengstuk 25 × 10
-      box(K, 0.25, 0.1, 0.14, matVS, P.x, P.y + 0.15, zKit - 0.07, false);                         // haakse bovenkant op de stroken-aansluitvlag
-      cyl(K, 0.1, 0.06, matZink, P.x, P.y, zKit + 0.08, 'z', 6); cyl(K, 0.12, 0.02, matZink, P.x, P.y, zKit + 0.06, 'z', 16);   // M12 moer + sluitring aan de strook
-      cyl(K, 0.06, 0.62, matZink, P.x, yT, zKit, 'z', 12);                                          // M12-aansluitbout kabelzijde
-      [-1, 1].forEach(sg => { cyl(K, 0.1, 0.07, matZink, P.x, yT, zKit + sg*0.27, 'z', 6); cyl(K, 0.12, 0.02, matZink, P.x, yT, zKit + sg*0.225, 'z', 16); });
-      for(let q = 0; q < 2; q++){ const sg = q ? -1 : 1, zP = zKit + sg*0.08, zB = zKit + sg*0.15;  // kabelschoen q0 voor, q1 achter het verlengstuk
-        if(q*1 + b*2 >= VK.n) continue;
-        perskous(K, P.x, yT, zP, zB, rLug, ader[['L1', 'L2', 'L3'][p]]);
-        VSK[p + '-' + b + '-' + q] = V(P.x, yT - 0.6, zB); } }
-    { const yK = s.fase[0][0].y, kap = box(K, s.st.TW/100 - 0.04, 1.0, 0.62, M(0x8a9196, {roughness: 0.4, transparent: true, opacity: 0.35, depthWrite: false}), s.x, yK - 0.55, zKit, false);
-      kap.userData.naam = 'Afdekking HA-SL123/10 (l = 100 mm)'; KAP_SL.push(kap);
-      const t = sprite('Jean Müller VS-SL3/1000 (2×300 / 3×120 mm²) + afdekking HA-SL123/10', W(V(s.x, yK - 0.5, KZ0 + 1.6)), 0.45, '#0a5fa8'); scene.add(t); LABELS.push(t); }
+    const matVS = M(0xd3d7da, {roughness: 0.3, metalness: 0.55});                              // vertind Cu
+    const VSK = {}, zA = zF1 + 0.08, zBp = zF1 + 0.5, rLug = VK.ra + 0.025;
+    const m12 = (x, y, z) => { cyl(K, 0.06, 0.24, matZink, x, y, z, 'z', 12); cyl(K, 0.1, 0.07, matZink, x, y, z + 0.14, 'z', 6); cyl(K, 0.12, 0.02, matZink, x, y, z + 0.1, 'z', 16); };
+    for(let p = 0; p < 3; p++){ const P0 = s.fase[p][0], P1 = s.fase[p][1], xc = (P0.x + P1.x)/2, y0 = P0.y;
+      box(K, 0.58, 1.32, 0.1, matVS, xc, y0 - 0.51, zA, false);                                    // achterste plaat op de aansluitvlag (bovenste rij)
+      box(K, 0.58, 0.55, 0.1, matVS, xc, y0 - 0.895, zBp, false);                                  // voorste trap, lager (onderste rij)
+      for(const sx of [-1, 1]) box(K, 0.025, 0.55, zBp - zA, matVS, xc + sx*0.29, y0 - 0.895, (zA + zBp)/2, false);   // zijwangen trap
+      [P0, P1].forEach(P => m12(P.x, y0, zA + 0.05));                                              // 2 × M12 op de strook
+      const plaat = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.09), new THREE.MeshBasicMaterial({map: lbl('VS-SL123/4x240', 256, 48, '#d3d7da', '#333', 'bold 22px Arial')}));
+      plaat.position.set(xc, y0 - 0.7, zBp + 0.052); K.add(plaat);
+      for(let b = 0; b < 2; b++) for(let q = 0; q < 2; q++){ if(b*2 + q >= VK.n) continue;
+        const x = (b ? P1 : P0).x, yR = q ? y0 - 0.92 : y0 - 0.4, zPl = q ? zBp : zA, zP = zPl + 0.07, zB = zP + rLug*0.9 + 0.03;
+        m12(x, yR, zPl);
+        perskous(K, x, yR, zP, zB, rLug, ader[['L1', 'L2', 'L3'][p]]);
+        VSK[p + '-' + b + '-' + q] = V(x, yR - 0.6, zB); } }
+    { const yK = s.fase[0][0].y, kap = box(K, s.st.TW/100 - 0.04, 1.3, 1.15, M(0x8a9196, {roughness: 0.4, transparent: true, opacity: 0.35, depthWrite: false}), s.x, yK - 0.5, zF1 + 0.5, false);
+      kap.userData.naam = 'Afdekking HA-SL123/10'; KAP_SL.push(kap);
+      const t = sprite('Jean Müller VS-SL123/4x240 (4 × 240 mm² per fase) + afdekking HA-SL123/10', W(V(s.x, yK - 0.5, KZ0 + 1.6)), 0.45, '#0a5fa8'); scene.add(t); LABELS.push(t); }
     for(let c = 0; c < VK.n; c++){ const b = c >> 1, q = c & 1, xm = s.x + (c - (VK.n - 1)/2)*0.62, zm = (zF1 + zF2)/2 + 0.1, yM0 = KS + 0.35;
       const tH = HVK.fase[1][b].clone().add(V(0, 0, q*0.3)), E = V(tH.x, HVK.P - 0.2, tH.z);
       const pts = [V(xm, yM0, zm), ...uit(xm, zm, c, 1.5, tH).slice(0, -2)];
@@ -1704,7 +1708,8 @@ SLOTS.forEach(s => {
     gland(x, z, R95); yStrut.forEach(y => klemB(x, y, z, R95));
     const kop = f === 'N' ? [V(e.x, e.y, z0), V(e.x, yNr - 0.75, z0 + 0.05), V(x, yNr - 1.05, z)] : [V(e.x, e.y, z), V(e.x, e.y - 0.7, z), V(x, e.y - 1.25, z)];
     let pts;
-    if(!grondR){ const lok = [...kop, V(x, KS + 0.1, z), V(x, yRun, z), V(zc - 0.9 + (j - 2)*0.06, yRun, KZ0 + 0.5 - j*0.14), V(zc + dz, PL_H + dyB, -KD/2 + 0.6), V(zc + dz, PL_H + dyB, -KD/2 - 0.3)];
+    if(!grondR){ const hj = PL_H + dyB, zl = -1.2 + (kn - N_GROND)*0.3, xe = zc + dz;               // per bundel een eigen baan (z), aders gestapeld op skidhoogte → haaks, geen kruisingen
+      const lok = [...kop, V(x, KS + 0.1, z), V(x, hj, z), V(x, hj, zl), V(xe, hj, zl), V(xe, hj, -KD/2 - 0.3)];
       pts = [...lok.map(W), V(XA(0) - AW/2 + 0.6, PL_H + dyB, zc + dz), V(g.x - 1.8, PL_H + dyB, zc + dz), V(g.x - 0.25, PL_H + dyB, zc + dz), V(g.x, PL_H + dyB + 0.25, zc + dz), V(g.x, PL_H + 1.9, zc + dz), V(g.x, PL_H + 2.06, zc + dz + (g.z - zc - dz)*0.15), V(g.x, PL_H + 2.06, g.z - (g.z - zc - dz)*0.15), V(g.x, SKY + 0.05, g.z), V(g.x, SKY - 0.0 + 0.3, g.z), V(g.x, SKY + 0.95 + 0.35, g.z), V(t.x, t.y - 0.3, t.z), V(t.x, t.y, t.z)]; }
     else { const off = (j - 1.5)*0.17, P = W(V(x, -0.6, z));                    // recht omlaag door de eigen sparing, in de mantelbuis, onder de eigen base omhoog
       let begin;
@@ -1807,11 +1812,11 @@ function ringLug(par, p, n, k){ k = k || 1; const g = new THREE.Group(); g.posit
     kabel(KAB, [la, V(la.x, la.y - 0.3, la.z + 0.05), V(a.x + 0.4, a.y - 0.9, a.z + 0.3), V(b.x - 0.4, b.y - 0.9, b.z + 0.3), V(lb.x, lb.y - 0.3, lb.z + 0.05), lb], r, ader.PE, 0.2); }
   if(!NO_JB){                                                                                       // kast #1 → aardbout op de plint (skid) van de junction box; intern plint → PE-rail
     const p1 = ringLug(KAB, aard(0, -1), '+z', 1.3), zP = -KD/2 + 0.9, yP = PL_H + 1.1;                    // aardbout M10 door de RVS-plint, zijkant aan de voorzijde van de rij
-    const uit = ringLug(KG, V(KW/2 + 0.02, yP, zP), '+x', 1.3), bin = ringLug(KG, V(KW/2 - 0.54, yP, zP), '-x', 1.1);
+    const uit = ringLug(KG, V(KW/2 + 0.02, yP, zP), '+x', 1.3);
+    cyl(KG, 0.08, 0.06, matZink, KW/2 - 0.55, yP, zP, 'x', 6);                                          // moer aan de binnenzijde (plint via romp-plint-draad al aan de PE-rail)
     cyl(KG, 0.05, 0.58, matZink, KW/2 - 0.25, yP, zP, 'x', 10);                                        // draadeind M10 door het zijpaneel (52 mm)
     kabel(KAB, [p1, V(p1.x, p1.y - 0.35, p1.z + 0.08), V(p1.x - 0.6, PL_H + 1.0, AZ + AD/2 + 0.35), W(V(uit.x, uit.y - 0.25, uit.z)), W(uit)], r, ader.PE, 0.3);
-    const xp = SLOTS[0].x + 0.6; railLug(xp, yPEr, 0.075, 'PE');
-    kabel(KAB, [W(bin), W(V(bin.x, bin.y - 0.25, bin.z)), W(V(bin.x - 0.5, KS - 0.1, zF2)), W(V(xp, KS + 0.2, zF2)), W(V(xp, yPEr - 0.45, zF2))], r, ader.PE, 0.3); }
+  }
   const t = sprite('vereffening: aardpunten kast ' + NR + (NO_JB ? '' : ' → aardbout plint junction box → intern naar de PE-rail'), V(XA((N_AIO - 1)/2), SKY - 0.5, AD/2 + 2), 0.7, '#3fa34d'); scene.add(t); LABELS.push(t); }
 // vereffening behuizing junction box (16 mm² gn/ge): PE-rail → aardbout romp (binnen, linkerzijwand) en RVS-plint; deuren met aardbanden
 { const xb = SLOTS[1].x + 0.6; railLug(xb, yPEr, 0.06, 'PE');
@@ -2203,7 +2208,7 @@ wrap.addEventListener('pointermove', e => {
   else if(pannen) schuif(dx, dy);
   else { theta -= dx*0.0035; phi = Math.min(1.55, Math.max(0.03, phi - dy*0.003)); }
   px = e.clientX; py = e.clientY; });
-wrap.addEventListener('pointerup', e => { dragging = false; if(sleep < 6 && e.button === 0){ const d = hitDeur(e); if(d){ d.doel = Math.abs(d.doel - d.open) < 1e-3 ? d.dicht : d.open; meld(d.naam + ' ' + (d.doel === d.open ? 'open' : 'dicht')); } } });
+wrap.addEventListener('pointerup', e => { dragging = false; if(sleep < 6 && e.button === 0 && typeof GUN !== 'undefined' && GUN.actief()){ GUN.vuur(); return; } if(sleep < 6 && e.button === 0){ const d = hitDeur(e); if(d){ d.doel = Math.abs(d.doel - d.open) < 1e-3 ? d.dicht : d.open; meld(d.naam + ' ' + (d.doel === d.open ? 'open' : 'dicht')); } } });
 wrap.addEventListener('wheel', e => { e.preventDefault(); if(FP.aan){ FP.pos.addScaledVector(new THREE.Vector3(-Math.sin(FP.yaw), 0, -Math.cos(FP.yaw)), -e.deltaY*0.02); return; } radius = Math.min(900, Math.max(4, radius*(1 + e.deltaY*0.0012))); }, {passive: false});
 const $t = id => document.getElementById(id);
 $t('pDicht').addEventListener('click', () => { $t('paneel').classList.add('dicht'); $t('pOpen').classList.add('toon'); });
@@ -2393,6 +2398,7 @@ window.addEventListener('keydown', e => {
   if(e.target.tagName === 'INPUT' && e.target.type !== 'checkbox' && e.target.type !== 'range') return;
   FP.keys[e.key.toLowerCase()] = true; if(e.key === 'Shift') FP.keys.shift = true;
   if(e.key === 'p' || e.key === 'P'){ zetFP(!FP.aan); return; }
+  if(e.key === 'b' || e.key === 'B'){ GUN.zet(!GUN.aan()); return; }
   if(e.key === 'f' || e.key === 'F'){ if(FP.rit) RIT.uit(true); zetStep(!(FP.step && !FP.tuk)); return; }
   if(e.key === 't' || e.key === 'T'){ if(FP.rit) RIT.uit(true); zetTuk(!FP.tuk); return; }
   if(e.key === 'g' || e.key === 'G'){ FP.rit === 'graaf' ? RIT.uit() : RIT.inStap('graaf'); return; }
@@ -2513,6 +2519,13 @@ const FX = (() => {
       losmaken(L.tablet, P.v.clone().multiplyScalar(0.6).add(V(rnd(-15, 15), 22, rnd(-15, 15))), V(rnd(-12, 12), rnd(-12, 12), rnd(-12, 12))); }
     geluid(0.09, 260, 1.0); geluid(0.05, 2600, 0.35); FP.v *= hard ? 0.5 : 0.75; schud = Math.max(schud, hard ? 0.55 : 0.2);
     meld(hard ? ['Au! 🤕 Die referentiepersoon had nog geen VCA…', 'Persoon aangereden — wacht even tot hij weer opstaat.', 'Kijk uit! Werken bij een BESS = verkeersregelaar erbij 🦺'][Math.floor(Math.random()*3)] : 'Hé! Je duwt hem omver — rustig aan met die ' + (FP.tuk ? 'tuktuk' : 'step') + '.'); }
+  function schot(m, f){ zetHuidig(m); if(!PS || P.staat !== 'staat') return false; const L = PS.userData.lijf; if(!L) return false;
+    if(!L.rust) L.rust = [L.aL.p, L.aR.p, L.bL, L.bR, L.aL.o, L.aR.o, L.H].map(o => o.rotation.clone());
+    const h = V(f.x, 0, f.z); if(h.lengthSq() < 1e-6) h.set(0, 0, 1); h.normalize();
+    PS.rotation.set(0, Math.atan2(h.x, h.z), 0); L.K.rotation.set(0, 0, 0); P.hip = PIV; P.t = 0; P.staat = 'vlieg'; P.tDoel = 0; pose('lucht');
+    P.v.copy(h).multiplyScalar(rnd(16, 24)).add(V(0, rnd(6, 10), 0)); P.w.set(-rnd(5, 7), rnd(-1.5, 1.5), rnd(-3, 3));
+    if(Math.random() < 0.6) losmaken(L.helm, h.clone().multiplyScalar(14).add(V(rnd(-6, 6), 28, rnd(-6, 6))), V(rnd(-9, 9), rnd(-9, 9), rnd(-9, 9)));
+    renderer.shadowMap.needsUpdate = true; return true; }
   function persoon(dt){ let a = false; for(const m of MENSEN){ zetHuidig(m); if(persoonEen(dt)) a = true; } return a; }
   function persoonEen(dt){ if(!PS || P.staat === 'staat') return false; const L = PS.userData.lijf, K = L.K; P.t += dt;
     // losse helm / tablet: zwaartekracht, stuiteren, uitglijden
@@ -2558,7 +2571,7 @@ const FX = (() => {
     if(persoon(dt)) actief = true;
     return actief; }
   const xcen = () => { if(!HVK.XR || !HVK.XR.children.length) return null; if(!xbox){ HVK.XR.updateMatrixWorld(true); xbox = new THREE.Box3().setFromObject(HVK.XR).expandByScalar(1.5); } return xbox.getCenter(new THREE.Vector3()); };
-  return {check, raak, update, xcen, boemBij: o => { const c = xcen(); if(c) boem(c, o); return !!c; }, schud: () => schud, dood: () => dood, vlucht: () => vl}; })();
+  return {check, raak, schot, update, xcen, boemBij: o => { const c = xcen(); if(c) boem(c, o); return !!c; }, schud: () => schud, dood: () => dood, vlucht: () => vl}; })();
 // ---------- extra voertuigen: graafmachine (G), drone (Y), olifant (O) · E = in-/uitstappen · 3rd-person camera ----------
 const RIT = (() => {
   const grondH = (x, z) => Math.abs(z) < PL/2 + 0.3 && x > PX0 && x < PX1 ? PL_H : 0;
@@ -2735,6 +2748,53 @@ const RIT = (() => {
     camera.lookAt(doel.x + kijk.x, doel.y + kijk.y, doel.z + kijk.z);
     if(n % 15 === 0) renderer.shadowMap.needsUpdate = true; }
   return {inStap, uit, e, stap, S}; })();
+// ============ PISTOOL (toets B): first person, klikken = schieten; poppetjes gaan neer (zelfde ragdoll als aanrijden) en staan weer op ============
+const GUN = (() => {
+  let aan = false, terug = 0, flits = null, tFl = 0, ac = null; const gaten = [], RC = new THREE.Raycaster();
+  if(!camera.parent) scene.add(camera);
+  const g = new THREE.Group(); g.visible = false; camera.add(g); g.position.set(0.75, -0.95, -4.2); g.rotation.y = 0.06;
+  const mZ = new THREE.MeshStandardMaterial({color: 0x1b1d20, roughness: 0.45, metalness: 0.6}), mG = new THREE.MeshStandardMaterial({color: 0x2a2c27, roughness: 0.85, metalness: 0.1}),
+        mS = new THREE.MeshStandardMaterial({color: 0x3a3d42, roughness: 0.3, metalness: 0.85}), mO = new THREE.MeshStandardMaterial({color: 0xff7a1a, emissive: 0xff5a00, emissiveIntensity: 0.6});
+  const bx = (w, h, d, m, x, y, z, rx) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); if(rx) o.rotation.x = rx; g.add(o); return o; };
+  const cy = (r, l, m, x, y, z) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(r, r, l, 16), m); o.rotation.x = Math.PI/2; o.position.set(x, y, z); g.add(o); return o; };
+  const slede = bx(0.3, 0.32, 1.9, mZ, 0, 0.12, -0.15);                                    // slede
+  for(let i = 0; i < 7; i++) bx(0.31, 0.24, 0.03, mS, 0, 0.13, 0.55 - i*0.07);              // kartels achter op de slede
+  bx(0.28, 0.2, 1.7, mG, 0, -0.12, -0.08);                                                   // frame
+  cy(0.07, 0.25, mS, 0, 0.1, -1.18);                                                         // loopmond
+  bx(0.05, 0.06, 0.08, mO, 0, 0.31, -1.0); bx(0.16, 0.06, 0.08, mZ, 0, 0.31, 0.7);           // vizier: korrel (oranje) + keep
+  const greep = bx(0.27, 0.95, 0.42, mG, 0, -0.62, 0.42, 0.22);                              // greep
+  for(let i = 0; i < 6; i++) bx(0.28, 0.03, 0.4, mZ, 0, -0.35 - i*0.11, 0.39 + i*0.024, 0.22);
+  const beugel = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.03, 6, 18, Math.PI), mG); beugel.rotation.set(0, Math.PI/2, Math.PI); beugel.position.set(0, -0.22, -0.02); g.add(beugel);
+  bx(0.05, 0.16, 0.05, mS, 0, -0.28, 0.02, 0.3);                                             // trekker
+  bx(0.24, 0.2, 0.22, new THREE.MeshStandardMaterial({color: 0xd9b48f, roughness: 0.8}), 0, -0.8, 0.62, 0.22);   // hand (werkhandschoen)
+  g.traverse(o => { if(o.isMesh){ o.castShadow = false; o.receiveShadow = false; o.userData.gun = true; } });
+  const vuurM = new THREE.MeshBasicMaterial({color: 0xffd27a, transparent: true, opacity: 0.95, depthWrite: false});
+  const vuurB = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 8), vuurM); vuurB.scale.set(1, 1, 2.2); vuurB.position.set(0, 0.1, -1.55); vuurB.visible = false; g.add(vuurB);
+  const knal = () => { try{ ac = ac || new (window.AudioContext || window.webkitAudioContext)(); const n = Math.floor(ac.sampleRate*0.35), b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0);
+      for(let i = 0; i < n; i++){ const t = i/ac.sampleRate; d[i] = (Math.random()*2 - 1)*Math.exp(-t*22)*0.9 + Math.sin(t*2*Math.PI*90)*Math.exp(-t*14)*0.5; }
+      const s = ac.createBufferSource(); s.buffer = b; const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 2600; const v = ac.createGain(); v.gain.value = 0.6; s.connect(f); f.connect(v); v.connect(ac.destination); s.start(); }catch(e){} };
+  const zichtbaar = o => { for(let q = o; q; q = q.parent) if(!q.visible) return false; return true; };
+  const vanPersoon = o => { for(let q = o; q; q = q.parent) if(MENSEN.includes(q)) return q; return null; };
+  function actief(){ return aan && FP.aan && !FP.rit && !FP.step; }
+  function zet(v){ aan = v; $t('tGun').checked = v; if(v){ if(FP.rit) RIT.uit(true); if(FP.step){ zetTuk(false); zetStep(false); } if(!FP.aan) zetFP(true); meld('Pistool aan 🔫 — klik om te schieten (mikken met het vizier in het midden) · B = uit'); }
+    else meld('Pistool weggeborgen'); vuil(4); }
+  $t('tGun').addEventListener('change', e => zet(e.target.checked));
+  function vuur(){ if(!actief()) return; knal(); terug = 1; vuurB.visible = true; tFl = 0.06;
+    if(!flits){ flits = new THREE.PointLight(0xffc870, 0, 40); scene.add(flits); } camera.localToWorld(flits.position.set(0.7, -0.8, -5.9)); flits.intensity = 3;
+    camera.updateMatrixWorld(); RC.setFromCamera(new THREE.Vector2(0, 0), camera); RC.far = 800;
+    const hits = RC.intersectObjects(scene.children, true).filter(h => h.object.isMesh && !h.object.userData.gun && !h.object.isSprite && h.distance > 0.5 && zichtbaar(h.object) &&
+      !([].concat(h.object.material).every(m => (m.transparent && m.opacity < 0.6) || m.alphaTest > 0)));          // door glas en de openingen van het gaashekwerk heen
+    if(!hits.length) return; const h = hits[0], m = vanPersoon(h.object), dir = RC.ray.direction.clone();
+    if(m){ if(FX.schot(m, dir)) meld(['Raak! 🎯 Hij gaat neer — staat zo weer op.', 'Voltreffer! Gelukkig had hij z’n PBM aan 🦺', 'Au! Dat wordt een melding in het incidentregister.'][Math.floor(Math.random()*3)]); return; }
+    const n = h.face ? h.face.normal.clone().transformDirection(h.object.matrixWorld) : dir.clone().negate();                // kogelgat + vonkje
+    const gat = new THREE.Mesh(new THREE.CircleGeometry(0.09, 12), new THREE.MeshBasicMaterial({color: 0x141414, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2}));
+    gat.position.copy(h.point).addScaledVector(n, 0.02); gat.lookAt(h.point.clone().add(n)); scene.add(gat); gaten.push(gat); if(gaten.length > 40){ const o = gaten.shift(); scene.remove(o); o.geometry.dispose(); o.material.dispose(); } }
+  function update(dt){ const zie = actief(); let bezig = false; if(g.visible !== zie){ g.visible = zie; bezig = true; } if(aan && !FP.aan){ aan = false; $t('tGun').checked = false; }
+    if(terug > 0){ terug = Math.max(0, terug - dt*7); g.position.z = -4.2 + terug*0.35; g.position.y = -0.95 + terug*0.05; g.rotation.x = terug*0.22; bezig = true; }
+    if(tFl > 0){ tFl -= dt; if(tFl <= 0){ vuurB.visible = false; if(flits) flits.intensity = 0; } bezig = true; }
+    return bezig; }
+  return {zet, vuur, update, actief, aan: () => aan}; })();
+
 ['Graaf', 'Drone', 'Olif'].forEach((k, i) => { const c = $t('t' + k); if(c) c.addEventListener('change', ev => ev.target.checked ? RIT.inStap(['graaf', 'drone', 'olifant'][i]) : RIT.uit()); });
 function stapFP(dt){
   if(FP.rit){ RIT.stap(dt); return; }
@@ -2778,6 +2838,7 @@ function animate(){ requestAnimationFrame(animate); const t = performance.now(),
   const sim = false;
   if(FX.update(dt)){ vuil(2); FX.n = (FX.n || 0) + 1; if(FX.n % 10 === 0) renderer.shadowMap.needsUpdate = true; }   // geen schaduw-update per frame (dat gaf lag)
   if(FP.aan) stapFP(dt); else updateCam();
+  if(GUN.update(dt)) vuil(2);
   camera.updateMatrixWorld(); const camVer = !camVorig.equals(camera.matrixWorld); camVorig.copy(camera.matrixWorld);
   if(beweegt || sim) renderer.shadowMap.needsUpdate = true;
   if(beweegt || sim || camVer || FP.aan || VUIL.n > 0){ VUIL.n = Math.max(0, VUIL.n - 1); renderer.render(scene, camera); } }
