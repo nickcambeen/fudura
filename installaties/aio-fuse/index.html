@@ -1928,13 +1928,63 @@ const ZN = {x0: SX0 - 7.0 - (NO_JB ? 0 : 7.0), x1: SXE + 7.85 + 7.0, z0: AZ - AD
   kaart.querySelectorAll('td').forEach(td => td.style.padding = '1px 10px 1px 0'); document.body.appendChild(kaart);
 }
 
-// ---------- referentiepersoon (kan omvergereden worden met step / tuktuk) ----------
+// ---------- referentiepersoon 1,80 m (monteur in PBM: helm, veiligheidsbril, RWS-jas, werkbroek, S3-schoenen) — kan omvergereden worden ----------
 let POP = null;
-{ const g = new THREE.Group(); POP = g; g.rotation.order = 'YXZ'; const huid = M(0xd9a887), jas = M(0xf07a12), broek = M(0x2c3540), helm = M(0xffffff, {roughness: 0.35});
-  const add = (geo, m, x, y, z) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = true; g.add(o); };
-  for(const sx of [-0.55, 0.55]) add(new THREE.CylinderGeometry(0.62, 0.55, 8.4, 12), broek, sx, 4.4, 0);
-  add(new THREE.CylinderGeometry(1.75, 1.45, 6.2, 16), jas, 0, 11.6, 0); add(new THREE.SphereGeometry(1.15, 18, 14), huid, 0, 16.4, 0); add(new THREE.SphereGeometry(1.32, 18, 10, 0, Math.PI*2, 0, Math.PI/2), helm, 0, 16.8, 0);
-  for(const sx of [-1, 1]) add(new THREE.CylinderGeometry(0.45, 0.4, 5.8, 10), jas, sx*2.05, 11.4, 0);
+{ const g = new THREE.Group(); POP = g; g.rotation.order = 'YXZ';
+  const huid = M(0xd6a184, {roughness: 0.7}), lip = M(0xb46a5e, {roughness: 0.6}), haar = M(0x3b2a1e, {roughness: 0.9}), oogW = M(0xf4f2ee, {roughness: 0.3}), iris = M(0x2d4a63, {roughness: 0.2}),
+    jas = M(0xe8560a, {roughness: 0.7}), jasD = M(0x23272c, {roughness: 0.7}), refl = M(0xd9dde0, {roughness: 0.25, metalness: 0.6, emissive: 0x2a2a2a}), broek = M(0x263241, {roughness: 0.85}),
+    knie = M(0x14181d, {roughness: 0.6}), schoen = M(0x1c1d1f, {roughness: 0.55}), zool = M(0x3a2c22, {roughness: 0.9}), helmM = M(0xf6f7f5, {roughness: 0.3, metalness: 0.05}), glasM = M(0x8fb3c4, {transparent: true, opacity: 0.35, roughness: 0.05, metalness: 0.3}),
+    hand = M(0x6b7075, {roughness: 0.8}), bord = M(0x2b2d30, {roughness: 0.5});
+  const mesh = (par, geo, m, x, y, z, sx, sy, sz) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); if(sx) o.scale.set(sx, sy, sz); o.castShadow = true; par.add(o); return o; };
+  const bol = (r, s1, s2) => new THREE.SphereGeometry(r, s1 || 18, s2 || 14), cil = (r1, r2, h, s) => new THREE.CylinderGeometry(r1, r2, h, s || 16);
+  const lathe = (pts, s) => new THREE.LatheGeometry(pts.map(([r, y]) => new THREE.Vector2(r, y)), s || 28);
+  // benen (pivot in de heup): dij, knie met kniestuk, scheen, reflecterende band, S3-schoen met neus en profielzool
+  const been = sx => { const p = new THREE.Group(); p.position.set(sx*0.95, 9.0, 0); g.add(p);
+    mesh(p, cil(0.92, 0.7, 4.0), broek, 0, -2.0, 0); mesh(p, bol(0.7), broek, 0, -4.0, 0); mesh(p, new THREE.BoxGeometry(1.15, 1.1, 0.35), knie, 0, -4.0, 0.62);
+    mesh(p, cil(0.68, 0.48, 3.8), broek, 0, -6.0, 0); mesh(p, cil(0.66, 0.6, 0.35), refl, 0, -6.6, 0, 1, 1, 1);
+    mesh(p, bol(0.62), schoen, 0, -8.2, 0.1, 1.0, 0.9, 1.0); mesh(p, new THREE.BoxGeometry(1.15, 0.85, 2.3), schoen, 0, -8.55, 0.55); mesh(p, bol(0.6), schoen, 0, -8.55, 1.65, 0.95, 0.72, 0.8);
+    mesh(p, new THREE.BoxGeometry(1.22, 0.3, 2.95), zool, 0, -8.88, 0.6); for(let k = 0; k < 4; k++) mesh(p, new THREE.BoxGeometry(0.9, 0.05, 0.08), M(0x9a9a9a), 0, -8.3, 0.0 + k*0.35);   // veters
+    return p; };
+  const bL = been(-1), bR = been(1); bL.rotation.x = 0.04; bR.rotation.x = -0.05;
+  // heup + romp (RWS-jas): lathe-profiel, plat gedrukt, reflecterende banden, rits, borstzak, logo, kraag
+  mesh(g, cil(1.6, 1.5, 1.4), broek, 0, 9.2, 0, 1, 1, 0.72); mesh(g, cil(1.63, 1.63, 0.25), M(0x111214), 0, 9.75, 0, 1, 1, 0.73);   // riem
+  mesh(g, new THREE.BoxGeometry(0.5, 0.35, 0.1), M(0xb7bcc0, {metalness: 0.8}), 0, 9.75, 1.2);
+  const romp = lathe([[0, 9.6], [1.62, 9.65], [1.7, 10.4], [1.62, 11.2], [1.75, 12.3], [1.98, 13.5], [2.05, 14.3], [1.75, 14.9], [0.9, 15.2], [0, 15.25]]);
+  mesh(g, romp, jas, 0, 0, 0, 1, 1, 0.66);
+  for(const y of [10.75, 12.55]) mesh(g, cil(1.69 + (y > 12 ? 0.12 : 0), 1.69 + (y > 12 ? 0.12 : 0), 0.42, 28), refl, 0, y, 0, 1.0, 1, 0.67);
+  for(const sx of [-1, 1]) mesh(g, new THREE.BoxGeometry(0.4, 4.2, 0.08), refl, sx*0.85, 12.9, 1.18, 1, 1, 1).rotation.z = sx*0.06;     // schouderbanden (braces)
+  mesh(g, new THREE.BoxGeometry(0.08, 5.1, 0.06), M(0x2b2d30), 0, 12.4, 1.27); mesh(g, new THREE.BoxGeometry(0.9, 0.9, 0.08), jas, 0.85, 13.6, 1.25);
+  plak(g, 0.8, 0.28, lbl('FUDURA', 160, 56, '#e8560a', '#ffffff', 'bold 34px Arial'), -0.8, 13.65, 1.31, 0);
+  mesh(g, cil(0.85, 1.05, 0.55), jasD, 0, 15.15, 0, 1, 1, 0.8);                                                                        // kraag
+  // armen (pivot in de schouder): bovenarm, elleboog, onderarm, reflecterende band, manchet, werkhandschoen met duim
+  const arm = sx => { const p = new THREE.Group(); p.position.set(sx*2.05, 14.4, 0); g.add(p); mesh(p, bol(0.68), jas, 0, 0, 0);
+    mesh(p, cil(0.6, 0.52, 3.1), jas, 0, -1.6, 0); mesh(p, cil(0.6, 0.6, 0.35), refl, 0, -2.3, 0);
+    const o = new THREE.Group(); o.position.set(0, -3.15, 0); p.add(o); mesh(o, bol(0.5), jas, 0, 0, 0); mesh(o, cil(0.5, 0.42, 2.7), jas, 0, -1.35, 0); mesh(o, cil(0.44, 0.44, 0.3), jasD, 0, -2.65, 0);
+    mesh(o, bol(0.42), hand, 0, -3.15, 0.05, 0.85, 1.25, 0.6); mesh(o, cil(0.13, 0.11, 0.7), hand, -sx*0.35, -3.0, 0.25).rotation.z = sx*0.5;
+    for(let k = 0; k < 4; k++) mesh(o, cil(0.09, 0.08, 0.6), hand, -0.22 + k*0.15, -3.75, 0.05);
+    p.rotation.z = sx*0.1; o.rotation.x = -0.25; return {p, o}; };
+  const aL = arm(-1), aR = arm(1); aR.o.rotation.x = -1.1; aR.p.rotation.x = -0.15;
+  { const kb = new THREE.Group(); kb.position.set(0.05, -3.4, 0.45); kb.rotation.set(-0.6, 0, 0); aR.o.add(kb);              // klembord / tablet in de rechterhand
+    mesh(kb, new THREE.BoxGeometry(1.7, 2.3, 0.08), bord, 0, 0, 0); mesh(kb, new THREE.BoxGeometry(1.5, 2.0, 0.02), M(0x7fb6d8, {emissive: 0x1a3550, roughness: 0.2}), 0, 0.02, 0.05); }
+  // nek + hoofd: schedel, kaak, oren, neus, ogen met iris, wenkbrauwen, mond, haar onder de helm
+  mesh(g, cil(0.55, 0.62, 0.9), huid, 0, 15.6, 0);
+  const H = new THREE.Group(); H.position.set(0, 16.9, 0.05); g.add(H);
+  mesh(H, bol(1.05, 28, 22), huid, 0, 0, 0, 0.88, 1.12, 1.0); mesh(H, bol(0.75), huid, 0, -0.6, 0.25, 0.95, 0.75, 1.0);                     // schedel + kaak
+  for(const sx of [-1, 1]){ mesh(H, bol(0.25, 10, 8), huid, sx*0.92, 0.0, -0.05, 0.45, 1.0, 0.75);
+    mesh(H, bol(0.15, 12, 10), oogW, sx*0.33, 0.12, 0.86, 1.2, 0.8, 0.6); mesh(H, bol(0.075, 10, 8), iris, sx*0.33, 0.12, 0.94);
+    mesh(H, new THREE.BoxGeometry(0.38, 0.07, 0.08), haar, sx*0.34, 0.36, 0.9).rotation.z = -sx*0.08; }
+  mesh(H, new THREE.ConeGeometry(0.17, 0.5, 10), huid, 0, -0.12, 1.03).rotation.x = Math.PI/2*0.92; mesh(H, bol(0.12, 10, 8), huid, 0, -0.32, 1.06, 1.3, 0.8, 0.9);   // neus
+  mesh(H, new THREE.BoxGeometry(0.42, 0.07, 0.06), lip, 0, -0.62, 0.9);
+  mesh(H, new THREE.SphereGeometry(1.02, 24, 12, 0, Math.PI*2, 0, Math.PI*0.62), haar, 0, 0.05, -0.08, 0.92, 1.05, 1.0);                                     // haar (achter/zijkant)
+  // veiligheidsbril + helm (schaal, rand met klep, ribbel, kinband)
+  mesh(H, new THREE.BoxGeometry(1.5, 0.4, 0.06), glasM, 0, 0.13, 1.0); mesh(H, new THREE.BoxGeometry(1.55, 0.06, 0.08), M(0x2b2d30), 0, 0.33, 0.99);
+  for(const sx of [-1, 1]) mesh(H, new THREE.BoxGeometry(0.05, 0.05, 1.1), M(0x2b2d30), sx*0.78, 0.25, 0.45);
+  const helm = new THREE.Group(); helm.position.set(0, 0.55, -0.02); H.add(helm);
+  mesh(helm, new THREE.SphereGeometry(1.25, 28, 14, 0, Math.PI*2, 0, Math.PI/2), helmM, 0, 0, 0, 0.98, 0.88, 1.12);
+  mesh(helm, cil(1.32, 1.36, 0.12, 32), helmM, 0, 0.0, 0.08, 1.0, 1, 1.12); mesh(helm, new THREE.CylinderGeometry(1.0, 1.0, 0.1, 24, 1, false, -Math.PI/2.6, Math.PI/1.3), helmM, 0, -0.02, 0.85, 1.0, 1, 0.9);   // rand + klep
+  mesh(helm, new THREE.BoxGeometry(0.25, 0.2, 2.3), helmM, 0, 1.02, 0.0); plak(helm, 0.75, 0.22, lbl('FUDURA', 150, 44, '#f6f7f5', '#1e8a4a', 'bold 30px Arial'), 0, 0.5, 1.33, 0);
+  { const kb = new THREE.Mesh(new THREE.TorusGeometry(0.95, 0.04, 6, 30, Math.PI), M(0x1c1d1f)); kb.position.set(0, -0.15, 0.05); kb.rotation.set(0, Math.PI/2, Math.PI); helm.add(kb); }
+  g.userData.lijf = {aL, aR, bL, bR, H};
   g.position.set(XA(N_AIO - 1) + (N_AIO < 3 ? 14 : 9), 0, PL/2 + (N_AIO < 3 ? 2 : 6)); g.rotation.y = 0.6; scene.add(g); }
 
 // ---------- simulatie ----------
@@ -2322,7 +2372,7 @@ $t('tStep').addEventListener('change', e => { if(e.target.checked && FP.tuk){ FP
 // ---------- tuktuk-gekkigheid: MS-installatie binnenrijden = BOEM · referentiepersoon omverrijden (R = reset) ----------
 const FX = (() => {
   const D = [], ov = document.createElement('div'); ov.style.cssText = 'position:fixed;inset:0;background:#fff1b8;opacity:0;pointer-events:none;z-index:25'; document.body.appendChild(ov);
-  let flits = null, schud = 0, ac = null, verbrand = false, xbox = null, binnen = false;
+  let flits = null, schud = 0, ac = null, verbrand = false, xbox = null, binnen = false, vl = null;
   const geluid = (dur, freq, vol) => { try{ ac = ac || new (window.AudioContext || window.webkitAudioContext)(); const n = Math.floor(ac.sampleRate*dur), b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0);
     for(let i = 0; i < n; i++) d[i] = (Math.random()*2 - 1)*Math.pow(1 - i/n, 2.5); const src = ac.createBufferSource(); src.buffer = b; const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = freq; const g = ac.createGain(); g.gain.value = vol;
     src.connect(f); f.connect(g); g.connect(ac.destination); src.start(); }catch(e){} };
@@ -2341,6 +2391,10 @@ const FX = (() => {
     const brand = new THREE.Mesh(new THREE.CircleGeometry(14, 28), new THREE.MeshBasicMaterial({color: 0x111111, transparent: true, opacity: 0.6, depthWrite: false})); brand.rotation.x = -Math.PI/2; brand.position.set(p.x, xbox ? xbox.min.y + 0.05 : p.y, p.z); scene.add(brand);
     if(!verbrand && HVK.XR){ verbrand = true; HVK.XR.traverse(o => { if(o.isMesh){ o.userData.matOrig = o.material; o.material = [].concat(o.material).map(m => { const c = m.clone(); if(c.color) c.color.lerp(new THREE.Color(0x1a1a1a), 0.75); return c; }); if(o.material.length === 1) o.material = o.material[0]; } }); HVK.XR.rotation.z = 0.06; }
     schud = 1.4; renderer.shadowMap.needsUpdate = true; setTimeout(wasted, 650);
+    // de klap: jij vliegt weg (ragdoll-camera), de tuktuk vliegt als wrak de andere kant op
+    const weg = V(FP.pos.x - p.x, 0, FP.pos.z - p.z); if(weg.lengthSq() < 1) weg.set(Math.sin(FP.yaw), 0, Math.cos(FP.yaw)); weg.normalize();
+    vl = {v: weg.clone().multiplyScalar(85 + Math.random()*25), vy: 150 + Math.random()*30, h: 0, rx: 0, rz: 0, wx: 7 + Math.random()*4, wz: (Math.random() < 0.5 ? -1 : 1)*(4 + Math.random()*3), lig: 0}; FP.v = 0;
+    if(FP.tuk){ const w = TUK.g.clone(); w.visible = true; scene.add(w); D.push({o: w, v: weg.clone().multiplyScalar(-40).add(V((Math.random() - 0.5)*30, 90, 0)), soort: 'brok', t: 0, life: 9, rot: V(5, 3, 6), deel: true}); }
     meld('💥 <b>BOEM!</b> 10 kV-installatie binnengereden. In het echt: MS-ruimte alleen met aanwijzing (NEN 3840) 😉'); }
   // GTA-stijl: grijs beeld, slow motion, "WASTED", daarna zwart en respawn buiten bij de opstelling
   let dood = false; const ws = document.createElement('div');
@@ -2351,7 +2405,7 @@ const FX = (() => {
     ws.style.display = 'flex'; const t = ws.firstChild; requestAnimationFrame(() => { t.style.opacity = '1'; t.style.transform = 'scale(1)'; });
     setTimeout(() => { zw.style.opacity = '1'; }, 4300);
     setTimeout(() => { respawn(); zw.style.opacity = '0'; ws.style.display = 'none'; t.style.opacity = '0'; t.style.transform = 'scale(1.6)'; cv.style.filter = ''; dood = false; }, 5100); }
-  function respawn(){ for(let i = D.length - 1; i >= 0; i--){ scene.remove(D[i].o); D.splice(i, 1); } if(flits){ scene.remove(flits); flits = null; } schud = 0;
+  function respawn(){ vl = null; for(let i = D.length - 1; i >= 0; i--){ scene.remove(D[i].o); D.splice(i, 1); } if(flits){ scene.remove(flits); flits = null; } schud = 0;
     if(HVK.XR){ HVK.XR.traverse(o => { if(o.isMesh && o.userData.matOrig){ o.material = o.userData.matOrig; delete o.userData.matOrig; } }); HVK.XR.rotation.z = 0; verbrand = false; }
     zetTuk(false); if(!FP.aan) zetFP(true); FP.keys = {}; FP.v = 0; FP.pos.set(XA(0) - 25, 0, PL/2 + 45); FP.yaw = -0.45; FP.pitch = -0.08; FP.oog = 17; binnen = false; renderer.shadowMap.needsUpdate = true; vuil(8);
     meld('Respawn 🏥 — de Xiria is weer heel. Volgende keer: tuktuk parkeren vóór de MS-ruimte.'); }
@@ -2370,15 +2424,20 @@ const FX = (() => {
       else if(d.soort === 'rook'){ o.position.addScaledVector(d.v, dt); d.v.multiplyScalar(0.99); o.scale.setScalar(d.s*(1 + k*3)); o.material.opacity = 0.6*Math.sin(Math.PI*Math.min(1, k)); }
       else { d.v.y -= 98*dt; o.position.addScaledVector(d.v, dt); if(o.position.y < 0.3){ o.position.y = 0.3; d.v.multiplyScalar(0.45); d.v.y = Math.abs(d.v.y)*0.35; if(d.rot) d.rot.multiplyScalar(0.6); }
         if(d.rot){ o.rotation.x += d.rot.x*dt; o.rotation.y += d.rot.y*dt; o.rotation.z += d.rot.z*dt; } if(d.soort === 'vonk') o.scale.setScalar(1 - k); }
-      if(d.t > d.life){ scene.remove(o); o.geometry.dispose(); o.material.dispose(); D.splice(i, 1); } }
+      if(d.t > d.life){ scene.remove(o); if(!d.deel && o.geometry){ o.geometry.dispose(); o.material.dispose(); } D.splice(i, 1); } }
+    if(vl){ vl.vy -= 98*dt; vl.h += vl.vy*dt; FP.pos.addScaledVector(vl.v, dt);
+      if(vl.h <= 0){ vl.h = 0; if(vl.vy < -25){ vl.vy = -vl.vy*0.32; vl.v.multiplyScalar(0.55); vl.wx *= 0.5; vl.wz *= 0.5; geluid(0.18, 350, 0.7); schud = Math.max(schud, 0.35); }
+        else { vl.vy = 0; vl.v.multiplyScalar(Math.max(0, 1 - dt*5)); vl.lig = Math.min(1, vl.lig + dt*1.5); vl.wx *= 0.85; vl.wz *= 0.85; vl.rx += (0 - vl.rx)*Math.min(1, dt*3); vl.rz += (Math.sign(vl.wz || 1)*1.35 - vl.rz)*Math.min(1, dt*3); } }
+      if(vl.h > 0 || vl.lig < 0.05){ vl.rx += vl.wx*dt; vl.rz += vl.wz*dt; } actief = true; }
     if(flits){ flits.userData.t += dt; flits.intensity = Math.max(0, 10*(1 - flits.userData.t/1.4)); if(flits.userData.t > 1.4){ scene.remove(flits); flits = null; } }
     schud = Math.max(0, schud - dt);
-    if(POP && P.staat === 'vlieg'){ P.t += dt; P.v.y -= 98*dt; POP.position.addScaledVector(P.v, dt); POP.rotation.x = Math.min(Math.PI/2, POP.rotation.x + dt*7); POP.rotation.z += dt*4;
-      if(POP.position.y <= 0 && P.t > 0.2){ POP.position.y = 0; P.staat = 'lig'; P.t = 0; POP.rotation.x = Math.PI/2; POP.rotation.z = 0; geluid(0.2, 400, 0.6); renderer.shadowMap.needsUpdate = true; } }
+    const LJ = POP && POP.userData.lijf; if(LJ && !LJ.rust) LJ.rust = [LJ.aL.p, LJ.aR.p, LJ.bL, LJ.bR, LJ.aL.o, LJ.aR.o, LJ.H].map(o => o.rotation.clone());
+    if(POP && P.staat === 'vlieg'){ P.t += dt; if(LJ){ const w = P.t*18; LJ.aL.p.rotation.set(Math.sin(w)*1.4, 0, -1.2 - Math.sin(w*0.7)*0.6); LJ.aR.p.rotation.set(Math.cos(w)*1.4, 0, 1.2 + Math.cos(w*0.8)*0.6); LJ.bL.rotation.x = Math.sin(w*0.9)*0.9; LJ.bR.rotation.x = -Math.sin(w*0.9)*0.9; LJ.H.rotation.x = Math.sin(w*1.3)*0.3; } P.v.y -= 98*dt; POP.position.addScaledVector(P.v, dt); POP.rotation.x = Math.min(Math.PI/2, POP.rotation.x + dt*7); POP.rotation.z += dt*4;
+      if(POP.position.y <= 0 && P.t > 0.2){ POP.position.y = 0; P.staat = 'lig'; P.t = 0; POP.rotation.x = Math.PI/2; POP.rotation.z = 0; geluid(0.2, 400, 0.6); if(LJ){ LJ.aL.p.rotation.set(0.2, 0, -1.5); LJ.aR.p.rotation.set(-0.3, 0, 1.3); LJ.bL.rotation.x = 0.3; LJ.bR.rotation.x = -0.1; LJ.H.rotation.set(0, 0.5, 0); } renderer.shadowMap.needsUpdate = true; } }
     else if(POP && P.staat === 'lig'){ P.t += dt; if(P.t > 4){ P.staat = 'op'; P.t = 0; } }
-    else if(POP && P.staat === 'op'){ P.t += dt; POP.rotation.x = Math.PI/2*Math.max(0, 1 - P.t/0.8); if(P.t >= 0.8){ POP.rotation.x = 0; P.staat = 'staat'; renderer.shadowMap.needsUpdate = true; } }
+    else if(POP && P.staat === 'op'){ P.t += dt; POP.rotation.x = Math.PI/2*Math.max(0, 1 - P.t/0.8); if(P.t >= 0.8){ POP.rotation.x = 0; P.staat = 'staat'; if(LJ) [LJ.aL.p, LJ.aR.p, LJ.bL, LJ.bR, LJ.aL.o, LJ.aR.o, LJ.H].forEach((o, i) => o.rotation.copy(LJ.rust[i])); renderer.shadowMap.needsUpdate = true; } }
     return actief; }
-  return {check, raak, update, schud: () => schud, dood: () => dood}; })();
+  return {check, raak, update, schud: () => schud, dood: () => dood, vlucht: () => vl}; })();
 function stapFP(dt){
   if(FX.dood()){ FP.v *= Math.max(0, 1 - dt*2); FP.keys = {}; FP.pitch = Math.max(-0.6, FP.pitch - dt*0.12); FP.yaw += dt*0.15; }
   const k = FP.keys, v = (k.shift ? 45 : 18)*dt, f = new THREE.Vector3(-Math.sin(FP.yaw), 0, -Math.cos(FP.yaw)), rt = new THREE.Vector3(-f.z, 0, f.x);
@@ -2397,8 +2456,10 @@ function stapFP(dt){
   if(FP.tuk){ TUK.g.position.set(FP.pos.x - Math.sin(FP.yaw)*2.0, yv, FP.pos.z - Math.cos(FP.yaw)*2.0); TUK.g.rotation.set(0, FP.yaw, 0); TUK.g.rotateZ(stuur*0.05*Math.min(1, Math.abs(FP.v)/80)); const rw = FP.v*dt/2.1; TUK.wv.rotation.x -= rw; TUK.wa.forEach(w => w.rotation.x -= rw); TUK.st.rotation.y = stuur*0.35; }
   else if(FP.step){ STEP.g.position.set(FP.pos.x - Math.sin(FP.yaw)*3.0, yv, FP.pos.z - Math.cos(FP.yaw)*3.0); STEP.g.rotation.set(0, FP.yaw, 0); STEP.g.rotateZ(stuur*0.14*Math.min(1, Math.abs(FP.v)/50)); const rw = FP.v*dt/1.0; STEP.wv.rotation.x -= rw; STEP.wa.rotation.x -= rw; STEP.zetKmh(FP.v); }
   if(FP.step){ const c = FP.tuk ? TUK.g.position : STEP.g.position; FX.raak(c, FP.v, FP.tuk ? 9 : 4.5); if(FP.tuk) FX.check(c, FP.v); }
-  camera.position.set(FP.pos.x, oog, FP.pos.z); { const sk = FX.schud(); if(sk > 0) camera.position.add(V((Math.random() - 0.5)*sk*4, (Math.random() - 0.5)*sk*3, (Math.random() - 0.5)*sk*4)); }
-  camera.lookAt(FP.pos.x - Math.sin(FP.yaw)*Math.cos(FP.pitch), oog + Math.sin(FP.pitch), FP.pos.z - Math.cos(FP.yaw)*Math.cos(FP.pitch)); }
+  const VL = FX.vlucht(); if(VL){ TUK.g.visible = false; STEP.g.visible = false; }
+  const oogV = VL ? 3 + (12 - 9.5*VL.lig) + VL.h : oog;
+  camera.position.set(FP.pos.x, oogV, FP.pos.z); { const sk = FX.schud(); if(sk > 0) camera.position.add(V((Math.random() - 0.5)*sk*4, (Math.random() - 0.5)*sk*3, (Math.random() - 0.5)*sk*4)); }
+  camera.lookAt(camera.position.x - Math.sin(FP.yaw)*Math.cos(FP.pitch), camera.position.y + Math.sin(FP.pitch), camera.position.z - Math.cos(FP.yaw)*Math.cos(FP.pitch)); if(VL){ camera.rotateX(VL.rx); camera.rotateZ(VL.rz); } }
 function resize(){ const w = wrap.clientWidth, h = wrap.clientHeight; renderer.setSize(w, h); renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5)); camera.aspect = w/h; camera.updateProjectionMatrix(); }
 window.addEventListener('resize', resize); resize();
 let tPrev = performance.now();
