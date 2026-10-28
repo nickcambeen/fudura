@@ -2207,7 +2207,7 @@ wrap.addEventListener('pointermove', e => {
   else if(pannen) schuif(dx, dy);
   else { theta -= dx*0.0035; phi = Math.min(1.55, Math.max(0.03, phi - dy*0.003)); }
   px = e.clientX; py = e.clientY; });
-wrap.addEventListener('pointerup', e => { dragging = false; if(sleep < 6 && e.button === 0 && typeof GUN !== 'undefined' && GUN.actief()){ GUN.klik(); return; } if(sleep < 6 && e.button === 0){ const d = hitDeur(e); if(d){ d.doel = Math.abs(d.doel - d.open) < 1e-3 ? d.dicht : d.open; meld(d.naam + ' ' + (d.doel === d.open ? 'open' : 'dicht')); } } });
+wrap.addEventListener('pointerup', e => { dragging = false; if(sleep < 6 && e.button === 0 && FP.rit === 'drone'){ RIT.kamikaze(); return; } if(sleep < 6 && e.button === 0 && typeof GUN !== 'undefined' && GUN.actief()){ GUN.klik(); return; } if(sleep < 6 && e.button === 0){ const d = hitDeur(e); if(d){ d.doel = Math.abs(d.doel - d.open) < 1e-3 ? d.dicht : d.open; meld(d.naam + ' ' + (d.doel === d.open ? 'open' : 'dicht')); } } });
 wrap.addEventListener('wheel', e => { e.preventDefault(); if(FP.aan){ FP.pos.addScaledVector(new THREE.Vector3(-Math.sin(FP.yaw), 0, -Math.cos(FP.yaw)), -e.deltaY*0.02); return; } radius = Math.min(900, Math.max(4, radius*(1 + e.deltaY*0.0012))); }, {passive: false});
 const $t = id => document.getElementById(id);
 $t('pDicht').addEventListener('click', () => { $t('paneel').classList.add('dicht'); $t('pOpen').classList.add('toon'); });
@@ -2678,7 +2678,7 @@ const RIT = (() => {
     o.connect(f); o2.connect(f); f.connect(g); g.connect(a.destination); [o, o2, lfo].forEach(x => { x.start(t); x.stop(t + 1.35); }); });
   // ---- in-/uitstappen ----
   const UITLEG = {graaf: 'Graafmachine: W/S rijden · A/D sturen · ↑/↓ giek · ←/→ zwenken · Z/X stuk · Q = bak dicht (graven) · V = bak open (storten) · E = uitstappen',
-    drone: 'Drone: W/S vooruit/achteruit · A/D draaien · spatie = stijgen · C = dalen · shift = snel · V = camera (FPV) · E = landen/uitstappen. Niet in de MS-ruimte of tegen het gebouw vliegen!',
+    drone: 'Drone: W/S vooruit/achteruit · A/D draaien · spatie = stijgen · C = dalen · shift = snel · V = camera (FPV/achter) · klik = ontploffen 💥 (kamikaze) · E = landen/uitstappen. Niet in de MS-ruimte of tegen het gebouw vliegen!',
     olifant: 'Olifant: W lopen · shift = draven · S achteruit · A/D sturen · spatie = trompetteren · E = afstappen'};
   const vinkje = () => ['Graaf', 'Drone', 'Olif'].forEach((k, i) => { const c = $t('t' + k); if(c) c.checked = FP.rit === ['graaf', 'drone', 'olifant'][i]; });
   let camP = new THREE.Vector3(), camInit = false;
@@ -2687,7 +2687,7 @@ const RIT = (() => {
     const gx = FP.pos.x, gz = FP.pos.z; s.yaw = FP.yaw; s.g.rotation.y = s.yaw; s.g.visible = true;
     if(naam === 'drone'){ const x = gx - Math.sin(FP.yaw)*12, z = gz - Math.cos(FP.yaw)*12; s.g.position.set(x, grondH(x, z), z); s.pad.position.set(x, 0.05, z); s.padH.position.set(x, 0.07, z); s.pad.visible = s.padH.visible = true; s.T.rotation.set(0, 0, 0); s.h = 0; }
     else { s.g.position.set(gx, grondH(gx, gz), gz); s.v = 0; }
-    if(naam === 'drone'){ s.piloot = bouwPersoon(); s.piloot.position.set(FP.pos.x, grondH(FP.pos.x, FP.pos.z), FP.pos.z); s.piloot.rotation.y = FP.yaw + Math.PI; scene.add(s.piloot);
+    if(naam === 'drone'){ s.fpv = true; s.piloot = bouwPersoon(); s.piloot.position.set(FP.pos.x, grondH(FP.pos.x, FP.pos.z), FP.pos.z); s.piloot.rotation.y = FP.yaw + Math.PI; scene.add(s.piloot);
       const L = s.piloot.userData.lijf; L.aL.p.rotation.x = -0.5; L.aR.p.rotation.x = -0.5; L.aL.o.rotation.x = -0.9; L.aR.o.rotation.x = -0.9; L.tablet.visible = false; bx(L.aR.o, 3, 0.5, 2, M(0x2b2d30), -1.4, -3.4, 0.6);
       s.v.set(0, 0, 0); s.neer = 0; }
     FP.rit = naam; FP.v = 0; FP.keys = {}; FP.yaw = s.yaw; FP.pitch = -0.15; camInit = false; camera.fov = s.cam.fov; camera.near = 0.5; camera.updateProjectionMatrix(); vinkje(); meld(UITLEG[naam]); vuil(5); }
@@ -2747,7 +2747,9 @@ const RIT = (() => {
     { const sk = FX.schud(); if(sk > 0) camera.position.add(V((Math.random() - 0.5)*sk*4, (Math.random() - 0.5)*sk*3, (Math.random() - 0.5)*sk*4)); }
     camera.lookAt(doel.x + kijk.x, doel.y + kijk.y, doel.z + kijk.z);
     if(n % 15 === 0) renderer.shadowMap.needsUpdate = true; }
-  return {inStap, uit, e, stap, S}; })();
+  function kamikaze(){ if(FP.rit !== 'drone') return; const s = S.drone; if(s.h < 1 && !s.neer){ meld('Eerst opstijgen (spatie) — dan klikken = ontploffen'); return; }
+    const p = s.g.position.clone(); uit(true); parkeer('drone'); GUN.ontplof(p); meld('💥 FPV-drone ontploft! Nieuwe drone: Y'); }
+  return {inStap, uit, e, stap, S, kamikaze}; })();
 // ============ PISTOOL (toets B): first person, klikken = schieten; poppetjes gaan neer (zelfde ragdoll als aanrijden) en staan weer op ============
 const GUN = (() => {
   // B wisselt: uit → pistool → shotgun → geweer → uit (niet in het zijpaneel); klik = schieten op het vizier in het midden
@@ -2812,18 +2814,22 @@ const GUN = (() => {
       o.type = 'sine'; o.frequency.setValueAtTime(140, t0); o.frequency.exponentialRampToValueAtTime(45, t0 + 0.18); g.gain.setValueAtTime(0.7, t0); g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.25); o.connect(g); g.connect(ac.destination); o.start(t0); o.stop(t0 + 0.3); }catch(e){}
     try{ if(window.speechSynthesis){ const u = new SpeechSynthesisUtterance(AU[Math.floor(Math.random()*AU.length)]); u.lang = 'nl-NL'; u.pitch = 0.7 + Math.random()*0.9; u.rate = 1.15 + Math.random()*0.3; u.volume = 1;
       const st = speechSynthesis.getVoices().find(v => /^nl/i.test(v.lang)); if(st) u.voice = st; speechSynthesis.cancel(); speechSynthesis.speak(u); } }catch(e){} }
+  const door = o => !o.userData.massief && [].concat(o.material).every(m => (m.transparent && m.opacity < 0.6) || m.alphaTest > 0);   // glas/gaas: kogel gaat erdoor; muren nooit
   const zichtbaar = o => { for(let q = o; q; q = q.parent) if(!q.visible) return false; return true; };
   const vanPersoon = o => { for(let q = o; q; q = q.parent) if(MENSEN.includes(q)) return q; return null; };
   const W = () => wapen >= 0 ? WAPENS[wapen] : null;
   let zoom = false, basisF = 0, houd = false, tAuto = 0, boemL = null; const RAKETTEN = [], DL = [], bolG = new THREE.SphereGeometry(1, 10, 8);
   const deeltje = (p, kleur, s, v, life, vuur) => { const o = new THREE.Mesh(bolG, new THREE.MeshBasicMaterial({color: kleur, transparent: true, depthWrite: false, blending: vuur ? THREE.AdditiveBlending : THREE.NormalBlending}));
     o.position.copy(p); o.scale.setScalar(s); o.userData.gun = true; scene.add(o); DL.push({o, v, t: 0, life, s, vuur}); };
+  // zichtlijn: zit er een muur/object tussen het explosiepunt en het doel, dan geen schade
+  function zicht(a, b){ const d = b.clone().sub(a), L = d.length(); if(L < 0.5) return true; RC.set(a.clone().add(V(0, 1, 0)), d.normalize()); RC.far = L;
+    return !RC.intersectObjects(scene.children, true).some(h => h.object.isMesh && !h.object.userData.gun && !vanPersoon(h.object) && zichtbaar(h.object) && !door(h.object) && h.distance < L - 1.5); }
   function ontplof(p, extern){ if(!extern) MP.boem(p); knal(true); knal(true); for(let i = 0; i < 26; i++) deeltje(p.clone().add(V((Math.random() - 0.5)*3, Math.random()*3, (Math.random() - 0.5)*3)), 0xff9a20, 1.2 + Math.random()*1.5, V(Math.random() - 0.5, Math.random()*0.9, Math.random() - 0.5).multiplyScalar(30), 0.7 + Math.random()*0.5, true);
     for(let i = 0; i < 18; i++) deeltje(p.clone().add(V((Math.random() - 0.5)*5, 2 + Math.random()*5, (Math.random() - 0.5)*5)), 0x45484b, 2 + Math.random()*2, V((Math.random() - 0.5)*5, 5 + Math.random()*6, (Math.random() - 0.5)*5), 3 + Math.random()*2, false);
     if(boemL) scene.remove(boemL); boemL = new THREE.PointLight(0xffa040, 8, 300, 1.2); boemL.position.copy(p).add(V(0, 5, 0)); scene.add(boemL);
     const brand = new THREE.Mesh(new THREE.CircleGeometry(5, 24), new THREE.MeshBasicMaterial({color: 0x161616, transparent: true, opacity: 0.55, depthWrite: false})); brand.rotation.x = -Math.PI/2; brand.position.set(p.x, Math.max(0.05, p.y < 3 ? (Math.abs(p.z) < PL/2 && p.x > PX0 && p.x < PX1 ? PL_H + 0.05 : 0.05) : -99), p.z); if(brand.position.y > -50){ scene.add(brand); gaten.push(brand); }
-    let n = 0; MENSEN.forEach(m => { const d = V(m.position.x - p.x, 0, m.position.z - p.z), L = d.length(); if(L < 40){ const r = (L > 0.1 ? d.normalize() : V(1, 0, 0)); if(!extern && m.userData.mpId) MP.raak(m.userData.mpId, r); if(FX.schot(m, r.clone().multiplyScalar(2.2))) n++; } });
-    if(extern) n = 0; { const ik = V(FP.pos.x - p.x, 0, FP.pos.z - p.z); if(extern && FP.aan && ik.length() < 40) MP.geraakt(ik.normalize(), 'een bazooka'); }
+    let n = 0; MENSEN.forEach(m => { const d = V(m.position.x - p.x, 0, m.position.z - p.z), L = d.length(); if(L < 40){ const r = (L > 0.1 ? d.normalize() : V(1, 0, 0)); if(!extern && m.userData.mpId && zicht(p, m.position.clone().setY(m.position.y + 10))) MP.raak(m.userData.mpId, r, Math.round(90*(1 - L/40))); if(FX.schot(m, r.clone().multiplyScalar(2.2))) n++; } });
+    if(extern) n = 0; { const ik = V(FP.pos.x - p.x, 0, FP.pos.z - p.z), L = ik.length(); if(extern && FP.aan && L < 40 && zicht(p, camera.position)) MP.geraakt(ik.normalize(), extern.naam + ' (bazooka)', Math.round(90*(1 - L/40)), extern.id); }
     if(n) setTimeout(au, 180);
     meld(n ? '💥 Boem! ' + n + ' collega' + (n > 1 ? '’s' : '') + ' omvergeblazen — die staan zo weer op.' : '💥 Boem!'); renderer.shadowMap.needsUpdate = true; }
   // keuzemenu (toets B): 1–6 kiezen, 0 = wapen weg, Esc = sluiten; staat niet in het zijpaneel
@@ -2848,7 +2854,7 @@ const GUN = (() => {
   window.addEventListener('mouseup', e => { if(e.button === 2) zoom = false; if(e.button === 0) houd = false; });
   window.addEventListener('blur', () => { zoom = false; houd = false; });
   function actief(){ return wapen >= 0 && FP.aan && !FP.rit && !FP.step; }
-  function kies(i){ wapen = i; zoom = false; houd = false; toonMenu(false); if(i >= 0) setTimeout(vang, 0); else los(); if(i >= 0){ if(FP.rit) RIT.uit(true); if(FP.step){ zetTuk(false); zetStep(false); } if(!FP.aan) zetFP(true); meld(WAPENS[i].naam + ' ' + IKOON[i] + ' — ' + (WAPENS[i].auto ? 'muisknop ingedrukt houden = vuren' : 'klik om te schieten') + ' · rechtermuisknop = inzoomen · B = ander wapen'); }
+  function kies(i){ const was = wapen; wapen = i; if(was < 0 && i >= 0) setTimeout(() => MP.spawn(), 0); zoom = false; houd = false; toonMenu(false); if(i >= 0) setTimeout(vang, 0); else los(); if(i >= 0){ if(FP.rit) RIT.uit(true); if(FP.step){ zetTuk(false); zetStep(false); } if(!FP.aan) zetFP(true); meld(WAPENS[i].naam + ' ' + IKOON[i] + ' — ' + (WAPENS[i].auto ? 'muisknop ingedrukt houden = vuren' : 'klik om te schieten') + ' · rechtermuisknop = inzoomen · B = ander wapen'); }
     else meld('Wapen weggeborgen'); vuil(4); }
   const volgende = () => toonMenu(!menuOpen());
   function kogelgat(h, dir){ const n = h.face ? h.face.normal.clone().transformDirection(h.object.matrixWorld) : dir.clone().negate();
@@ -2865,9 +2871,10 @@ const GUN = (() => {
       RAKETTEN.push({r, dir: RC.ray.direction.clone(), af: 0}); return; }
     for(let k = 0; k < w.kogels; k++){ RC.setFromCamera(new THREE.Vector2((Math.random() - 0.5)*2*w.spreid, (Math.random() - 0.5)*2*w.spreid), camera); RC.far = 800;
       const hits = RC.intersectObjects(scene.children, true).filter(h => h.object.isMesh && !h.object.userData.gun && !h.object.isSprite && h.distance > 0.5 && zichtbaar(h.object) &&
-        !([].concat(h.object.material).every(m => (m.transparent && m.opacity < 0.6) || m.alphaTest > 0)));          // door glas en de openingen van het gaashekwerk heen
+        !door(h.object));          // door glas en de openingen van het gaashekwerk heen
       if(!hits.length) continue; const h = hits[0], m = vanPersoon(h.object), dir = RC.ray.direction.clone();
-      if(m){ if(m.userData.mpId) MP.raak(m.userData.mpId, dir); if(FX.schot(m, dir.clone().multiplyScalar(w.kracht))) raak = true; } else kogelgat(h, dir); }
+      if(!m && h.object.userData.mpVoertuig){ MP.raak(h.object.userData.mpVoertuig, dir, [25, 12, 40, 18, 0, 100][wapen]); raak = true; kogelgat(h, dir); continue; }
+      if(m){ if(m.userData.mpId) MP.raak(m.userData.mpId, dir, [25, 12, 40, 18, 0, 100][wapen]); if(FX.schot(m, dir.clone().multiplyScalar(w.kracht))) raak = true; } else kogelgat(h, dir); }
     if(raak) au();
     if(raak) meld(['Raak! 🎯 Hij gaat neer — staat zo weer op.', 'Voltreffer! Gelukkig had hij z’n PBM aan 🦺', 'Au! Dat wordt een melding in het incidentregister.'][Math.floor(Math.random()*3)]); }
   function update(dt){ const zie = actief(); let bezig = false; const w0 = W();
@@ -2880,7 +2887,7 @@ const GUN = (() => {
     if(wapen >= 0 && !FP.aan){ wapen = -1; zoom = false; houd = false; los(); }
     if(zie && w0.auto && houd){ tAuto -= dt; if(tAuto <= 0){ tAuto = w0.auto; vuur(); FP.pitch = Math.min(1.3, FP.pitch + 0.004); } bezig = true; }
     for(let i = RAKETTEN.length - 1; i >= 0; i--){ const q = RAKETTEN[i], stap = 260*dt; q.af += stap;
-      RC.set(q.r.position, q.dir); RC.far = stap + 0.5; const h = RC.intersectObjects(scene.children, true).find(h => h.object.isMesh && !h.object.userData.gun && !h.object.isSprite && zichtbaar(h.object) && !([].concat(h.object.material).every(m => (m.transparent && m.opacity < 0.6) || m.alphaTest > 0)));
+      RC.set(q.r.position, q.dir); RC.far = stap + 0.5; const h = RC.intersectObjects(scene.children, true).find(h => h.object.isMesh && !h.object.userData.gun && !h.object.isSprite && zichtbaar(h.object) && !door(h.object));
       if(h || q.af > 700 || q.r.position.y < 0){ scene.remove(q.r); RAKETTEN.splice(i, 1); ontplof(h ? h.point : q.r.position.clone()); }
       else { q.r.position.addScaledVector(q.dir, stap); if(Math.random() < 0.8) deeltje(q.r.position.clone(), 0x9a9da0, 0.4, V((Math.random() - 0.5)*3, 2, (Math.random() - 0.5)*3), 1.2, false); }
       bezig = true; }
@@ -2915,7 +2922,11 @@ const MP = (() => {
   function avatar(p, d){ const kleur = JASSEN[parseInt(d.id, 36) % JASSEN.length]; const g = bouwPersoon({jas: kleur}); g.userData.mpId = d.id; scene.add(g); MENSEN.push(g);
     const t = sprite(d.naam, V(0, 0, 0), 0.55, '#' + new THREE.Color(kleur).getHexString()); scene.remove(t); t.position.set(0, 22, 0); g.add(t); p.lbl = t; return g; }
   function naamLbl(p, n){ if(p.naam === n) return; p.naam = n; const kleur = '#' + new THREE.Color(JASSEN[parseInt(p.id, 36) % JASSEN.length]).getHexString(); p.g.remove(p.lbl); p.lbl = sprite(n, V(0, 0, 0), 0.55, kleur); scene.remove(p.lbl); p.lbl.position.set(0, 22, 0); p.g.add(p.lbl); }
-  function weg(id){ const p = PEERS[id]; if(!p) return; scene.remove(p.g); const i = MENSEN.indexOf(p.g); if(i >= 0) MENSEN.splice(i, 1); delete PEERS[id]; meld('👋 ' + p.naam + ' heeft de omgeving verlaten'); toonBadge(); }
+  const BRON = () => ({graaf: RIT.S.graaf.g, drone: RIT.S.drone.g, olifant: RIT.S.olifant.g, tuk: TUK.g, step: STEP.g});
+  function voertuig(p){ p.mod = p.mod || {}; const t = p.veh; Object.keys(p.mod).forEach(k => p.mod[k].visible = k === t); if(!t) return null;
+    if(!p.mod[t]){ const c = BRON()[t].clone(true); c.visible = true; c.traverse(o => { o.userData.mpVoertuig = p.id; }); c.position.set(p.vx, p.vh, p.vz); c.rotation.y = p.vr; scene.add(c); p.mod[t] = c; }
+    return p.mod[t]; }
+  function weg(id){ const p = PEERS[id]; if(!p) return; scene.remove(p.g); if(p.mod) Object.values(p.mod).forEach(c => scene.remove(c)); const i = MENSEN.indexOf(p.g); if(i >= 0) MENSEN.splice(i, 1); delete PEERS[id]; meld('👋 ' + p.naam + ' heeft de omgeving verlaten'); toonBadge(); }
   const sporen = [];
   function spoor(o, d){ const a = V(o.x, o.y, o.z), b = a.clone().addScaledVector(V(d.x, d.y, d.z), 300), geo = new THREE.BufferGeometry().setFromPoints([a, b]);
     const l = new THREE.Line(geo, new THREE.LineBasicMaterial({color: 0xffd27a, transparent: true, opacity: 0.9})); scene.add(l); sporen.push({l, t: 0}); }
@@ -2923,14 +2934,25 @@ const MP = (() => {
     let p = PEERS[d.id]; if(d.t === 'bye'){ weg(d.id); return; }
     if(!p){ p = PEERS[d.id] = {id: d.id, naam: d.naam, x: d.x || 0, z: d.z || 0, yaw: d.yaw || 0, fp: false, tLaatst: performance.now()}; p.g = avatar(p, d); p.g.visible = false; meld('👷 ' + d.naam + ' is binnengekomen'); toonBadge(); }
     p.tLaatst = performance.now(); naamLbl(p, d.naam);
-    if(d.t === 'st'){ if(d.x !== undefined){ p.x = d.x; p.z = d.z; p.yaw = d.yaw; p.y = d.y || 0; } p.fp = !!d.fp; toonBadge(); }
+    if(d.t === 'st'){ if(d.x !== undefined){ p.x = d.x; p.z = d.z; p.yaw = d.yaw; p.y = d.y || 0; } p.fp = !!d.fp; p.veh = d.fp ? (d.v || null) : null; if(p.veh){ p.vx = d.vx; p.vh = d.vh; p.vz = d.vz; p.vr = d.vr; } toonBadge(); }
     else if(d.t === 'schot'){ spoor(d.o, d.d); if(GUN) GUN.knal(d.w === 1 || d.w === 4); }
-    else if(d.t === 'boem'){ GUN.ontplof(V(d.p.x, d.p.y, d.p.z), true); }
-    else if(d.t === 'raak' && d.doel === ID){ geraakt(V(d.r.x, 0, d.r.z), d.naam); } }
+    else if(d.t === 'boem'){ GUN.ontplof(V(d.p.x, d.p.y, d.p.z), {id: d.id, naam: d.naam}); }
+    else if(d.t === 'raak' && d.doel === ID){ geraakt(V(d.r.x, 0, d.r.z), d.naam, d.s || 20, d.id); }
+    else if(d.t === 'kill' && d.doel === ID){ score++; meld('☠️ Je hebt ' + d.naam + ' uitgeschakeld! (' + score + ')'); toonHp(); } }
   // ik ben geraakt: rode flits, terugslag, melding
   const rood = document.createElement('div'); rood.style.cssText = 'position:fixed;inset:0;z-index:24;pointer-events:none;background:radial-gradient(circle,transparent 40%,rgba(200,0,0,.55));opacity:0;transition:opacity .6s'; document.body.appendChild(rood);
-  function geraakt(r, door){ rood.style.transition = 'none'; rood.style.opacity = '1'; setTimeout(() => { rood.style.transition = 'opacity .8s'; rood.style.opacity = '0'; }, 60);
-    if(FP.aan){ FP.pos.addScaledVector(r.normalize(), 8); FP.pitch = Math.min(1.3, FP.pitch + 0.25); } GUN.au(); meld('🎯 Je bent geraakt door ' + door + '!'); vuil(6); }
+  // levens: ♥ 100; 0 = uitgeschakeld → na 2 s respawn op een willekeurige plek van het terrein
+  let hp = 100, score = 0, dood = false;
+  const hpEl = document.createElement('div'); hpEl.style.cssText = 'position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:40;background:rgba(20,24,28,.78);color:#fff;border-radius:12px;padding:6px 14px;font:700 14px system-ui,sans-serif;display:none;pointer-events:none';
+  document.body.appendChild(hpEl);
+  function toonHp(){ const zie = GUN.aan() || Object.keys(PEERS).length > 0; hpEl.style.display = zie && FP.aan ? 'block' : 'none';
+    hpEl.innerHTML = '<span style="color:' + (hp > 50 ? '#5fd35f' : hp > 25 ? '#f2c200' : '#ff4d4d') + '">♥ ' + Math.max(0, hp) + '</span>' + (score ? ' &nbsp;☠️ ' + score : ''); }
+  function spawn(){ const S = TERREIN.spawns, p = S[Math.floor(Math.random()*S.length)]; FP.pos.set(p[0], 0, p[1]); FP.yaw = Math.random()*Math.PI*2; FP.pitch = -0.03; FP.oog = 17; toonHp(); vuil(6); }
+  function geraakt(r, door, dmg, vanId){ if(dood) return; rood.style.transition = 'none'; rood.style.opacity = '1'; setTimeout(() => { rood.style.transition = 'opacity .8s'; rood.style.opacity = '0'; }, 60);
+    hp -= dmg || 20; if(FP.aan){ FP.pos.addScaledVector(r.normalize(), 6); FP.pitch = Math.min(1.3, FP.pitch + 0.2); } GUN.au();
+    if(hp <= 0){ dood = true; if(vanId) stuur({t: 'kill', doel: vanId}); rood.style.transition = 'none'; rood.style.opacity = '1'; meld('💀 Uitgeschakeld door ' + door + ' — je respawnt zo op een andere plek…');
+      setTimeout(() => { hp = 100; dood = false; if(!FP.aan) zetFP(true); spawn(); rood.style.transition = 'opacity 1s'; rood.style.opacity = '0'; meld('🔁 Gerespawnd — ♥ 100'); }, 2000); }
+    else meld('🎯 Geraakt door ' + door + ' (−' + (dmg || 20) + ') · ♥ ' + hp); toonHp(); vuil(6); }
   function verbind(){ const go = () => { try{ cl = mqtt.connect(URL_BROKER, {clientId: 'fudura_' + ID, clean: true, reconnectPeriod: 4000, connectTimeout: 8000, keepalive: 30, will: {topic: KAMER, payload: JSON.stringify({t: 'bye', id: ID}), qos: 0}});
       cl.on('connect', () => { verbonden = true; cl.subscribe(KAMER); stuur({t: 'st'}); toonBadge(); });
       cl.on('close', () => { verbonden = false; toonBadge(); }); cl.on('message', (tp, buf) => ontvang(buf.toString())); }catch(e){ console.warn('MP', e); } };
@@ -2939,11 +2961,17 @@ const MP = (() => {
   setTimeout(verbind, 1500);
   // status los van de tekenlus (ook als het tabblad op de achtergrond staat): lopend 10×/s, anders 1×/s
   let tel = 0; setInterval(() => { if(!verbonden) return; tel++; if(!FP.aan && tel % 10) return; const yv = Math.abs(FP.pos.z) < PL/2 + 0.3 && FP.pos.x > PX0 && FP.pos.x < PX1 ? PL_H : 0;
-    stuur(FP.aan ? {t: 'st', fp: 1, x: +FP.pos.x.toFixed(2), z: +FP.pos.z.toFixed(2), y: yv, yaw: +FP.yaw.toFixed(3), w: GUN.wapen()} : {t: 'st', fp: 0}); }, 100);
+    let vt = null, vg = null; if(FP.rit){ vt = FP.rit; vg = RIT.S[FP.rit].g; } else if(FP.tuk){ vt = 'tuk'; vg = TUK.g; } else if(FP.step){ vt = 'step'; vg = STEP.g; }
+    const m = FP.aan ? {t: 'st', fp: 1, x: +FP.pos.x.toFixed(2), z: +FP.pos.z.toFixed(2), y: yv, yaw: +FP.yaw.toFixed(3), w: GUN.wapen()} : {t: 'st', fp: 0};
+    if(FP.aan && vt) Object.assign(m, {v: vt, vx: +vg.position.x.toFixed(2), vh: +vg.position.y.toFixed(2), vz: +vg.position.z.toFixed(2), vr: +vg.rotation.y.toFixed(3)});
+    stuur(m); }, 100);
   function update(dt){ let bezig = false; const nu = performance.now();
     for(const id in PEERS){ const p = PEERS[id], g = p.g, P = g.userData.P;
       if(nu - p.tLaatst > 6000){ weg(id); continue; }
-      if(g.visible !== p.fp){ g.visible = p.fp; bezig = true; }
+      const vm = voertuig(p), inVoertuig = p.veh === 'graaf' || p.veh === 'olifant', zie = p.fp && !inVoertuig;
+      if(g.visible !== zie){ g.visible = zie; bezig = true; }
+      if(vm){ const k = Math.min(1, dt*10); vm.position.x += (p.vx - vm.position.x)*k; vm.position.y += (p.vh - vm.position.y)*k; vm.position.z += (p.vz - vm.position.z)*k;
+        let dv = p.vr - vm.rotation.y; dv = Math.atan2(Math.sin(dv), Math.cos(dv)); vm.rotation.y += dv*k; bezig = true; }
       if(!p.fp) continue;
       if(P && P.staat !== 'staat') { bezig = true; continue; }                        // ligt na een treffer: ragdoll laat hem eerst opstaan
       const k = Math.min(1, dt*10), dx = p.x - g.position.x, dz = p.z - g.position.z;
@@ -2952,9 +2980,68 @@ const MP = (() => {
       if(Math.abs(dx) + Math.abs(dz) > 0.02 || Math.abs(dr) > 0.01) bezig = true; }
     for(let i = sporen.length - 1; i >= 0; i--){ const s = sporen[i]; s.t += dt; s.l.material.opacity = Math.max(0, 0.9 - s.t*6); if(s.t > 0.15){ scene.remove(s.l); s.l.geometry.dispose(); s.l.material.dispose(); sporen.splice(i, 1); } bezig = true; }
     return bezig; }
-  return {update, raak: (id, r) => stuur({t: 'raak', doel: id, r: {x: +r.x.toFixed(3), z: +r.z.toFixed(3)}}),
+  setInterval(toonHp, 500);
+  return {update, spawn, raak: (id, r, sch) => stuur({t: 'raak', doel: id, s: sch, r: {x: +r.x.toFixed(3), z: +r.z.toFixed(3)}}),
     schot: (o, d, w) => stuur({t: 'schot', w, o: {x: +o.x.toFixed(2), y: +o.y.toFixed(2), z: +o.z.toFixed(2)}, d: {x: +d.x.toFixed(4), y: +d.y.toFixed(4), z: +d.z.toFixed(4)}}),
     boem: p => stuur({t: 'boem', p: {x: +p.x.toFixed(2), y: +p.y.toFixed(2), z: +p.z.toFixed(2)}}), geraakt, online: () => verbonden}; })();
+// ============ BEDRIJVENTERREIN: dekking (containers, haspels, betonblokken, pallets, voertuigen, keet, vaten), botsen, spawnpunten ============
+const TERREIN = (() => {
+  const G = new THREE.Group(); G.name = 'terrein'; scene.add(G); const RECTS = [];
+  const mat = (c, o) => new THREE.MeshStandardMaterial(Object.assign({color: c, roughness: 0.75}, o || {}));
+  const mesh = (par, geo, m, x, y, z) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = true; o.receiveShadow = true; o.userData.massief = true; par.add(o); return o; };
+  const bx = (par, w, h, d, m, x, y, z) => mesh(par, new THREE.BoxGeometry(w, h, d), m, x, y, z);
+  const cy = (par, r, h, m, x, y, z, as) => { const o = mesh(par, new THREE.CylinderGeometry(r, r, h, 24), m, x, y, z); if(as === 'x') o.rotation.z = Math.PI/2; if(as === 'z') o.rotation.x = Math.PI/2; return o; };
+  const plaats = (x, z, rot, hw, hd) => { const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rot || 0; G.add(g); if(hw) RECTS.push({x, z, rot: rot || 0, hw, hd}); return g; };
+  const golf = (kleur) => { const t = ctex(256, 64, (c, W, H) => { c.fillStyle = kleur; c.fillRect(0, 0, W, H); for(let x = 0; x < W; x += 16){ c.fillStyle = 'rgba(0,0,0,.18)'; c.fillRect(x, 0, 5, H); c.fillStyle = 'rgba(255,255,255,.08)'; c.fillRect(x + 8, 0, 3, H); } }, [6, 1]); return mat(0xffffff, {map: t, roughness: 0.65, metalness: 0.3}); };
+  // zeecontainer 20 ft (6058 × 2438 × 2591)
+  function container(x, z, rot, kleur, y, merk){ const g = plaats(x, z, rot, y ? 0 : 30.6, y ? 0 : 12.5); g.position.y = y || 0;
+    const m = golf(kleur), rand = mat(new THREE.Color(kleur).multiplyScalar(0.7).getHex(), {metalness: 0.4});
+    bx(g, 60.6, 25.9, 24.4, m, 0, 12.95, 0); for(const sx of [-1, 1]) for(const sy of [0, 1]) for(const sz of [-1, 1]) bx(g, 1.8, 1.4, 1.8, mat(0x2a2c2e), sx*29.6, sy*24.5 + 0.7, sz*11.5);   // hoekstukken
+    bx(g, 0.6, 24, 23, rand, 30.4, 12.95, 0); for(const sz of [-5.8, 5.8]) for(let k = 0; k < 2; k++) bx(g, 0.8, 22, 0.4, mat(0x9aa0a4, {metalness: 0.8}), 30.8, 12.95, sz + (k ? 2 : -2));   // deuren + sluitstangen
+    plak(g, 14, 3, lbl(merk || 'FUDURA', 280, 60, kleur, '#ffffff', 'bold 40px Arial'), 0, 21, 12.25); return g; }
+  // kabelhaspel (Ø 1800, kabel YMvKas)
+  function haspel(x, z, rot){ const g = plaats(x, z, rot, 5, 9.2); const hout = mat(0x8b6236, {roughness: 0.9});
+    for(const sx of [-4.6, 4.6]) cy(g, 9, 0.8, hout, sx, 9, 0, 'x'); cy(g, 7.2, 8.4, mat(0x1d1e20, {roughness: 0.6}), 0, 9, 0, 'x'); cy(g, 1.2, 10.5, mat(0x6b6f73, {metalness: 0.7}), 0, 9, 0, 'x');
+    plak(g, 6, 1.6, lbl('YMvKas 4×240', 200, 52, '#e8e2d0', '#222', 'bold 26px Arial'), 5.05, 9, 0, Math.PI/2); return g; }
+  // betonblok 1600 × 800 × 800 met nokken
+  function blok(x, z, rot, n){ const g = plaats(x, z, rot, n*8.1, 4.1); const bm = mat(0xa9a8a2, {roughness: 0.95});
+    for(let i = 0; i < n; i++){ const xi = (i - (n - 1)/2)*16.2; bx(g, 16, 8, 8, bm, xi, 4, 0); for(const sx of [-4, 4]) cy(g, 1.8, 1, bm, xi + sx, 8.5, 0); } return g; }
+  // pallet met dozen
+  function pallet(x, z, rot){ const g = plaats(x, z, rot, 6.2, 4.2); const hout = mat(0xc8a46c, {roughness: 0.95}), doos = mat(0xb58b55, {roughness: 0.9});
+    bx(g, 12, 1.4, 8, hout, 0, 0.7, 0); for(let i = 0; i < 3; i++) for(let j = 0; j < 2; j++) bx(g, 5.6, 4.2, 7.6, doos, -3 + j*6, 3.5 + i*4.3, 0);
+    bx(g, 12.1, 0.3, 8.1, mat(0xd9dde0, {transparent: true, opacity: 0.35}), 0, 14.4, 0); return g; }
+  const wiel = (g, x, z, r) => { cy(g, r, 2.4, mat(0x141414, {roughness: 0.9}), x, r, z, 'z'); cy(g, r*0.55, 2.5, mat(0x9aa0a4, {metalness: 0.8}), x, r, z, 'z'); };
+  // bestelbus (servicebus monteur)
+  function bus(x, z, rot){ const g = plaats(x, z, rot, 26, 11); const wit = mat(0xf2f3f1, {roughness: 0.4, metalness: 0.2}), ruit = mat(0x22384a, {roughness: 0.1, metalness: 0.5});
+    bx(g, 36, 21, 20, wit, -6, 12, 0); bx(g, 14, 13, 19.6, wit, 18, 8.5, 0); bx(g, 8, 8, 19.8, ruit, 16, 17, 0); bx(g, 0.4, 7, 17, ruit, 25.1, 10, 0);
+    for(const sz of [-10.1, 10.1]) bx(g, 7, 6, 0.2, ruit, 16, 17, sz); for(const [wx, wz] of [[-16, -9.5], [-16, 9.5], [16, -9.5], [16, 9.5]]) wiel(g, wx, wz, 3.3);
+    plak(g, 18, 4, lbl('FUDURA  ·  E&A', 360, 80, '#f2f3f1', '#d2400a', 'bold 46px Arial'), -6, 13, 10.05); return g; }
+  // vrachtwagen met oplegger
+  function truck(x, z, rot){ const g = plaats(x, z, rot, 50, 13.5); const cab = mat(0x1f5fa8, {roughness: 0.4, metalness: 0.3}), ruit = mat(0x22384a, {roughness: 0.1, metalness: 0.5});
+    bx(g, 20, 26, 25, cab, 38, 15, 0); bx(g, 0.4, 10, 22, ruit, 48.2, 21, 0); bx(g, 76, 30, 25.5, mat(0xe9eae6, {roughness: 0.6}), -12, 18, 0); bx(g, 90, 2, 20, mat(0x2a2c2e), -2, 4, 0);
+    for(const wx of [40, 24, -32, -40, -48]) for(const wz of [-11, 11]) wiel(g, wx, wz, 4.8);
+    plak(g, 40, 7, lbl('ENERGIE-OPSLAG LOGISTIEK', 600, 100, '#e9eae6', '#1f5fa8', 'bold 48px Arial'), -12, 20, 12.8); return g; }
+  // bouwkeet
+  function keet(x, z, rot){ const g = plaats(x, z, rot, 30.5, 12.5); bx(g, 60, 26, 24, golf('#d3d6d2'), 0, 13.5, 0); bx(g, 60.4, 1, 24.4, mat(0x8e9394), 0, 27, 0);
+    bx(g, 9, 21, 0.4, mat(0x6b7075), -18, 11.5, 12.2); bx(g, 14, 8, 0.3, mat(0x22384a, {roughness: 0.1, metalness: 0.5}), 8, 16, 12.2); for(const sx of [-27, 27]) for(const sz of [-10, 10]) bx(g, 3, 1, 3, mat(0x444), sx, 0.5, sz);
+    plak(g, 18, 3.5, lbl('BOUWKEET · VCA', 300, 60, '#d3d6d2', '#222', 'bold 34px Arial'), 8, 22, 12.25); return g; }
+  // olievaten
+  function vaten(x, z, n){ const kl = [0x1f5fa8, 0xa8322a, 0x2f6b3a]; for(let i = 0; i < n; i++){ const a = i*2.4, r = i ? 6.5 : 0, vx = x + Math.cos(a)*r, vz = z + Math.sin(a)*r; const g = plaats(vx, vz, 0, 3, 3);
+      cy(g, 2.9, 8.8, mat(kl[i % 3], {roughness: 0.5, metalness: 0.4}), 0, 4.4, 0); for(const y of [2.9, 5.9]) cy(g, 3.0, 0.3, mat(0x2a2c2e), 0, y, 0); } }
+  // ---- indeling (buiten het hekwerk en weg van het kabeltracé naar het gebouw) ----
+  container(110, -65, 0, '#1f5fa8', 0, 'FUDURA'); container(110, -65, 0, '#a8322a', 25.9, 'MAERSK-ISH'); container(110, -38, 0, '#2f6b3a');
+  container(165, 75, Math.PI/2, '#a8322a'); container(-130, -95, 0.35, '#5d6b73', 0, 'SEACO'); container(25, 105, 0, '#1f5fa8'); container(-205, 140, 1.2, '#2f6b3a');
+  haspel(-60, 62, 0); haspel(-78, 72, 0.5); haspel(88, 72, 1.2); haspel(-170, 40, 0.2);
+  blok(-150, -55, 0, 3); blok(45, -75, 0.2, 3); blok(125, 140, -0.4, 4); blok(-40, 135, 1.57, 3); blok(195, -95, 0.6, 2);
+  pallet(-40, -62, 0.3); pallet(-28, -66, 0); pallet(62, 125, 0.8); pallet(150, 20, 0);
+  bus(-100, 72, 0.2); truck(195, -15, Math.PI/2); keet(-185, -60, 0); vaten(20, -52, 3); vaten(-232, 62, 4); vaten(140, 105, 3);
+  HVK.HG.traverse(o => { if(o.isMesh) o.userData.massief = true; });                                     // gebouw: kogels gaan nooit door de muren, ook niet bij 'wanden doorzichtig'
+  const SPAWNS = [[135, -100], [-145, -125], [-15, 160], [175, 120], [-235, -15], [60, -115], [-170, 175], [235, 45], [-95, 105], [85, 30], [-60, -100], [150, -40]];
+  function bots(p){ const r = 2.2; for(const q of RECTS){ const c = Math.cos(q.rot), s_ = Math.sin(q.rot), dx = p.x - q.x, dz = p.z - q.z, lx = dx*c - dz*s_, lz = dx*s_ + dz*c;
+      const ox = q.hw + r - Math.abs(lx), oz = q.hd + r - Math.abs(lz); if(ox <= 0 || oz <= 0) continue;
+      let nx = lx, nz = lz; if(ox < oz) nx = Math.sign(lx || 1)*(q.hw + r); else nz = Math.sign(lz || 1)*(q.hd + r);
+      p.x = q.x + nx*c + nz*s_; p.z = q.z - nx*s_ + nz*c; } }
+  return {G, spawns: SPAWNS, bots}; })();
 
 ['Graaf', 'Drone', 'Olif'].forEach((k, i) => { const c = $t('t' + k); if(c) c.addEventListener('change', ev => ev.target.checked ? RIT.inStap(['graaf', 'drone', 'olifant'][i]) : RIT.uit()); });
 function stapFP(dt){
@@ -2978,6 +3065,7 @@ function stapFP(dt){
   if(FP.step){ const c = FP.tuk ? TUK.g.position : STEP.g.position; FX.raak(c, FP.v, FP.tuk ? 9 : 4.5); if(FP.tuk) FX.check(c, FP.v); }
   const VL = FX.vlucht(); if(VL){ TUK.g.visible = false; STEP.g.visible = false; }
   const oogV = VL ? 3 + (12 - 9.5*VL.lig) + VL.h : oog;
+  TERREIN.bots(FP.pos);
   camera.position.set(FP.pos.x, oogV, FP.pos.z); { const sk = FX.schud(); if(sk > 0) camera.position.add(V((Math.random() - 0.5)*sk*4, (Math.random() - 0.5)*sk*3, (Math.random() - 0.5)*sk*4)); }
   camera.lookAt(camera.position.x - Math.sin(FP.yaw)*Math.cos(FP.pitch), camera.position.y + Math.sin(FP.pitch), camera.position.z - Math.cos(FP.yaw)*Math.cos(FP.pitch)); if(VL){ camera.rotateX(VL.rx); camera.rotateZ(VL.rz); } }
 function resize(){ const w = wrap.clientWidth, h = wrap.clientHeight; renderer.setSize(w, h); renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5)); camera.aspect = w/h; camera.updateProjectionMatrix(); }
