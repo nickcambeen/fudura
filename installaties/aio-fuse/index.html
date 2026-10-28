@@ -2840,8 +2840,11 @@ const GUN = (() => {
   const menuOpen = () => menu.style.display !== 'none';
   function toonMenu(v){ if(v) los(); menu.style.display = v ? 'block' : 'none'; WAPENS.forEach((w, i) => w.knop.style.background = i === wapen ? 'rgba(255,122,26,.55)' : 'rgba(255,255,255,.08)'); }
   function toets(k){ if(!menuOpen()) return false; if(k === 'Escape'){ toonMenu(false); return true; } if(k === '0'){ kies(-1); return true; } const n = parseInt(k, 10); if(n >= 1 && n <= WAPENS.length){ kies(n - 1); return true; } return /^[0-9]$/.test(k); }
-  wrap.addEventListener('pointerdown', e => { if(!actief()) return; if(e.button === 2){ zoom = true; vuil(4); } if(e.button === 0 && W().auto){ houd = true; tAuto = 0; } });
-  window.addEventListener('pointerup', e => { if(e.button === 2) zoom = false; if(e.button === 0) houd = false; });
+  // muisknoppen via mousedown/mouseup: die komen ook door als je links klikt terwijl rechts (inzoomen) al ingedrukt is (pointerdown niet)
+  wrap.addEventListener('mousedown', e => { if(!actief()) return; e.preventDefault(); if(document.pointerLockElement !== wrap) vang();
+    if(e.button === 2){ zoom = true; vuil(4); }
+    if(e.button === 0){ if(W().auto){ houd = true; tAuto = 0; } else vuur(); } });
+  window.addEventListener('mouseup', e => { if(e.button === 2) zoom = false; if(e.button === 0) houd = false; });
   window.addEventListener('blur', () => { zoom = false; houd = false; });
   function actief(){ return wapen >= 0 && FP.aan && !FP.rit && !FP.step; }
   function kies(i){ wapen = i; zoom = false; houd = false; toonMenu(false); if(i >= 0) setTimeout(vang, 0); else los(); if(i >= 0){ if(FP.rit) RIT.uit(true); if(FP.step){ zetTuk(false); zetStep(false); } if(!FP.aan) zetFP(true); meld(WAPENS[i].naam + ' ' + IKOON[i] + ' — ' + (WAPENS[i].auto ? 'muisknop ingedrukt houden = vuren' : 'klik om te schieten') + ' · rechtermuisknop = inzoomen · B = ander wapen'); }
@@ -2886,7 +2889,7 @@ const GUN = (() => {
     const w = W(); if(w && terug > 0){ terug = Math.max(0, terug - dt*(w.kogels > 1 ? 4 : 7)); w.g.position.z = w.pos[2] + terug*w.terug; w.g.position.y = w.pos[1] + terug*0.05; w.g.rotation.x = terug*(w.kogels > 1 ? 0.35 : 0.22); bezig = true; }
     if(tFl > 0){ tFl -= dt; if(tFl <= 0){ WAPENS.forEach(q => q.vuur.visible = false); if(flits) flits.intensity = 0; } bezig = true; }
     return bezig; }
-  const klik = () => { if(!actief()) return; if(document.pointerLockElement !== wrap){ vang(); return; } if(!W().auto) vuur(); };
+  const klik = () => {};                                                                      // schieten gaat via mousedown
   // muis vangen (pointer lock) zolang er een wapen actief is: bewegen = rondkijken, Esc = muis los, klik in beeld = weer vangen
   const vang = () => { try{ if(document.pointerLockElement !== wrap) wrap.requestPointerLock(); }catch(e){} };
   const los = () => { try{ if(document.pointerLockElement) document.exitPointerLock(); }catch(e){} };
