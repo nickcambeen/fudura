@@ -1928,8 +1928,9 @@ const ZN = {x0: SX0 - 7.0 - (NO_JB ? 0 : 7.0), x1: SXE + 7.85 + 7.0, z0: AZ - AD
   kaart.querySelectorAll('td').forEach(td => td.style.padding = '1px 10px 1px 0'); document.body.appendChild(kaart);
 }
 
-// ---------- referentiepersoon ----------
-{ const g = new THREE.Group(); const huid = M(0xd9a887), jas = M(0xf07a12), broek = M(0x2c3540), helm = M(0xffffff, {roughness: 0.35});
+// ---------- referentiepersoon (kan omvergereden worden met step / tuktuk) ----------
+let POP = null;
+{ const g = new THREE.Group(); POP = g; g.rotation.order = 'YXZ'; const huid = M(0xd9a887), jas = M(0xf07a12), broek = M(0x2c3540), helm = M(0xffffff, {roughness: 0.35});
   const add = (geo, m, x, y, z) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = true; g.add(o); };
   for(const sx of [-0.55, 0.55]) add(new THREE.CylinderGeometry(0.62, 0.55, 8.4, 12), broek, sx, 4.4, 0);
   add(new THREE.CylinderGeometry(1.75, 1.45, 6.2, 16), jas, 0, 11.6, 0); add(new THREE.SphereGeometry(1.15, 18, 14), huid, 0, 16.4, 0); add(new THREE.SphereGeometry(1.32, 18, 10, 0, Math.PI*2, 0, Math.PI/2), helm, 0, 16.8, 0);
@@ -2318,6 +2319,53 @@ function zetStep(v){ FP.step = !!v; FP.v = 0; if(!FP.step){ FP.tuk = false; $t('
   camera.fov = FP.step ? 62 : 42; camera.updateProjectionMatrix(); if(FP.step) FP.pitch = -0.45;
   if(FP.step && !FP.tuk) meld('Elektrische step: W = gas · S = remmen/achteruit · A/D = sturen · shift = turbo · F = afstappen'); }
 $t('tStep').addEventListener('change', e => { if(e.target.checked && FP.tuk){ FP.tuk = false; TUK.g.visible = false; $t('tTuk').checked = false; STEP.g.visible = FP.aan; return; } zetStep(e.target.checked); });
+// ---------- tuktuk-gekkigheid: MS-installatie binnenrijden = BOEM · referentiepersoon omverrijden (R = reset) ----------
+const FX = (() => {
+  const D = [], ov = document.createElement('div'); ov.style.cssText = 'position:fixed;inset:0;background:#fff1b8;opacity:0;pointer-events:none;z-index:25'; document.body.appendChild(ov);
+  let flits = null, schud = 0, ac = null, verbrand = false, xbox = null, binnen = false;
+  const geluid = (dur, freq, vol) => { try{ ac = ac || new (window.AudioContext || window.webkitAudioContext)(); const n = Math.floor(ac.sampleRate*dur), b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0);
+    for(let i = 0; i < n; i++) d[i] = (Math.random()*2 - 1)*Math.pow(1 - i/n, 2.5); const src = ac.createBufferSource(); src.buffer = b; const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = freq; const g = ac.createGain(); g.gain.value = vol;
+    src.connect(f); f.connect(g); g.connect(ac.destination); src.start(); }catch(e){} };
+  const bol = (m, r) => new THREE.Mesh(new THREE.SphereGeometry(r, 12, 9), m);
+  function boem(p){ geluid(2.2, 700, 1.0); geluid(0.25, 6000, 0.6); ov.style.transition = 'none'; ov.style.opacity = '0.9'; setTimeout(() => { ov.style.transition = 'opacity 1.1s'; ov.style.opacity = '0'; }, 30);
+    if(flits) scene.remove(flits); flits = new THREE.PointLight(0xffa040, 10, 600, 1.2); flits.position.copy(p).add(V(0, 12, 0)); flits.userData.t = 0; scene.add(flits);
+    for(let i = 0; i < 45; i++){ const o = bol(new THREE.MeshBasicMaterial({color: 0xff9a20, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending}), 1); o.position.copy(p).add(V((Math.random() - 0.5)*8, 3 + Math.random()*14, (Math.random() - 0.5)*8)); scene.add(o);
+      D.push({o, v: V(Math.random() - 0.5, Math.random()*0.9 + 0.2, Math.random() - 0.5).normalize().multiplyScalar(15 + Math.random()*30), soort: 'vuur', t: 0, life: 1.0 + Math.random()*0.9, s: 1.5 + Math.random()*2.5}); }
+    for(let i = 0; i < 30; i++){ const o = bol(new THREE.MeshStandardMaterial({color: 0x3a3d40, transparent: true, depthWrite: false, roughness: 1}), 1); o.position.copy(p).add(V((Math.random() - 0.5)*10, 8 + Math.random()*10, (Math.random() - 0.5)*10)); scene.add(o);
+      D.push({o, v: V((Math.random() - 0.5)*6, 8 + Math.random()*10, (Math.random() - 0.5)*6), soort: 'rook', t: -Math.random()*0.6, life: 6 + Math.random()*3, s: 3 + Math.random()*3}); }
+    for(let i = 0; i < 40; i++){ const o = new THREE.Mesh(new THREE.BoxGeometry(0.6 + Math.random()*2.5, 0.2 + Math.random()*0.8, 0.6 + Math.random()*2), new THREE.MeshStandardMaterial({color: [0x2b2d30, 0x9aa0a4, 0xd38f5c, 0xe8e9e7][i % 4], roughness: 0.6, metalness: i % 4 === 2 ? 0.8 : 0.3})); o.castShadow = true;
+      o.position.copy(p).add(V((Math.random() - 0.5)*8, 5 + Math.random()*12, (Math.random() - 0.5)*8)); scene.add(o);
+      D.push({o, v: V(Math.random() - 0.5, Math.random()*0.8 + 0.4, Math.random() - 0.5).normalize().multiplyScalar(30 + Math.random()*45), soort: 'brok', t: 0, life: 9, rot: V(Math.random()*9, Math.random()*9, Math.random()*9)}); }
+    for(let i = 0; i < 25; i++){ const o = bol(new THREE.MeshBasicMaterial({color: 0x9fd8ff}), 0.25); o.position.copy(p).add(V(0, 10, 0)); scene.add(o);   // vonken
+      D.push({o, v: V(Math.random() - 0.5, Math.random(), Math.random() - 0.5).normalize().multiplyScalar(60 + Math.random()*60), soort: 'vonk', t: 0, life: 0.6 + Math.random()*0.6}); }
+    const brand = new THREE.Mesh(new THREE.CircleGeometry(14, 28), new THREE.MeshBasicMaterial({color: 0x111111, transparent: true, opacity: 0.6, depthWrite: false})); brand.rotation.x = -Math.PI/2; brand.position.set(p.x, xbox ? xbox.min.y + 0.05 : p.y, p.z); scene.add(brand);
+    if(!verbrand && HVK.XR){ verbrand = true; HVK.XR.traverse(o => { if(o.isMesh){ o.material = [].concat(o.material).map(m => { const c = m.clone(); if(c.color) c.color.lerp(new THREE.Color(0x1a1a1a), 0.75); return c; }); if(o.material.length === 1) o.material = o.material[0]; } }); HVK.XR.rotation.z = 0.06; }
+    schud = 1.4; renderer.shadowMap.needsUpdate = true;
+    meld('💥 <b>BOEM!</b> Je reed de 10 kV-installatie (Xiria) binnen. In het echt: MS-ruimte alleen met aanwijzing (NEN 3840) en nooit met een tuktuk 😉 · R = reset'); }
+  function check(c, v){ if(!HVK.XR || !HVK.XR.children.length) return; if(!xbox){ HVK.XR.updateMatrixWorld(true); xbox = new THREE.Box3().setFromObject(HVK.XR).expandByScalar(1.5); }
+    const q = V(c.x, (xbox.min.y + xbox.max.y)/2, c.z), in_ = xbox.containsPoint(q);
+    if(in_ && !binnen && Math.abs(v) > 6){ boem(xbox.getCenter(new THREE.Vector3())); FP.v = -Math.sign(FP.v)*Math.min(40, Math.abs(FP.v)*0.5); }
+    binnen = in_; }
+  // referentiepersoon: omverrijden, wegvliegen, liggen, na 4 s weer opstaan
+  const P = {staat: 'staat', v: V(0, 0, 0), t: 0, kant: 0, yaw0: 0};
+  function raak(c, v, r){ if(!POP || P.staat !== 'staat' || Math.abs(v) < 5) return; const d = V(POP.position.x - c.x, 0, POP.position.z - c.z), L = d.length(); if(L > r) return;
+    d.normalize(); if(!P.yaw0) P.yaw0 = POP.rotation.y; P.staat = 'vlieg'; P.t = 0; P.v.copy(d).multiplyScalar(Math.abs(v)*0.9).add(V(0, 25 + Math.abs(v)*0.25, 0)); POP.rotation.y = Math.atan2(d.x, d.z);
+    geluid(0.15, 1800, 0.7); FP.v *= 0.75; meld(['Au! 🤕 Die referentiepersoon had nog geen VCA…', 'Oeps! Persoon omvergereden — hij staat zo weer op.', 'Kijk uit! Werken bij een BESS = verkeersregelaar erbij 🦺'][Math.floor(Math.random()*3)]); }
+  function update(dt){ let actief = D.length > 0 || !!flits || schud > 0 || P.staat !== 'staat';
+    for(let i = D.length - 1; i >= 0; i--){ const d = D[i]; d.t += dt; if(d.t < 0) continue; const k = d.t/d.life, o = d.o;
+      if(d.soort === 'vuur'){ o.position.addScaledVector(d.v, dt); d.v.multiplyScalar(Math.max(0, 1 - dt*2.5)); o.scale.setScalar(d.s*(1 + k*2.5)); o.material.opacity = Math.max(0, 1 - k); o.material.color.setHSL(0.1 - k*0.1, 1, 0.55 - k*0.35); }
+      else if(d.soort === 'rook'){ o.position.addScaledVector(d.v, dt); d.v.multiplyScalar(0.99); o.scale.setScalar(d.s*(1 + k*3)); o.material.opacity = 0.6*Math.sin(Math.PI*Math.min(1, k)); }
+      else { d.v.y -= 98*dt; o.position.addScaledVector(d.v, dt); if(o.position.y < 0.3){ o.position.y = 0.3; d.v.multiplyScalar(0.45); d.v.y = Math.abs(d.v.y)*0.35; if(d.rot) d.rot.multiplyScalar(0.6); }
+        if(d.rot){ o.rotation.x += d.rot.x*dt; o.rotation.y += d.rot.y*dt; o.rotation.z += d.rot.z*dt; } if(d.soort === 'vonk') o.scale.setScalar(1 - k); }
+      if(d.t > d.life){ scene.remove(o); o.geometry.dispose(); o.material.dispose(); D.splice(i, 1); } }
+    if(flits){ flits.userData.t += dt; flits.intensity = Math.max(0, 10*(1 - flits.userData.t/1.4)); if(flits.userData.t > 1.4){ scene.remove(flits); flits = null; } }
+    schud = Math.max(0, schud - dt);
+    if(POP && P.staat === 'vlieg'){ P.t += dt; P.v.y -= 98*dt; POP.position.addScaledVector(P.v, dt); POP.rotation.x = Math.min(Math.PI/2, POP.rotation.x + dt*7); POP.rotation.z += dt*4;
+      if(POP.position.y <= 0 && P.t > 0.2){ POP.position.y = 0; P.staat = 'lig'; P.t = 0; POP.rotation.x = Math.PI/2; POP.rotation.z = 0; geluid(0.2, 400, 0.6); renderer.shadowMap.needsUpdate = true; } }
+    else if(POP && P.staat === 'lig'){ P.t += dt; if(P.t > 4){ P.staat = 'op'; P.t = 0; } }
+    else if(POP && P.staat === 'op'){ P.t += dt; POP.rotation.x = Math.PI/2*Math.max(0, 1 - P.t/0.8); if(P.t >= 0.8){ POP.rotation.x = 0; P.staat = 'staat'; renderer.shadowMap.needsUpdate = true; } }
+    return actief; }
+  return {check, raak, update, schud: () => schud}; })();
 function stapFP(dt){
   const k = FP.keys, v = (k.shift ? 45 : 18)*dt, f = new THREE.Vector3(-Math.sin(FP.yaw), 0, -Math.cos(FP.yaw)), rt = new THREE.Vector3(-f.z, 0, f.x);
   let stuur = 0;
@@ -2334,7 +2382,8 @@ function stapFP(dt){
   const oog = FP.tuk ? 12.5 + yv : FP.oog + yv + (FP.step ? 1.2 : 0); STEP.g.visible = !!FP.step && !FP.tuk; TUK.g.visible = !!FP.tuk;
   if(FP.tuk){ TUK.g.position.set(FP.pos.x - Math.sin(FP.yaw)*2.0, yv, FP.pos.z - Math.cos(FP.yaw)*2.0); TUK.g.rotation.set(0, FP.yaw, 0); TUK.g.rotateZ(stuur*0.05*Math.min(1, Math.abs(FP.v)/80)); const rw = FP.v*dt/2.1; TUK.wv.rotation.x -= rw; TUK.wa.forEach(w => w.rotation.x -= rw); TUK.st.rotation.y = stuur*0.35; }
   else if(FP.step){ STEP.g.position.set(FP.pos.x - Math.sin(FP.yaw)*3.0, yv, FP.pos.z - Math.cos(FP.yaw)*3.0); STEP.g.rotation.set(0, FP.yaw, 0); STEP.g.rotateZ(stuur*0.14*Math.min(1, Math.abs(FP.v)/50)); const rw = FP.v*dt/1.0; STEP.wv.rotation.x -= rw; STEP.wa.rotation.x -= rw; STEP.zetKmh(FP.v); }
-  camera.position.set(FP.pos.x, oog, FP.pos.z);
+  if(FP.step){ const c = FP.tuk ? TUK.g.position : STEP.g.position; FX.raak(c, FP.v, FP.tuk ? 9 : 4.5); if(FP.tuk) FX.check(c, FP.v); }
+  camera.position.set(FP.pos.x, oog, FP.pos.z); { const sk = FX.schud(); if(sk > 0) camera.position.add(V((Math.random() - 0.5)*sk*4, (Math.random() - 0.5)*sk*3, (Math.random() - 0.5)*sk*4)); }
   camera.lookAt(FP.pos.x - Math.sin(FP.yaw)*Math.cos(FP.pitch), oog + Math.sin(FP.pitch), FP.pos.z - Math.cos(FP.yaw)*Math.cos(FP.pitch)); }
 function resize(){ const w = wrap.clientWidth, h = wrap.clientHeight; renderer.setSize(w, h); renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5)); camera.aspect = w/h; camera.updateProjectionMatrix(); }
 window.addEventListener('resize', resize); resize();
@@ -2353,6 +2402,7 @@ function animate(){ requestAnimationFrame(animate); const t = performance.now(),
   AIO.forEach(a => { if(Math.abs(a.uitDoel - a.uit) > 1e-3){ a.uit += (a.uitDoel - a.uit)*Math.min(1, dt*1.2); if(Math.abs(a.uitDoel - a.uit) < 1e-3) a.uit = a.uitDoel; beweegt = true;
     a.PK.forEach((p, k) => p.position.z = a.pD*Math.max(0, Math.min(1, a.uit*1.6 - (4 - k)*0.15))); a.KB.visible = a.uit < 0.01; a.zone.visible = a.uit > 0.01; } });
   const sim = false;
+  if(FX.update(dt)) beweegt = true;
   if(FP.aan) stapFP(dt); else updateCam();
   camera.updateMatrixWorld(); const camVer = !camVorig.equals(camera.matrixWorld); camVorig.copy(camera.matrixWorld);
   if(beweegt || sim) renderer.shadowMap.needsUpdate = true;
