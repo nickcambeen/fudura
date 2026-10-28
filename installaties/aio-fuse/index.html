@@ -1964,7 +1964,7 @@ let POP = null;
     for(let k = 0; k < 4; k++) mesh(o, cil(0.09, 0.08, 0.6), hand, -0.22 + k*0.15, -3.75, 0.05);
     p.rotation.z = sx*0.1; o.rotation.x = -0.25; return {p, o}; };
   const aL = arm(-1), aR = arm(1); aR.o.rotation.x = -1.1; aR.p.rotation.x = -0.15;
-  { const kb = new THREE.Group(); kb.position.set(0.05, -3.4, 0.45); kb.rotation.set(-0.6, 0, 0); aR.o.add(kb);              // klembord / tablet in de rechterhand
+  let tablet; { const kb = new THREE.Group(); tablet = kb; kb.position.set(0.05, -3.4, 0.45); kb.rotation.set(-0.6, 0, 0); aR.o.add(kb);              // klembord / tablet in de rechterhand
     mesh(kb, new THREE.BoxGeometry(1.7, 2.3, 0.08), bord, 0, 0, 0); mesh(kb, new THREE.BoxGeometry(1.5, 2.0, 0.02), M(0x7fb6d8, {emissive: 0x1a3550, roughness: 0.2}), 0, 0.02, 0.05); }
   // nek + hoofd: schedel, kaak, oren, neus, ogen met iris, wenkbrauwen, mond, haar onder de helm
   mesh(g, cil(0.55, 0.62, 0.9), huid, 0, 15.6, 0);
@@ -1984,7 +1984,8 @@ let POP = null;
   mesh(helm, cil(1.32, 1.36, 0.12, 32), helmM, 0, 0.0, 0.08, 1.0, 1, 1.12); mesh(helm, new THREE.CylinderGeometry(1.0, 1.0, 0.1, 24, 1, false, -Math.PI/2.6, Math.PI/1.3), helmM, 0, -0.02, 0.85, 1.0, 1, 0.9);   // rand + klep
   mesh(helm, new THREE.BoxGeometry(0.25, 0.2, 2.3), helmM, 0, 1.02, 0.0); plak(helm, 0.75, 0.22, lbl('FUDURA', 150, 44, '#f6f7f5', '#1e8a4a', 'bold 30px Arial'), 0, 0.5, 1.33, 0);
   { const kb = new THREE.Mesh(new THREE.TorusGeometry(0.95, 0.04, 6, 30, Math.PI), M(0x1c1d1f)); kb.position.set(0, -0.15, 0.05); kb.rotation.set(0, Math.PI/2, Math.PI); helm.add(kb); }
-  g.userData.lijf = {aL, aR, bL, bR, H};
+  const K = new THREE.Group(); K.position.y = 9.5; [...g.children].forEach(c => { c.position.y -= 9.5; K.add(c); }); g.add(K);   // lichaam draait om de heup (ragdoll)
+  g.userData.lijf = {aL, aR, bL, bR, H, K, helm, tablet};
   g.position.set(XA(N_AIO - 1) + (N_AIO < 3 ? 14 : 9), 0, PL/2 + (N_AIO < 3 ? 2 : 6)); g.rotation.y = 0.6; scene.add(g); }
 
 // ---------- simulatie ----------
@@ -2413,11 +2414,56 @@ const FX = (() => {
     const q = V(c.x, (xbox.min.y + xbox.max.y)/2, c.z), in_ = xbox.containsPoint(q);
     if(in_ && !binnen && Math.abs(v) > 6){ boem(xbox.getCenter(new THREE.Vector3())); FP.v = -Math.sign(FP.v)*Math.min(40, Math.abs(FP.v)*0.5); }
     binnen = in_; }
-  // referentiepersoon: omverrijden, wegvliegen, liggen, na 4 s weer opstaan
-  const P = {staat: 'staat', v: V(0, 0, 0), t: 0, kant: 0, yaw0: 0};
-  function raak(c, v, r){ if(!POP || P.staat !== 'staat' || Math.abs(v) < 5) return; const d = V(POP.position.x - c.x, 0, POP.position.z - c.z), L = d.length(); if(L > r) return;
-    d.normalize(); if(!P.yaw0) P.yaw0 = POP.rotation.y; P.staat = 'vlieg'; P.t = 0; P.v.copy(d).multiplyScalar(Math.abs(v)*0.9).add(V(0, 25 + Math.abs(v)*0.25, 0)); POP.rotation.y = Math.atan2(d.x, d.z);
-    geluid(0.15, 1800, 0.7); FP.v *= 0.75; meld(['Au! 🤕 Die referentiepersoon had nog geen VCA…', 'Oeps! Persoon omvergereden — hij staat zo weer op.', 'Kijk uit! Werken bij een BESS = verkeersregelaar erbij 🦺'][Math.floor(Math.random()*3)]); }
+  // referentiepersoon — aanrijding met (vereenvoudigde) ragdoll-fysica: benen worden weggemaaid, bovenlijf klapt op de neus/voorruit,
+  // lichaam wordt in rijrichting weggeslingerd, tuimelt, stuitert en glijdt uit; helm en tablet vliegen los; daarna krabbelt hij overeind
+  const P = {staat: 'staat', v: V(0, 0, 0), w: V(0, 0, 0), t: 0, hip: 9.5, los: [], doel: null, tDoel: 0};
+  const PIV = 9.5, HOEK = 2*Math.PI, wrap = a => Math.atan2(Math.sin(a), Math.cos(a)), rnd = (a, b) => a + Math.random()*(b - a);
+  function losmaken(o, v, w){ if(!o || !o.parent) return; const terug = {par: o.parent, pos: o.position.clone(), rot: o.rotation.clone()}; scene.attach(o); P.los.push({o, v, w, terug}); }
+  function pose(soort){ const L = POP.userData.lijf; if(!L) return;
+    P.doel = soort === 'lucht' ? {aL: [rnd(-2.6, 0.4), 0, rnd(-2.4, -0.6)], aR: [rnd(-2.6, 0.4), 0, rnd(0.6, 2.4)], eL: rnd(-1.6, -0.1), eR: rnd(-1.6, -0.1), bL: rnd(-1.3, 0.9), bR: rnd(-1.3, 0.9), H: [rnd(-0.6, 0.6), rnd(-0.5, 0.5), rnd(-0.4, 0.4)]}
+      : {aL: [rnd(-0.4, 0.4), 0, rnd(-1.7, -1.0)], aR: [rnd(-0.6, 0.3), 0, rnd(1.0, 1.8)], eL: rnd(-0.6, -0.1), eR: rnd(-0.9, -0.2), bL: rnd(-0.9, 0.0), bR: rnd(0.0, 0.3), H: [rnd(-0.2, 0.2), rnd(-0.7, 0.7), 0]}; }
+  function ledematen(dt, snel){ const L = POP.userData.lijf, d = P.doel; if(!L || !d) return; const k = Math.min(1, dt*snel), e = (o, a, b) => o.rotation[a] += (b - o.rotation[a])*k;
+    e(L.aL.p, 'x', d.aL[0]); e(L.aL.p, 'z', d.aL[2]); e(L.aR.p, 'x', d.aR[0]); e(L.aR.p, 'z', d.aR[2]); e(L.aL.o, 'x', d.eL); e(L.aR.o, 'x', d.eR); e(L.bL, 'x', d.bL); e(L.bR, 'x', d.bR);
+    e(L.H, 'x', d.H[0]); e(L.H, 'y', d.H[1]); e(L.H, 'z', d.H[2]); }
+  function raak(c, v, r){ if(!POP || P.staat !== 'staat' || Math.abs(v) < 5) return; const d = V(POP.position.x - c.x, 0, POP.position.z - c.z); if(d.length() > r) return;
+    const L = POP.userData.lijf, s = Math.abs(v), f = V(-Math.sin(FP.yaw), 0, -Math.cos(FP.yaw)).multiplyScalar(Math.sign(v) || 1), zij = d.clone().addScaledVector(f, -d.dot(f));
+    if(!L.rust) L.rust = [L.aL.p, L.aR.p, L.bL, L.bR, L.aL.o, L.aR.o, L.H].map(o => o.rotation.clone());
+    POP.rotation.set(0, Math.atan2(f.x, f.z), 0); L.K.rotation.set(0, 0, 0); P.hip = PIV; P.t = 0; P.staat = 'vlieg'; P.tDoel = 0; pose('lucht');
+    const hard = s > 28, zl = zij.lengthSq() > 0.01 ? zij.normalize() : V(f.z, 0, -f.x);
+    P.v.copy(f).multiplyScalar(s*(hard ? rnd(0.8, 0.92) : 0.6)).addScaledVector(zl, s*rnd(0.04, 0.14)).add(V(0, hard ? 8 + s*0.2 : 3, 0));
+    P.w.set(hard ? -(5 + s*0.05) : -(2.5 + s*0.04), rnd(-1.5, 1.5), rnd(-1, 1)*(hard ? 4 : 1.5));                     // benen weg → bovenlijf klapt achterover naar het voertuig
+    if(hard){ losmaken(L.helm, P.v.clone().multiplyScalar(0.8).add(V(rnd(-8, 8), 30, rnd(-8, 8))), V(rnd(-9, 9), rnd(-9, 9), rnd(-9, 9)));
+      losmaken(L.tablet, P.v.clone().multiplyScalar(0.6).add(V(rnd(-15, 15), 22, rnd(-15, 15))), V(rnd(-12, 12), rnd(-12, 12), rnd(-12, 12))); }
+    geluid(0.09, 260, 1.0); geluid(0.05, 2600, 0.35); FP.v *= hard ? 0.5 : 0.75; schud = Math.max(schud, hard ? 0.55 : 0.2);
+    meld(hard ? ['Au! 🤕 Die referentiepersoon had nog geen VCA…', 'Persoon aangereden — wacht even tot hij weer opstaat.', 'Kijk uit! Werken bij een BESS = verkeersregelaar erbij 🦺'][Math.floor(Math.random()*3)] : 'Hé! Je duwt hem omver — rustig aan met die ' + (FP.tuk ? 'tuktuk' : 'step') + '.'); }
+  function persoon(dt){ if(!POP || P.staat === 'staat') return false; const L = POP.userData.lijf, K = L.K; P.t += dt;
+    // losse helm / tablet: zwaartekracht, stuiteren, uitglijden
+    P.los.forEach(l => { l.v.y -= 98*dt; l.o.position.addScaledVector(l.v, dt); l.o.rotation.x += l.w.x*dt; l.o.rotation.y += l.w.y*dt; l.o.rotation.z += l.w.z*dt;
+      if(l.o.position.y < 0.6){ l.o.position.y = 0.6; l.v.y = Math.abs(l.v.y) > 12 ? -l.v.y*0.35 : 0; l.v.x *= 0.7; l.v.z *= 0.7; l.w.multiplyScalar(0.6); if(Math.abs(l.v.y) < 1 && l.v.lengthSq() < 4){ l.w.multiplyScalar(0.8); } } });
+    if(P.staat === 'vlieg'){
+      P.v.y -= 98*dt; P.hip += P.v.y*dt; POP.position.x += P.v.x*dt; POP.position.z += P.v.z*dt;
+      K.rotation.x += P.w.x*dt; K.rotation.y += P.w.y*dt; K.rotation.z += P.w.z*dt;
+      const clr = 1.3 + (PIV - 1.3)*Math.abs(Math.cos(K.rotation.x))*Math.abs(Math.cos(K.rotation.z));                    // heuphoogte boven de grond bij deze stand
+      P.tDoel -= dt; if(P.tDoel <= 0){ pose(P.hip > clr + 0.5 ? 'lucht' : 'grond'); P.tDoel = rnd(0.12, 0.3); } ledematen(dt, 9);
+      const hor = Math.hypot(P.v.x, P.v.z);
+      if(P.hip <= clr + 1.2){ const rem = Math.min(hor, 80*dt); if(hor > 0){ P.v.x -= P.v.x/hor*rem; P.v.z -= P.v.z/hor*rem; } }
+      if(P.hip <= clr){ P.hip = clr; const rem = 0; if(hor > 0){ P.v.x -= P.v.x/hor*rem; P.v.z -= P.v.z/hor*rem; }      // wrijving (glijden over het maaiveld)
+        if(P.v.y < -14){ P.v.y = -P.v.y*0.2; P.w.multiplyScalar(0.5); geluid(0.08, 300, 0.8); renderer.shadowMap.needsUpdate = true; } else if(P.v.y < 0) P.v.y = 0;
+        P.w.y *= Math.max(0, 1 - dt*5); P.w.z *= Math.max(0, 1 - dt*5); P.w.x += (-(hor/7) - P.w.x)*Math.min(1, dt*3);                                     // rollen over de grond i.p.v. vrij tollen
+        if(hor < 9) P.w.x *= Math.max(0, 1 - dt*6); }
+      if((hor < 3 && P.t > 0.6 && P.hip <= clr + 0.3) || P.t > 4.5){ P.staat = 'tot'; P.t = 0; K.rotation.x = wrap(K.rotation.x); K.rotation.z = wrap(K.rotation.z); P.v.set(0, 0, 0); pose('grond'); } }
+    else if(P.staat === 'tot'){ const doelX = K.rotation.x >= 0 ? Math.PI/2 : -Math.PI/2, doelZ = Math.abs(K.rotation.z) > Math.PI/2 ? Math.sign(K.rotation.z)*Math.PI : 0, k = Math.min(1, dt*4);    // komt tot rust: plat op rug/buik
+      K.rotation.x += (doelX - K.rotation.x)*k; K.rotation.z += (doelZ - K.rotation.z)*k; K.rotation.y *= 1 - k*0.2; P.hip += (1.3 - P.hip)*k; ledematen(dt, 4);
+      if(P.t > 0.8){ P.staat = 'lig'; P.t = 0; renderer.shadowMap.needsUpdate = true; } }
+    else if(P.staat === 'lig'){ if(P.t > 0.9 && P.t < 1.0) L.H.rotation.y = 0.6; if(P.t > 2.0 && P.t < 2.6) L.aR.p.rotation.x = -0.6 - Math.sin(P.t*9)*0.25;               // beweegt even: hoofd draaien, hand
+      if(P.t > 3.5){ P.staat = 'op'; P.t = 0; P.van = {x: K.rotation.x, y: K.rotation.y, z: K.rotation.z, hip: P.hip}; geluid(0.4, 180, 0.25); } }
+    else if(P.staat === 'op'){ const T = 2.2, k = Math.min(1, P.t/T), e = k*k*(3 - 2*k), zit = Math.sin(Math.PI*Math.min(1, k*1.3));                                   // omrollen, op de knieën, overeind
+      K.rotation.x = P.van.x*(1 - e); K.rotation.y = P.van.y*(1 - e); K.rotation.z = P.van.z*(1 - e); P.hip = P.van.hip + (PIV - P.van.hip)*e;
+      L.bL.rotation.x = -1.4*zit; L.bR.rotation.x = -0.6*zit; L.aL.p.rotation.set(-0.6*zit, 0, -0.3*zit); L.aR.p.rotation.set(-0.9*zit, 0, 0.3*zit); L.aL.o.rotation.x = -0.5*zit; L.aR.o.rotation.x = -0.5*zit; L.H.rotation.set(0.2*zit, 0, 0);
+      if(k >= 1){ P.staat = 'staat'; K.rotation.set(0, 0, 0); P.hip = PIV; [L.aL.p, L.aR.p, L.bL, L.bR, L.aL.o, L.aR.o, L.H].forEach((o, i) => o.rotation.copy(L.rust[i]));
+        P.los.forEach(l => { l.terug.par.add(l.o); l.o.position.copy(l.terug.pos); l.o.rotation.copy(l.terug.rot); }); P.los = [];
+        meld(['Au… m’n heup. Dat wordt een melding in het incidentregister.', 'Hij staat weer — helm weer op, tablet opgeraapt.', 'Gelukkig had hij z’n PBM aan 🦺'][Math.floor(Math.random()*3)]); renderer.shadowMap.needsUpdate = true; } }
+    POP.position.y = P.hip - PIV; return true; }
   function update(dt){ let actief = D.length > 0 || !!flits || schud > 0 || P.staat !== 'staat';
     for(let i = D.length - 1; i >= 0; i--){ const d = D[i]; d.t += dt; if(d.t < 0) continue; const k = d.t/d.life, o = d.o;
       if(d.soort === 'vuur'){ o.position.addScaledVector(d.v, dt); d.v.multiplyScalar(Math.max(0, 1 - dt*2.5)); o.scale.setScalar(d.s*(1 + k*2.5)); o.material.opacity = Math.max(0, 1 - k); o.material.color.setHSL(0.1 - k*0.1, 1, 0.55 - k*0.35); }
@@ -2431,11 +2477,7 @@ const FX = (() => {
       if(vl.h > 0 || vl.lig < 0.05){ vl.rx += vl.wx*dt; vl.rz += vl.wz*dt; } actief = true; }
     if(flits){ flits.userData.t += dt; flits.intensity = Math.max(0, 10*(1 - flits.userData.t/1.4)); if(flits.userData.t > 1.4){ scene.remove(flits); flits = null; } }
     schud = Math.max(0, schud - dt);
-    const LJ = POP && POP.userData.lijf; if(LJ && !LJ.rust) LJ.rust = [LJ.aL.p, LJ.aR.p, LJ.bL, LJ.bR, LJ.aL.o, LJ.aR.o, LJ.H].map(o => o.rotation.clone());
-    if(POP && P.staat === 'vlieg'){ P.t += dt; if(LJ){ const w = P.t*18; LJ.aL.p.rotation.set(Math.sin(w)*1.4, 0, -1.2 - Math.sin(w*0.7)*0.6); LJ.aR.p.rotation.set(Math.cos(w)*1.4, 0, 1.2 + Math.cos(w*0.8)*0.6); LJ.bL.rotation.x = Math.sin(w*0.9)*0.9; LJ.bR.rotation.x = -Math.sin(w*0.9)*0.9; LJ.H.rotation.x = Math.sin(w*1.3)*0.3; } P.v.y -= 98*dt; POP.position.addScaledVector(P.v, dt); POP.rotation.x = Math.min(Math.PI/2, POP.rotation.x + dt*7); POP.rotation.z += dt*4;
-      if(POP.position.y <= 0 && P.t > 0.2){ POP.position.y = 0; P.staat = 'lig'; P.t = 0; POP.rotation.x = Math.PI/2; POP.rotation.z = 0; geluid(0.2, 400, 0.6); if(LJ){ LJ.aL.p.rotation.set(0.2, 0, -1.5); LJ.aR.p.rotation.set(-0.3, 0, 1.3); LJ.bL.rotation.x = 0.3; LJ.bR.rotation.x = -0.1; LJ.H.rotation.set(0, 0.5, 0); } renderer.shadowMap.needsUpdate = true; } }
-    else if(POP && P.staat === 'lig'){ P.t += dt; if(P.t > 4){ P.staat = 'op'; P.t = 0; } }
-    else if(POP && P.staat === 'op'){ P.t += dt; POP.rotation.x = Math.PI/2*Math.max(0, 1 - P.t/0.8); if(P.t >= 0.8){ POP.rotation.x = 0; P.staat = 'staat'; if(LJ) [LJ.aL.p, LJ.aR.p, LJ.bL, LJ.bR, LJ.aL.o, LJ.aR.o, LJ.H].forEach((o, i) => o.rotation.copy(LJ.rust[i])); renderer.shadowMap.needsUpdate = true; } }
+    if(persoon(dt)) actief = true;
     return actief; }
   return {check, raak, update, schud: () => schud, dood: () => dood, vlucht: () => vl}; })();
 function stapFP(dt){
