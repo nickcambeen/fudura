@@ -2339,9 +2339,22 @@ const FX = (() => {
     for(let i = 0; i < 25; i++){ const o = bol(new THREE.MeshBasicMaterial({color: 0x9fd8ff}), 0.25); o.position.copy(p).add(V(0, 10, 0)); scene.add(o);   // vonken
       D.push({o, v: V(Math.random() - 0.5, Math.random(), Math.random() - 0.5).normalize().multiplyScalar(60 + Math.random()*60), soort: 'vonk', t: 0, life: 0.6 + Math.random()*0.6}); }
     const brand = new THREE.Mesh(new THREE.CircleGeometry(14, 28), new THREE.MeshBasicMaterial({color: 0x111111, transparent: true, opacity: 0.6, depthWrite: false})); brand.rotation.x = -Math.PI/2; brand.position.set(p.x, xbox ? xbox.min.y + 0.05 : p.y, p.z); scene.add(brand);
-    if(!verbrand && HVK.XR){ verbrand = true; HVK.XR.traverse(o => { if(o.isMesh){ o.material = [].concat(o.material).map(m => { const c = m.clone(); if(c.color) c.color.lerp(new THREE.Color(0x1a1a1a), 0.75); return c; }); if(o.material.length === 1) o.material = o.material[0]; } }); HVK.XR.rotation.z = 0.06; }
-    schud = 1.4; renderer.shadowMap.needsUpdate = true;
-    meld('💥 <b>BOEM!</b> Je reed de 10 kV-installatie (Xiria) binnen. In het echt: MS-ruimte alleen met aanwijzing (NEN 3840) en nooit met een tuktuk 😉 · R = reset'); }
+    if(!verbrand && HVK.XR){ verbrand = true; HVK.XR.traverse(o => { if(o.isMesh){ o.userData.matOrig = o.material; o.material = [].concat(o.material).map(m => { const c = m.clone(); if(c.color) c.color.lerp(new THREE.Color(0x1a1a1a), 0.75); return c; }); if(o.material.length === 1) o.material = o.material[0]; } }); HVK.XR.rotation.z = 0.06; }
+    schud = 1.4; renderer.shadowMap.needsUpdate = true; setTimeout(wasted, 650);
+    meld('💥 <b>BOEM!</b> 10 kV-installatie binnengereden. In het echt: MS-ruimte alleen met aanwijzing (NEN 3840) 😉'); }
+  // GTA-stijl: grijs beeld, slow motion, "WASTED", daarna zwart en respawn buiten bij de opstelling
+  let dood = false; const ws = document.createElement('div');
+  ws.style.cssText = 'position:fixed;left:0;right:0;top:50%;transform:translateY(-50%);height:150px;display:none;align-items:center;justify-content:center;pointer-events:none;z-index:26;background:linear-gradient(90deg,rgba(0,0,0,0) 0%,rgba(0,0,0,.62) 25%,rgba(0,0,0,.62) 75%,rgba(0,0,0,0) 100%)';
+  ws.innerHTML = '<span style="font:italic 900 96px/1 Georgia,\'Times New Roman\',serif;letter-spacing:6px;color:#c8312c;-webkit-text-stroke:3px #1a0505;text-shadow:0 4px 18px rgba(0,0,0,.8);transform:scale(1.6);opacity:0;transition:transform 1.4s cubic-bezier(.2,.8,.2,1),opacity .5s">WASTED</span>';
+  document.body.appendChild(ws); const zw = document.createElement('div'); zw.style.cssText = 'position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;z-index:27;transition:opacity .7s'; document.body.appendChild(zw);
+  function wasted(){ if(dood) return; dood = true; const cv = renderer.domElement; cv.style.transition = 'filter 1.2s'; cv.style.filter = 'grayscale(1) contrast(1.2) brightness(0.8)'; geluid(1.6, 220, 0.5);
+    ws.style.display = 'flex'; const t = ws.firstChild; requestAnimationFrame(() => { t.style.opacity = '1'; t.style.transform = 'scale(1)'; });
+    setTimeout(() => { zw.style.opacity = '1'; }, 4300);
+    setTimeout(() => { respawn(); zw.style.opacity = '0'; ws.style.display = 'none'; t.style.opacity = '0'; t.style.transform = 'scale(1.6)'; cv.style.filter = ''; dood = false; }, 5100); }
+  function respawn(){ for(let i = D.length - 1; i >= 0; i--){ scene.remove(D[i].o); D.splice(i, 1); } if(flits){ scene.remove(flits); flits = null; } schud = 0;
+    if(HVK.XR){ HVK.XR.traverse(o => { if(o.isMesh && o.userData.matOrig){ o.material = o.userData.matOrig; delete o.userData.matOrig; } }); HVK.XR.rotation.z = 0; verbrand = false; }
+    zetTuk(false); if(!FP.aan) zetFP(true); FP.keys = {}; FP.v = 0; FP.pos.set(XA(0) - 25, 0, PL/2 + 45); FP.yaw = -0.45; FP.pitch = -0.08; FP.oog = 17; binnen = false; renderer.shadowMap.needsUpdate = true; vuil(8);
+    meld('Respawn 🏥 — de Xiria is weer heel. Volgende keer: tuktuk parkeren vóór de MS-ruimte.'); }
   function check(c, v){ if(!HVK.XR || !HVK.XR.children.length) return; if(!xbox){ HVK.XR.updateMatrixWorld(true); xbox = new THREE.Box3().setFromObject(HVK.XR).expandByScalar(1.5); }
     const q = V(c.x, (xbox.min.y + xbox.max.y)/2, c.z), in_ = xbox.containsPoint(q);
     if(in_ && !binnen && Math.abs(v) > 6){ boem(xbox.getCenter(new THREE.Vector3())); FP.v = -Math.sign(FP.v)*Math.min(40, Math.abs(FP.v)*0.5); }
@@ -2365,8 +2378,9 @@ const FX = (() => {
     else if(POP && P.staat === 'lig'){ P.t += dt; if(P.t > 4){ P.staat = 'op'; P.t = 0; } }
     else if(POP && P.staat === 'op'){ P.t += dt; POP.rotation.x = Math.PI/2*Math.max(0, 1 - P.t/0.8); if(P.t >= 0.8){ POP.rotation.x = 0; P.staat = 'staat'; renderer.shadowMap.needsUpdate = true; } }
     return actief; }
-  return {check, raak, update, schud: () => schud}; })();
+  return {check, raak, update, schud: () => schud, dood: () => dood}; })();
 function stapFP(dt){
+  if(FX.dood()){ FP.v *= Math.max(0, 1 - dt*2); FP.keys = {}; FP.pitch = Math.max(-0.6, FP.pitch - dt*0.12); FP.yaw += dt*0.15; }
   const k = FP.keys, v = (k.shift ? 45 : 18)*dt, f = new THREE.Vector3(-Math.sin(FP.yaw), 0, -Math.cos(FP.yaw)), rt = new THREE.Vector3(-f.z, 0, f.x);
   let stuur = 0;
   if(FP.step){ const gas = (k.w || k.arrowup) ? 1 : 0, rem = (k.s || k.arrowdown) ? 1 : 0, vmax = FP.tuk ? (k.shift ? 220 : 130) : (k.shift ? 140 : 70);
