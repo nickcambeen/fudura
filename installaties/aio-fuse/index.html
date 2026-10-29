@@ -1203,10 +1203,27 @@ function bouwVMSBlok(K, JBOPT, YDIN43){ const kunst = M(0xd5d8d4, {roughness: 0.
   else {
     // optie 2 — VMS64 onder: 3 DIN-rails (735 / 575 / 415) met reserve-rijgklemmen; VMS43 boven: hoofdschakelaar -Q0 160 A 4P
     // rail 2: 4 × 3F-aardlekautomaat (RCBO 3P+N, 4 modulen) · rail 3: 3 × 3F + 1 × 1F-aardlekautomaat (RCBO 1P+N, 2 modulen)
+    const KAMRAIL = [];
     { let nr = 2; [[575, ['3', '3', '3', '3']], [415, ['3', '3', '3', '1']]].forEach(([y, rij]) => { din(JX(877.6), JX(1272.6), JB(y));
         const G2 = new THREE.Group(); G2.scale.setScalar(0.01); G2.position.set(0, JB(y), zDin); K.add(G2); ABBDEV.zet(G2); let x = JX(892)*100;
-        rij.forEach(f => { const tag = '-F' + nr++; const r = f === '3' ? ABBDEV.s203(x, 0, tag, 'RCBO 3P+N 30 mA') : ABBDEV.ds201(x, 0, tag, 'B16', tag + '  RCBO 1P+N 30 mA'); x = r.x1 + 2; }); });
-      ABBDEV.zet(AG); }
+        const xs = []; rij.forEach(f => { const tag = '-F' + nr++; const r = f === '3' ? ABBDEV.s203(x, 0, tag, 'RCBO 3P+N 30 mA') : ABBDEV.ds201(x, 0, tag, 'B16', tag + '  RCBO 1P+N 30 mA'); xs.push([r.x0, r.x1, f]); x = r.x1 + 2; });
+        // kamrail 3P+N (ABB PS4/.. 16 mm²) over de bovenklemmen van de hele rij; bij de 1F-automaat alleen L1 + N (pennen weggebroken)
+        { const xa = xs[0][0] + 2, xb = xs[xs.length - 1][1] - 2, yK = 34, zK = 46, kamM = M(0xd38f5c, {metalness: 0.85, roughness: 0.3}), isoK = M(0xe8e6e0, {transparent: true, opacity: 0.85, roughness: 0.4});
+          box(G2, xb - xa, 9, 12, isoK, (xa + xb)/2, yK, zK);
+          for(let k = 0; k < 4; k++) box(G2, xb - xa - 2, 1.4, 1.4, kamM, (xa + xb)/2, yK - 3 + k*2, zK + 6.2, false);
+          xs.forEach(([x0, x1, f]) => { const pins = f === '3' ? [0, 1, 2, 3] : [0, 3]; pins.forEach(k => box(G2, 3, 10, 2, kamM, (f === '3' ? x0 + 8.9 + k*17.8 : x0 + 8.9 + (k ? 17.8 : 0)), yK + 6, zK - 2, false)); });
+          box(G2, 4, 11, 13, M(0x2b2d30), xa - 2, yK, zK);                                                                                    // eindkap
+          KAMRAIL.push({y: JB(y), x0: xa/100, z: zDin + (zK + 6)/100}); } }); ABBDEV.zet(AG);
+      // verdeelblok 4P 160 A (L1 L2 L3 N) rechts op rail 1; voeding vanaf de onderklemmen van -Q0, uitgangen naar het begin van beide kamrails (4 × 16 mm²)
+      const xv = JX(1225), yv = JB(735), zv = zDin;
+      box(K, 0.72, 0.9, 0.62, M(0x6b7075, {roughness: 0.5}), xv, yv, zv + 0.31); for(let k = 0; k < 4; k++){ box(K, 0.15, 0.82, 0.08, M(['L1', 'L2', 'L3', 'N'].map(f => ({L1: 0x7a4a22, L2: 0x1c1c1c, L3: 0x8e9397, N: 0x1f5fbf})[f])[k]), xv - 0.27 + k*0.18, yv, zv + 0.63); }
+      plak(K, 0.7, 0.13, lbl('-X0 verdeelblok 160 A', 200, 36, '#ffffff', '#111', 'bold 20px Arial'), xv, yv - 0.55, zv + 0.02);
+      const qx = p => JX(1075) - 0.54 + p*0.36, qOnder = JB(985) - 0.99, qz = zB + 0.2 + 0.6, fz = ['L1', 'L2', 'L3', 'N'];
+      fz.forEach((f, k) => { const xb = xv - 0.27 + k*0.18;
+        kabel(K, [V(qx(k), qOnder, qz + 0.2), V(qx(k), qOnder - 0.25, qz + 0.2), V(qx(k) + 0.15 + k*0.05, JB(800), qz + 0.25 + k*0.03), V(xb, JB(800), qz + 0.25 + k*0.03), V(xb, yv + 0.45, zv + 0.65)], 0.045, ader[f], 0.1, 6);
+        KAMRAIL.forEach((kr, j) => { const xk = kr.x0 + 0.04 + k*0.12;
+          kabel(K, [V(xb, yv - 0.45, zv + 0.65), V(xb, yv - 0.6 - j*0.03, zv + 0.7), V(JX(1290) - k*0.05 - j*0.22, yv - 0.6 - j*0.03, zv + 0.75), V(JX(1290) - k*0.05 - j*0.22, kr.y + 0.75, zv + 0.75), V(xk, kr.y + 0.75, kr.z + 0.15), V(xk, kr.y + 0.45, kr.z)], 0.03, ader[f], 0.06, 6); }); });
+      KAMRAIL.length = 0; }
     const xq = JX(1075), yq = JB(985), zq = zB + 0.2, grijsQ = M(0xd4d7d1, {roughness: 0.5}), zwartQ = M(0x16181b, {roughness: 0.4});
     box(K, 3.8, 2.6, 0.03, matZink, xq, yq, zB + 0.18);                                                                                    // montageplaat
     box(K, 1.5, 1.7, 0.95, grijsQ, xq, yq, zq + 0.48); box(K, 1.1, 1.1, 0.12, M(0x3d6a96, {roughness: 0.5}), xq, yq, zq + 1.0);                 // romp + blauw frontvlak
