@@ -1160,6 +1160,18 @@ const AUXUIT = []; let F0 = null, METCOM = null;
       for(const rz of [0.4, 0.4 + Math.PI/2]){ const sl = box(dk, 10, 1.8, 1.2, M(0x0f2c55), x, y, DL + 3.6, false); sl.rotation.z = rz; } }
     plak(dk, 70, 13, lbl(naam + ' + VHR + DF', 280, 52, '#d4d7d1', '#3c4045', 'bold 26px Arial'), 0, h/2 - 22, DL + 0.2);
     KAP_SL.push(dk); dk.userData.vms = true;
+    // maatvoering (aan/uit met 'Maatvoering'): breedte × hoogte × diepte volgens O&K-maatschets (VMS43 = 440 × 320 × 175/179)
+    { const MG = new THREE.Group(); MG.visible = false; G.add(MG); MAAT.push(MG); const lm = new THREE.LineBasicMaterial({color: 0x1a4f9c, depthTest: false, transparent: true}), zf = DB + DL + 6, D = DB + 3 + DL;
+      const lijn = (pts) => { const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts.map(q => new THREE.Vector3(...q))), lm); l.renderOrder = 10; MG.add(l); };
+      const pijl = (a, b) => { lijn([a, b]); const d = new THREE.Vector3(...b).sub(new THREE.Vector3(...a)).normalize(), k = 9;
+        for(const [p, sgn] of [[a, 1], [b, -1]]){ const q = new THREE.Vector3(...p); const n = Math.abs(d.z) > 0.5 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(-d.y, d.x, 0);
+          lijn([q.clone().addScaledVector(d, sgn*k).addScaledVector(n, k*0.5).toArray(), q.toArray(), q.clone().addScaledVector(d, sgn*k).addScaledVector(n, -k*0.5).toArray()]); } };
+      const tekst = (t, x, y, z, rz, ry) => { const m = plak(MG, t.length*15 + 30, 34, lbl(t, t.length*26 + 40, 56, '#ffffff', '#1a4f9c', 'bold 34px Arial'), x, y, z); m.material.depthTest = false; m.renderOrder = 11; if(rz) m.rotation.z = rz; if(ry) m.rotation.y = ry; };
+      const nw = Math.round(w/10)*10, nh = Math.round(h/10)*10, boven = naam !== 'VMS43', yw = boven ? h/2 + 40 : -h/2 - 40, xh = -w/2 - 40;
+      lijn([[-w/2, (boven ? 1 : -1)*h/2, zf], [-w/2, yw + (boven ? 10 : -10), zf]]); lijn([[w/2, (boven ? 1 : -1)*h/2, zf], [w/2, yw + (boven ? 10 : -10), zf]]); pijl([-w/2, yw, zf], [w/2, yw, zf]); tekst(String(nw), 0, yw + (boven ? 20 : -20), zf + 1);
+      lijn([[-w/2, -h/2, zf], [xh - 10, -h/2, zf]]); lijn([[-w/2, h/2, zf], [xh - 10, h/2, zf]]); pijl([xh, -h/2, zf], [xh, h/2, zf]); tekst(String(nh), xh - 20, 0, zf + 1, Math.PI/2);
+      const yd = boven ? h/2 : -h/2, xd = -w/2 - 40; lijn([[-w/2, yd, 0], [xd - 10, yd, 0]]); lijn([[-w/2, yd, D], [xd - 10, yd, D]]); pijl([xd, yd, 0], [xd, yd, D]); tekst('175 (179 met kap)', xd - 10, yd + (boven ? 22 : -22), D/2, 0, -Math.PI/2);
+      tekst(naam + ' · ' + nw + ' × ' + nh + ' × 175', 0, 0, zf + 2); }
     return {cx, cy, w: w/100, h: h/100, x0: cx - w/200, y1: cy + h/200}; };
   const din = (x0, x1, y) => { box(K, x1 - x0, 0.35, 0.15, M(0xc0c4c6, {metalness: 0.8, roughness: 0.3}), (x0 + x1)/2, y, zDin - 0.075); };
   const etiket = (t, x, y, w) => plak(K, w, 0.12, lbl(t, Math.round(w*160), 20, '#ffffff', '#111', 'bold 13px Arial'), x, y, zDin + 0.69);
