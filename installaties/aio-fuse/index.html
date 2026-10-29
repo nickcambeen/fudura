@@ -106,7 +106,7 @@
     <label>Afdekkappen Jean Müller-stroken <input type="checkbox" id="tKapS" checked></label>
     <label>MetCom MCS301 per AIO (ERE-meting, optie) <input type="checkbox" id="tMet"></label>
     <div class="grp">Hekwerk + veiligheid</div>
-    <label>Hekwerk met 2 vluchtdeuren <input type="checkbox" id="tHekA" checked></label>
+    <label>Hekwerk met 2 vluchtdeuren <input type="checkbox" id="tHekA"></label>
     <label>Veiligheidsafstanden (deuren open + 700) <input type="checkbox" id="tZoneA"></label>
     <label>AIO-kasten verbergen (kabelbanen van boven) <input type="checkbox" id="tAioUit"></label>
     <div class="grp">EMS-buitenkast</div>
@@ -2181,7 +2181,7 @@ const HEKA = new THREE.Group(); scene.add(HEKA);
     for(const s2 of [-1, 1]){ const m = new THREE.Mesh(new THREE.PlaneGeometry(6, 1.5), new THREE.MeshBasicMaterial({map: b})); m.position.set(x0 + 5.5, H + 2.2, z + s2*0.3); if(s2 < 0) m.rotation.y = Math.PI; HEKA.add(m); } }
   { const t = sprite('hekwerk 2,0 m · 2 vluchtdeuren 1100 (panieksluiting)', V(hx1, H + 4, hz1), 0.5, '#555'); scene.add(t); LABELS.push(t); }
 }
-document.getElementById('tHekA').addEventListener('change', e => { HEKA.visible = e.target.checked; });
+document.getElementById('tHekA').addEventListener('change', e => { HEKA.visible = e.target.checked; }); HEKA.visible = document.getElementById('tHekA').checked;   // standaard uit
 document.getElementById('tZoneA').addEventListener('change', e => { const v = e.target.checked; ZONEA.visible = v;
   doors.forEach(d => { if(/^kast #|^junction box$|^EMS-kast$/.test(d.naam || '')) d.doel = v ? d.open : d.dicht; }); });   // deuren open: zo zie je de deurzwaai + 700
 const zetAioUit = a => { AIO.forEach(o => o.G.visible = !a); };
