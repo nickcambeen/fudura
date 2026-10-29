@@ -1127,7 +1127,7 @@ const railLug = (x, y, r, f) => { const z0 = f === 'N' ? JZ(81) : JZ(71); box(K,
 const hexNut3 = (x, y, z) => { const n = cyl(K, 0.1, 0.07, matZink, x, y, z, 'z', 6); n.rotation.y = 0; };
 // rechts: VMS64 (boven, y 507–1150, lege montageplaat) + VMS43 (onder, y 187–510) op x 853,6–1296,6, diepte 31–160, deksels met venster tot 210
 //   VMS43: DIN-rails (y 415 en 287, maatschets O&K), bovenste: -F0 ABB S203-B10NA 3P+N, -F1 DS201 B16 30 mA, 3 × PTV 4 grijs + 3 × PTV 4 blauw met FBS-bruggen, 2 × wcd 230 V; N/PE-hakenrail (16 klemmen)
-const AUXUIT = []; let F0 = null, METCOM = null;
+const AUXUIT = []; let F0 = null, METCOM = null; const QFEED = {g: null};
 const JBOPT = (() => { try{ return new URLSearchParams(location.search).get('jb') === '2' ? 2 : 1; }catch(_){ return 1; } })();   // JB-indeling: 1 = VMS64 boven + VMS43 onder · 2 = VMS43 met hoofdschakelaar 160 A boven + VMS64 met DIN-rails onder
 const YDIN43 = JBOPT === 2 ? 735 : 415;
 const JB_BEDRADING = false;
@@ -1286,19 +1286,21 @@ bouwVMSBlok(VMSG[2], 2, 735); bouwVMSBlok(VMSG[1], 1, 415);
   const yMs = JB(380), yOnder = JB(120);                                                                // aders gaan onder de stroken de mantel in; mantel onder de VMS64 door
   // mantel: onder strook #5 → in de spleet tussen de NH-stroken en de VMS-bakken (x ± 838) omhoog op de montageplaat → wartel M32 in de LINKERWAND van de VMS43 (boven -Q0)
   const xSp = JX(838), yWa = JB(1112), xWa = JX(853.6);
-  kabel(G, [V(1.05, yMs, zM), V(1.05, yMs - 0.25, zM), V(xSp, yMs - 0.25, zM), V(xSp, yWa - 0.4, zM), V(xSp, yWa, zM), V(xWa - 0.05, yWa, zM)], rM, mantel, 0.3, 8);
+  const STROOK5 = N_AIO < 5;   // bij 5 AIO's is strook #5 bezet → -Q0 krijgt een eigen kabel vanaf de HVK (via de sleuf, eigen sparing onder de spleet)
+  if(STROOK5) kabel(G, [V(1.05, yMs, zM), V(1.05, yMs - 0.25, zM), V(xSp, yMs - 0.25, zM), V(xSp, yWa - 0.4, zM), V(xSp, yWa, zM), V(xWa - 0.05, yWa, zM)], rM, mantel, 0.3, 8);
+  else { kabel(G, [V(xSp, KS - 0.3, zM), V(xSp, KS + 0.4, zM), V(xSp, yWa - 0.4, zM), V(xSp, yWa, zM), V(xWa - 0.05, yWa, zM)], rM, mantel, 0.3, 8); box(G, 0.4, PL_H + 0.04, 0.4, M(0x0b0c0d, {roughness: 0.9}), xSp, PL_H/2, zM, false); }
   for(const yb of [JB(500), JB(750), JB(950)]){ box(G, 0.06, 0.04, 0.28, M(0x2b2d30), xSp - 0.14, yb, zM); box(G, 0.3, 0.04, 0.04, M(0x2b2d30), xSp, yb, zM + 0.14); }   // kabelzadels op de plaat
   cyl(G, 0.2, 0.16, matZwart, xWa + 0.02, yWa, zM, 'x', 16); cyl(G, 0.23, 0.05, matZwart, xWa - 0.08, yWa, zM, 'x', 6);                                 // wartel M32 + contramoer
   cyl(G, rM + 0.015, 0.2, M(0x111214), xWa + 0.2, yWa, zM, 'x', 14);                                                                           // krimpkous bij het afstrippen
-  [['L1', 0], ['L2', 1], ['L3', 2]].forEach(([f, p], j) => { const t0 = s5.fase[p][0], t = V(t0.x, t0.y, t0.z + 0.06); box(G, 0.2, 0.26, 0.04, tin, t.x, t.y - 0.05, t.z + 0.02);   // kabelschoen naast de AIO-schoen
+  if(STROOK5) [['L1', 0], ['L2', 1], ['L3', 2]].forEach(([f, p], j) => { const t0 = s5.fase[p][0], t = V(t0.x, t0.y, t0.z + 0.06); box(G, 0.2, 0.26, 0.04, tin, t.x, t.y - 0.05, t.z + 0.02);   // kabelschoen naast de AIO-schoen
     kabel(G, [V(t.x, t.y - 0.15, t.z), V(t.x, t.y - 0.6, t.z - 0.2), V(1.0 + j*0.04, yMs + 0.6, zM + 0.1), V(1.05, yMs + 0.05, zM)], 0.035, ader[f], 0.15, 6); });
-  for(const [f, y] of [['N', JB(232)], ['PE', JB(132)]]){ const xb = JX(765), zr = f === 'N' ? JZ(84) : JZ(74); box(G, 0.2, 0.24, 0.04, tin, xb, y + 0.08, zr + 0.02);
+  if(STROOK5) for(const [f, y] of [['N', JB(232)], ['PE', JB(132)]]){ const xb = JX(765), zr = f === 'N' ? JZ(84) : JZ(74); box(G, 0.2, 0.24, 0.04, tin, xb, y + 0.08, zr + 0.02);
     kabel(G, [V(xb, y + 0.2, zr), V(xb, y + 0.5, zr - 0.1), V(1.0, yMs - 0.4, zM + 0.05), V(1.05, yMs - 0.05, zM)], f === 'PE' ? 0.03 : 0.035, ader[f], 0.15, 6); }
   // in de VMS43: aders van de wartel naar de bovenklemmen van -Q0 (L1 L2 L3 N); PE op een PE-klem (groen/geel) links naast -Q0
   const x0 = xWa + 0.3; box(G, 0.12, 0.6, 0.45, M(0x3fa34d), JX(890), JB(1000), KZ0 + 0.45); box(G, 0.13, 0.08, 0.46, M(0xe8d23a), JX(890), JB(1000) + 0.14, KZ0 + 0.45);
   [['L1', 0], ['L2', 1], ['L3', 2], ['N', 3]].forEach(([f, p], j) => kabel(G, [V(x0, yWa + 0.02*(j - 1.5), zM), V(x0 + 0.25, yWa + 0.03*(j - 1.5), zM + 0.1), V(qx(p) - 0.05, JB(1125) - j*0.02, qz - 0.3), V(qx(p), JB(1125) - j*0.02, qz - 0.25), V(qx(p), qTop + 0.12, qz - 0.2), V(qx(p), qTop, qz - 0.2)], 0.035, ader[f], 0.1, 6));
   kabel(G, [V(x0, yWa - 0.06, zM), V(x0 + 0.05, yWa - 0.3, zM + 0.1), V(JX(890), JB(1000) + 0.35, KZ0 + 0.5)], 0.03, ader.PE, 0.1, 6);
-  const t = sprite('-Q0 voeding: NH2-strook #5 → YMvK 5G25 (voorstel, nog doorrekenen) → wartel M32 linkerwand VMS43', V(0, 0, 0), 0.35, '#c0281f'); G.add(t); t.position.set(xSp - 0.6, JB(700), zM + 0.4); LABELS.push(t); } }
+  const t = sprite(STROOK5 ? '-Q0 voeding: NH2-strook #5 → YMvK 5G25 (voorstel, nog doorrekenen) → wartel M32 linkerwand VMS43' : '-Q0 voeding: eigen kabel vanaf HVK (strook #5 bezet bij 5 AIO\'s) → wartel M32 linkerwand VMS43', V(0, 0, 0), 0.35, '#c0281f'); G.add(t); t.position.set(xSp - 0.6, JB(700), zM + 0.4); LABELS.push(t); } }
 VMSG[1].visible = JBOPT === 1; VMSG[2].visible = JBOPT === 2;
 { // kastverlichting Finder 6 W (x 961–1272, y 1227–1270) en deurschakelaar met M20-wartel rechtsboven
   box(K, 3.11, 0.43, 0.44, M(0xf1f2ef), JX(1116.5), JB(1248.5), JZ(286)); box(K, 3.0, 0.08, 0.36, M(0xffffff, {emissive: 0xfff6dd, emissiveIntensity: 0.9}), JX(1116.5), JB(1227), JZ(286));
@@ -1835,6 +1837,11 @@ CAT = 'voeding';
   const pad = [V(xI, yVb + 0.25, zG), V(xI, yVb - 0.2, zG), V(xI, yVb - 0.7, zG), V(xR, yVb - 1.2, zG), V(xR, KS + 0.4, zG), V(xR, -0.6, zG), V(xR, yD, zG + 0.6), V(xS, yD, 3.2), V(xS, yD, hz - 9.8),
     V(A.onder.x, yD, hz - 6.0), V(A.onder.x, -1.2, A.onder.z), V(A.onder.x, HVK.P - 0.3, A.onder.z), A.onder];
   const k = kabel(KAB, pad.map(W), rK, mantel, 0.6, 8); KABELS.push(k);
+  // bij 5 AIO's + JB-optie 2: eigen voedingskabel -Q0 vanaf een groep in de HVK, in de sleuf naast de 230 V-kabel, eigen sparing onder de spleet naast de VMS
+  if(N_AIO >= 5){ QFEED.g = new THREE.Group(); KAB.add(QFEED.g); QFEED.g.visible = JBOPT === 2; const xQ = JX(838), zQ = -0.75, d = 0.18;
+    const p2 = [V(xQ, KS - 0.3, zQ), V(xQ, -0.6, zQ), V(xQ, yD, zQ + 0.6), V(xS + d, yD, 3.2), V(xS + d, yD, hz - 9.8), V(A.onder.x + d, yD, hz - 6.0), V(A.onder.x + d, -1.2, A.onder.z), V(A.onder.x + d, HVK.P - 0.3, A.onder.z), V(A.onder.x + d, A.onder.y, A.onder.z)];
+    const kq = kabel(QFEED.g, p2.map(W), 0.12, mantel, 0.6, 8); KABELS.push(kq);
+    const tq = sprite('-Q0 160 A: eigen kabel YMvK 5G.. vanaf HVK (strook #5 bezet) — doorrekenen', W(V(xS + 1.5, 2.4, hz*0.55)), 0.55, '#c0281f'); QFEED.g.add(tq); tq.position.copy(W(V(xS + 1.5, 2.4, hz*0.55))); LABELS.push(tq); }
   { const t = sprite((JBOPT === 2 ? 'aparte 230 V voeding JB: YMvK 3G2,5 vanaf HVK → hoofdschakelaar -Q0 160 A → -F0 S203-B10' : 'aparte 230 V voeding JB: YMvK 3G2,5 vanaf HVK → onderzijde -F0 S203-B10'), W(V(xS, 1.6, hz*0.45)), 0.55, '#c0281f'); scene.add(t); LABELS.push(t); }
   // aders van onderen op -F0: L op pool 1 (onder = klem 2), N op de N-pool (onder); PE naar de hakenrail
   const yO = JB(YDIN43) - 0.42, yS = yVb + 0.25;
@@ -2261,7 +2268,7 @@ const VIEWS = {
 { const box = document.getElementById('cfgN');
   for(let n = 1; n <= 5; n++){ const b = document.createElement('button'); b.textContent = n; b.title = n + ' × DELTerra C'; if(n === N_AIO) b.classList.add('aan');
     b.addEventListener('click', () => { if(n === N_AIO) return; const u = new URL(location.href); u.searchParams.set('n', n); location.href = u.toString(); }); box.appendChild(b); }
-  const zetJB = v => { VMSG[1].visible = v === 1; VMSG[2].visible = v === 2; document.querySelectorAll('#cfgJB button').forEach(x => x.classList.toggle('aan', +x.dataset.jb === v));
+  const zetJB = v => { VMSG[1].visible = v === 1; VMSG[2].visible = v === 2; if(QFEED.g) QFEED.g.visible = v === 2; document.querySelectorAll('#cfgJB button').forEach(x => x.classList.toggle('aan', +x.dataset.jb === v));
     const c = $t('tMet'); if(c){ c.disabled = v === 2; if(v === 2 && c.checked){ c.checked = false; c.dispatchEvent(new Event('change')); } c.parentElement.title = v === 2 ? 'Alleen bij JB-optie 1 (lege montageplaat in de VMS64)' : ''; }
     try{ const u = new URL(location.href); u.searchParams.set('jb', v); history.replaceState(null, '', u.toString()); }catch(_){}
     renderer.shadowMap.needsUpdate = true; if(typeof vuil === 'function') vuil(4); meld(v === 2 ? 'Junction box optie 2: hoofdschakelaar 160 A + 7 × 3F en 1 × 1F aardlekautomaat' : 'Junction box optie 1: VMS64 (montageplaat) + VMS43'); };
