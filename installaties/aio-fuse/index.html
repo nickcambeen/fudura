@@ -1123,8 +1123,9 @@ const railLug = (x, y, r, f) => { const z0 = f === 'N' ? JZ(81) : JZ(71); box(K,
   KABDEEL.push(cyl(K, r + 0.025, 0.22, f === 'N' ? M(0x1f5fbf) : ader.PE, x, y - 0.58, z0 + 0.19, null, 12)); plak(K, 0.26, 0.15, lbl(f, 52, 30, f === 'N' ? '#1f5fbf' : '#3fa34d', '#fff', 'bold 20px Arial'), x, y + 0.27, z0 + 0.07); };
 const hexNut3 = (x, y, z) => { const n = cyl(K, 0.1, 0.07, matZink, x, y, z, 'z', 6); n.rotation.y = 0; };
 // rechts: VMS64 (boven, y 507–1150, lege montageplaat) + VMS43 (onder, y 187–510) op x 853,6–1296,6, diepte 31–160, deksels met venster tot 210
-//   VMS43: DIN-rail (y 348,5): -F0 ABB S203-B10NA 3P+N, -F1 DS201 B16 30 mA, 3 × PTV 4 grijs + 3 × PTV 4 blauw met FBS-bruggen, 2 × wcd 230 V; N/PE-hakenrail (16 klemmen)
+//   VMS43: DIN-rails (y 415 en 287, maatschets O&K), bovenste: -F0 ABB S203-B10NA 3P+N, -F1 DS201 B16 30 mA, 3 × PTV 4 grijs + 3 × PTV 4 blauw met FBS-bruggen, 2 × wcd 230 V; N/PE-hakenrail (16 klemmen)
 const AUXUIT = []; let F0 = null, METCOM = null;
+const YDIN43 = 415;   // VMS43 volgens O&K-maatschets: DIN-rails op 95 en 223 mm onder de bovenkant (y 510) → 415 (automaten) en 287 (reserve)
 { const kunst = M(0xd5d8d4, {roughness: 0.55}), kunstD = M(0xb9bdb9, {roughness: 0.6}), abbW = M(0xeeeeea, {roughness: 0.5}), abbG = M(0xc9ccc9, {roughness: 0.5});
   const rook = new THREE.MeshStandardMaterial({color: 0xbfcfd4, transparent: true, opacity: 0.32, roughness: 0.08, metalness: 0.1, depthWrite: false});
   const zB = KZ0 + 0.02, zDin = JZ(111);
@@ -1175,25 +1176,27 @@ const AUXUIT = []; let F0 = null, METCOM = null;
     return {cx, cy, w: w/100, h: h/100, x0: cx - w/200, y1: cy + h/200}; };
   const din = (x0, x1, y) => { box(K, x1 - x0, 0.35, 0.15, M(0xc0c4c6, {metalness: 0.8, roughness: 0.3}), (x0 + x1)/2, y, zDin - 0.075); };
   const etiket = (t, x, y, w) => plak(K, w, 0.12, lbl(t, Math.round(w*160), 20, '#ffffff', '#111', 'bold 13px Arial'), x, y, zDin + 0.69);
-  const AG = new THREE.Group(); AG.scale.setScalar(0.01); AG.position.set(0, JB(348.5), zDin); K.add(AG); ABBDEV.zet(AG);
+  const AG = new THREE.Group(); AG.scale.setScalar(0.01); AG.position.set(0, JB(YDIN43), zDin); K.add(AG); ABBDEV.zet(AG);
   const abb = (x, n, type, tag, tekst) => { const X = x*100; let r;
     if(type === 'wcd') r = ABBDEV.m1175(X, 0, tag); else if(n >= 3) r = ABBDEV.s203(X, 0, tag, tekst || ''); else r = ABBDEV.ds201(X, 0, tag, ((tekst || '').match(/B\d+/) || ['B16'])[0], tag + '  EMS / WCD');
     return {x0: r.x0/100, x1: r.x1/100, xc: r.xc/100}; };
   const b1 = vms(853.6, 1296.6, 507, 1150, 'VMS64', -1, [1]);                                                                   // VMS64: lege montageplaat 380 × 580 (router/EMS-ruimte)
   box(K, 3.8, 5.8, 0.03, matZink, JX(1075), JB(828.5), zB + 0.2); const lblRes = plak(K, 1.4, 0.2, lbl('reserve / router', 280, 40, '#c8cdd0', '#5d6b73', 'bold 22px Arial'), JX(1075), JB(828.5), zB + 0.22);
+  // VMS64: 4 DIN-rails TS35 (steek 128 mm: 95 / 223 / 351 / 479 onder de bovenkant y 1150) — verborgen als de ERE-meters op de montageplaat staan
+  const RG64 = new THREE.Group(); K.add(RG64); for(const y of [1055, 927, 799, 671]){ box(RG64, JX(1272.6) - JX(877.6), 0.35, 0.15, M(0xc0c4c6, {metalness: 0.8, roughness: 0.3}), (JX(877.6) + JX(1272.6))/2, JB(y), zDin - 0.075); for(let k = 0; k < 12; k++) box(RG64, 0.12, 0.06, 0.02, M(0x6b7075), JX(890 + k*32), JB(y), zDin + 0.005, false); }
   // optie ERE-meting: MetCom MCS301 (CT x/5 A) per AIO op de lege montageplaat van de VMS64 (2 × 2, max. 4 meters van 150 × 260,5 mm) — aan/uit met een knop
-  { const MG = new THREE.Group(); K.add(MG); MG.visible = false; METCOM = {MG, lblRes}; const zP = zB + 0.22, n = Math.min(4, N_AIO);
+  { const MG = new THREE.Group(); K.add(MG); MG.visible = false; METCOM = {MG, lblRes, rails: RG64}; const zP = zB + 0.22, n = Math.min(4, N_AIO);
     for(let i = 0; i < n; i++){ const x = JX(1075) + (i % 2 ? 0.78 : -0.78), y = JB(828.5) + (i < 2 ? 1.36 : -1.36);
       const r = DETM.mcs301(MG, x, y, zP, null); plak(MG, 0.9, 0.16, lbl('ERE AIO #' + (i + 1), 180, 32, '#ffffff', '#111', 'bold 22px Arial'), x, y - 1.36, zP + 0.02);
       for(let k = 0; k < 10; k++){ const xx = x - 0.62 + k*0.124; kabel(MG, [V(xx, y - 1.25, zP + 0.44), V(xx, y - 1.42, zP + 0.4), V(x + (k - 4.5)*0.03, y - 1.5, zP + 0.3)], 0.018, k % 3 === 1 ? ader.L1 : (k === 9 ? ader.N : M(0x1d1e20)), 0.05, 4); } }
     if(N_AIO > 4){ const t = plak(MG, 2.6, 0.3, lbl('ruimte voor 4 × MCS301 — 5e meter elders plaatsen', 420, 46, '#fff4c2', '#6b4c00', 'bold 20px Arial'), JX(1075), JB(828.5) - 2.95, zP + 0.03); } }
   const b2 = vms(853.6, 1296.6, 187, 510, 'VMS43', 1, [-1]);                                                                    // VMS43
-  din(JX(877.6), JX(1272.6), JB(348.5));
+  din(JX(877.6), JX(1272.6), JB(YDIN43)); din(JX(877.6), JX(1272.6), JB(287)); plak(K, 0.9, 0.14, lbl('reserve TS35', 180, 28, '#c0c4c6', '#3c4045', 'bold 18px Arial'), JX(1240), JB(287), zDin + 0.02);
   const f0 = abb(JX(895), 3.9, 'ls', '-F0', 'S203-B10NA 3P+N'), f1 = abb(JX(965), 1.95, 'ls', '-F1', 'DS201 B16 30mA');
   // 3 × PTV 4 grijs + 3 × PTV 4 blauw met FBS 3-6 bruggen
-  for(let k = 0; k < 6; k++){ const x = JX(1003 + k*6.2); box(K, 0.06, 0.62, 0.46, k < 3 ? M(0xc9c3b4) : M(0x2f6fd0), x, JB(348.5), zDin + 0.23); for(const s of [-1, 1]) box(K, 0.04, 0.06, 0.04, M(0xf28a00), x, JB(348.5) + s*0.2, zDin + 0.48); }
-  for(const k of [0, 3]) box(K, 0.18, 0.04, 0.03, M(0xc8281c), JX(1009 + k*6.2), JB(348.5), zDin + 0.49);
-  etiket('-X1', JX(1019), JB(348.5) - 0.45, 0.3);
+  for(let k = 0; k < 6; k++){ const x = JX(1003 + k*6.2); box(K, 0.06, 0.62, 0.46, k < 3 ? M(0xc9c3b4) : M(0x2f6fd0), x, JB(YDIN43), zDin + 0.23); for(const s of [-1, 1]) box(K, 0.04, 0.06, 0.04, M(0xf28a00), x, JB(YDIN43) + s*0.2, zDin + 0.48); }
+  for(const k of [0, 3]) box(K, 0.18, 0.04, 0.03, M(0xc8281c), JX(1009 + k*6.2), JB(YDIN43), zDin + 0.49);
+  etiket('-X1', JX(1019), JB(YDIN43) - 0.45, 0.3);
   const w1 = abb(JX(1037), 2.45, 'wcd', '-WCD1'), w2 = abb(JX(1081), 2.45, 'wcd', '-WCD2');
   // N/PE-hakenrail L = 330 met 16 klemmen
   box(K, 3.34, 0.12, 0.12, matKoper, JX(1075), JB(223.5), zB + 0.3); for(let k = 0; k < 16; k++) cyl(K, 0.035, 0.12, matZink, JX(918 + k*21), JB(223.5), zB + 0.4, 'z', 6);
@@ -1202,7 +1205,7 @@ const AUXUIT = []; let F0 = null, METCOM = null;
   const dw = (pts, k, r) => KABDEEL.push(kabel(K, pts, r || 0.035, k, 0.08, 6));
   F0 = {f0, f1, zB, zDin};
   // -F0 (voeding van onderen) → uitgang bovenkant → -F1 ingang bovenkant (L en N); -F1 uitgang onderkant → WCD1/WCD2 (L, N) van onderen
-  const yR = JB(348.5), zK = zDin + 0.27, kx = (d, k) => d.x0 + 0.089 + k*0.178;
+  const yR = JB(YDIN43), zK = zDin + 0.27, kx = (d, k) => d.x0 + 0.089 + k*0.178;
   dw([[kx(f0, 0), yR + 0.47, zK], [kx(f0, 0), yR + 0.82, zK + 0.05], [kx(f1, 0), yR + 0.82, zK + 0.05], [kx(f1, 0), yR + 0.47, zK]], ader.L1);
   dw([[kx(f0, 3), yR + 0.47, zK], [kx(f0, 3), yR + 0.68, zK + 0.1], [kx(f1, 1), yR + 0.68, zK + 0.1], [kx(f1, 1), yR + 0.47, zK]], ader.N);
   // -F1 onderkant → rijgklemmen -X1 (PTV 4, van onderen): L op X1:1 (grijs), N op X1:4 (blauw); FBS-bruggen 1-2-3 en 4-5-6
@@ -1752,7 +1755,7 @@ CAT = 'voeding';
   const k = kabel(KAB, pad.map(W), rK, mantel, 0.6, 8); KABELS.push(k);
   { const t = sprite('aparte 230 V voeding JB: YMvK 3G2,5 vanaf HVK → onderzijde -F0 S203-B10', W(V(xS, 1.6, hz*0.45)), 0.55, '#c0281f'); scene.add(t); LABELS.push(t); }
   // aders van onderen op -F0: L op pool 1 (onder = klem 2), N op de N-pool (onder); PE naar de hakenrail
-  const yO = JB(348.5) - 0.42, yS = yVb + 0.25;
+  const yO = JB(YDIN43) - 0.42, yS = yVb + 0.25;
   [['L1', 0, 'L'], ['N', 3, 'N']].forEach(([f, p, t], j) => { const x = f0.x0 + 0.09 + p*0.18;
     kabel(KAB, [V(xI + (j - 0.5)*0.05, yS, zG), V(xI + (j - 0.5)*0.05, yS + 0.3, zG), V(x, yO - 0.55, zDin + 0.5), V(x, yO - 0.15, zDin + 0.48), V(x, yO, zDin + 0.48)].map(W), 0.03, ader[f], 0.08, 6);
     cyl(KAB, 0.04, 0.07, M(0x2f5fbf), x, yO - 0.06, zDin + 0.48, null, 8).position.copy(W(V(x, yO - 0.06, zDin + 0.48))); });
@@ -1763,7 +1766,7 @@ CAT = 'voeding';
   kabel(KAB, [A.onder, V(A.nul.x, A.nul.y - 0.4, A.nul.z), A.nul].map(W), 0.04, ader.N, 0.1, 6);
   kabel(KAB, [A.onder, V(A.pe.x, A.pe.y - 0.4, A.pe.z), A.pe].map(W), 0.04, ader.PE, 0.1, 6); }
 // 230 V EMS-voeding (YMvK 3G2,5) uit de VMS43: wartel M20 in de onderzijde, L en N van onderen op -F1 (DS201 B16 30 mA), PE op de N/PE-hakenrail
-if(!NO_JB){ const {f1, zB, zDin} = F0, x = JX(1100), yVb = JB(187), z = zB + 0.65, yR = JB(348.5), zK = zDin + 0.27, yS = yVb + 0.25;
+if(!NO_JB){ const {f1, zB, zDin} = F0, x = JX(1100), yVb = JB(187), z = zB + 0.65, yR = JB(YDIN43), zK = zDin + 0.27, yS = yVb + 0.25;
   cyl(K, 0.14, 0.05, matZwart, x, yVb - 0.03, z, null, 6); cyl(K, 0.11, 0.12, matZwart, x, yVb - 0.13, z, null, 16); cyl(K, 0.12, 0.04, matZwart, x, yVb + 0.06, z, null, 6);
   kabel(KAB, [V(x, yVb - 0.2, z), V(x, yS, z)].map(W), 0.065, M(0x1d1e20, {roughness: 0.65}), 0.1, 8);                         // mantel tot net boven de wartel
   [['L1', 0], ['N', 1]].forEach(([f, k], j) => { const xt = f1.x0 + 0.089 + k*0.178;
@@ -2242,7 +2245,7 @@ $t('tSkid').addEventListener('change', e => zetSkid(e.target.checked));
 $t('tTR').addEventListener('change', e => HVK.zetTR(e.target.checked));
 $t('tKelder').addEventListener('change', e => HVK.zetKelder(e.target.checked));
 $t('tEMS').addEventListener('change', e => EMSV.zet(e.target.checked));
-$t('tMet').addEventListener('change', e => { METCOM.MG.visible = e.target.checked; METCOM.lblRes.visible = !e.target.checked; });
+$t('tMet').addEventListener('change', e => { METCOM.MG.visible = e.target.checked; METCOM.lblRes.visible = !e.target.checked; if(METCOM.rails) METCOM.rails.visible = !e.target.checked; });
 $t('tKapM').addEventListener('change', e => KAP_MCCB.forEach(k => k.visible = e.target.checked));
 $t('tKapS').addEventListener('change', e => KAP_SL.forEach(k => k.visible = e.target.checked));
 $t('tKabel').addEventListener('change', e => { KAB.visible = KABK.visible = e.target.checked; KABDEEL.forEach(o => o.visible = e.target.checked); });
