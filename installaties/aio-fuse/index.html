@@ -1128,7 +1128,8 @@ const hexNut3 = (x, y, z) => { const n = cyl(K, 0.1, 0.07, matZink, x, y, z, 'z'
 //   VMS43: DIN-rails (y 415 en 287, maatschets O&K), bovenste: -F0 ABB S203-B10NA 3P+N, -F1 DS201 B16 30 mA, 3 × PTV 4 grijs + 3 × PTV 4 blauw met FBS-bruggen, 2 × wcd 230 V; N/PE-hakenrail (16 klemmen)
 const AUXUIT = []; let F0 = null, METCOM = null;
 const JBOPT = (() => { try{ return new URLSearchParams(location.search).get('jb') === '2' ? 2 : 1; }catch(_){ return 1; } })();   // JB-indeling: 1 = VMS64 boven + VMS43 onder · 2 = VMS43 met hoofdschakelaar 160 A boven + VMS64 met DIN-rails onder
-const YDIN43 = JBOPT === 2 ? 735 : 415;   // VMS43 volgens O&K-maatschets: DIN-rails op 95 en 223 mm onder de bovenkant (y 510) → 415 (automaten) en 287 (reserve)
+const YDIN43 = JBOPT === 2 ? 735 : 415;
+const JB_BEDRADING = false;   // interne bedrading in de VMS-bakken voorlopig niet tekenen (alleen apparaten, rails en wartels)   // VMS43 volgens O&K-maatschets: DIN-rails op 95 en 223 mm onder de bovenkant (y 510) → 415 (automaten) en 287 (reserve)
 { const kunst = M(0xd5d8d4, {roughness: 0.55}), kunstD = M(0xb9bdb9, {roughness: 0.6}), abbW = M(0xeeeeea, {roughness: 0.5}), abbG = M(0xc9ccc9, {roughness: 0.5});
   const rook = new THREE.MeshStandardMaterial({color: 0xbfcfd4, transparent: true, opacity: 0.32, roughness: 0.08, metalness: 0.1, depthWrite: false});
   const zB = KZ0 + 0.02, zDin = JZ(111);
@@ -1221,7 +1222,7 @@ const YDIN43 = JBOPT === 2 ? 735 : 415;   // VMS43 volgens O&K-maatschets: DIN-r
   box(K, 3.34, 0.12, 0.12, matKoper, JX(1075), JB(223.5), zB + 0.3); for(let k = 0; k < 16; k++) cyl(K, 0.035, 0.12, matZink, JX(918 + k*21), JB(223.5), zB + 0.4, 'z', 6);
   // M32-doorvoertule links in VMS43: hier komt de aparte voedingskabel vanaf de HVK binnen (zie 'hulpvoeding junction box' bij de kabels)
   cyl(K, 0.19, 0.12, matZwart, JX(849.5), JB(438), zB + 0.65, 'x', 16);
-  const dw = (pts, k, r) => KABDEEL.push(kabel(K, pts, r || 0.035, k, 0.08, 6));
+  const dw = (pts, k, r) => { if(JB_BEDRADING) KABDEEL.push(kabel(K, pts, r || 0.035, k, 0.08, 6)); };
   F0 = {f0, f1, zB, zDin, q0: Q0};
   // -F0 (voeding van onderen) → uitgang bovenkant → -F1 ingang bovenkant (L en N); -F1 uitgang onderkant → WCD1/WCD2 (L, N) van onderen
   const yR = JB(YDIN43), zK = zDin + 0.27, kx = (d, k) => d.x0 + 0.089 + k*0.178;
@@ -1235,7 +1236,7 @@ const YDIN43 = JBOPT === 2 ? 735 : 415;   // VMS43 volgens O&K-maatschets: DIN-r
   [w1, w2].forEach((d, n) => [0, 1].forEach(k => { const y2 = yR - 0.86 - n*0.1 - k*0.05, xs = xX(1 + n + k*3), xt = d.xc - 0.12 + k*0.12;
     dw([[xs, yXb, zX], [xs, y2, zK + 0.05 + k*0.05], [xt, y2, zK + 0.05 + k*0.05], [xt, yR - 0.47, zK - 0.03]], k ? ader.N : ader.L1); }));
   // adereindhulzen bij de -X1-klemmen
-  for(const k of [0, 1, 2, 3, 4, 5]) cyl(K, 0.035, 0.1, k < 3 ? M(0xe8e8e8) : M(0x2f5fbf), xX(k), yXb - 0.06, zX, null, 8);
+  if(JB_BEDRADING) for(const k of [0, 1, 2, 3, 4, 5]) cyl(K, 0.035, 0.1, k < 3 ? M(0xe8e8e8) : M(0x2f5fbf), xX(k), yXb - 0.06, zX, null, 8);
 }
 { // kastverlichting Finder 6 W (x 961–1272, y 1227–1270) en deurschakelaar met M20-wartel rechtsboven
   box(K, 3.11, 0.43, 0.44, M(0xf1f2ef), JX(1116.5), JB(1248.5), JZ(286)); box(K, 3.0, 0.08, 0.36, M(0xffffff, {emissive: 0xfff6dd, emissiveIntensity: 0.9}), JX(1116.5), JB(1227), JZ(286));
@@ -1776,15 +1777,15 @@ CAT = 'voeding';
   // aders van onderen op -F0: L op pool 1 (onder = klem 2), N op de N-pool (onder); PE naar de hakenrail
   const yO = JB(YDIN43) - 0.42, yS = yVb + 0.25;
   const Q = F0.q0;
-  if(Q){ // optie 2: aders langs de linkerwand omhoog naar de bovenklemmen van -Q0 (L op pool 1, N op pool 4); vanaf de onderklemmen naar -F0 (van onderen)
+  if(Q && JB_BEDRADING){ // optie 2: aders langs de linkerwand omhoog naar de bovenklemmen van -Q0 (L op pool 1, N op pool 4); vanaf de onderklemmen naar -F0 (van onderen)
     [['L1', 0], ['N', 3]].forEach(([f, p], j) => { const xq = Q.x(p), xw = JX(872) + j*0.06;
       kabel(KAB, [V(xI + (j - 0.5)*0.05, yS, zG), V(xI + (j - 0.5)*0.05, yS + 0.3, zG), V(xw, yS + 0.8, zB + 0.45), V(xw, JB(1120), zB + 0.45), V(xq, JB(1120), Q.z + 0.1), V(xq, Q.yTop + 0.1, Q.z + 0.15), V(xq, Q.yTop, Q.z + 0.2)].map(W), 0.03, ader[f], 0.08, 6);
       const x = f0.x0 + 0.09 + (p ? 3 : 0)*0.18;
       kabel(KAB, [V(xq, Q.yOnder, Q.z + 0.2), V(xq, Q.yOnder - 0.3, Q.z + 0.2), V(JX(1265) - j*0.06, Q.yOnder - 0.5, zB + 0.45), V(JX(1265) - j*0.06, yO - 0.9, zB + 0.45), V(x, yO - 0.55, zDin + 0.5), V(x, yO - 0.15, zDin + 0.48), V(x, yO, zDin + 0.48)].map(W), 0.03, ader[f], 0.08, 6); }); }
-  [['L1', 0, 'L'], ['N', 3, 'N']].forEach(([f, p, t], j) => { const x = f0.x0 + 0.09 + p*0.18; if(Q) return;
+  [['L1', 0, 'L'], ['N', 3, 'N']].forEach(([f, p, t], j) => { const x = f0.x0 + 0.09 + p*0.18; if(Q || !JB_BEDRADING) return;
     kabel(KAB, [V(xI + (j - 0.5)*0.05, yS, zG), V(xI + (j - 0.5)*0.05, yS + 0.3, zG), V(x, yO - 0.55, zDin + 0.5), V(x, yO - 0.15, zDin + 0.48), V(x, yO, zDin + 0.48)].map(W), 0.03, ader[f], 0.08, 6);
     cyl(KAB, 0.04, 0.07, M(0x2f5fbf), x, yO - 0.06, zDin + 0.48, null, 8).position.copy(W(V(x, yO - 0.06, zDin + 0.48))); });
-  kabel(KAB, [V(xI + 0.06, yS, zG), V(xI + 0.06, yS + 0.15, zG), V(JX(918), JB(223.5) - 0.25, zB + 0.45), V(JX(918), JB(223.5), zB + 0.45)].map(W), 0.03, ader.PE, 0.08, 6);
+  if(JB_BEDRADING) kabel(KAB, [V(xI + 0.06, yS, zG), V(xI + 0.06, yS + 0.15, zG), V(JX(918), JB(223.5) - 0.25, zB + 0.45), V(JX(918), JB(223.5), zB + 0.45)].map(W), 0.03, ader.PE, 0.08, 6);
   }
   // aders in de HVK: L op de groep (pool 1 van het SL2-veld), N en PE op de rails
   { const p = A.fase[0]; kabel(KAB, [A.onder, V(p.x, A.onder.y + 0.3, p.z), p].map(W), 0.04, ader.L1, 0.1, 6); }
@@ -1794,9 +1795,9 @@ CAT = 'voeding';
 if(!NO_JB){ const {f1, zB, zDin} = F0, x = JX(1100), yVb = JB(187), z = zB + 0.65, yR = JB(YDIN43), zK = zDin + 0.27, yS = yVb + 0.25;
   cyl(K, 0.14, 0.05, matZwart, x, yVb - 0.03, z, null, 6); cyl(K, 0.11, 0.12, matZwart, x, yVb - 0.13, z, null, 16); cyl(K, 0.12, 0.04, matZwart, x, yVb + 0.06, z, null, 6);
   kabel(KAB, [V(x, yVb - 0.2, z), V(x, yS, z)].map(W), 0.065, M(0x1d1e20, {roughness: 0.65}), 0.1, 8);                         // mantel tot net boven de wartel
-  [['L1', 0], ['N', 1]].forEach(([f, k], j) => { const xt = f1.x0 + 0.089 + k*0.178;
+  if(JB_BEDRADING) [['L1', 0], ['N', 1]].forEach(([f, k], j) => { const xt = f1.x0 + 0.089 + k*0.178;
     kabel(KAB, [V(x + (j - 0.5)*0.05, yS, z), V(x + (j - 0.5)*0.05, yS + 0.3, z), V(xt, yR - 1.07, zK + 0.12), V(xt, yR - 0.6, zK + 0.06), V(xt, yR - 0.47, zK)].map(W), 0.03, ader[f], 0.08, 6); });
-  kabel(KAB, [V(x + 0.06, yS, z), V(x + 0.06, yS + 0.15, z), V(JX(1191), JB(223.5) - 0.25, zB + 0.45), V(JX(1191), JB(223.5), zB + 0.45)].map(W), 0.03, ader.PE, 0.08, 6); }
+  if(JB_BEDRADING) kabel(KAB, [V(x + 0.06, yS, z), V(x + 0.06, yS + 0.15, z), V(JX(1191), JB(223.5) - 0.25, zB + 0.45), V(JX(1191), JB(223.5), zB + 0.45)].map(W), 0.03, ader.PE, 0.08, 6); }
 let DATA_HVK_PTS = [];                                                              // CAT 6A HVK → EMS-kast: tracé tot naast de rij, verder getekend in het EMS-blok
 CAT = 'data';
 { const zc = zKan(KAN_DATA), y0 = PL_H + 0.3;
