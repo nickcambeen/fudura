@@ -1201,7 +1201,11 @@ const JB_BEDRADING = false;   // interne bedrading in de VMS-bakken voorlopig ni
   if(JBOPT === 1){ din(JX(877.6), JX(1272.6), JB(287)); plak(K, 0.9, 0.14, lbl('reserve TS35', 180, 28, '#c0c4c6', '#3c4045', 'bold 18px Arial'), JX(1240), JB(287), zDin + 0.02); }
   else {
     // optie 2 — VMS64 onder: 3 DIN-rails (735 / 575 / 415) met reserve-rijgklemmen; VMS43 boven: hoofdschakelaar -Q0 160 A 4P
-    for(const y of [575, 415]){ din(JX(877.6), JX(1272.6), JB(y)); for(let k = 0; k < 16; k++){ const x = JX(900 + k*6.2); box(K, 0.06, 0.62, 0.46, k % 8 === 7 ? M(0x2f6fd0) : k % 8 === 6 ? M(0x3fa34d) : M(0xc9c3b4), x, JB(y), zDin + 0.23); } plak(K, 0.9, 0.14, lbl('reserve -X' + (y === 575 ? 2 : 3), 180, 28, '#c0c4c6', '#3c4045', 'bold 18px Arial'), JX(1220), JB(y), zDin + 0.02); }
+    // rail 2: 4 × 3F-aardlekautomaat (RCBO 3P+N, 4 modulen) · rail 3: 3 × 3F + 1 × 1F-aardlekautomaat (RCBO 1P+N, 2 modulen)
+    { let nr = 2; [[575, ['3', '3', '3', '3']], [415, ['3', '3', '3', '1']]].forEach(([y, rij]) => { din(JX(877.6), JX(1272.6), JB(y));
+        const G2 = new THREE.Group(); G2.scale.setScalar(0.01); G2.position.set(0, JB(y), zDin); K.add(G2); ABBDEV.zet(G2); let x = JX(892)*100;
+        rij.forEach(f => { const tag = '-F' + nr++; const r = f === '3' ? ABBDEV.s203(x, 0, tag, 'RCBO 3P+N 30 mA') : ABBDEV.ds201(x, 0, tag, 'B16', tag + '  RCBO 1P+N 30 mA'); x = r.x1 + 2; }); });
+      ABBDEV.zet(AG); }
     const xq = JX(1075), yq = JB(985), zq = zB + 0.2, grijsQ = M(0xd4d7d1, {roughness: 0.5}), zwartQ = M(0x16181b, {roughness: 0.4});
     box(K, 3.8, 2.6, 0.03, matZink, xq, yq, zB + 0.18);                                                                                    // montageplaat
     box(K, 1.5, 1.7, 0.95, grijsQ, xq, yq, zq + 0.48); box(K, 1.1, 1.1, 0.12, M(0x3d6a96, {roughness: 0.5}), xq, yq, zq + 1.0);                 // romp + blauw frontvlak
