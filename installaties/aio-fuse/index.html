@@ -3288,12 +3288,7 @@ const TERREIN = (() => {
   function vaten(x, z, n){ const kl = [0x1f5fa8, 0xa8322a, 0x2f6b3a]; for(let i = 0; i < n; i++){ const a = i*2.4, r = i ? 6.5 : 0, vx = x + Math.cos(a)*r, vz = z + Math.sin(a)*r; const g = plaats(vx, vz, 0, 3, 3);
       cy(g, 2.9, 8.8, mat(kl[i % 3], {roughness: 0.5, metalness: 0.4}), 0, 4.4, 0); for(const y of [2.9, 5.9]) cy(g, 3.0, 0.3, mat(0x2a2c2e), 0, y, 0); } }
   // ---- indeling (buiten het hekwerk en weg van het kabeltracé naar het gebouw) ----
-  container(110, -65, 0, '#1f5fa8', 0, 'FUDURA'); container(110, -65, 0, '#a8322a', 25.9, 'MAERSK-ISH'); container(110, -38, 0, '#2f6b3a');
-  container(165, 75, Math.PI/2, '#a8322a'); container(-130, -95, 0.35, '#5d6b73', 0, 'SEACO'); container(25, 105, 0, '#1f5fa8'); container(-205, 140, 1.2, '#2f6b3a');
-  haspel(-60, 62, 0); haspel(-78, 72, 0.5); haspel(88, 72, 1.2); haspel(-170, 40, 0.2);
-  blok(-150, -55, 0, 3); blok(45, -75, 0.2, 3); blok(125, 140, -0.4, 4); blok(-40, 135, 1.57, 3); blok(195, -95, 0.6, 2);
-  pallet(-40, -62, 0.3); pallet(-28, -66, 0); pallet(62, 125, 0.8); pallet(150, 20, 0);
-  bus(-100, 72, 0.2); truck(195, -15, Math.PI/2); keet(-185, -60, 0); vaten(20, -52, 3); vaten(-232, 62, 4); vaten(140, 105, 3);
+  // objecten (containers, haspels, betonblokken, pallets, voertuigen, keet, vaten) voorlopig uit de tekening
   HVK.HG.traverse(o => { if(o.isMesh) o.userData.massief = true; });                                     // gebouw: kogels gaan nooit door de muren, ook niet bij 'wanden doorzichtig'
   const SPAWNS = [[135, -100], [-145, -125], [-15, 160], [175, 120], [-235, -15], [60, -115], [-170, 175], [235, 45], [-95, 105], [85, 30], [-60, -100], [150, -40]];
   function bots(p){ const r = 2.2; for(const q of RECTS){ const c = Math.cos(q.rot), s_ = Math.sin(q.rot), dx = p.x - q.x, dz = p.z - q.z, lx = dx*c - dz*s_, lz = dx*s_ + dz*c;
