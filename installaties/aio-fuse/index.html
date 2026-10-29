@@ -44,6 +44,20 @@
   .cfgT { border-collapse: collapse; width: 100%; margin-top: 4px; } .cfgT td { padding: 2px 0; vertical-align: top; } .cfgT td:first-child { color: #8a959c; padding-right: 10px; white-space: nowrap; } .cfgT td:last-child { color: #243038; }
   .cfgLet { margin-top: 4px; color: #b5651d; font-size: 11px; }
   .knoprij button.aan { background: #243038; color: #fff; border-color: #243038; }
+  .rijK { display: grid; grid-template-columns: 58px 1fr; align-items: center; gap: 4px; }
+  .rijK > span { font: 600 10.5px system-ui, sans-serif; color: #8a979e; text-transform: uppercase; letter-spacing: .03em; }
+  .rijK .knoprij { padding: 2px 0; gap: 4px; }
+  .knoprij button { padding: 4px 7px !important; font-size: 11px; }
+  #cfgN button { min-width: 28px !important; font-size: 12px !important; }
+  .rij2 { display: grid; grid-template-columns: 1fr 1fr; column-gap: 12px; }
+  #paneel .rij2 label { padding: 3px 0; font-size: 12px; white-space: nowrap; }
+  #paneel .rij2 label small { color: #9aa6ad; font-size: 10px; margin-left: auto; }
+  #paneel .rij2 input[type=checkbox] { width: 26px; height: 15px; } #paneel .rij2 input[type=checkbox]::after { width: 11px; height: 11px; top: 2px; left: 2px; } #paneel .rij2 input[type=checkbox]:checked::after { left: 13px; }
+  #paneel details.sub { border-top: 1px dashed #e5eaed; padding: 3px 0 0; margin-top: 3px; }
+  #paneel details.sub summary { text-transform: none; letter-spacing: 0; font-size: 11.5px; color: #3f4b52; font-weight: 600; }
+  #paneel { width: 280px !important; padding: 8px 12px 10px !important; }
+  #paneel details { padding: 4px 0 2px !important; }
+  .cfgInfo { padding: 0 0 2px !important; } .cfgT td { padding: 1px 0 !important; }
   #paneel ul { margin: 2px 0 4px; padding-left: 16px; color: #4a5258; font-size: 12px; line-height: 1.5; }
   #simInfo { font-size: 12px; color: #4a5258; padding: 2px 0 4px; font-variant-numeric: tabular-nums; }
   #melding { position: fixed; left: 14px; bottom: 14px; z-index: 29; max-width: min(460px, calc(100vw - 28px)); background: rgba(36,48,56,.9); color: #fff; font-size: 13px; padding: 8px 12px; border-radius: 8px; opacity: 0; transition: opacity .3s; pointer-events: none; }
@@ -68,54 +82,57 @@
 <div id="paneel">
   <div id="pKop"><h3 id="titel"><a href="../../" style="color:#1b4f8a;text-decoration:none" title="Hoofdmenu">‹ menu</a> AIO + FUSE kast</h3><button class="pKnop" id="pReset" title="Alles terugzetten naar de beginweergave (R)" aria-label="Reset weergave" style="margin-left:auto;margin-right:6px">⟲</button><button class="pKnop" id="pDicht" title="Paneel inklappen" aria-label="Paneel inklappen">›</button></div>
   <details open><summary>Configuratie</summary>
-    <div class="cfgKop">Aantal AIO's (DELTerra C 125 kW)</div>
-    <div class="knoprij" id="cfgN"></div>
-    <div class="cfgKop" style="margin-top:6px">Junction box indeling</div>
-    <div class="knoprij" id="cfgJB"><button data-jb="1" title="VMS64 (lege montageplaat) boven + VMS43 (automaten, wcd) onder">Optie 1</button><button data-jb="2" title="VMS43 met hoofdschakelaar 160 A boven + VMS64 met 3 DIN-rails onder">Optie 2 · 160 A</button></div>
+    <div class="rijK"><span>AIO's</span><div class="knoprij" id="cfgN"></div></div>
+    <div class="rijK"><span>JB</span><div class="knoprij" id="cfgJB"><button data-jb="1" title="VMS64 (lege montageplaat) boven + VMS43 (automaten, wcd) onder">Optie 1</button><button data-jb="2" title="VMS43 met hoofdschakelaar 160 A boven + VMS64 met 3 DIN-rails onder">Optie 2 · 160 A</button></div></div>
     <div class="cfgInfo" id="cfgInfo"></div>
-    <div class="knoprij" style="margin-top:6px"><button id="bKabelber">Kabelberekening</button><button id="b2D" title="Bovenaanzicht met alle maten — download als DXF, SVG of PDF">2D-tekening (DXF/PDF)</button></div>
+    <div class="knoprij"><button id="bKabelber">Kabelberekening</button><button id="b2D" title="Bovenaanzicht met alle maten — download als DXF, SVG of PDF">2D-tekening</button></div>
   </details>
   <details open><summary>Bekijken</summary>
-    <div class="grp">Opstelling</div><div class="knoprij"><button id="bOverzicht">overzicht</button><button id="bBoven">boven</button><button id="bAchter">achterzijde</button><button id="bSkid">kabelbanen</button><button id="bSkidBoven">skid van boven</button></div>
-    <div class="grp">AIO's</div><div class="knoprij"><button id="bAio">AIO 1</button><button id="bMccb">MCCB</button></div>
-    <div class="grp">Junction box</div><div class="knoprij"><button id="bKast">junction box</button></div>
-    <div class="grp">Gebouw</div><div class="knoprij"><button id="bGebouw">gebouw</button><button id="bHvk">HVK</button><button id="bMeter">meterkast</button><button id="bKelder">kelder</button></div>
-    <div class="grp">Bewegen</div>
-    <label>Rondlopen <small>P</small><input type="checkbox" id="tFP"></label>
-    <label>Elektrische step <small>F</small><input type="checkbox" id="tStep"></label>
-    <label>Tuktuk <small>T</small><input type="checkbox" id="tTuk"></label>
-    <label>Graafmachine <small>G</small><input type="checkbox" id="tGraaf"></label>
-    <label>Drone <small>Y</small><input type="checkbox" id="tDrone"></label>
-    <label>Olifant <small>O</small><input type="checkbox" id="tOlif"></label>
+    <div class="rijK"><span>Opstelling</span><div class="knoprij"><button id="bOverzicht">overzicht</button><button id="bBoven">boven</button><button id="bAchter">achter</button><button id="bSkid">kabelbanen</button><button id="bSkidBoven">skid boven</button></div></div>
+    <div class="rijK"><span>Details</span><div class="knoprij"><button id="bAio">AIO 1</button><button id="bMccb">MCCB</button><button id="bKast">JB</button></div></div>
+    <div class="rijK"><span>Gebouw</span><div class="knoprij"><button id="bGebouw">gebouw</button><button id="bHvk">HVK</button><button id="bMeter">meterkast</button><button id="bKelder">kelder</button></div></div>
+  </details>
+  <details><summary>Bewegen</summary>
+    <div class="rij2">
+      <label>Lopen <small>P</small><input type="checkbox" id="tFP"></label>
+      <label>Step <small>F</small><input type="checkbox" id="tStep"></label>
+      <label>Tuktuk <small>T</small><input type="checkbox" id="tTuk"></label>
+      <label>Graaf&shy;machine <small>G</small><input type="checkbox" id="tGraaf"></label>
+      <label>Drone <small>Y</small><input type="checkbox" id="tDrone"></label>
+      <label>Olifant <small>O</small><input type="checkbox" id="tOlif"></label>
+    </div>
   </details>
   <details open><summary>Weergave</summary>
-    <div class="grp">Algemeen</div>
-    <label>Kabels <input type="checkbox" id="tKabel" checked></label>
-    <label>Grond doorzichtig <input type="checkbox" id="tGrond" checked></label>
-    <label>Kabelgeul dichtgooien <input type="checkbox" id="tGeul" checked></label>
-    <label>Labels <input type="checkbox" id="tLabel"></label>
-    <label>Maatvoering <input type="checkbox" id="tMaat"></label>
-    <div class="grp">AIO's</div>
-    <label>Deuren open <input type="checkbox" id="tDeur"></label>
-    <label>Afdekkap MCCB <input type="checkbox" id="tKapM"></label>
-    <label>Metal bases doorzichtig (kabelbanen) <input type="checkbox" id="tSkid"></label>
-    <label>Accupacks uitschuiven (benodigde ruimte) <input type="checkbox" id="tPack"></label>
-    <div class="grp">Junction box</div>
-    <label>Deuren open <input type="checkbox" id="tKastDeur"></label>
-    <label>NH-stroken uitgeklapt <input type="checkbox" id="tStrook"></label>
-    <label>Afdekkappen Jean Müller-stroken <input type="checkbox" id="tKapS" checked></label>
-    <label>MetCom MCS301 per AIO (ERE-meting, optie) <input type="checkbox" id="tMet"></label>
-    <div class="grp">Hekwerk + veiligheid</div>
-    <label>Hekwerk met 2 vluchtdeuren <input type="checkbox" id="tHekA"></label>
-    <label>Veiligheidsafstanden (deuren open + 700) <input type="checkbox" id="tZoneA"></label>
-    <label>AIO-kasten verbergen (kabelbanen van boven) <input type="checkbox" id="tAioUit"></label>
-    <div class="grp">EMS-buitenkast</div>
-    <label>Tonen <input type="checkbox" id="tEMS" checked></label>
-    <label>Deur open <input type="checkbox" id="tDeurEMS"></label>
-    <div class="grp">Gebouw (MS · trafo · techniek)</div>
-    <label>Deuren gebouw, HVK en meterkast open <input type="checkbox" id="tDeurGeb"></label>
-    <label>Wanden doorzichtig <input type="checkbox" id="tTR"></label>
-    <label>Kabelkelders zichtbaar <input type="checkbox" id="tKelder"></label>
+    <div class="rij2">
+      <label>Kabels <input type="checkbox" id="tKabel" checked></label>
+      <label>Labels <input type="checkbox" id="tLabel"></label>
+      <label>Maten <input type="checkbox" id="tMaat"></label>
+      <label>Hekwerk <input type="checkbox" id="tHekA"></label>
+      <label title="Grond doorzichtig">Grond transp. <input type="checkbox" id="tGrond" checked></label>
+      <label title="Kabelgeul dichtgooien">Geul dicht <input type="checkbox" id="tGeul" checked></label>
+    </div>
+    <details class="sub"><summary>AIO's</summary><div class="rij2">
+      <label>Deuren open <input type="checkbox" id="tDeur"></label>
+      <label title="Afdekkap MCCB">Kap MCCB <input type="checkbox" id="tKapM"></label>
+      <label title="Metal bases doorzichtig (kabelbanen)">Skid transp. <input type="checkbox" id="tSkid"></label>
+      <label title="Accupacks uitschuiven (benodigde ruimte)">Packs uit <input type="checkbox" id="tPack"></label>
+      <label title="AIO-kasten verbergen (kabelbanen van boven)">AIO's weg <input type="checkbox" id="tAioUit"></label>
+      <label title="Veiligheidsafstanden (deuren open + 700)">Vrije zone <input type="checkbox" id="tZoneA"></label>
+    </div></details>
+    <details class="sub"><summary>Junction box</summary><div class="rij2">
+      <label>Deuren open <input type="checkbox" id="tKastDeur"></label>
+      <label title="NH-stroken uitgeklapt">Stroken uit <input type="checkbox" id="tStrook"></label>
+      <label title="Afdekkappen Jean Müller-stroken">Kappen <input type="checkbox" id="tKapS" checked></label>
+      <label title="MetCom MCS301 per AIO (ERE-meting, optie 1)">MetCom <input type="checkbox" id="tMet"></label>
+      <label title="Deksels van de bedradingskokers in de VMS-bak weg: zie hoe de aders lopen (optie 2)">Kokers open <input type="checkbox" id="tKoker"></label>
+    </div></details>
+    <details class="sub"><summary>EMS-kast &amp; gebouw</summary><div class="rij2">
+      <label>EMS-kast <input type="checkbox" id="tEMS" checked></label>
+      <label>Deur EMS <input type="checkbox" id="tDeurEMS"></label>
+      <label title="Deuren gebouw, HVK en meterkast open">Deuren geb. <input type="checkbox" id="tDeurGeb"></label>
+      <label title="Wanden doorzichtig">Wanden transp. <input type="checkbox" id="tTR"></label>
+      <label title="Kabelkelders zichtbaar">Kelders <input type="checkbox" id="tKelder"></label>
+    </div></details>
   </details>
   <details><summary>Componenten</summary>
     <ul>
@@ -1127,7 +1144,7 @@ const railLug = (x, y, r, f) => { const z0 = f === 'N' ? JZ(81) : JZ(71); box(K,
 const hexNut3 = (x, y, z) => { const n = cyl(K, 0.1, 0.07, matZink, x, y, z, 'z', 6); n.rotation.y = 0; };
 // rechts: VMS64 (boven, y 507–1150, lege montageplaat) + VMS43 (onder, y 187–510) op x 853,6–1296,6, diepte 31–160, deksels met venster tot 210
 //   VMS43: DIN-rails (y 415 en 287, maatschets O&K), bovenste: -F0 ABB S203-B10NA 3P+N, -F1 DS201 B16 30 mA, 3 × PTV 4 grijs + 3 × PTV 4 blauw met FBS-bruggen, 2 × wcd 230 V; N/PE-hakenrail (16 klemmen)
-const AUXUIT = []; let F0 = null, METCOM = null; const QFEED = {g: null};
+const AUXUIT = []; let F0 = null, METCOM = null; const QFEED = {g: null}, KOKERS = [];
 const JBOPT = (() => { try{ return new URLSearchParams(location.search).get('jb') === '2' ? 2 : 1; }catch(_){ return 1; } })();   // JB-indeling: 1 = VMS64 boven + VMS43 onder · 2 = VMS43 met hoofdschakelaar 160 A boven + VMS64 met DIN-rails onder
 const YDIN43 = JBOPT === 2 ? 735 : 415;
 const JB_BEDRADING = false;
@@ -1210,19 +1227,23 @@ function bouwVMSBlok(K, JBOPT, YDIN43){ const kunst = M(0xd5d8d4, {roughness: 0.
     //   rail 3 (415): voedingsklem + kamrail 3P+N · -F6…-F8 (3P+N) · -F9 (1P+N, 2 korte aders vanaf -F8)
     //   alle bedrading loopt in de kokers; zichtbaar zijn alleen de korte, rechte aders van koker naar klem. Uitgaande kabels: koker → wartels in de bodem; PE → hakenrail
     const mmX = mm => JX(mm)*100, kamM = M(0xe0904f, {metalness: 0.7, roughness: 0.3, emissive: 0x3a1a00}), isoK = M(0x9aa3a8, {transparent: true, opacity: 0.45, roughness: 0.2, depthWrite: false}), grijsK = M(0x3a3f44, {roughness: 0.5});
+    const F0x = k => JX(965) + 0.089 + k*0.178;
+    const KK = {dek: new THREE.Group(), bin: new THREE.Group()}; K.add(KK.dek, KK.bin); KK.bin.visible = false; KOKERS.push(KK);
     const kokerM = M(0x8f938e, {roughness: 0.55}), dekM = M(0xa4a8a3, {roughness: 0.5}), sleufM = M(0x4f534f, {roughness: 0.7});
     const zK0 = zB + 0.35, zK1 = zDin + 0.42, zKc = (zK0 + zK1)/2, dK = zK1 - zK0, zT = zDin + 0.3, ACOL = {L1: ader.L1, L2: ader.L2, L3: ader.L3, N: ader.N, PE: ader.PE}, fz = ['L1', 'L2', 'L3', 'N'];
     const koker = (x0, x1, y0, y1, naam) => { const vert = (y1 - y0) > (x1 - x0), w = (x1 - x0)/100, h = (y1 - y0)/100, cx = JX((x0 + x1)/2), cy = JB((y0 + y1)/2);
-      box(K, w, h, dK - 0.06, kokerM, cx, cy, zKc - 0.03); box(K, w + 0.04, h + 0.04, 0.06, dekM, cx, cy, zK1 + 0.0);                                  // goot + deksel
+      box(K, w, h, 0.04, kokerM, cx, cy, zK0 + 0.02);                                                                                           // bodem van de goot
+      for(const s2 of [-1, 1]){ if(vert) box(K, 0.03, h, dK - 0.06, kokerM, cx + s2*(w/2 - 0.015), cy, zKc - 0.03); else box(K, w, 0.03, dK - 0.06, kokerM, cx, cy + s2*(h/2 - 0.015), zKc - 0.03); }   // zijwanden met vingers
+      box(KK.dek, w + 0.04, h + 0.04, 0.06, dekM, cx, cy, zK1 + 0.0);                                                                           // deksel (afneembaar)
       const n = Math.floor((vert ? (y1 - y0) : (x1 - x0))/12);                                                                                    // sleuven (vingers) in de zijwanden
       for(let i = 1; i < n; i++){ const t = i*12/100; for(const s2 of [-1, 1]){ if(vert) box(K, 0.012, 0.06, dK - 0.12, sleufM, cx + s2*(w/2 + 0.002), JB(y0) + t, zKc - 0.05, false); else box(K, 0.06, 0.012, dK - 0.12, sleufM, JX(x0) + t, cy + s2*(h/2 + 0.002), zKc - 0.05, false); } }
-      if(naam) plak(K, Math.min(1.2, w*0.6) || 0.6, 0.11, lbl(naam, 200, 30, '#a4a8a3', '#ffffff', 'bold 18px Arial'), cx, cy, zK1 + 0.035); };
+      if(naam) plak(KK.dek, Math.min(1.2, w*0.6) || 0.6, 0.11, lbl(naam, 200, 30, '#a4a8a3', '#ffffff', 'bold 18px Arial'), cx, cy, zK1 + 0.035); };
     // aderstukje van een koker naar een klem (recht, met een knik) — de rest zit in de koker
     const ader2 = (f, xk, yk, xs, ys, r) => kabel(K, [V(xk, yk, zK1 - 0.05), V(xs, (yk + ys)/2, zT + 0.05), V(xs, ys, zT)], r || 0.03, ACOL[f], 0.05, 6);
     const stomp = (f, x, yKok, yKlem, r) => kabel(K, [V(x, yKok, zKc), V(x, yKok + (yKlem - yKok)*0.6, zT + 0.04), V(x, yKlem, zT)], r || 0.03, ACOL[f], 0.04, 6);
     // kokers
     koker(880, 910, 230, 866, null); koker(910, 1165, 832, 866, 'K0'); koker(910, 1268, 640, 680, 'K1'); koker(910, 1268, 478, 518, 'K2'); koker(910, 1268, 315, 355, 'K3');
-    plak(K, 0.11, 0.6, lbl('KV', 30, 160, '#a4a8a3', '#ffffff', 'bold 20px Arial'), JX(895), JB(560), zK1 + 0.035);
+    plak(KK.dek, 0.11, 0.6, lbl('KV', 30, 160, '#a4a8a3', '#ffffff', 'bold 20px Arial'), JX(895), JB(560), zK1 + 0.035);
     // rail 2 en 3: aardlekautomaten + kamrail
     const KR = {}; let nr = 2;
     [[575, ['3', '3', '3', '3']], [415, ['3', '3', '3', '1']]].forEach(([y, rij]) => { din(JX(877.6), JX(1272.6), JB(y));
@@ -1259,6 +1280,21 @@ function bouwVMSBlok(K, JBOPT, YDIN43){ const kunst = M(0xd5d8d4, {roughness: 0.
     for(let i = 0; i < 8; i++){ const x = JX(960 + i*36); kabel(K, [V(x, JB(315), zKc), V(x, JB(260), zB + 0.42), V(x, JB(223.5) + 0.06, zB + 0.42)], 0.025, ader.PE, 0.05, 6); }
     for(let i = 0; i < 8; i++){ const x = JX(950 + i*40); cyl(K, 0.17, 0.1, matZwart, x, JB(187) - 0.05, zKc, null, 6); cyl(K, 0.12, 0.12, matZwart, x, JB(187) - 0.16, zKc, null, 14);
       kabel(K, [V(x, JB(315), zKc), V(x, JB(205), zKc), V(x, JB(150), zKc), V(x, JB(60), zKc - 0.05)], 0.1, M(0x1d1e20, {roughness: 0.6}), 0.1, 8); }
+    // ---- bedrading ín de kokers (zichtbaar met 'Kokers open') ----
+    { const B = KK.bin, zb = zK0 + 0.12, yy = mm => JB(mm), bw = (f, pts, r) => kabel(B, pts.map(([x, y, dz]) => V(x, y, zb + (dz || 0))), r || 0.03, ACOL[f], 0.06, 6);
+      const xKV = k => JX(887) + k*0.045;
+      fz.forEach((f, k) => { const xk = xv0 + k*dv, o = k*0.03;
+        bw(f, [[qx(k), yy(849), 0.1], [qx(k) - 0.15, yy(849) - o, 0.05], [xKV(k) + 0.2, yy(849) - o, 0], [xKV(k), yy(830), 0], [xKV(k), JB(790) + k*0.04 + 0.05, 0], [JX(905), JB(790) + k*0.04, 0.08]], 0.04);   // -Q0 → K0 → KV → -X0
+        bw(f, [[xk, yy(672), 0.1], [xk, yy(660) - o, 0.04], [KR[575].xf(k), yy(660) - o, 0.04], [KR[575].xf(k), yy(645), 0.1]], 0.03);                 // -X0 → kamrail 2
+        bw(f, [[xk, yy(668), 0.08], [xk - 0.05, yy(655) + o, 0], [xKV(k) + 0.1, yy(655) + o, 0], [xKV(k), yy(640), 0], [xKV(k), yy(510), 0], [xKV(k) + 0.15, yy(498) - o, 0], [KR[415].xf(k), yy(498) - o, 0.04], [KR[415].xf(k), yy(482), 0.1]], 0.03);   // -X0 → KV → kamrail 3
+        bw(f, [[xk + 0.02, yy(672), 0.12], [xk + 0.1, yy(664) + o*0.5, 0.12], [F0x(k) - 0.05, yy(664) + o*0.5, 0.12], [F0x(k), yy(676), 0.12]], 0.025); });   // -X0 → -F0 (van onderen)
+      // uitgaande aders aardlekautomaten → K2/K3 → KV → kabels naar de wartels; per automaat een bundel
+      let ci = 0;
+      [[575, 498], [415, 335]].forEach(([y, yk]) => KR[y].xs.forEach(([x0, x1, f]) => { const pol = f === '3' ? fz : ['L1', 'N'], xc = JX(950 + ci*40), lane = (ci % 4)*0.035;
+        pol.forEach((ff, k) => { const xa = (x0 + 8.9 + k*17.8)/100, dz = k*0.03;
+          if(y === 575) bw(ff, [[xa, yy(512), 0.1], [xa, yy(498) + lane, dz], [xKV(3) + 0.06, yy(498) + lane, dz], [xKV(3) + 0.03, yy(480), dz], [xKV(3) + 0.03, yy(345) - lane, dz], [xc - 0.1, yy(345) - lane, dz], [xc, yy(320), dz]], 0.02);
+          else bw(ff, [[xa, yy(350), 0.1], [xa, yy(337) - lane, dz], [xc, yy(337) - lane, dz], [xc, yy(320), dz]], 0.02); });
+        plak(B, 0.3, 0.08, lbl('W' + (ci + 1), 80, 22, '#ffffff', '#111', 'bold 16px Arial'), xc, JB(300), zb + 0.2); ci++; })); }
     plak(K, 1.4, 0.11, lbl('uitgaand: 8 × wartel M25 (bodem)', 280, 26, '#ffffff', '#3c4045', 'bold 16px Arial'), JX(1090), JB(150), zKc + 0.12);
     const xq = JX(1075), yq = JB(985), zq = zB + 0.2, grijsQ = M(0xd4d7d1, {roughness: 0.5}), zwartQ = M(0x16181b, {roughness: 0.4});
     box(K, 3.8, 2.6, 0.03, matZink, xq, yq, zB + 0.18);                                                                                    // montageplaat
@@ -2373,6 +2409,7 @@ $t('tSkid').addEventListener('change', e => zetSkid(e.target.checked));
 $t('tTR').addEventListener('change', e => HVK.zetTR(e.target.checked));
 $t('tKelder').addEventListener('change', e => HVK.zetKelder(e.target.checked));
 $t('tEMS').addEventListener('change', e => EMSV.zet(e.target.checked));
+$t('tKoker').addEventListener('change', e => { KOKERS.forEach(k => { k.dek.visible = !e.target.checked; k.bin.visible = e.target.checked; }); renderer.shadowMap.needsUpdate = true; if(e.target.checked){ $t('tKastDeur').checked = true; $t('tKastDeur').dispatchEvent(new Event('change')); meld('Kokerdeksels weg — bedrading in de kokers zichtbaar (JB optie 2)'); } });
 if(JBOPT === 2){ $t('tMet').disabled = true; $t('tMet').parentElement.title = 'Alleen bij JB-optie 1 (lege montageplaat in de VMS64)'; }
 $t('tMet').addEventListener('change', e => { METCOM.MG.visible = e.target.checked; METCOM.lblRes.visible = !e.target.checked; if(METCOM.rails) METCOM.rails.visible = !e.target.checked; });
 $t('tKapM').addEventListener('change', e => KAP_MCCB.forEach(k => k.visible = e.target.checked));
