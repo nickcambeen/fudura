@@ -2753,8 +2753,8 @@ const RIT = (() => {
   return {inStap, uit, e, stap, S, kamikaze}; })();
 // ============ PISTOOL (toets B): first person, klikken = schieten; poppetjes gaan neer (zelfde ragdoll als aanrijden) en staan weer op ============
 const GUN = (() => {
-  // B wisselt: uit → pistool → shotgun → geweer → uit (niet in het zijpaneel); klik = schieten op het vizier in het midden
-  let wapen = -1, terug = 0, flits = null, tFl = 0, ac = null; const gaten = [], RC = new THREE.Raycaster();
+  // B = wapenmenu · 1–6 / muiswiel = wisselen · R = herladen · rechtermuisknop = richten (ADS) · Tab = scorebord · klik = schieten
+  let wapen = -1, terug = 0, flits = null, tFl = 0, ac = null; const gaten = [], RC = new THREE.Raycaster(); RC.camera = camera;
   if(!camera.parent) scene.add(camera);
   const mZ = new THREE.MeshStandardMaterial({color: 0x1b1d20, roughness: 0.45, metalness: 0.6}), mG = new THREE.MeshStandardMaterial({color: 0x2a2c27, roughness: 0.85, metalness: 0.1}),
         mS = new THREE.MeshStandardMaterial({color: 0x3a3d42, roughness: 0.3, metalness: 0.85}), mO = new THREE.MeshStandardMaterial({color: 0xff7a1a, emissive: 0xff5a00, emissiveIntensity: 0.6}),
@@ -2765,19 +2765,19 @@ const GUN = (() => {
   const beugel = (r, y, z) => { const o = new THREE.Mesh(new THREE.TorusGeometry(r, 0.03, 6, 18, Math.PI), mG); o.rotation.set(0, Math.PI/2, Math.PI); o.position.set(0, y, z); G.add(o); };
   const nieuw = () => { G = new THREE.Group(); G.visible = false; camera.add(G); return G; };
   const WAPENS = [
-    {naam: 'Pistool', pos: [0.75, -0.95, -4.2], terug: 0.35, kogels: 1, spreid: 0, kracht: 1, mond: -1.55, bouw(){
+    {naam: 'Pistool', mag: 12, herlaad: 1.2, dmg: 25, rate: 0.16, kick: 0.022, adsY: 0.34, adsZ: -3.6, adsF: 0.8, klank: 0, pos: [0.75, -0.95, -4.2], terug: 0.35, kogels: 1, spreid: 0, kracht: 1, mond: -1.55, bouw(){
       bx(0.3, 0.32, 1.9, mZ, 0, 0.12, -0.15); for(let i = 0; i < 7; i++) bx(0.31, 0.24, 0.03, mS, 0, 0.13, 0.55 - i*0.07);
       bx(0.28, 0.2, 1.7, mG, 0, -0.12, -0.08); cy(0.07, 0.25, mS, 0, 0.1, -1.18); bx(0.05, 0.06, 0.08, mO, 0, 0.31, -1.0); bx(0.16, 0.06, 0.08, mZ, 0, 0.31, 0.7);
       bx(0.27, 0.95, 0.42, mG, 0, -0.62, 0.42, 0.22); for(let i = 0; i < 6; i++) bx(0.28, 0.03, 0.4, mZ, 0, -0.35 - i*0.11, 0.39 + i*0.024, 0.22);
       beugel(0.2, -0.22, -0.02); bx(0.05, 0.16, 0.05, mS, 0, -0.28, 0.02, 0.3); bx(0.24, 0.2, 0.22, mHand, 0, -0.8, 0.62, 0.22); }},
-    {naam: 'Shotgun', pos: [0.8, -1.05, -4.6], terug: 0.7, kogels: 8, spreid: 0.045, kracht: 1.3, mond: -3.7, bouw(){
+    {naam: 'Shotgun', mag: 6, herlaad: 2.2, dmg: 12, rate: 0.85, kick: 0.07, adsY: 0.3, adsZ: -5.4, adsF: 0.75, klank: 1, pos: [0.8, -1.05, -4.6], terug: 0.7, kogels: 8, spreid: 0.045, kracht: 1.3, mond: -3.7, bouw(){
       cy(0.09, 3.6, mS, 0, 0.12, -1.6); cy(0.08, 2.8, mZ, 0, -0.08, -1.2);                     // loop + buismagazijn
       bx(0.34, 0.32, 1.1, mZ, 0, 0.02, 0.45);                                                    // huls (receiver)
       const pomp = bx(0.3, 0.26, 0.9, mH, 0, -0.1, -1.1); for(let i = 0; i < 6; i++) bx(0.31, 0.27, 0.03, M(0x5e3a1d), 0, -0.1, -0.75 - i*0.12);   // pompgreep met ribbels
       bx(0.3, 0.42, 1.4, mH, 0, -0.18, 1.55, -0.18); bx(0.3, 0.5, 0.12, M(0x2a2c27), 0, -0.3, 2.25, -0.18);   // kolf + kolfplaat
       bx(0.06, 0.06, 0.06, mO, 0, 0.24, -3.3); beugel(0.18, -0.2, 0.55); bx(0.05, 0.15, 0.05, mS, 0, -0.26, 0.58, 0.3);
       bx(0.26, 0.22, 0.3, mHand, 0, -0.32, -1.05); bx(0.24, 0.2, 0.22, mHand, 0, -0.42, 0.85, 0.3); }},
-    {naam: 'Geweer', pos: [0.7, -1.0, -4.4], terug: 0.45, kogels: 1, spreid: 0, kracht: 1.6, mond: -3.9, bouw(){
+    {naam: 'Geweer', mag: 20, herlaad: 1.9, dmg: 34, rate: 0.13, kick: 0.018, adsY: 0.64, adsZ: -4.4, adsF: 0.6, klank: 2, pos: [0.7, -1.0, -4.4], terug: 0.3, kogels: 1, spreid: 0.006, auto: 0.13, kracht: 1.6, mond: -3.9, bouw(){
       cy(0.06, 2.6, mS, 0, 0.15, -2.4); bx(0.34, 0.3, 2.2, mZ, 0, 0.1, -0.4);                   // loop + huls
       bx(0.3, 0.3, 1.4, mG, 0, 0.0, -1.9); for(let i = 0; i < 5; i++) bx(0.32, 0.06, 0.18, mZ, 0, 0.16, -1.4 - i*0.25);   // handkap met koelsleuven
       bx(0.2, 0.22, 1.1, mZ, 0, 0.42, -0.3); cy(0.16, 0.9, M(0x111214), 0, 0.42, -0.3); cy(0.17, 0.08, mS, 0, 0.42, -0.78); cy(0.17, 0.08, mS, 0, 0.42, 0.18);   // richtkijker
@@ -2785,129 +2785,251 @@ const GUN = (() => {
       bx(0.25, 0.7, 0.32, mG, 0, -0.45, 0.35, 0.3); bx(0.3, 0.38, 1.3, mG, 0, -0.05, 1.3); bx(0.3, 0.5, 0.1, M(0x111214), 0, -0.1, 1.98);   // pistoolgreep + kolf
       cy(0.08, 0.35, mS, 0, 0.15, -3.75); beugel(0.16, -0.12, 0.1); bx(0.05, 0.14, 0.05, mS, 0, -0.18, 0.12, 0.3);
       bx(0.24, 0.2, 0.22, mHand, 0, -0.62, 0.48, 0.3); bx(0.26, 0.2, 0.3, mHand, 0, -0.18, -1.8); }},
-    {naam: 'LMG', pos: [0.75, -1.15, -4.6], terug: 0.18, kogels: 1, spreid: 0.014, kracht: 1.4, mond: -4.3, auto: 0.075, bouw(){
+    {naam: 'LMG', mag: 100, herlaad: 3.6, dmg: 18, rate: 0.075, kick: 0.011, adsY: 0.38, adsZ: -6.0, adsF: 0.7, klank: 3, pos: [0.75, -1.15, -4.6], terug: 0.18, kogels: 1, spreid: 0.014, kracht: 1.4, mond: -4.3, auto: 0.075, bouw(){
       cy(0.08, 3.0, mS, 0, 0.15, -2.7); cy(0.11, 1.6, mZ, 0, 0.15, -1.6); for(let i = 0; i < 8; i++) cy(0.12, 0.05, mS, 0, 0.15, -1.0 - i*0.18);   // zware loop met koelribben
       bx(0.42, 0.42, 2.0, mZ, 0, 0.05, -0.2); bx(0.36, 0.1, 1.8, mS, 0, 0.3, -0.2);                // huls + deksel
       bx(0.5, 0.55, 0.6, M(0x3d4a2c), -0.38, -0.25, -0.3); for(let i = 0; i < 6; i++) bx(0.08, 0.06, 0.1, M(0xc9a24a, {metalness: 0.8, roughness: 0.3}), -0.12, 0.05 - i*0.02, -0.55 + i*0.1);   // patroonkist + band
       bx(0.25, 0.7, 0.32, mG, 0, -0.45, 0.45, 0.3); bx(0.32, 0.4, 1.3, mG, 0, -0.05, 1.4); bx(0.06, 0.06, 0.06, mO, 0, 0.32, -3.9);
       [-1, 1].forEach(sx => { const p = bx(0.05, 0.9, 0.05, mS, sx*0.25, -0.35, -3.0); p.rotation.z = sx*0.35; });   // bipod
       beugel(0.16, -0.17, 0.2); bx(0.24, 0.2, 0.22, mHand, 0, -0.62, 0.58, 0.3); }},
-    {naam: 'Bazooka', pos: [0.95, -0.75, -4.2], terug: 0.6, kogels: 1, spreid: 0, kracht: 2, mond: -4.0, raket: true, bouw(){
+    {naam: 'Bazooka', mag: 1, herlaad: 2.6, dmg: 0, rate: 0.6, kick: 0.06, adsY: 0.82, adsZ: -4.8, adsF: 0.8, klank: 4, pos: [0.95, -0.75, -4.2], terug: 0.6, kogels: 1, spreid: 0, kracht: 2, mond: -4.0, raket: true, bouw(){
       cy(0.32, 5.2, M(0x4b5a36, {roughness: 0.75}), 0, 0.2, -1.1); cy(0.36, 0.3, mZ, 0, 0.2, -3.6); cy(0.36, 0.3, mZ, 0, 0.2, 1.4);   // buis + mondringen
       cy(0.2, 0.5, M(0xb33a1e, {roughness: 0.6}), 0, 0.2, -3.85);                                 // raketkop in de mond
       bx(0.12, 0.3, 0.4, mZ, 0, 0.6, -1.6); bx(0.24, 0.6, 0.3, mG, 0, -0.32, -0.2, 0.25); bx(0.22, 0.5, 0.25, mG, 0, -0.27, -1.6, 0.15);   // vizier + 2 grepen
       bx(0.5, 0.06, 0.06, M(0xf2c200), 0, 0.53, 0.2); bx(0.24, 0.2, 0.22, mHand, 0, -0.55, -0.1, 0.25); }},
-    {naam: 'Sniper', pos: [0.7, -0.95, -4.4], terug: 0.55, kogels: 1, spreid: 0, kracht: 2.4, mond: -5.0, zoom: 5, bouw(){
+    {naam: 'Sniper', mag: 5, herlaad: 2.6, dmg: 100, rate: 1.25, kick: 0.09, adsY: 0.5, adsZ: -3.2, adsF: 0, klank: 5, pos: [0.7, -0.95, -4.4], terug: 0.55, kogels: 1, spreid: 0.05, kracht: 2.4, mond: -5.0, zoom: 5, bouw(){
       cy(0.05, 3.4, mS, 0, 0.15, -3.0); cy(0.08, 0.5, mZ, 0, 0.15, -4.75);                        // lange loop + demper
       bx(0.32, 0.3, 1.8, mZ, 0, 0.08, -0.5); bx(0.3, 0.36, 2.0, M(0x5a6b45, {roughness: 0.8}), 0, -0.05, 0.6); bx(0.3, 0.55, 0.12, M(0x111214), 0, -0.12, 1.62);   // huls + kolf
       cy(0.18, 1.8, M(0x111214), 0, 0.5, -0.4); cy(0.24, 0.35, M(0x111214), 0, 0.5, -1.4); cy(0.21, 0.25, M(0x111214), 0, 0.5, 0.55);   // richtkijker
       bx(0.2, 0.2, 0.2, mS, 0.24, 0.5, -0.4); cy(0.05, 0.25, mS, 0.18, 0.12, 0.1);                  // turret + grendel
       bx(0.2, 0.5, 0.25, mZ, 0, -0.38, -0.3, -0.1); beugel(0.15, -0.12, 0.1); bx(0.24, 0.2, 0.22, mHand, 0, -0.45, 0.35, 0.3); }}];
-  const vuurM = new THREE.MeshBasicMaterial({color: 0xffd27a, transparent: true, opacity: 0.95, depthWrite: false});
-  WAPENS.forEach(w => { w.g = nieuw(); w.bouw(); w.g.position.set(...w.pos); w.g.rotation.y = 0.06;
-    w.vuur = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 8), vuurM); w.vuur.scale.set(w.kogels > 1 ? 1.8 : 1, w.kogels > 1 ? 1.8 : 1, 2.4); w.vuur.position.set(0, 0.12, w.mond); w.vuur.visible = false; w.g.add(w.vuur);
+  const IKOON = ['🔫', '💥', '🎯', '🔥', '🚀', '🔭'];
+  // mondingsvuur: ster van 3 gekruiste vlakken + kern; per schot willekeurig gedraaid/geschaald
+  const vuurT = ctex(64, 64, (c, W, H) => { const g = c.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, 'rgba(255,250,220,1)'); g.addColorStop(0.35, 'rgba(255,190,80,.9)'); g.addColorStop(1, 'rgba(255,120,20,0)'); c.fillStyle = g; c.fillRect(0, 0, W, H); });
+  const vuurM = new THREE.MeshBasicMaterial({map: vuurT, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide});
+  WAPENS.forEach(w => { w.g = nieuw(); w.bouw(); w.g.position.set(...w.pos); w.g.rotation.y = 0.06; w.inMag = w.mag;
+    const v = new THREE.Group(); v.position.set(0, 0.12, w.mond); const s = w.kogels > 1 ? 1.6 : w.raket ? 2.2 : 1;
+    for(let k = 0; k < 3; k++){ const p = new THREE.Mesh(new THREE.PlaneGeometry(1.1*s, 2.6*s), vuurM); p.rotation.set(Math.PI/2, k*Math.PI/3, 0); p.position.z = -0.9*s; v.add(p); }
+    const kern = new THREE.Mesh(new THREE.PlaneGeometry(1.3*s, 1.3*s), vuurM); v.add(kern); v.userData.vuur = true; v.visible = false; w.g.add(v); w.vuur = v;
     w.g.traverse(o => { if(o.isMesh){ o.castShadow = false; o.receiveShadow = false; o.userData.gun = true; } }); });
-  const knal = (zwaar) => { try{ ac = ac || new (window.AudioContext || window.webkitAudioContext)(); const n = Math.floor(ac.sampleRate*(zwaar ? 0.55 : 0.35)), b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0);
-      for(let i = 0; i < n; i++){ const t = i/ac.sampleRate; d[i] = (Math.random()*2 - 1)*Math.exp(-t*(zwaar ? 12 : 22))*0.9 + Math.sin(t*2*Math.PI*(zwaar ? 60 : 90))*Math.exp(-t*14)*0.5; }
-      const s = ac.createBufferSource(); s.buffer = b; const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = zwaar ? 1800 : 2600; const v = ac.createGain(); v.gain.value = 0.6; s.connect(f); f.connect(v); v.connect(ac.destination); s.start(); }catch(e){} };
-  const AU = ['Au!', 'Auw!', 'Au, m’n heup!', 'Hé!', 'Oei!', 'Aaah!', 'Waarom ik?!', 'Mijn helm!'];
-  function au(){ try{ ac = ac || new (window.AudioContext || window.webkitAudioContext)(); const t0 = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();       // doffe inslag
-      o.type = 'sine'; o.frequency.setValueAtTime(140, t0); o.frequency.exponentialRampToValueAtTime(45, t0 + 0.18); g.gain.setValueAtTime(0.7, t0); g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.25); o.connect(g); g.connect(ac.destination); o.start(t0); o.stop(t0 + 0.3); }catch(e){}
+  // ================= geluid (Web Audio, alles gesynthetiseerd) =================
+  const AC = () => { try{ ac = ac || new (window.AudioContext || window.webkitAudioContext)(); return ac; }catch(e){ return null; } };
+  const ruisBuf = {}; const ruis = dur => { const a = AC(); if(!a) return null; const k = Math.round(dur*100); if(ruisBuf[k]) return ruisBuf[k];
+    const n = Math.floor(a.sampleRate*dur), b = a.createBuffer(1, n, a.sampleRate), d = b.getChannelData(0); for(let i = 0; i < n; i++) d[i] = Math.random()*2 - 1; return ruisBuf[k] = b; };
+  //            verval  lowpass  dreun  duur  volume
+  const KLANK = [[30, 3400, 120, 0.28, 0.55], [9, 1500, 52, 0.7, 0.95], [24, 4200, 95, 0.35, 0.65], [30, 3000, 85, 0.22, 0.5], [0, 0, 0, 0, 0], [11, 5200, 58, 1.0, 1.0]];
+  function knal(w, vol){ const a = AC(); if(!a) return; if(typeof w === 'boolean') w = w ? 1 : 0; vol = vol === undefined ? 1 : vol; if(vol < 0.02) return; const t0 = a.currentTime;
+    if(w === 4){ const s = a.createBufferSource(); s.buffer = ruis(0.9); const f = a.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 1.2; f.frequency.setValueAtTime(300, t0); f.frequency.exponentialRampToValueAtTime(2400, t0 + 0.6);   // raket: sissende whoosh
+      const g = a.createGain(); g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.8*vol, t0 + 0.05); g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.85); s.connect(f); f.connect(g); g.connect(a.destination); s.start(t0); s.stop(t0 + 0.9); return; }
+    if(w === 'boem'){ const s = a.createBufferSource(); s.buffer = ruis(2.0); const f = a.createBiquadFilter(); f.type = 'lowpass'; f.frequency.setValueAtTime(900, t0); f.frequency.exponentialRampToValueAtTime(120, t0 + 1.8);
+      const g = a.createGain(); g.gain.setValueAtTime(1.0*vol, t0); g.gain.exponentialRampToValueAtTime(0.001, t0 + 1.9); s.connect(f); f.connect(g); g.connect(a.destination); s.start(t0); s.stop(t0 + 2.0);
+      const o = a.createOscillator(), og = a.createGain(); o.frequency.setValueAtTime(70, t0); o.frequency.exponentialRampToValueAtTime(25, t0 + 0.8); og.gain.setValueAtTime(0.9*vol, t0); og.gain.exponentialRampToValueAtTime(0.001, t0 + 0.9); o.connect(og); og.connect(a.destination); o.start(t0); o.stop(t0 + 1.0); return; }
+    const [vv, lp, dr, du, gv] = KLANK[w] || KLANK[0], s = a.createBufferSource(); s.buffer = ruis(du); const f = a.createBiquadFilter(); f.type = 'lowpass'; f.frequency.setValueAtTime(lp, t0); f.frequency.exponentialRampToValueAtTime(lp*0.25, t0 + du);
+    const g = a.createGain(); g.gain.setValueAtTime(gv*vol, t0); g.gain.exponentialRampToValueAtTime(0.001, t0 + du); s.connect(f); f.connect(g); g.connect(a.destination); s.start(t0); s.stop(t0 + du);
+    const o = a.createOscillator(), og = a.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(dr, t0); o.frequency.exponentialRampToValueAtTime(dr*0.4, t0 + 0.15); og.gain.setValueAtTime(0.6*gv*vol, t0); og.gain.exponentialRampToValueAtTime(0.001, t0 + 0.2); o.connect(og); og.connect(a.destination); o.start(t0); o.stop(t0 + 0.22);
+    if(w === 5 && vol > 0.3){ const d = a.createDelay(); d.delayTime.value = 0.32; const dg = a.createGain(); dg.gain.value = 0.28; g.connect(d); d.connect(dg); dg.connect(a.destination); } }       // sniper: echo over het terrein
+  // korte metaalklikjes: herladen, pomp, grendel, leeg
+  function klik(freq, t, vol, dur){ const a = AC(); if(!a) return; const t0 = a.currentTime + (t || 0), s = a.createBufferSource(); s.buffer = ruis(0.06); const f = a.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = 6;
+    const g = a.createGain(); g.gain.setValueAtTime(vol || 0.5, t0); g.gain.exponentialRampToValueAtTime(0.001, t0 + (dur || 0.05)); s.connect(f); f.connect(g); g.connect(a.destination); s.start(t0); s.stop(t0 + 0.06); }
+  const pling = (f1, vol) => { const a = AC(); if(!a) return; const t0 = a.currentTime, o = a.createOscillator(), g = a.createGain(); o.type = 'triangle'; o.frequency.setValueAtTime(f1, t0); g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.25); o.connect(g); g.connect(a.destination); o.start(t0); o.stop(t0 + 0.26); };
+  const AU = ['Au!', 'Auw!', 'Au, m’n heup!', 'Hé!', 'Oei!', 'Aaah!', 'Waarom ik?!', 'Mijn helm!']; let tAu = 0;
+  function au(){ const a = AC(); if(a){ const t0 = a.currentTime, o = a.createOscillator(), g = a.createGain();       // doffe inslag
+      o.type = 'sine'; o.frequency.setValueAtTime(140, t0); o.frequency.exponentialRampToValueAtTime(45, t0 + 0.18); g.gain.setValueAtTime(0.7, t0); g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.25); o.connect(g); g.connect(a.destination); o.start(t0); o.stop(t0 + 0.3); }
+    if(performance.now() - tAu < 1200) return; tAu = performance.now();
     try{ if(window.speechSynthesis){ const u = new SpeechSynthesisUtterance(AU[Math.floor(Math.random()*AU.length)]); u.lang = 'nl-NL'; u.pitch = 0.7 + Math.random()*0.9; u.rate = 1.15 + Math.random()*0.3; u.volume = 1;
       const st = speechSynthesis.getVoices().find(v => /^nl/i.test(v.lang)); if(st) u.voice = st; speechSynthesis.cancel(); speechSynthesis.speak(u); } }catch(e){} }
+  // ================= hulpfuncties raycast =================
   const door = o => !o.userData.massief && [].concat(o.material).every(m => (m.transparent && m.opacity < 0.6) || m.alphaTest > 0);   // glas/gaas: kogel gaat erdoor; muren nooit
   const zichtbaar = o => { for(let q = o; q; q = q.parent) if(!q.visible) return false; return true; };
   const vanPersoon = o => { for(let q = o; q; q = q.parent) if(MENSEN.includes(q)) return q; return null; };
   const W = () => wapen >= 0 ? WAPENS[wapen] : null;
-  let zoom = false, basisF = 0, houd = false, tAuto = 0, boemL = null; const RAKETTEN = [], DL = [], bolG = new THREE.SphereGeometry(1, 10, 8);
-  const deeltje = (p, kleur, s, v, life, vuur) => { const o = new THREE.Mesh(bolG, new THREE.MeshBasicMaterial({color: kleur, transparent: true, depthWrite: false, blending: vuur ? THREE.AdditiveBlending : THREE.NormalBlending}));
-    o.position.copy(p); o.scale.setScalar(s); o.userData.gun = true; scene.add(o); DL.push({o, v, t: 0, life, s, vuur}); };
+  let zoom = false, basisF = 0, houd = false, tAuto = 0, boemL = null, adsT = 0, bobT = 0, bobA = 0, swayX = 0, swayY = 0, bloom = 0, recAcc = 0, tVolg = 0, trek = 0, rT = -1; const RAKETTEN = [], DL = [], HULS = [], TRC = [], bolG = new THREE.SphereGeometry(1, 10, 8);
+  const deeltje = (p, kleur, s, v, life, vuur, zw) => { const o = new THREE.Mesh(bolG, new THREE.MeshBasicMaterial({color: kleur, transparent: true, depthWrite: false, blending: vuur ? THREE.AdditiveBlending : THREE.NormalBlending}));
+    o.position.copy(p); o.scale.setScalar(s); o.userData.gun = true; scene.add(o); DL.push({o, v, t: 0, life, s, vuur, zw: zw || 0}); };
+  const grondY = (x, z) => Math.abs(z) < PL/2 && x > PX0 && x < PX1 ? PL_H : 0;
   // zichtlijn: zit er een muur/object tussen het explosiepunt en het doel, dan geen schade
   function zicht(a, b){ const d = b.clone().sub(a), L = d.length(); if(L < 0.5) return true; RC.set(a.clone().add(V(0, 1, 0)), d.normalize()); RC.far = L;
     return !RC.intersectObjects(scene.children, true).some(h => h.object.isMesh && !h.object.userData.gun && !vanPersoon(h.object) && zichtbaar(h.object) && !door(h.object) && h.distance < L - 1.5); }
-  function ontplof(p, extern){ if(!extern) MP.boem(p); knal(true); knal(true); for(let i = 0; i < 26; i++) deeltje(p.clone().add(V((Math.random() - 0.5)*3, Math.random()*3, (Math.random() - 0.5)*3)), 0xff9a20, 1.2 + Math.random()*1.5, V(Math.random() - 0.5, Math.random()*0.9, Math.random() - 0.5).multiplyScalar(30), 0.7 + Math.random()*0.5, true);
+  function ontplof(p, extern){ if(!extern) MP.boem(p); const dA = camera.position.distanceTo(p); knal('boem', Math.max(0.15, 1 - dA/600)); if(dA < 120) schok = Math.max(schok, 1 - dA/120);
+    for(let i = 0; i < 26; i++) deeltje(p.clone().add(V((Math.random() - 0.5)*3, Math.random()*3, (Math.random() - 0.5)*3)), 0xff9a20, 1.2 + Math.random()*1.5, V(Math.random() - 0.5, Math.random()*0.9, Math.random() - 0.5).multiplyScalar(30), 0.7 + Math.random()*0.5, true);
     for(let i = 0; i < 18; i++) deeltje(p.clone().add(V((Math.random() - 0.5)*5, 2 + Math.random()*5, (Math.random() - 0.5)*5)), 0x45484b, 2 + Math.random()*2, V((Math.random() - 0.5)*5, 5 + Math.random()*6, (Math.random() - 0.5)*5), 3 + Math.random()*2, false);
+    for(let i = 0; i < 14; i++) deeltje(p.clone().add(V(0, 1, 0)), 0x6b5a44, 0.35, V((Math.random() - 0.5)*60, 20 + Math.random()*40, (Math.random() - 0.5)*60), 1.4, false, 98);   // gruis
     if(boemL) scene.remove(boemL); boemL = new THREE.PointLight(0xffa040, 8, 300, 1.2); boemL.position.copy(p).add(V(0, 5, 0)); scene.add(boemL);
-    const brand = new THREE.Mesh(new THREE.CircleGeometry(5, 24), new THREE.MeshBasicMaterial({color: 0x161616, transparent: true, opacity: 0.55, depthWrite: false})); brand.rotation.x = -Math.PI/2; brand.position.set(p.x, Math.max(0.05, p.y < 3 ? (Math.abs(p.z) < PL/2 && p.x > PX0 && p.x < PX1 ? PL_H + 0.05 : 0.05) : -99), p.z); if(brand.position.y > -50){ scene.add(brand); gaten.push(brand); }
-    let n = 0; MENSEN.forEach(m => { const d = V(m.position.x - p.x, 0, m.position.z - p.z), L = d.length(); if(L < 40){ const r = (L > 0.1 ? d.normalize() : V(1, 0, 0)); if(!extern && m.userData.mpId && zicht(p, m.position.clone().setY(m.position.y + 10))) MP.raak(m.userData.mpId, r, Math.round(90*(1 - L/40))); if(FX.schot(m, r.clone().multiplyScalar(2.2))) n++; } });
-    if(extern) n = 0; { const ik = V(FP.pos.x - p.x, 0, FP.pos.z - p.z), L = ik.length(); if(extern && FP.aan && L < 40 && zicht(p, camera.position)) MP.geraakt(ik.normalize(), extern.naam + ' (bazooka)', Math.round(90*(1 - L/40)), extern.id); }
-    if(n) setTimeout(au, 180);
-    meld(n ? '💥 Boem! ' + n + ' collega' + (n > 1 ? '’s' : '') + ' omvergeblazen — die staan zo weer op.' : '💥 Boem!'); renderer.shadowMap.needsUpdate = true; }
-  // keuzemenu (toets B): 1–6 kiezen, 0 = wapen weg, Esc = sluiten; staat niet in het zijpaneel
+    const brand = new THREE.Mesh(new THREE.CircleGeometry(5, 24), new THREE.MeshBasicMaterial({color: 0x161616, transparent: true, opacity: 0.55, depthWrite: false})); brand.rotation.x = -Math.PI/2; brand.position.set(p.x, p.y < 3 ? grondY(p.x, p.z) + 0.05 : -99, p.z); if(brand.position.y > -50){ scene.add(brand); gaten.push(brand); }
+    let n = 0; MENSEN.forEach(m => { const d = V(m.position.x - p.x, 0, m.position.z - p.z), L = d.length(); if(L < 40 && zicht(p, m.position.clone().setY(m.position.y + 10))){ const r = (L > 0.1 ? d.normalize() : V(1, 0, 0));
+        if(!extern && m.userData.mpId){ MP.raak(m.userData.mpId, r, Math.round(110*(1 - L/40)), 4, false); n++; } if(FX.schot(m, r.clone().multiplyScalar(2.2)) && !m.userData.mpId) n++; } });
+    if(!extern && n) hitmarker(false, 0);
+    { const ik = V(FP.pos.x - p.x, 0, FP.pos.z - p.z), L = ik.length(); if(extern && FP.aan && L < 40 && zicht(p, camera.position)) MP.geraakt(ik.normalize(), extern.naam, Math.round(110*(1 - L/40)), extern.id, 4, false); }
+    if(n && !extern) setTimeout(au, 180); renderer.shadowMap.needsUpdate = true; }
+  let schok = 0;
+  // ================= HUD: richtkruis, hitmarker, munitie, herlaadbalk =================
+  const css = document.createElement('style'); css.textContent = `
+    #gHud{position:fixed;inset:0;pointer-events:none;z-index:26;display:none;font:700 13px system-ui,sans-serif;color:#fff}
+    #gKruis{position:absolute;left:50%;top:50%}
+    #gKruis i{position:absolute;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.55);border-radius:1px}
+    #gKruis .h{width:9px;height:2px;margin-top:-1px}#gKruis .v{width:2px;height:9px;margin-left:-1px}#gKruis .p{width:3px;height:3px;margin:-1.5px 0 0 -1.5px;border-radius:50%}
+    #gHit{position:absolute;left:50%;top:50%;opacity:0}#gHit i{position:absolute;width:11px;height:2.5px;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.5)}
+    #gHit.kill i{background:#ff3b30}#gDmg{position:absolute;left:calc(50% + 18px);top:calc(50% - 30px);font:800 15px system-ui;text-shadow:0 1px 3px #000;opacity:0}
+    #gAmmo{position:absolute;left:calc(50% + 10px);bottom:18px;background:rgba(20,24,28,.78);border-radius:12px;padding:6px 14px;white-space:nowrap}
+    #gAmmo b{font-size:18px}#gAmmo .r{display:block;height:3px;background:rgba(255,255,255,.2);border-radius:2px;margin-top:4px;overflow:hidden}#gAmmo .r span{display:block;height:100%;width:0;background:#ff7a1a}
+    #gTip{position:absolute;left:50%;top:calc(50% + 34px);transform:translateX(-50%);font:700 12px system-ui;text-shadow:0 1px 3px #000;opacity:.9}`;
+  document.head.appendChild(css);
+  const hud = document.createElement('div'); hud.id = 'gHud';
+  hud.innerHTML = '<div id="gKruis"><i class="h" data-d="l"></i><i class="h" data-d="r"></i><i class="v" data-d="t"></i><i class="v" data-d="b"></i><i class="p"></i></div>' +
+    '<div id="gHit"><i style="transform:translate(-14px,-14px) rotate(45deg)"></i><i style="transform:translate(3px,-14px) rotate(-45deg)"></i><i style="transform:translate(-14px,11px) rotate(-45deg)"></i><i style="transform:translate(3px,11px) rotate(45deg)"></i></div>' +
+    '<div id="gDmg"></div><div id="gTip"></div><div id="gAmmo"></div><div id="gDot" style="position:absolute;left:50%;top:50%;width:5px;height:5px;margin:-2.5px;border-radius:50%;background:#ff2a2a;box-shadow:0 0 6px #ff2a2a;opacity:0"></div>';
+  document.body.appendChild(hud);
+  const DOT = hud.querySelector('#gDot'), KR = [...hud.querySelectorAll('#gKruis i')], HIT = hud.querySelector('#gHit'), DMG = hud.querySelector('#gDmg'), AMMO = hud.querySelector('#gAmmo'), TIP = hud.querySelector('#gTip'), KRUIS = hud.querySelector('#gKruis');
+  let tHit = 0, tTip = 0;
+  function hitmarker(kill, dmg, hs){ HIT.classList.toggle('kill', !!kill); HIT.style.opacity = '1'; HIT.style.transform = 'scale(' + (kill ? 1.35 : 1) + ')'; tHit = kill ? 0.45 : 0.18;
+    if(dmg){ DMG.textContent = (hs ? '💀 ' : '') + dmg; DMG.style.color = hs ? '#ffcc00' : kill ? '#ff3b30' : '#fff'; DMG.style.opacity = '1'; }
+    if(hs) tip('HEADSHOT', '#ffcc00'); if(kill) tip('UITGESCHAKELD', '#ff3b30');
+    klik(hs ? 5200 : 3400, 0, 0.35, 0.04); if(hs) pling(1760, 0.18); if(kill) pling(880, 0.2); }
+  function tip(t, kleur){ TIP.textContent = t; TIP.style.color = kleur || '#fff'; TIP.style.opacity = '1'; tTip = 1.1; }
+  function toonAmmo(){ const w = W(); if(!w) return; const laag = w.inMag <= Math.ceil(w.mag*0.25);
+    AMMO.innerHTML = IKOON[wapen] + ' ' + w.naam + ' &nbsp;<b style="color:' + (w.inMag === 0 ? '#ff3b30' : laag ? '#f2c200' : '#fff') + '">' + w.inMag + '</b> / ' + w.mag + (rT >= 0 ? ' · herladen…' : w.inMag === 0 ? ' · <span style="color:#ff3b30">R</span>' : '') +
+      '<span class="r"><span style="width:' + (rT >= 0 ? Math.round(rT*100) : 0) + '%"></span></span>'; }
+  // ================= wapenmenu (toets B) =================
   const menu = document.createElement('div'); menu.id = 'wapenMenu';
-  menu.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:60;display:none;background:rgba(20,24,28,.86);color:#fff;border-radius:16px;padding:14px;font:600 13px system-ui,sans-serif;box-shadow:0 10px 40px rgba(0,0,0,.45)';
-  const IKOON = ['🔫', '💥', '🎯', '🔥', '🚀', '🔭'];
-  menu.innerHTML = '<div style="text-align:center;margin-bottom:10px;opacity:.85">Kies een wapen · 1–6 · 0 = wegbergen · rechtermuisknop = inzoomen</div><div id="wmRij" style="display:grid;grid-template-columns:repeat(3,120px);gap:8px"></div>';
-  document.body.appendChild(menu); ['keydown', 'keyup', 'pointerdown', 'pointerup', 'wheel'].forEach(ev => menu.addEventListener(ev, e => e.stopPropagation()));
+  menu.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:60;display:none;background:rgba(20,24,28,.88);color:#fff;border-radius:16px;padding:14px;font:600 13px system-ui,sans-serif;box-shadow:0 10px 40px rgba(0,0,0,.45)';
+  menu.innerHTML = '<div style="text-align:center;margin-bottom:10px;opacity:.85">Kies een wapen · 1–6 · 0 = wegbergen</div><div id="wmRij" style="display:grid;grid-template-columns:repeat(3,128px);gap:8px"></div>' +
+    '<div style="margin-top:10px;opacity:.65;font-size:11px;text-align:center;line-height:1.5">klik = schieten · rechts = richten · R = herladen · 1–6 / muiswiel = wisselen · Tab = scorebord · spatie = springen · Esc = muis los</div>';
+  document.body.appendChild(menu); ['keydown', 'keyup', 'pointerdown', 'pointerup', 'wheel', 'mousedown'].forEach(ev => menu.addEventListener(ev, e => e.stopPropagation()));
   const rij = menu.querySelector('#wmRij');
-  WAPENS.forEach((w, i) => { const b = document.createElement('button'); b.style.cssText = 'background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:12px 6px;cursor:pointer;font:600 13px system-ui,sans-serif';
-    b.innerHTML = '<div style="font-size:26px">' + IKOON[i] + '</div>' + w.naam + '<div style="opacity:.6;font-size:11px;margin-top:2px">' + (i + 1) + '</div>'; b.onclick = () => kies(i); w.knop = b; rij.appendChild(b); });
+  WAPENS.forEach((w, i) => { const b = document.createElement('button'); b.style.cssText = 'background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:10px 6px;cursor:pointer;font:600 13px system-ui,sans-serif';
+    const sch = w.raket ? 'splash 110' : (w.kogels > 1 ? w.kogels + '×' + w.dmg : w.dmg) + ' schade';
+    b.innerHTML = '<div style="font-size:26px">' + IKOON[i] + '</div>' + w.naam + '<div style="opacity:.6;font-size:11px;margin-top:2px">' + (i + 1) + ' · ' + sch + ' · ' + w.mag + ' patr.</div>'; b.onclick = () => kies(i); w.knop = b; rij.appendChild(b); });
   const scope = document.createElement('div'); scope.style.cssText = 'position:fixed;inset:0;z-index:25;pointer-events:none;display:none;background:radial-gradient(circle at 50% 50%,transparent 0,transparent 36vmin,#000 36.4vmin)';
   scope.innerHTML = '<div style="position:absolute;left:50%;top:14%;bottom:14%;width:1px;background:rgba(0,0,0,.8)"></div><div style="position:absolute;top:50%;left:calc(50% - 36vmin);right:calc(50% - 36vmin);height:1px;background:rgba(0,0,0,.8)"></div><div style="position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px;border-radius:50%;background:#d22"></div>';
   document.body.appendChild(scope);
   const menuOpen = () => menu.style.display !== 'none';
   function toonMenu(v){ if(v) los(); menu.style.display = v ? 'block' : 'none'; WAPENS.forEach((w, i) => w.knop.style.background = i === wapen ? 'rgba(255,122,26,.55)' : 'rgba(255,255,255,.08)'); }
-  function toets(k){ if(!menuOpen()) return false; if(k === 'Escape'){ toonMenu(false); return true; } if(k === '0'){ kies(-1); return true; } const n = parseInt(k, 10); if(n >= 1 && n <= WAPENS.length){ kies(n - 1); return true; } return /^[0-9]$/.test(k); }
-  // muisknoppen via mousedown/mouseup: die komen ook door als je links klikt terwijl rechts (inzoomen) al ingedrukt is (pointerdown niet)
+  function toets(k){ if(menuOpen()){ if(k === 'Escape'){ toonMenu(false); return true; } if(k === '0'){ kies(-1); return true; } const n = parseInt(k, 10); if(n >= 1 && n <= WAPENS.length){ kies(n - 1); return true; } return /^[0-9]$/.test(k); }
+    if(!actief()) return false; const n = parseInt(k, 10); if(n >= 1 && n <= WAPENS.length){ if(n - 1 !== wapen) kies(n - 1); return true; }
+    if(k === 'r' || k === 'R'){ herlaad(); return true; } return false; }
+  // ================= invoer =================
   wrap.addEventListener('mousedown', e => { if(!actief()) return; e.preventDefault(); if(document.pointerLockElement !== wrap) vang();
     if(e.button === 2){ zoom = true; vuil(4); }
     if(e.button === 0){ if(W().auto){ houd = true; tAuto = 0; } else vuur(); } });
   window.addEventListener('mouseup', e => { if(e.button === 2) zoom = false; if(e.button === 0) houd = false; });
   window.addEventListener('blur', () => { zoom = false; houd = false; });
+  wrap.addEventListener('wheel', e => { if(!actief()) return; e.preventDefault(); e.stopImmediatePropagation(); const n = WAPENS.length; kies(((wapen + (e.deltaY > 0 ? 1 : -1)) % n + n) % n); }, {capture: true, passive: false});
   function actief(){ return wapen >= 0 && FP.aan && !FP.rit && !FP.step; }
-  function kies(i){ const was = wapen; wapen = i; if(was < 0 && i >= 0) setTimeout(() => MP.spawn(), 0); zoom = false; houd = false; toonMenu(false); if(i >= 0) setTimeout(vang, 0); else los(); if(i >= 0){ if(FP.rit) RIT.uit(true); if(FP.step){ zetTuk(false); zetStep(false); } if(!FP.aan) zetFP(true); meld(WAPENS[i].naam + ' ' + IKOON[i] + ' — ' + (WAPENS[i].auto ? 'muisknop ingedrukt houden = vuren' : 'klik om te schieten') + ' · rechtermuisknop = inzoomen · B = ander wapen'); }
+  function kies(i){ const was = wapen; if(rT >= 0) rT = -1; wapen = i; if(was < 0 && i >= 0) setTimeout(() => MP.spawn(), 0); zoom = false; houd = false; toonMenu(false); if(i >= 0) setTimeout(vang, 0); else los();
+    if(i >= 0){ if(FP.rit) RIT.uit(true); if(FP.step){ zetTuk(false); zetStep(false); } if(!FP.aan) zetFP(true); trek = 1; tVolg = 0.35; klik(1400, 0, 0.3); klik(900, 0.12, 0.3); toonAmmo();
+      if(was < 0) meld(WAPENS[i].naam + ' ' + IKOON[i] + ' — klik = schieten · rechts = richten · R = herladen · 1–6 = wisselen · Tab = scorebord'); }
     else meld('Wapen weggeborgen'); vuil(4); }
   const volgende = () => toonMenu(!menuOpen());
+  function herlaad(){ const w = W(); if(!w || rT >= 0 || w.inMag === w.mag) return; rT = 0; houd = false;
+    const d = w.herlaad; klik(700, 0.05, 0.4); klik(500, d*0.45, 0.5); klik(1200, d*0.85, 0.45); if(w.kogels > 1 || w.zoom) klik(800, d*0.95, 0.4); toonAmmo(); }
   function kogelgat(h, dir){ const n = h.face ? h.face.normal.clone().transformDirection(h.object.matrixWorld) : dir.clone().negate();
     const gat = new THREE.Mesh(new THREE.CircleGeometry(0.09, 12), new THREE.MeshBasicMaterial({color: 0x141414, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2}));
-    gat.position.copy(h.point).addScaledVector(n, 0.02); gat.lookAt(h.point.clone().add(n)); scene.add(gat); gaten.push(gat); if(gaten.length > 60){ const o = gaten.shift(); scene.remove(o); o.geometry.dispose(); o.material.dispose(); } }
-  function vuur(){ if(!actief()) return; const w = W(); knal(w.kogels > 1); terug = 1; w.vuur.visible = true; tFl = 0.06;
-    if(!flits){ flits = new THREE.PointLight(0xffc870, 0, 40); scene.add(flits); } camera.localToWorld(flits.position.set(w.pos[0], w.pos[1] + 0.15, w.pos[2] + w.mond - 0.3)); flits.intensity = 3;
-    camera.updateMatrixWorld(); let raak = false;
+    gat.position.copy(h.point).addScaledVector(n, 0.02); gat.lookAt(h.point.clone().add(n)); scene.add(gat); gaten.push(gat); if(gaten.length > 80){ const o = gaten.shift(); scene.remove(o); o.geometry.dispose(); o.material.dispose(); }
+    // inslag: vonken op metaal/beton, stofwolkje
+    for(let k = 0; k < 4; k++) deeltje(h.point.clone().addScaledVector(n, 0.1), 0xffd27a, 0.07, n.clone().multiplyScalar(14).add(V((Math.random() - 0.5)*18, (Math.random() - 0.2)*14, (Math.random() - 0.5)*18)), 0.22, true, 60);
+    deeltje(h.point.clone().addScaledVector(n, 0.25), 0xa8a49c, 0.22, n.clone().multiplyScalar(3), 0.6, false); }
+  const muis = () => { const k = FP.keys; return !!(k.w || k.a || k.s || k.d || k.arrowup || k.arrowdown || k.arrowleft || k.arrowright); };
+  function spreiding(){ const w = W(); if(!w) return 0; let s = w.spreid + bloom + (muis() ? (w.zoom ? 0.04 : 0.012) : 0) + (FP.jy > 0 ? 0.035 : 0);
+    if(w.zoom && adsT > 0.9) s = (muis() ? 0.01 : 0) + (FP.jy > 0 ? 0.03 : 0); else s *= 1 - adsT*0.6; return s; }
+  function vuur(){ if(!actief()) return; const w = W(); if(tVolg > 0 || rT >= 0 || trek > 0.5) return;
+    if(w.inMag <= 0){ klik(2200, 0, 0.4, 0.03); herlaad(); return; }
+    w.inMag--; tVolg = w.auto ? 0 : w.rate; knal(w.klank, 1); terug = 1; tFl = 0.05; const v = w.vuur; v.visible = true; v.rotation.z = Math.random()*Math.PI; v.scale.setScalar(0.8 + Math.random()*0.5);
+    if(!flits){ flits = new THREE.PointLight(0xffc870, 0, 60); scene.add(flits); } camera.localToWorld(flits.position.set(w.pos[0], w.pos[1] + 0.15, w.pos[2] + w.mond - 0.3)); flits.intensity = 4;
+    // terugslag op de camera (deels herstel in update), bloei van de spreiding
+    const k = w.kick*(1 - adsT*0.4); FP.pitch = Math.min(1.3, FP.pitch + k); FP.yaw += (Math.random() - 0.5)*k*0.6; recAcc += k; bloom = Math.min(0.06, bloom + (w.auto ? 0.004 : w.kogels > 1 ? 0 : 0.012));
+    if(w.zoom) setTimeout(() => { klik(600, 0, 0.45); klik(1100, 0.28, 0.45); }, 350); if(w.kogels > 1) setTimeout(() => { klik(500, 0, 0.5); klik(800, 0.16, 0.5); }, 330);   // grendel / pomp
+    camera.updateMatrixWorld(); let raak = false, kill = false, hs = false, som = 0;
     { const o = camera.localToWorld(V(w.pos[0], w.pos[1] + 0.15, w.pos[2] + w.mond)), dv = V(0, 0, -1).transformDirection(camera.matrixWorld); MP.schot(o, dv, wapen); }
+    huls(w);
     if(w.raket){ RC.setFromCamera(new THREE.Vector2(0, 0), camera); const r = new THREE.Group(), lijf = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 1.6, 10), M(0x4b5a36)); lijf.rotation.x = Math.PI/2; r.add(lijf);
       const kop = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.6, 10), M(0xb33a1e)); kop.rotation.x = -Math.PI/2; kop.position.z = -1.1; r.add(kop);
       const vl = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 6), new THREE.MeshBasicMaterial({color: 0xffb040})); vl.scale.z = 2.5; vl.position.z = 1.2; r.add(vl);
       r.position.copy(camera.localToWorld(V(w.pos[0], w.pos[1] + 0.2, w.pos[2] + w.mond))); r.lookAt(r.position.clone().add(RC.ray.direction)); r.rotateY(Math.PI); r.traverse(o => o.userData.gun = true); scene.add(r);
-      RAKETTEN.push({r, dir: RC.ray.direction.clone(), af: 0}); return; }
-    for(let k = 0; k < w.kogels; k++){ RC.setFromCamera(new THREE.Vector2((Math.random() - 0.5)*2*w.spreid, (Math.random() - 0.5)*2*w.spreid), camera); RC.far = 800;
-      const hits = RC.intersectObjects(scene.children, true).filter(h => h.object.isMesh && !h.object.userData.gun && !h.object.isSprite && h.distance > 0.5 && zichtbaar(h.object) &&
-        !door(h.object));          // door glas en de openingen van het gaashekwerk heen
+      RAKETTEN.push({r, dir: RC.ray.direction.clone(), af: 0}); for(let i = 0; i < 10; i++) deeltje(camera.localToWorld(V(w.pos[0], w.pos[1], w.pos[2] + 3)), 0xbfc2c4, 0.6, V((Math.random() - 0.5)*8, 4, (Math.random() - 0.5)*8).add(V(0, 0, 25).transformDirection(camera.matrixWorld).multiplyScalar(25)), 1.5, false);   // achteruitlaat
+      toonAmmo(); if(w.inMag === 0) setTimeout(herlaad, 250); return; }
+    const sp = w.kogels > 1 ? w.spreid*(1 - adsT*0.3) : spreiding(), mond = camera.localToWorld(V(w.pos[0]*(1 - adsT), w.pos[1]*(1 - adsT) + 0.15, w.pos[2] + w.mond));
+    for(let n = 0; n < w.kogels; n++){ const a = Math.random()*Math.PI*2, r = Math.sqrt(Math.random())*sp; RC.setFromCamera(new THREE.Vector2(Math.cos(a)*r, Math.sin(a)*r), camera); RC.far = 900;
+      const hits = RC.intersectObjects(scene.children, true).filter(h => h.object.isMesh && !h.object.userData.gun && !h.object.isSprite && h.distance > 0.5 && zichtbaar(h.object) && !door(h.object));
+      const eind = hits.length ? hits[0].point : RC.ray.origin.clone().addScaledVector(RC.ray.direction, 600);
+      if(w.klank !== 0 && (n === 0 || Math.random() < 0.3)) kogelspoor(mond, eind);
       if(!hits.length) continue; const h = hits[0], m = vanPersoon(h.object), dir = RC.ray.direction.clone();
-      if(!m && h.object.userData.mpVoertuig){ MP.raak(h.object.userData.mpVoertuig, dir, [25, 12, 40, 18, 0, 100][wapen]); raak = true; kogelgat(h, dir); continue; }
-      if(m){ if(m.userData.mpId) MP.raak(m.userData.mpId, dir, [25, 12, 40, 18, 0, 100][wapen]); if(FX.schot(m, dir.clone().multiplyScalar(w.kracht))) raak = true; } else kogelgat(h, dir); }
-    if(raak) au();
-    if(raak) meld(['Raak! 🎯 Hij gaat neer — staat zo weer op.', 'Voltreffer! Gelukkig had hij z’n PBM aan 🦺', 'Au! Dat wordt een melding in het incidentregister.'][Math.floor(Math.random()*3)]); }
+      if(!m && h.object.userData.mpVoertuig){ MP.raak(h.object.userData.mpVoertuig, dir, w.dmg, wapen, false); raak = true; som += w.dmg; kogelgat(h, dir); continue; }
+      if(m){ const kop = h.point.y - m.position.y > 15.2 && (!m.userData.P || m.userData.P.staat === 'staat'), d = Math.round(w.dmg*(kop ? 2 : 1)); som += d; hs = hs || kop; raak = true;
+        deeltje(h.point.clone(), 0xffffff, 0.12, dir.clone().multiplyScalar(-6), 0.15, true);
+        if(m.userData.mpId){ MP.raak(m.userData.mpId, dir, d, wapen, kop); if(MP.zalSterven(m.userData.mpId, d)) kill = true; }
+        else FX.schot(m, dir.clone().multiplyScalar(w.kracht)); }
+      else kogelgat(h, dir); }
+    if(raak){ hitmarker(kill, som, hs); if(!kill) au(); }
+    toonAmmo(); if(w.inMag === 0) setTimeout(herlaad, 200); }
+  function kogelspoor(a, b){ const geo = new THREE.BufferGeometry().setFromPoints([a.clone(), b.clone()]), l = new THREE.Line(geo, new THREE.LineBasicMaterial({color: 0xffe2a0, transparent: true, opacity: 0.85, depthWrite: false}));
+    l.userData.gun = true; scene.add(l); TRC.push({l, t: 0}); }
+  const hulsG = new THREE.CylinderGeometry(0.045, 0.045, 0.22, 8), hulsM = new THREE.MeshStandardMaterial({color: 0xc9a24a, metalness: 0.85, roughness: 0.3}), hulsR = new THREE.MeshStandardMaterial({color: 0xb3261e, roughness: 0.5});
+  function huls(w){ if(w.raket) return; const o = new THREE.Mesh(w.kogels > 1 ? new THREE.CylinderGeometry(0.1, 0.1, 0.35, 8) : hulsG, w.kogels > 1 ? hulsR : hulsM); o.userData.gun = true;
+    o.position.copy(camera.localToWorld(V(w.pos[0] + 0.25, w.pos[1] + 0.3, w.pos[2] + 0.2))); scene.add(o);
+    const v = V(3 + Math.random()*2, 4 + Math.random()*2, 1 + Math.random()).transformDirection(camera.matrixWorld).multiplyScalar(14 + Math.random()*6);
+    HULS.push({o, v, w: V(Math.random()*20, Math.random()*20, Math.random()*20), t: 0}); if(HULS.length > 40){ const q = HULS.shift(); scene.remove(q.o); }
+    if(Math.random() < 0.7) klik(4200 + Math.random()*1500, 0.45 + Math.random()*0.2, 0.08, 0.04); }                // tinkel op de grond
+  // externe flits (schot van een collega)
+  function flitsBij(p){ deeltje(p, 0xffc870, 0.45, V(0, 0, 0), 0.06, true); }
+  // ================= update per frame =================
   function update(dt){ const zie = actief(); let bezig = false; const w0 = W();
-    // inzoomen (rechtermuisknop): fov naar zoomwaarde; sniper met richtkijker-overlay, wapen dan uit beeld
-    const doelF = zoom && zie ? (w0.zoom ? 42/w0.zoom/1.6 : 22) : (basisF || camera.fov);
+    hud.style.display = zie ? 'block' : 'none'; const fh = $t('fpHud'); if(fh) fh.style.visibility = zie ? 'hidden' : '';
+    if(tVolg > 0) tVolg -= dt; bloom = Math.max(0, bloom - dt*(houd ? 0.05 : 0.12));
+    // herladen
+    if(w0 && rT >= 0){ rT += dt/w0.herlaad; if(rT >= 1){ rT = -1; w0.inMag = w0.mag; } toonAmmo(); bezig = true; }
+    // terugslag-herstel: ± 65 % van de opgetelde trap komt terug
+    if(recAcc > 0){ const r = Math.min(recAcc, recAcc*dt*7 + dt*0.02); FP.pitch -= r*0.65; recAcc -= r; bezig = true; }
+    // richten (ADS) en zoom
+    adsT += ((zoom && zie && rT < 0 ? 1 : 0) - adsT)*Math.min(1, dt*13);
+    const adsDoel = w0 ? (w0.zoom ? 42/w0.zoom/1.6 : (basisF || camera.fov)*w0.adsF) : 0;
     if(zie && zoom && basisF === 0) basisF = camera.fov;
-    if(basisF){ camera.fov += (doelF - camera.fov)*Math.min(1, dt*12); camera.updateProjectionMatrix(); bezig = true; if(!zoom && Math.abs(camera.fov - basisF) < 0.05){ camera.fov = basisF; camera.updateProjectionMatrix(); basisF = 0; } }
-    const kijker = zie && zoom && w0 && w0.zoom && camera.fov < 12; scope.style.display = kijker ? 'block' : 'none';
+    if(basisF){ const doelF = zoom && zie && rT < 0 ? adsDoel : basisF; camera.fov += (doelF - camera.fov)*Math.min(1, dt*12); camera.updateProjectionMatrix(); bezig = true; if(!(zoom && zie) && Math.abs(camera.fov - basisF) < 0.05){ camera.fov = basisF; camera.updateProjectionMatrix(); basisF = 0; } }
+    const kijker = zie && w0 && w0.zoom && adsT > 0.85; scope.style.display = kijker ? 'block' : 'none';
     WAPENS.forEach((w, i) => { const v = zie && i === wapen && !kijker; if(w.g.visible !== v){ w.g.visible = v; bezig = true; } });
     if(wapen >= 0 && !FP.aan){ wapen = -1; zoom = false; houd = false; los(); }
-    if(zie && w0.auto && houd){ tAuto -= dt; if(tAuto <= 0){ tAuto = w0.auto; vuur(); FP.pitch = Math.min(1.3, FP.pitch + 0.004); } bezig = true; }
+    if(zie && w0.auto && houd){ tAuto -= dt; if(tAuto <= 0){ tAuto = w0.auto; vuur(); } bezig = true; }
+    // wapenpositie: heup ↔ richten, loopschommel, muiszwaai, terugslag, herlaad- en trekanimatie
+    if(zie && w0){ const lopen = muis() && FP.jy <= 0.01; bobA += ((lopen ? 1 : 0) - bobA)*Math.min(1, dt*8); bobT += dt*(FP.keys.shift ? 14 : 9)*bobA;
+      const amp = bobA*(1 - adsT*0.85), bx_ = Math.sin(bobT)*0.06*amp, by_ = -Math.abs(Math.cos(bobT))*0.05*amp;
+      swayX *= Math.max(0, 1 - dt*9); swayY *= Math.max(0, 1 - dt*9); trek = Math.max(0, trek - dt*4); terug = Math.max(0, terug - dt*(w0.kogels > 1 || w0.zoom ? 4 : 9));
+      const dip = rT >= 0 ? Math.sin(Math.min(1, rT)*Math.PI) : 0, sp = (1 - adsT*0.75);
+      const hx = w0.pos[0]*(1 - adsT), hy = w0.pos[1] + (-w0.adsY - w0.pos[1])*adsT, hz = w0.pos[2] + (w0.adsZ - w0.pos[2])*adsT;
+      w0.g.position.set(hx + bx_ + swayX*sp, hy + by_ - swayY*sp - dip*0.55 - trek*1.4 + terug*0.05, hz + terug*w0.terug + (FP.jy > 0 ? 0.15 : 0));
+      w0.g.rotation.set(terug*(w0.kogels > 1 ? 0.3 : 0.16) - dip*0.6 - trek*0.5, 0.06*(1 - adsT) - swayX*0.8, dip*0.35 + Math.sin(bobT*0.5)*0.02*amp); bezig = bezig || amp > 0.01 || dip > 0 || trek > 0 || terug > 0 || Math.abs(swayX) > 0.001; }
+    // richtkruis: opening volgt de spreiding, weg bij richten
+    if(zie){ const g = 5 + spreiding()*900, z = Math.max(0, 1 - adsT*1.6); KR.forEach(e => { const d = e.dataset.d; if(d === 'l') e.style.transform = 'translate(' + (-g - 9) + 'px,0)'; if(d === 'r') e.style.transform = 'translate(' + g + 'px,0)';
+        if(d === 't') e.style.transform = 'translate(0,' + (-g - 9) + 'px)'; if(d === 'b') e.style.transform = 'translate(0,' + g + 'px)'; }); KRUIS.style.opacity = (w0.zoom && adsT > 0.5 ? 0 : z).toFixed(2); DOT.style.opacity = (w0.zoom ? 0 : Math.max(0, adsT*2 - 1)).toFixed(2); }
+    if(tHit > 0){ tHit -= dt; HIT.style.opacity = Math.max(0, Math.min(1, tHit*6)).toFixed(2); DMG.style.opacity = Math.max(0, Math.min(1, tHit*4)).toFixed(2); DMG.style.transform = 'translateY(' + (-(0.45 - tHit)*30).toFixed(1) + 'px)'; bezig = true; }
+    if(tTip > 0){ tTip -= dt; TIP.style.opacity = Math.min(1, tTip*3).toFixed(2); bezig = true; }
+    if(schok > 0){ schok = Math.max(0, schok - dt*1.5); FP.yaw += (Math.random() - 0.5)*schok*0.02; FP.pitch += (Math.random() - 0.5)*schok*0.02; bezig = true; }
+    // raketten
     for(let i = RAKETTEN.length - 1; i >= 0; i--){ const q = RAKETTEN[i], stap = 260*dt; q.af += stap;
       RC.set(q.r.position, q.dir); RC.far = stap + 0.5; const h = RC.intersectObjects(scene.children, true).find(h => h.object.isMesh && !h.object.userData.gun && !h.object.isSprite && zichtbaar(h.object) && !door(h.object));
       if(h || q.af > 700 || q.r.position.y < 0){ scene.remove(q.r); RAKETTEN.splice(i, 1); ontplof(h ? h.point : q.r.position.clone()); }
       else { q.r.position.addScaledVector(q.dir, stap); if(Math.random() < 0.8) deeltje(q.r.position.clone(), 0x9a9da0, 0.4, V((Math.random() - 0.5)*3, 2, (Math.random() - 0.5)*3), 1.2, false); }
       bezig = true; }
-    for(let i = DL.length - 1; i >= 0; i--){ const d = DL[i]; d.t += dt; const k = d.t/d.life; d.o.position.addScaledVector(d.v, dt); d.v.multiplyScalar(Math.max(0, 1 - dt*2));
-      d.o.scale.setScalar(d.s*(1 + k*(d.vuur ? 2.5 : 4))); d.o.material.opacity = Math.max(0, (d.vuur ? 1 : 0.55)*(1 - k)); if(d.vuur) d.o.material.color.setHSL(0.1 - k*0.1, 1, 0.6 - k*0.4);
+    for(let i = DL.length - 1; i >= 0; i--){ const d = DL[i]; d.t += dt; const k = d.t/d.life; if(d.zw) d.v.y -= d.zw*dt; d.o.position.addScaledVector(d.v, dt); if(!d.zw) d.v.multiplyScalar(Math.max(0, 1 - dt*2));
+      d.o.scale.setScalar(d.s*(1 + k*(d.zw ? 0 : d.vuur ? 2.5 : 4))); d.o.material.opacity = Math.max(0, (d.vuur ? 1 : 0.55)*(1 - k)); if(d.vuur && d.s > 0.3) d.o.material.color.setHSL(0.1 - k*0.1, 1, 0.6 - k*0.4);
       if(d.t > d.life){ scene.remove(d.o); d.o.material.dispose(); DL.splice(i, 1); } bezig = true; }
+    for(let i = HULS.length - 1; i >= 0; i--){ const q = HULS[i]; q.t += dt; if(q.t > 2.5){ scene.remove(q.o); HULS.splice(i, 1); continue; } const gy = grondY(q.o.position.x, q.o.position.z) + 0.05;
+      if(q.o.position.y > gy || q.v.y > 0){ q.v.y -= 98*dt; q.o.position.addScaledVector(q.v, dt); q.o.rotation.x += q.w.x*dt; q.o.rotation.z += q.w.z*dt; if(q.o.position.y < gy){ q.o.position.y = gy; q.v.multiplyScalar(0.3); q.v.y = Math.abs(q.v.y) > 3 ? -q.v.y*0.35 : 0; } bezig = true; } }
+    for(let i = TRC.length - 1; i >= 0; i--){ const q = TRC[i]; q.t += dt; q.l.material.opacity = Math.max(0, 0.85 - q.t*12); if(q.t > 0.08){ scene.remove(q.l); q.l.geometry.dispose(); q.l.material.dispose(); TRC.splice(i, 1); } bezig = true; }
     if(boemL){ boemL.intensity = Math.max(0, boemL.intensity - dt*25); if(boemL.intensity <= 0){ scene.remove(boemL); boemL = null; } bezig = true; }
-    const w = W(); if(w && terug > 0){ terug = Math.max(0, terug - dt*(w.kogels > 1 ? 4 : 7)); w.g.position.z = w.pos[2] + terug*w.terug; w.g.position.y = w.pos[1] + terug*0.05; w.g.rotation.x = terug*(w.kogels > 1 ? 0.35 : 0.22); bezig = true; }
     if(tFl > 0){ tFl -= dt; if(tFl <= 0){ WAPENS.forEach(q => q.vuur.visible = false); if(flits) flits.intensity = 0; } bezig = true; }
     return bezig; }
-  const klik = () => {};                                                                      // schieten gaat via mousedown
   // muis vangen (pointer lock) zolang er een wapen actief is: bewegen = rondkijken, Esc = muis los, klik in beeld = weer vangen
   const vang = () => { try{ if(document.pointerLockElement !== wrap) wrap.requestPointerLock(); }catch(e){} };
   const los = () => { try{ if(document.pointerLockElement) document.exitPointerLock(); }catch(e){} };
   document.addEventListener('mousemove', e => { if(document.pointerLockElement !== wrap || !actief()) return; const gv = gevoel();
-    FP.yaw -= e.movementX*0.0022*gv; FP.pitch = Math.max(-1.3, Math.min(1.3, FP.pitch - e.movementY*0.0022*gv)); vuil(2); });
+    FP.yaw -= e.movementX*0.0022*gv; FP.pitch = Math.max(-1.3, Math.min(1.3, FP.pitch - e.movementY*0.0022*gv));
+    swayX = Math.max(-0.18, Math.min(0.18, swayX + e.movementX*0.0009)); swayY = Math.max(-0.12, Math.min(0.12, swayY + e.movementY*0.0007)); vuil(2); });
   document.addEventListener('pointerlockchange', () => { if(document.pointerLockElement !== wrap){ zoom = false; houd = false; } });
   const gevoel = () => basisF ? camera.fov/basisF : 1;
-  return {kies, volgende, toets, vuur, klik, gevoel, update, actief, aan: () => wapen >= 0, ontplof, knal, au, wapen: () => wapen}; })();
+  // model van een wapen voor de poppetjes van collega's (zelfde modellen, zonder mondingsvuur)
+  function model(i){ const w = WAPENS[i]; if(!w) return null; const c = w.g.clone(true); c.visible = true; c.position.set(0, 0, 0); c.rotation.set(0, 0, 0); c.children.forEach(o => { if(o.userData.vuur) o.visible = false; });
+    c.traverse(o => { o.userData.gun = true; }); return c; }
+  const klikLeeg = () => {};
+  return {kies, volgende, toets, vuur, klik: klikLeeg, gevoel, update, actief, aan: () => wapen >= 0, ontplof, knal, au, wapen: () => wapen, hitmarker, tip, flitsBij, model, IKOON, naamVan: i => WAPENS[i] ? WAPENS[i].naam : ''}; })();
 // ============ MULTIPLAYER: collega's op dezelfde pagina zien elkaar (publieke MQTT-relay, alleen posities/schoten, geen gegevens) ============
 const MP = (() => {
   const URL_BROKER = 'wss://broker.hivemq.com:8884/mqtt', KAMER = 'fudura-nc/aio-fuse/n' + N_AIO, ID = Math.random().toString(36).slice(2, 10);
@@ -2935,29 +3057,46 @@ const MP = (() => {
     let p = PEERS[d.id]; if(d.t === 'bye'){ weg(d.id); return; }
     if(!p){ p = PEERS[d.id] = {id: d.id, naam: d.naam, x: d.x || 0, z: d.z || 0, yaw: d.yaw || 0, fp: false, tLaatst: performance.now()}; p.g = avatar(p, d); p.g.visible = false; meld('👷 ' + d.naam + ' is binnengekomen'); toonBadge(); }
     p.tLaatst = performance.now(); naamLbl(p, d.naam);
-    if(d.t === 'st'){ if(d.x !== undefined){ p.x = d.x; p.z = d.z; p.yaw = d.yaw; p.y = d.y || 0; } p.fp = !!d.fp; p.veh = d.fp ? (d.v || null) : null; if(p.veh){ p.vx = d.vx; p.vh = d.vh; p.vz = d.vz; p.vr = d.vr; } toonBadge(); }
-    else if(d.t === 'schot'){ spoor(d.o, d.d); if(GUN) GUN.knal(d.w === 1 || d.w === 4); }
+    if(d.t === 'st'){ if(d.x !== undefined){ p.x = d.x; p.z = d.z; p.yaw = d.yaw; p.y = d.y || 0; } p.fp = !!d.fp; p.w = d.fp && d.w !== undefined ? d.w : -1; p.k = d.k || 0; p.dd = d.dd || 0; if(d.hp !== undefined) p.hp = d.hp; p.veh = d.fp ? (d.v || null) : null; if(p.veh){ p.vx = d.vx; p.vh = d.vh; p.vz = d.vz; p.vr = d.vr; } toonBadge(); }
+    else if(d.t === 'schot'){ const o = V(d.o.x, d.o.y, d.o.z); if(d.w !== 4) spoor(d.o, d.d); GUN.flitsBij(o); GUN.knal(d.w, Math.max(0, 1 - camera.position.distanceTo(o)/700)); }
     else if(d.t === 'boem'){ GUN.ontplof(V(d.p.x, d.p.y, d.p.z), {id: d.id, naam: d.naam}); }
-    else if(d.t === 'raak' && d.doel === ID){ geraakt(V(d.r.x, 0, d.r.z), d.naam, d.s || 20, d.id); }
+    else if(d.t === 'raak' && d.doel === ID){ geraakt(V(d.r.x, 0, d.r.z), d.naam, d.s || 20, d.id, d.w, d.hs); }
+    else if(d.t === 'feed'){ voegFeed(d.kn, d.naam, d.w, d.hs); { const kp = d.kid === ID ? FP.pos : PEERS[d.kid] ? V(PEERS[d.kid].x, 0, PEERS[d.kid].z) : null, r = kp ? V(p.g.position.x - kp.x, 0, p.g.position.z - kp.z) : V(1, 0, 0); if(r.lengthSq() < 0.01) r.set(1, 0, 0); FX.schot(p.g, r.normalize().multiplyScalar(d.w === 4 ? 2.2 : 1.4)); } if(d.kid === ID){ score++; GUN.hitmarker(true, 0, d.hs); meld('☠️ Je hebt ' + d.naam + ' uitgeschakeld' + (d.hs ? ' (headshot)' : '') + '! · ' + score + ' kills'); toonHp(); } }
     else if(d.t === 'kill' && d.doel === ID){ score++; meld('☠️ Je hebt ' + d.naam + ' uitgeschakeld! (' + score + ')'); toonHp(); } }
+  // killfeed (linksboven) en scorebord (Tab ingedrukt houden)
+  const feed = document.createElement('div'); feed.style.cssText = 'position:fixed;left:12px;top:12px;z-index:41;display:flex;flex-direction:column;gap:4px;pointer-events:none;font:700 12px system-ui,sans-serif'; document.body.appendChild(feed);
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+  function voegFeed(killer, slachtoffer, w, hs){ const e = document.createElement('div'); e.style.cssText = 'background:rgba(20,24,28,.8);color:#fff;border-radius:8px;padding:4px 10px;transition:opacity .6s';
+    e.innerHTML = esc(killer || '?') + ' &nbsp;' + (GUN.IKOON[w] || '☠️') + (hs ? ' 💀' : '') + '&nbsp; <span style="color:#ff8a80">' + esc(slachtoffer) + '</span>'; feed.prepend(e);
+    while(feed.children.length > 5) feed.lastChild.remove(); setTimeout(() => { e.style.opacity = '0'; setTimeout(() => e.remove(), 700); }, 6000); }
+  const bord = document.createElement('div'); bord.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:61;display:none;background:rgba(20,24,28,.9);color:#fff;border-radius:14px;padding:14px 18px;font:600 13px system-ui,sans-serif;min-width:300px;box-shadow:0 10px 40px rgba(0,0,0,.45)';
+  document.body.appendChild(bord);
+  function toonBord(v){ if(!v){ bord.style.display = 'none'; return; }
+    const r = [{naam: naam + ' (jij)', k: score, d: doden, ik: true}, ...Object.values(PEERS).map(p => ({naam: p.naam, k: p.k || 0, d: p.dd || 0}))].sort((a, b) => b.k - a.k || a.d - b.d);
+    bord.innerHTML = '<div style="text-align:center;margin-bottom:8px;opacity:.8">Scorebord · ' + r.length + ' speler' + (r.length > 1 ? 's' : '') + '</div><table style="width:100%;border-collapse:collapse"><tr style="opacity:.6;font-size:11px"><td>Naam</td><td style="text-align:right">☠️ kills</td><td style="text-align:right">💀 dood</td><td style="text-align:right">K/D</td></tr>' +
+      r.map(q => '<tr style="' + (q.ik ? 'color:#ffb37a' : '') + '"><td style="padding:3px 0">' + esc(q.naam) + '</td><td style="text-align:right">' + q.k + '</td><td style="text-align:right">' + q.d + '</td><td style="text-align:right">' + (q.d ? (q.k/q.d).toFixed(1) : q.k.toFixed(1)) + '</td></tr>').join('') + '</table>';
+    bord.style.display = 'block'; }
+  window.addEventListener('keydown', e => { if(e.key === 'Tab' && FP.aan){ e.preventDefault(); toonBord(true); } }, true);
+  window.addEventListener('keyup', e => { if(e.key === 'Tab') toonBord(false); }, true);
   // ik ben geraakt: rode flits, terugslag, melding
   const rood = document.createElement('div'); rood.style.cssText = 'position:fixed;inset:0;z-index:24;pointer-events:none;background:radial-gradient(circle,transparent 40%,rgba(200,0,0,.55));opacity:0;transition:opacity .6s'; document.body.appendChild(rood);
   // levens: ♥ 100; 0 = uitgeschakeld → na 2 s respawn op een willekeurige plek van het terrein
   let hp = 100, score = 0, dood = false;
-  const hpEl = document.createElement('div'); hpEl.style.cssText = 'position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:40;background:rgba(20,24,28,.78);color:#fff;border-radius:12px;padding:6px 14px;font:700 14px system-ui,sans-serif;display:none;pointer-events:none';
+  const hpEl = document.createElement('div'); hpEl.style.cssText = 'position:fixed;left:calc(50% - 10px);bottom:18px;transform:translateX(-100%);z-index:40;background:rgba(20,24,28,.78);color:#fff;border-radius:12px;padding:6px 14px;font:700 14px system-ui,sans-serif;display:none;pointer-events:none';
   document.body.appendChild(hpEl);
   function toonHp(){ const zie = GUN.aan() || Object.keys(PEERS).length > 0; hpEl.style.display = zie && FP.aan ? 'block' : 'none';
-    hpEl.innerHTML = '<span style="color:' + (hp > 50 ? '#5fd35f' : hp > 25 ? '#f2c200' : '#ff4d4d') + '">♥ ' + Math.max(0, hp) + '</span>' + (score ? ' &nbsp;☠️ ' + score : ''); }
+    hpEl.innerHTML = (performance.now() < beschermTot ? '🛡️ ' : '') + '<span style="color:' + (hp > 50 ? '#5fd35f' : hp > 25 ? '#f2c200' : '#ff4d4d') + '">♥ ' + Math.max(0, hp) + '</span>' + ' &nbsp;☠️ ' + score + ' · 💀 ' + doden; }
   let laatste = -1;
   function spawn(){ const S = TERREIN.spawns, ik = V(FP.pos.x, 0, FP.pos.z), ander = Object.values(PEERS).filter(p => p.fp).map(p => V(p.x, 0, p.z));
     // ver van de plek waar je doodging, ver van collega's, nooit dezelfde als vorige keer; uit de beste helft willekeurig
     const sc = S.map((p, i) => { const q = V(p[0], 0, p[1]); let d = q.distanceTo(ik); ander.forEach(a => d = Math.min(d, q.distanceTo(a)*1.2)); return {i, d: i === laatste ? -1 : d + Math.random()*40}; }).sort((a, b) => b.d - a.d);
-    const kies = sc[Math.floor(Math.random()*Math.max(1, Math.ceil(sc.length/2)))].i; laatste = kies; const p = S[kies]; FP.pos.set(p[0], 0, p[1]); FP.jy = 0; FP.jv = 0; FP.yaw = Math.random()*Math.PI*2; FP.pitch = -0.03; FP.oog = 17; toonHp(); vuil(6); }
-  function geraakt(r, door, dmg, vanId){ if(dood) return; rood.style.transition = 'none'; rood.style.opacity = '1'; setTimeout(() => { rood.style.transition = 'opacity .8s'; rood.style.opacity = '0'; }, 60);
+    const kies = sc[Math.floor(Math.random()*Math.max(1, Math.ceil(sc.length/2)))].i; laatste = kies; const p = S[kies]; FP.pos.set(p[0], 0, p[1]); FP.jy = 0; FP.jv = 0; FP.yaw = Math.random()*Math.PI*2; FP.pitch = -0.03; FP.oog = 17; beschermTot = performance.now() + 2500; toonHp(); vuil(6); }
+  let doden = 0, beschermTot = 0;
+  function geraakt(r, door, dmg, vanId, w, hs){ if(dood || performance.now() < beschermTot) return; rood.style.transition = 'none'; rood.style.opacity = '1'; setTimeout(() => { rood.style.transition = 'opacity .8s'; rood.style.opacity = '0'; }, 60);
     hp -= dmg || 20; if(FP.aan){ FP.pos.addScaledVector(r.normalize(), 6); FP.pitch = Math.min(1.3, FP.pitch + 0.2); } GUN.au();
-    if(hp <= 0){ dood = true; if(vanId) stuur({t: 'kill', doel: vanId}); rood.style.transition = 'none'; rood.style.opacity = '1'; meld('💀 Uitgeschakeld door ' + door + ' — je respawnt zo op een andere plek…');
+    if(hp <= 0){ dood = true; doden++; stuur({t: 'feed', kid: vanId, kn: door, w, hs: !!hs}); voegFeed(door, naam, w, hs); rood.style.transition = 'none'; rood.style.opacity = '1'; GUN.tip('UITGESCHAKELD DOOR ' + String(door).toUpperCase(), '#ff3b30'); meld('💀 Uitgeschakeld door ' + door + (hs ? ' (headshot)' : '') + ' — je respawnt zo op een andere plek…');
       setTimeout(() => { hp = 100; dood = false; if(!FP.aan) zetFP(true); spawn(); rood.style.transition = 'opacity 1s'; rood.style.opacity = '0'; meld('🔁 Gerespawnd — ♥ 100'); }, 2000); }
-    else meld('🎯 Geraakt door ' + door + ' (−' + (dmg || 20) + ') · ♥ ' + hp); toonHp(); vuil(6); }
+    else meld('🎯 Geraakt door ' + door + (hs ? ' — HEADSHOT' : '') + ' (−' + (dmg || 20) + ') · ♥ ' + hp); toonHp(); vuil(6); }
   function verbind(){ const go = () => { try{ cl = mqtt.connect(URL_BROKER, {clientId: 'fudura_' + ID, clean: true, reconnectPeriod: 4000, connectTimeout: 8000, keepalive: 30, will: {topic: KAMER, payload: JSON.stringify({t: 'bye', id: ID}), qos: 0}});
       cl.on('connect', () => { verbonden = true; cl.subscribe(KAMER); stuur({t: 'st'}); toonBadge(); });
       cl.on('close', () => { verbonden = false; toonBadge(); }); cl.on('message', (tp, buf) => ontvang(buf.toString())); }catch(e){ console.warn('MP', e); } };
@@ -2967,7 +3106,7 @@ const MP = (() => {
   // status los van de tekenlus (ook als het tabblad op de achtergrond staat): lopend 10×/s, anders 1×/s
   let tel = 0; setInterval(() => { if(!verbonden) return; tel++; if(!FP.aan && tel % 10) return; const yv = Math.abs(FP.pos.z) < PL/2 + 0.3 && FP.pos.x > PX0 && FP.pos.x < PX1 ? PL_H : 0;
     let vt = null, vg = null; if(FP.rit){ vt = FP.rit; vg = RIT.S[FP.rit].g; } else if(FP.tuk){ vt = 'tuk'; vg = TUK.g; } else if(FP.step){ vt = 'step'; vg = STEP.g; }
-    const m = FP.aan ? {t: 'st', fp: 1, x: +FP.pos.x.toFixed(2), z: +FP.pos.z.toFixed(2), y: +(yv + FP.jy).toFixed(2), yaw: +FP.yaw.toFixed(3), w: GUN.wapen()} : {t: 'st', fp: 0};
+    const m = FP.aan ? {t: 'st', fp: 1, x: +FP.pos.x.toFixed(2), z: +FP.pos.z.toFixed(2), y: +(yv + FP.jy).toFixed(2), yaw: +FP.yaw.toFixed(3), w: GUN.wapen(), hp: Math.max(0, hp), k: score, dd: doden} : {t: 'st', fp: 0, k: score, dd: doden};
     if(FP.aan && vt) Object.assign(m, {v: vt, vx: +vg.position.x.toFixed(2), vh: +vg.position.y.toFixed(2), vz: +vg.position.z.toFixed(2), vr: +vg.rotation.y.toFixed(3)});
     stuur(m); }, 100);
   // naamplaatje alleen als je de collega echt ziet: zichtlijn camera → hoofd, geblokkeerd door muren/objecten (glas en hekgaas tellen niet)
@@ -2988,6 +3127,15 @@ const MP = (() => {
         if(vm){ if(!vm.userData.lbl){ vm.userData.lbl = p.lbl.clone(); vm.userData.lbl.position.set(0, 30, 0); vm.add(vm.userData.lbl); } vm.userData.lbl.material = p.lbl.material; vm.userData.lbl.visible = v && inVoertuig; } }
       if(vm){ const k = Math.min(1, dt*10); vm.position.x += (p.vx - vm.position.x)*k; vm.position.y += (p.vh - vm.position.y)*k; vm.position.z += (p.vz - vm.position.z)*k;
         let dv = p.vr - vm.rotation.y; dv = Math.atan2(Math.sin(dv), Math.cos(dv)); vm.rotation.y += dv*k; bezig = true; }
+      { const L = g.userData.lijf, wil = p.fp && !inVoertuig && !p.veh ? (p.w === undefined ? -1 : p.w) : -1;
+        if(wil !== p.wHeld){ if(p.wg){ g.remove(p.wg); p.wg = null; } if(wil >= 0){ p.wg = GUN.model(wil); if(p.wg){ p.wg.scale.setScalar(1.5); p.wg.position.set(0.9, 13.5, 4.6); p.wg.rotation.y = Math.PI; g.add(p.wg); } } p.wHeld = wil; bezig = true; }
+        const staat = !P || P.staat === 'staat'; if(p.wg) p.wg.visible = staat;
+        if(L && staat){ if(!p.armRust) p.armRust = [L.aL.p, L.aR.p, L.aL.o, L.aR.o].map(o => o.rotation.clone());
+          if(p.wg){ L.aR.p.rotation.set(-1.3, 0, -0.19); L.aR.o.rotation.set(-0.5, 0, 0); L.aL.p.rotation.set(-1.45, 0, 0.45); L.aL.o.rotation.set(-0.1, 0, 0); if(L.tablet) L.tablet.visible = false; }
+          else if(p.armRust){ [L.aL.p, L.aR.p, L.aL.o, L.aR.o].forEach((o, i) => o.rotation.copy(p.armRust[i])); if(L.tablet) L.tablet.visible = true; } } }
+      if(P && P.staat !== 'staat' && P.staat !== 'vlieg' && p.fp && Math.hypot(p.x - g.position.x, p.z - g.position.z) > 25){          // collega is elders gerespawnd: lichaam direct rechtop
+        const L = g.userData.lijf; P.staat = 'staat'; P.hip = 9.5; P.v.set(0, 0, 0); if(L){ L.K.rotation.set(0, 0, 0); if(L.rust) [L.aL.p, L.aR.p, L.bL, L.bR, L.aL.o, L.aR.o, L.H].forEach((o, i) => o.rotation.copy(L.rust[i])); }
+        P.los.forEach(l => { l.terug.par.add(l.o); l.o.position.copy(l.terug.pos); l.o.rotation.copy(l.terug.rot); }); P.los = []; g.position.set(p.x, p.y || 0, p.z); bezig = true; }
       if(!p.fp) continue;
       if(P && P.staat !== 'staat') { bezig = true; continue; }                        // ligt na een treffer: ragdoll laat hem eerst opstaan
       const k = Math.min(1, dt*10), dx = p.x - g.position.x, dz = p.z - g.position.z;
@@ -2997,7 +3145,8 @@ const MP = (() => {
     for(let i = sporen.length - 1; i >= 0; i--){ const s = sporen[i]; s.t += dt; s.l.material.opacity = Math.max(0, 0.9 - s.t*6); if(s.t > 0.15){ scene.remove(s.l); s.l.geometry.dispose(); s.l.material.dispose(); sporen.splice(i, 1); } bezig = true; }
     return bezig; }
   setInterval(toonHp, 500);
-  return {update, spawn, raak: (id, r, sch) => stuur({t: 'raak', doel: id, s: sch, r: {x: +r.x.toFixed(3), z: +r.z.toFixed(3)}}),
+  return {update, spawn, zalSterven: (id, dmg) => { const p = PEERS[id]; if(!p) return false; const h = p.hp === undefined ? 100 : p.hp; if(h <= 0) return false; p.hp = h - dmg; return p.hp <= 0; },
+    raak: (id, r, sch, w, hs) => stuur({t: 'raak', doel: id, s: sch, w, hs: !!hs, r: {x: +r.x.toFixed(3), z: +r.z.toFixed(3)}}),
     schot: (o, d, w) => stuur({t: 'schot', w, o: {x: +o.x.toFixed(2), y: +o.y.toFixed(2), z: +o.z.toFixed(2)}, d: {x: +d.x.toFixed(4), y: +d.y.toFixed(4), z: +d.z.toFixed(4)}}),
     boem: p => stuur({t: 'boem', p: {x: +p.x.toFixed(2), y: +p.y.toFixed(2), z: +p.z.toFixed(2)}}), geraakt, online: () => verbonden}; })();
 // ============ BEDRIJVENTERREIN: dekking (containers, haspels, betonblokken, pallets, voertuigen, keet, vaten), botsen, spawnpunten ============
