@@ -225,7 +225,8 @@ const KW = 14.0, KD = 3.55, KH = 13.15, KP = 2.2;                               
 const XA = i => i*AW;
 const KXW = XA(0) - AW/2 - 0.05 - KD/2, KZW = AZ;                                       // junction box 90° gedraaid tegen de zijkant van #1, deuren naar buiten (-x)
 const BF = false;                                                                    // vast uitgangspunt: gebiedseigen grond, Sww 1,5 K·m/W (zie Kabelberekening)
-const NO_JB = N_AIO <= (BF ? 3 : 2);                                                                    // 1–3 AIO's: geen junction box, per AIO een YMvK 4×70 (1–2) / 4×95 (3) rechtstreeks vanuit de HVK (≤ 30 m, backfill ρ 1 K·m/W)
+const JBX = (() => { try{ return new URLSearchParams(location.search).get('jbx') === '1'; }catch(_){ return false; } })();   // junction box geforceerd bij 1–2 AIO's (knop)
+const NO_JB = !JBX && N_AIO <= (BF ? 3 : 2);                                                                    // 1–3 AIO's: geen junction box, per AIO een YMvK 4×70 (1–2) / 4×95 (3) rechtstreeks vanuit de HVK (≤ 30 m, backfill ρ 1 K·m/W)
 const AIOKAB = N_AIO <= (BF ? 2 : 1) ? {txt: 'YMvK 4×70 mm²', rm: 0.21, ra: 0.075, mm: 70} : {txt: 'YMvK 4×95 mm²', rm: 0.24, ra: 0.085, mm: 95};
 // voeding HVK → junction box (30 m, D2): 3 AIO's 2 × 4×185/95 gG 630 · 4 AIO's 3 × 4×185/95 gG 800 · 5 AIO's 3 × 4×240/120 gG 1000 (met backfill; zonder backfill nog door te rekenen)
 const VKAB = N_AIO >= 5 ? (BF ? {n: 3, txt: 'YMvKas 4×240/120', rm: 0.33, ra: 0.105, gG: 1000} : {n: 4, txt: 'YMvKas 4×185/95', rm: 0.29, ra: 0.095, gG: 1000}) : N_AIO === 4 ? {n: 3, txt: 'YMvKas 4×185/95', rm: 0.29, ra: 0.095, gG: 800} : {n: 2, txt: 'YMvKas 4×185/95', rm: 0.29, ra: 0.095, gG: 630};   // Sww 1,5: bij 5 AIO 4 × 4×185/95 (3 × 240 haalt 1000 A niet)
@@ -2256,10 +2257,11 @@ const VIEWS = {
     document.getElementById('cfgInfo').innerHTML = '<table class="cfgT">'
       + r('Vermogen', kW + ' kW · ' + kWh + ' kWh')
       + r('Stroom', N_AIO > 1 ? N_AIO + ' × 180 A = ' + N_AIO*180 + ' A' : '180 A')
-      + r('Junction box', NO_JB ? 'nee' : 'ja')
-      + r('Voeding', NO_JB ? N_AIO + ' × ' + AIOKAB.txt + ' (gG 200) uit HVK' : VKAB.n + ' × ' + VKAB.txt + ' (gG ' + VKAB.gG + ') naar JB')
+      + r('Junction box', (NO_JB ? 'nee' : 'ja') + (N_AIO <= (BF ? 3 : 2) ? ' <span class="knoprij" style="display:inline-flex;margin-left:6px"><button id="bJbx" style="padding:2px 8px">' + (JBX ? 'JB verwijderen' : '+ junction box') + '</button></span>' : ''))
+      + r('Voeding', NO_JB ? N_AIO + ' × ' + AIOKAB.txt + ' (gG 200) uit HVK' : (N_AIO <= 2 ? 'HVK → JB nog doorrekenen (' + N_AIO*180 + ' A)' : VKAB.n + ' × ' + VKAB.txt + ' (gG ' + VKAB.gG + ') naar JB'))
       + (NO_JB ? '' : r('JB → AIO', '4 × 1×70 mm² per AIO'))
-      + '</table>' + ('<div class="cfgLet">Standaard kabelberekeningen volgen nog</div>'); }
+      + '</table>' + ('<div class="cfgLet">Standaard kabelberekeningen volgen nog</div>');
+    const bj = document.getElementById('bJbx'); if(bj) bj.addEventListener('click', () => { const u = new URL(location.href); if(JBX) u.searchParams.delete('jbx'); else u.searchParams.set('jbx', '1'); location.href = u.toString(); }); }
   const h = document.getElementById('titel'); if(h) h.innerHTML = h.innerHTML.replace('AIO 5 ×', 'AIO ' + N_AIO + ' ×');
   document.querySelectorAll('.nAio').forEach(e => e.textContent = N_AIO); document.querySelectorAll('.nSlave').forEach(e => e.textContent = N_AIO > 1 ? ', #2..#' + N_AIO + ' slave' : '');
   document.title = document.title.replace('AIO 5 ×', 'AIO ' + N_AIO + ' ×'); }
@@ -2338,7 +2340,7 @@ function zetFP(aan){
   camera.updateProjectionMatrix(); }
 $t('tFP').addEventListener('change', e => zetFP(e.target.checked));
 // reset: pagina opnieuw laden met dezelfde configuratie (aantal AIO's, backfill) — alle knoppen, deuren en camera terug naar de beginstand
-function resetView(){ const u = new URL(location.href), q = new URLSearchParams(); ['n', 'jb'].forEach(k => { if(u.searchParams.get(k) !== null) q.set(k, u.searchParams.get(k)); }); u.search = q.toString(); location.replace(u.toString()); }
+function resetView(){ const u = new URL(location.href), q = new URLSearchParams(); ['n', 'jb', 'jbx'].forEach(k => { if(u.searchParams.get(k) !== null) q.set(k, u.searchParams.get(k)); }); u.search = q.toString(); location.replace(u.toString()); }
 document.getElementById('pReset').addEventListener('click', resetView);
 // ---------- 2D-tekening (bovenaanzicht) met alle maten: weergave als SVG + download DXF / SVG / afdrukken (PDF) ----------
 const TEKEN2D = (() => {
@@ -2469,7 +2471,7 @@ document.getElementById('b2D').addEventListener('click', () => TEKEN2D.open());
       <td>${!r ? '<span style="color:#c0281f">ontbreekt</span>' : r.pending ? '<span style="color:#c0281f">nog doorrekenen (B1)</span>' : r.est ? '<span style="color:#e06a1a">schatting</span>' : ok ? '<span style="color:#1f8a4c">✓ Kablix</span>' : '<span style="color:#c0281f">✗</span>'}</td></tr>`; };
   let rows = '';
   if(NO_JB) rows += rij('HVK → AIO (per AIO)', set.aio[N_AIO]);
-  else { rows += rij('HVK → junction box', set.feed[N_AIO]); rows += rij('JB → AIO (skid, B1 nr. 50)', N_AIO >= 1 ? {k: '4 × 1×70 mm² Cu', gG: 200, Ib: 180, Iz: undefined, pending: true} : null); }
+  else { rows += rij('HVK → junction box', set.feed[N_AIO] || {k: VKAB.n + ' × ' + VKAB.txt + ' (nog doorrekenen)', gG: VKAB.gG, Ib: N_AIO*180, pending: true}); rows += rij('JB → AIO (skid, B1 nr. 50)', N_AIO >= 1 ? {k: '4 × 1×70 mm² Cu', gG: 200, Ib: 180, Iz: undefined, pending: true} : null); }
   const UP = [['Stelsel', 'TN-S, 400/230 V, 50 Hz'], ['Belasting', 'Ib = n × 125 kW, cos φ 1 (Ib AIO 180 A)'], ['Kabellengte', '≤ 30 m (HVK → JB / AIO)'], ['Grond', BF ? 'backfillzand, Sww 1 K·m/W (cs 1,5)' : 'gebiedseigen grond, Sww 1,5 K·m/W (cs 1,28)'],
     ['Temperatuur', 'grond 20 °C · lucht 30 °C'], ['Installatie', 'grond: methode 72 (D2), 600 mm diep, groepering 1d · skid: methode 50 (B1)'], ['Beveiliging', 'gG NH volgens tabel; AIO: gG 200 in SL2 / JB'], ['Spanningsverlies', '≤ 2 % tot de AIO (NEN 1010 § 525: ≤ 5 %)'], ['Kortsluiting', 'Ik op de HVK-rail uit de netberekening van het project'], ['Kabeltype', 'Cu XLPE, YMvK(as), brandklasse Dca']];
   const d = document.createElement('div'); d.id = 'kbKaart'; d.style.cssText = 'position:fixed;inset:0;z-index:60;background:rgba(20,26,32,.55);display:none;align-items:center;justify-content:center;padding:14px';
