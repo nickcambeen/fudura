@@ -1129,8 +1129,9 @@ const hexNut3 = (x, y, z) => { const n = cyl(K, 0.1, 0.07, matZink, x, y, z, 'z'
 const AUXUIT = []; let F0 = null, METCOM = null;
 const JBOPT = (() => { try{ return new URLSearchParams(location.search).get('jb') === '2' ? 2 : 1; }catch(_){ return 1; } })();   // JB-indeling: 1 = VMS64 boven + VMS43 onder · 2 = VMS43 met hoofdschakelaar 160 A boven + VMS64 met DIN-rails onder
 const YDIN43 = JBOPT === 2 ? 735 : 415;
-const JB_BEDRADING = false;   // interne bedrading in de VMS-bakken voorlopig niet tekenen (alleen apparaten, rails en wartels)   // VMS43 volgens O&K-maatschets: DIN-rails op 95 en 223 mm onder de bovenkant (y 510) → 415 (automaten) en 287 (reserve)
-{ const kunst = M(0xd5d8d4, {roughness: 0.55}), kunstD = M(0xb9bdb9, {roughness: 0.6}), abbW = M(0xeeeeea, {roughness: 0.5}), abbG = M(0xc9ccc9, {roughness: 0.5});
+const JB_BEDRADING = false;
+const SHOOTER = false;   // shooter (wapens, levens, scorebord) voorlopig uit   // interne bedrading in de VMS-bakken voorlopig niet tekenen (alleen apparaten, rails en wartels)   // VMS43 volgens O&K-maatschets: DIN-rails op 95 en 223 mm onder de bovenkant (y 510) → 415 (automaten) en 287 (reserve)
+function bouwVMSBlok(K, JBOPT, YDIN43){ const kunst = M(0xd5d8d4, {roughness: 0.55}), kunstD = M(0xb9bdb9, {roughness: 0.6}), abbW = M(0xeeeeea, {roughness: 0.5}), abbG = M(0xc9ccc9, {roughness: 0.5});
   const rook = new THREE.MeshStandardMaterial({color: 0xbfcfd4, transparent: true, opacity: 0.32, roughness: 0.08, metalness: 0.1, depthWrite: false});
   const zB = KZ0 + 0.02, zDin = JZ(111);
   // VMS-modules (O&K, polycarbonaat RAL 7035) zoals bij de EMS-kast: onderbak met afgeronde hoeken, gietribben, schroefdomes, PUR-afdichting,
@@ -1242,6 +1243,10 @@ const JB_BEDRADING = false;   // interne bedrading in de VMS-bakken voorlopig ni
   // adereindhulzen bij de -X1-klemmen
   if(JB_BEDRADING) for(const k of [0, 1, 2, 3, 4, 5]) cyl(K, 0.035, 0.1, k < 3 ? M(0xe8e8e8) : M(0x2f5fbf), xX(k), yXb - 0.06, zX, null, 8);
 }
+// beide JB-indelingen worden gebouwd (eerst 2, dan 1 zodat METCOM/F0 naar optie 1 wijzen); de knoppen in de zijbalk wisselen live
+const VMSG = {1: new THREE.Group(), 2: new THREE.Group()}; K.add(VMSG[1], VMSG[2]);
+bouwVMSBlok(VMSG[2], 2, 735); bouwVMSBlok(VMSG[1], 1, 415);
+VMSG[1].visible = JBOPT === 1; VMSG[2].visible = JBOPT === 2;
 { // kastverlichting Finder 6 W (x 961–1272, y 1227–1270) en deurschakelaar met M20-wartel rechtsboven
   box(K, 3.11, 0.43, 0.44, M(0xf1f2ef), JX(1116.5), JB(1248.5), JZ(286)); box(K, 3.0, 0.08, 0.36, M(0xffffff, {emissive: 0xfff6dd, emissiveIntensity: 0.9}), JX(1116.5), JB(1227), JZ(286));
   box(K, 0.31, 0.31, 1.08, M(0xd9b100, {roughness: 0.45}), JX(1314.5), JB(1156.5), JZ(279)); cyl(K, 0.1, 0.15, matZwart, JX(1314.5), JB(1135), JZ(279), null, 6); }
@@ -2203,8 +2208,11 @@ const VIEWS = {
 { const box = document.getElementById('cfgN');
   for(let n = 1; n <= 5; n++){ const b = document.createElement('button'); b.textContent = n; b.title = n + ' × DELTerra C'; if(n === N_AIO) b.classList.add('aan');
     b.addEventListener('click', () => { if(n === N_AIO) return; const u = new URL(location.href); u.searchParams.set('n', n); location.href = u.toString(); }); box.appendChild(b); }
-  document.querySelectorAll('#cfgJB button').forEach(b => { const v = +b.dataset.jb; if(v === JBOPT) b.classList.add('aan');
-    b.addEventListener('click', () => { if(v === JBOPT) return; const u = new URL(location.href); u.searchParams.set('jb', v); location.href = u.toString(); }); });
+  const zetJB = v => { VMSG[1].visible = v === 1; VMSG[2].visible = v === 2; document.querySelectorAll('#cfgJB button').forEach(x => x.classList.toggle('aan', +x.dataset.jb === v));
+    const c = $t('tMet'); if(c){ c.disabled = v === 2; if(v === 2 && c.checked){ c.checked = false; c.dispatchEvent(new Event('change')); } c.parentElement.title = v === 2 ? 'Alleen bij JB-optie 1 (lege montageplaat in de VMS64)' : ''; }
+    try{ const u = new URL(location.href); u.searchParams.set('jb', v); history.replaceState(null, '', u.toString()); }catch(_){}
+    renderer.shadowMap.needsUpdate = true; if(typeof vuil === 'function') vuil(4); meld(v === 2 ? 'Junction box optie 2: hoofdschakelaar 160 A + 7 × 3F en 1 × 1F aardlekautomaat' : 'Junction box optie 1: VMS64 (montageplaat) + VMS43'); };
+  document.querySelectorAll('#cfgJB button').forEach(b => { const v = +b.dataset.jb; if(v === JBOPT) b.classList.add('aan'); b.addEventListener('click', () => zetJB(v)); });
   document.querySelectorAll('#cfgBF button').forEach(b => { const v = b.dataset.bf === '1'; if(v === BF) b.classList.add('aan');
     b.addEventListener('click', () => { if(v === BF) return; const u = new URL(location.href); u.searchParams.set('bf', v ? '1' : '0'); location.href = u.toString(); }); });
   const kW = N_AIO*125, kWh = N_AIO*261, In = Math.round(kW*1000/(Math.sqrt(3)*400));
@@ -2446,8 +2454,8 @@ window.addEventListener('keydown', e => {
   FP.keys[e.key.toLowerCase()] = true; if(e.key === 'Shift') FP.keys.shift = true;
   if(e.key === 'p' || e.key === 'P'){ zetFP(!FP.aan); return; }
   if(e.key === ' ' && FP.aan && !FP.rit && !FP.step && FP.jy <= 0.01 && !e.repeat){ e.preventDefault(); FP.jv = 32; FP.jy = 0.01; FP.oog = 17; }   // springen (± 0,5 m)
-  if(e.key === 'b' || e.key === 'B'){ GUN.volgende(); return; }
-  if(GUN.toets(e.key)){ e.preventDefault(); return; }
+  if(SHOOTER && (e.key === 'b' || e.key === 'B')){ GUN.volgende(); return; }
+  if(SHOOTER && GUN.toets(e.key)){ e.preventDefault(); return; }
   if(e.key === 'f' || e.key === 'F'){ if(FP.rit) RIT.uit(true); zetStep(!(FP.step && !FP.tuk)); return; }
   if(e.key === 't' || e.key === 'T'){ if(FP.rit) RIT.uit(true); zetTuk(!FP.tuk); return; }
   if(e.key === 'g' || e.key === 'G'){ FP.rit === 'graaf' ? RIT.uit() : RIT.inStap('graaf'); return; }
@@ -3124,7 +3132,7 @@ const MP = (() => {
     bord.innerHTML = '<div style="text-align:center;margin-bottom:8px;opacity:.8">Scorebord · ' + r.length + ' speler' + (r.length > 1 ? 's' : '') + '</div><table style="width:100%;border-collapse:collapse"><tr style="opacity:.6;font-size:11px"><td>Naam</td><td style="text-align:right">☠️ kills</td><td style="text-align:right">💀 dood</td><td style="text-align:right">K/D</td></tr>' +
       r.map(q => '<tr style="' + (q.ik ? 'color:#ffb37a' : '') + '"><td style="padding:3px 0">' + esc(q.naam) + '</td><td style="text-align:right">' + q.k + '</td><td style="text-align:right">' + q.d + '</td><td style="text-align:right">' + (q.d ? (q.k/q.d).toFixed(1) : q.k.toFixed(1)) + '</td></tr>').join('') + '</table>';
     bord.style.display = 'block'; }
-  window.addEventListener('keydown', e => { if(e.key === 'Tab' && FP.aan){ e.preventDefault(); toonBord(true); } }, true);
+  window.addEventListener('keydown', e => { if(SHOOTER && e.key === 'Tab' && FP.aan){ e.preventDefault(); toonBord(true); } }, true);
   window.addEventListener('keyup', e => { if(e.key === 'Tab') toonBord(false); }, true);
   // ik ben geraakt: rode flits, terugslag, melding
   const rood = document.createElement('div'); rood.style.cssText = 'position:fixed;inset:0;z-index:24;pointer-events:none;background:radial-gradient(circle,transparent 40%,rgba(200,0,0,.55));opacity:0;transition:opacity .6s'; document.body.appendChild(rood);
@@ -3132,7 +3140,7 @@ const MP = (() => {
   let hp = 100, score = 0, dood = false;
   const hpEl = document.createElement('div'); hpEl.style.cssText = 'position:fixed;left:calc(50% - 10px);bottom:18px;transform:translateX(-100%);z-index:40;background:rgba(20,24,28,.78);color:#fff;border-radius:12px;padding:6px 14px;font:700 14px system-ui,sans-serif;display:none;pointer-events:none';
   document.body.appendChild(hpEl);
-  function toonHp(){ const zie = GUN.aan() || Object.keys(PEERS).length > 0; hpEl.style.display = zie && FP.aan ? 'block' : 'none';
+  function toonHp(){ const zie = SHOOTER && (GUN.aan() || Object.keys(PEERS).length > 0); hpEl.style.display = zie && FP.aan ? 'block' : 'none';
     hpEl.innerHTML = (performance.now() < beschermTot ? '🛡️ ' : '') + '<span style="color:' + (hp > 50 ? '#5fd35f' : hp > 25 ? '#f2c200' : '#ff4d4d') + '">♥ ' + Math.max(0, hp) + '</span>' + ' &nbsp;☠️ ' + score + ' · 💀 ' + doden; }
   let laatste = -1;
   function spawn(){ const S = TERREIN.spawns, ik = V(FP.pos.x, 0, FP.pos.z), ander = Object.values(PEERS).filter(p => p.fp).map(p => V(p.x, 0, p.z));
