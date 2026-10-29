@@ -1206,14 +1206,15 @@ function bouwVMSBlok(K, JBOPT, YDIN43){ const kunst = M(0xd5d8d4, {roughness: 0.
     // rail 2: 4 × 3F-aardlekautomaat (RCBO 3P+N, 4 modulen) · rail 3: 3 × 3F + 1 × 1F-aardlekautomaat (RCBO 1P+N, 2 modulen)
     // rail 2: -X0 verdeelblok 4P 160 A (links) + voedingsklem + kamrail 3P+N over -F2…-F5
     // rail 3: voedingsklem + kamrail 3P+N over -F6…-F8, -F9 (1P+N) rechts gevoed met 2 korte aders vanaf -F8 (dubbele klem)
-    const mmX = mm => JX(mm)*100, kamM = M(0xd38f5c, {metalness: 0.85, roughness: 0.3}), isoK = M(0xe8e6e0, {transparent: true, opacity: 0.85, roughness: 0.4}), grijsK = M(0x5a6066, {roughness: 0.5});
+    const mmX = mm => JX(mm)*100, kamM = M(0xe0904f, {metalness: 0.7, roughness: 0.3, emissive: 0x3a1a00}), isoK = M(0x9aa3a8, {transparent: true, opacity: 0.45, roughness: 0.2, depthWrite: false}), grijsK = M(0x3a3f44, {roughness: 0.5});
     const KR = {}; let nr = 2;
     [[575, ['3', '3', '3', '3']], [415, ['3', '3', '3', '1']]].forEach(([y, rij]) => { din(JX(877.6), JX(1272.6), JB(y));
       const G2 = new THREE.Group(); G2.scale.setScalar(0.01); G2.position.set(0, JB(y), zDin); K.add(G2); ABBDEV.zet(G2); let x = mmX(958);
       const xs = []; rij.forEach(f => { const tag = '-F' + nr++; const r = f === '3' ? ABBDEV.s203(x, 0, tag, 'RCBO 3P+N 30 mA') : ABBDEV.ds201(x, 0, tag, 'B16', tag + '  RCBO 1P+N 30 mA'); xs.push([r.x0, r.x1, f]); x = r.x1 + (f === '3' ? 0.4 : 0); });
       const drie = xs.filter(q => q[2] === '3'), xa = drie[0][0] + 1, xb = drie[drie.length - 1][1] - 1, yK = 34, zK = 46;
-      box(G2, xb - xa, 9, 12, isoK, (xa + xb)/2, yK, zK); for(let k = 0; k < 4; k++) box(G2, xb - xa - 2, 1.4, 1.4, kamM, (xa + xb)/2, yK - 3 + k*2, zK + 6.2, false);
-      drie.forEach(([x0]) => [0, 1, 2, 3].forEach(k => box(G2, 3, 10, 2, kamM, x0 + 8.9 + k*17.8, yK + 6, zK - 2, false)));
+      for(let k = 0; k < 4; k++) box(G2, xb - xa - 2, 2.6, 4, k === 3 ? M(0x2f6fd0, {metalness: 0.4, roughness: 0.4}) : kamM, (xa + xb)/2, yK - 5 + k*3.4, zK + 2, false);   // 4 koperbanen (N blauw gemerkt)
+      box(G2, xb - xa, 16, 14, isoK, (xa + xb)/2, yK, zK + 1);
+      drie.forEach(([x0]) => [0, 1, 2, 3].forEach(k => box(G2, 4, 14, 3, kamM, x0 + 8.9 + k*17.8, yK + 1, zK - 7, false)));   // pennen in de bovenklemmen
       box(G2, 4, 11, 13, M(0x2b2d30), xb + 2, yK, zK);                                                                       // eindkap rechts
       // voedingsklem (4 × 35 mm²) links op de kamrail
       box(G2, 18, 26, 30, grijsK, xa - 10, yK + 4, zK - 4); for(let k = 0; k < 4; k++) cyl(G2, 1.6, 2, M(0x9aa0a5, {metalness: 0.8}), xa - 15 + k*3.4, yK + 12, zK + 11, 'z', 8);
@@ -1283,19 +1284,21 @@ bouwVMSBlok(VMSG[2], 2, 735); bouwVMSBlok(VMSG[1], 1, 415);
   const mantel = M(0x1d1e20, {roughness: 0.6}), zM = -0.75, rM = 0.12, tin = M(0xcfd3d6, {metalness: 0.8, roughness: 0.3}), xGl = JX(1000), yGl = JB(187), xL = JX(866), zI = -1.2;
   const qx = p => JX(1075) - 0.54 + p*0.36, qTop = JB(985) + 0.99, qz = KZ0 + 0.02 + 0.2 + 0.8;      // bovenklemmen -Q0 (zelfde maten als in bouwVMSBlok)
   const yMs = JB(380), yOnder = JB(120);                                                                // aders gaan onder de stroken de mantel in; mantel onder de VMS64 door
-  // mantel: onder strook #5 → onder de VMS64 → wartel M32 in de onderzijde → binnen langs de linkerwand omhoog (door de koppeling) → VMS43
-  kabel(G, [V(1.05, yMs, zM), V(1.05, yOnder + 0.3, zM), V(1.3, yOnder, zM), V(xGl - 0.3, yOnder, zM), V(xGl, yOnder + 0.3, zM), V(xGl, yGl + 0.25, zM), V(xGl - 0.2, yGl + 0.6, zI + 0.1), V(xL, JB(260), zI), V(xL, JB(1080), zI), V(xL + 0.2, JB(1115), zI + 0.1)], rM, mantel, 0.5, 8);
-  cyl(G, 0.2, 0.18, matZwart, xGl, yGl - 0.1, zM, null, 16); cyl(G, 0.23, 0.06, matZwart, xGl, yGl + 0.04, zM, null, 6);                       // wartel M32 + moer
-  cyl(G, rM + 0.015, 0.25, M(0x111214), xL + 0.2, JB(1110), zI + 0.1, 'x', 14);                                                           // krimpkous bij het afstrippen
+  // mantel: onder strook #5 → in de spleet tussen de NH-stroken en de VMS-bakken (x ± 838) omhoog op de montageplaat → wartel M32 in de LINKERWAND van de VMS43 (boven -Q0)
+  const xSp = JX(838), yWa = JB(1112), xWa = JX(853.6);
+  kabel(G, [V(1.05, yMs, zM), V(1.05, yMs - 0.25, zM), V(xSp, yMs - 0.25, zM), V(xSp, yWa - 0.4, zM), V(xSp, yWa, zM), V(xWa - 0.05, yWa, zM)], rM, mantel, 0.3, 8);
+  for(const yb of [JB(500), JB(750), JB(950)]){ box(G, 0.06, 0.04, 0.28, M(0x2b2d30), xSp - 0.14, yb, zM); box(G, 0.3, 0.04, 0.04, M(0x2b2d30), xSp, yb, zM + 0.14); }   // kabelzadels op de plaat
+  cyl(G, 0.2, 0.16, matZwart, xWa + 0.02, yWa, zM, 'x', 16); cyl(G, 0.23, 0.05, matZwart, xWa - 0.08, yWa, zM, 'x', 6);                                 // wartel M32 + contramoer
+  cyl(G, rM + 0.015, 0.2, M(0x111214), xWa + 0.2, yWa, zM, 'x', 14);                                                                           // krimpkous bij het afstrippen
   [['L1', 0], ['L2', 1], ['L3', 2]].forEach(([f, p], j) => { const t0 = s5.fase[p][0], t = V(t0.x, t0.y, t0.z + 0.06); box(G, 0.2, 0.26, 0.04, tin, t.x, t.y - 0.05, t.z + 0.02);   // kabelschoen naast de AIO-schoen
     kabel(G, [V(t.x, t.y - 0.15, t.z), V(t.x, t.y - 0.6, t.z - 0.2), V(1.0 + j*0.04, yMs + 0.6, zM + 0.1), V(1.05, yMs + 0.05, zM)], 0.035, ader[f], 0.15, 6); });
   for(const [f, y] of [['N', JB(232)], ['PE', JB(132)]]){ const xb = JX(765), zr = f === 'N' ? JZ(84) : JZ(74); box(G, 0.2, 0.24, 0.04, tin, xb, y + 0.08, zr + 0.02);
     kabel(G, [V(xb, y + 0.2, zr), V(xb, y + 0.5, zr - 0.1), V(1.0, yMs - 0.4, zM + 0.05), V(1.05, yMs - 0.05, zM)], f === 'PE' ? 0.03 : 0.035, ader[f], 0.15, 6); }
-  // in de VMS43: aders naar de bovenklemmen van -Q0 (L1 L2 L3 N); PE op een PE-klem (groen/geel) linksboven
-  const yIn = JB(1128), x0 = xL + 0.3; box(G, 0.12, 0.6, 0.45, M(0x3fa34d), JX(890), JB(1060), KZ0 + 0.45); box(G, 0.13, 0.08, 0.46, M(0xe8d23a), JX(890), JB(1060) + 0.14, KZ0 + 0.45);
-  [['L1', 0], ['L2', 1], ['L3', 2], ['N', 3]].forEach(([f, p], j) => kabel(G, [V(x0, JB(1112), zI + 0.1), V(x0 + 0.2, yIn - 0.05 + j*0.03, zI + 0.4), V(qx(p), yIn, qz - 0.3), V(qx(p), qTop + 0.15, qz - 0.2), V(qx(p), qTop, qz - 0.2)], 0.035, ader[f], 0.12, 6));
-  kabel(G, [V(x0, JB(1105), zI + 0.1), V(x0 + 0.1, JB(1085), zI + 0.3), V(JX(890), JB(1060) + 0.35, KZ0 + 0.5)], 0.03, ader.PE, 0.1, 6);
-  const t = sprite('-Q0 voeding: NH2-strook #5 → YMvK 5G25 (voorstel, nog doorrekenen) → wartel M32 onderzijde VMS64', V(0, 0, 0), 0.35, '#c0281f'); G.add(t); t.position.set(JX(1000), JB(60), zM + 0.4); LABELS.push(t); } }
+  // in de VMS43: aders van de wartel naar de bovenklemmen van -Q0 (L1 L2 L3 N); PE op een PE-klem (groen/geel) links naast -Q0
+  const x0 = xWa + 0.3; box(G, 0.12, 0.6, 0.45, M(0x3fa34d), JX(890), JB(1000), KZ0 + 0.45); box(G, 0.13, 0.08, 0.46, M(0xe8d23a), JX(890), JB(1000) + 0.14, KZ0 + 0.45);
+  [['L1', 0], ['L2', 1], ['L3', 2], ['N', 3]].forEach(([f, p], j) => kabel(G, [V(x0, yWa + 0.02*(j - 1.5), zM), V(x0 + 0.25, yWa + 0.03*(j - 1.5), zM + 0.1), V(qx(p) - 0.05, JB(1125) - j*0.02, qz - 0.3), V(qx(p), JB(1125) - j*0.02, qz - 0.25), V(qx(p), qTop + 0.12, qz - 0.2), V(qx(p), qTop, qz - 0.2)], 0.035, ader[f], 0.1, 6));
+  kabel(G, [V(x0, yWa - 0.06, zM), V(x0 + 0.05, yWa - 0.3, zM + 0.1), V(JX(890), JB(1000) + 0.35, KZ0 + 0.5)], 0.03, ader.PE, 0.1, 6);
+  const t = sprite('-Q0 voeding: NH2-strook #5 → YMvK 5G25 (voorstel, nog doorrekenen) → wartel M32 linkerwand VMS43', V(0, 0, 0), 0.35, '#c0281f'); G.add(t); t.position.set(xSp - 0.6, JB(700), zM + 0.4); LABELS.push(t); } }
 VMSG[1].visible = JBOPT === 1; VMSG[2].visible = JBOPT === 2;
 { // kastverlichting Finder 6 W (x 961–1272, y 1227–1270) en deurschakelaar met M20-wartel rechtsboven
   box(K, 3.11, 0.43, 0.44, M(0xf1f2ef), JX(1116.5), JB(1248.5), JZ(286)); box(K, 3.0, 0.08, 0.36, M(0xffffff, {emissive: 0xfff6dd, emissiveIntensity: 0.9}), JX(1116.5), JB(1227), JZ(286));
