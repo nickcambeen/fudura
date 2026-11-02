@@ -1,0 +1,1535 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Getec BESS 3D</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #dfe4e2; font-family: system-ui, sans-serif; }
+  #wrap { width: 100%; height: 100%; cursor: grab; touch-action: none; }
+  #caption {
+    position: fixed; left: 16px; bottom: 12px; right: 16px; font-size: 13px; color: #4a5258;
+    background: rgba(255,255,255,0.84); padding: 6px 10px; border-radius: 8px; line-height: 1.5;
+    max-width: 1100px;
+  }
+  #titel { position: fixed; left: 16px; top: 12px; font: 600 15px/1.3 system-ui, sans-serif; color: #1d2830;
+    background: rgba(255,255,255,0.86); padding: 7px 12px; border-radius: 8px; }
+  #titel span { display: block; font-weight: 400; font-size: 12px; color: #5f6d76; }
+  .knop{position:absolute;right:14px;z-index:20;padding:7px 13px;
+    font:600 12px/1.2 system-ui,sans-serif;color:#3f4b52;background:rgba(255,255,255,.88);
+    border:1.5px solid #8fa0ab;border-radius:6px;cursor:pointer;letter-spacing:.02em}
+  .knop:hover{background:#fff}
+  .knop:focus-visible{outline:2px solid #1b4f8a;outline-offset:2px}
+  .knop.uit{color:#78838a;border-color:#b3bcc2;background:rgba(255,255,255,.72)}
+  #kaartStand{position:absolute;top:282px;right:14px;z-index:20;display:none;padding:8px 12px;font:500 12px/1.6 ui-monospace,Menlo,monospace;color:#243038;background:rgba(255,255,255,.94);border:1px solid #8fa0ab;border-radius:6px}
+  #kaartStand span{font:400 10px system-ui,sans-serif;color:#78838a}
+  #luchtBtn{top:14px;color:#2f4f6a;border-color:#4f7590}
+  #hekBtn{top:52px;color:#3f5a4a;border-color:#4f7d64}
+  #kabelBtn{top:90px;color:#7a2a2a;border-color:#a54a3f}
+  #maatBtn{top:128px}
+  #bovenBtn{top:166px}
+  #meetBtn{top:204px;color:#a8241d;border-color:#d8322a}
+  #meetBtn.actief{color:#fff;background:#d8322a}
+  #meetWisBtn{top:242px;padding:6px 11px;font-weight:500;font-size:11px;color:#78838a;border:1px solid #b3bcc2}
+</style>
+</head>
+<body>
+<div id="wrap"></div>
+<div id="titel">Getec BESS-park Emmen &middot; 8 rijen<span>8 &times; (CS EOS + PCS + 2 batterijcontainers) + CS AUX in het midden</span></div>
+<button class="knop" id="luchtBtn">kaart: aan</button>
+<div id="kaartStand"></div>
+<button class="knop" id="hekBtn">hek: aan</button>
+<button class="knop" id="kabelBtn">kabels: aan</button>
+<button class="knop" id="maatBtn">maatvoering: aan</button>
+<button class="knop" id="bovenBtn">bovenaanzicht</button>
+<button class="knop" id="meetBtn">meten</button>
+<button class="knop" id="meetWisBtn">wis metingen</button>
+<div id="caption">Sleep om te draaien &middot; scroll of + en &minus; om te zoomen &middot; 0: overzicht &middot; B: bovenaanzicht &middot; C: containerkoppen rij 1 &middot; 1: LS-zijde CS EOS 1 &middot; A: CS AUX &middot; D: deuren &middot; H: hek &middot; K: kabels &middot; P: ladderbaan rij 1 &middot; V: DC-kabels rij 1 (van boven) &middot; M: maatvoering &middot; E: contouren &middot; Q: meten (Esc wist) &middot; L: kaart aan/uit (pijltjes = kaart schuiven, , en . = draaien)</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// Schaal: 1 eenheid = 100 mm
+const wrap = document.getElementById('wrap');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xdfe4e2);
+scene.fog = new THREE.Fog(0xdfe4e2, 1600, 5200);
+const camera = new THREE.PerspectiveCamera(38, 1, 0.5, 6000);
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.shadowMap.enabled = false;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+wrap.appendChild(renderer.domElement);
+
+function envFace(bright, windowStrip){
+  const c = document.createElement('canvas');
+  c.width = 128; c.height = 128;
+  const g = c.getContext('2d');
+  const grad = g.createLinearGradient(0, 0, 0, 128);
+  grad.addColorStop(0, bright ? '#ffffff' : '#e8e9ea');
+  grad.addColorStop(0.55, '#c9cbcd');
+  grad.addColorStop(1, '#8f9194');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 128, 128);
+  if(windowStrip){
+    g.fillStyle = '#ffffff';
+    g.fillRect(18, 10, 40, 70);
+  }
+  return c;
+}
+const cube = new THREE.CubeTexture([
+  envFace(false, true), envFace(false, false),
+  envFace(true, false), envFace(false, false),
+  envFace(false, true), envFace(false, false)
+]);
+cube.needsUpdate = true;
+cube.encoding = THREE.sRGBEncoding;
+scene.environment = cube;
+
+const hemi = new THREE.HemisphereLight(0xffffff, 0x7d8a80, 0.34);
+scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xfff4e2, 1.55);
+sun.position.set(60, 80, 40);
+sun.castShadow = false;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left = -180; sun.shadow.camera.right = 200;
+sun.shadow.camera.top = 130; sun.shadow.camera.bottom = -130;
+sun.shadow.radius = 4;
+sun.shadow.bias = -0.0006;
+scene.add(sun);
+const fill = new THREE.DirectionalLight(0xc9d8ea, 0.28);
+fill.position.set(-40, 25, 30);
+scene.add(fill);
+scene.add(new THREE.AmbientLight(0xffffff, 0.10));
+const side = new THREE.DirectionalLight(0xffffff, 0.42);
+side.position.set(-120, 40, 160);
+scene.add(side);
+
+
+// texturen
+const rc = document.createElement('canvas');
+rc.width = 256; rc.height = 256;
+const rg = rc.getContext('2d');
+rg.fillStyle = '#6f6f6f'; rg.fillRect(0, 0, 256, 256);
+for(let i = 0; i < 2600; i++){
+  const v = 90 + Math.floor(Math.random()*110);
+  rg.fillStyle = 'rgb(' + v + ',' + v + ',' + v + ')';
+  rg.fillRect(Math.random()*256, Math.random()*256, 1 + Math.random()*3, 1 + Math.random()*2);
+}
+const roughTex = new THREE.CanvasTexture(rc);
+roughTex.wrapS = roughTex.wrapT = THREE.RepeatWrapping;
+
+// maaiveld: grindachtige grondtextuur
+const gr = document.createElement('canvas');
+gr.width = 256; gr.height = 256;
+const grc = gr.getContext('2d');
+grc.fillStyle = '#95907e'; grc.fillRect(0, 0, 256, 256);
+for(let i = 0; i < 5200; i++){
+  const t = Math.random();
+  grc.fillStyle = t < 0.4 ? '#a8a390' : (t < 0.7 ? '#807b6b' : '#b3ae9c');
+  const s = 1 + Math.random()*2.5;
+  grc.fillRect(Math.random()*256, Math.random()*256, s, s);
+}
+const groundTex = new THREE.CanvasTexture(gr);
+groundTex.wrapS = groundTex.wrapT = THREE.RepeatWrapping;
+groundTex.repeat.set(34, 34);
+
+const gyc2 = document.createElement('canvas');
+gyc2.width = 64; gyc2.height = 64;
+const gyc = gyc2.getContext('2d');
+gyc.fillStyle = '#e8cf1e'; gyc.fillRect(0, 0, 64, 64);
+gyc.fillStyle = '#2f9e3f';
+gyc.save(); gyc.translate(32, 32); gyc.rotate(-0.6);
+for(let i = -3; i <= 3; i++) gyc.fillRect(-64, i*22 - 6, 128, 12);
+gyc.restore();
+const gyTex = new THREE.CanvasTexture(gyc2);
+gyTex.wrapS = gyTex.wrapT = THREE.RepeatWrapping;
+gyTex.repeat.set(4, 1);
+
+const lv = document.createElement('canvas');
+lv.width = 64; lv.height = 64;
+const lvc = lv.getContext('2d');
+lvc.fillStyle = '#b3b2aa'; lvc.fillRect(0, 0, 64, 64);
+lvc.fillStyle = '#77766f';
+for(let y = 2; y < 64; y += 8) lvc.fillRect(0, y, 64, 3);
+const lvTex = new THREE.CanvasTexture(lv);
+lvTex.wrapS = lvTex.wrapT = THREE.RepeatWrapping;
+lvTex.repeat.set(2, 6);
+
+// materialen
+const matSteel = new THREE.MeshStandardMaterial({color:0xc9cfd5, roughness:0.35, metalness:0.9, roughnessMap:roughTex, envMapIntensity:0.9});
+const matSheath = new THREE.MeshStandardMaterial({color:0x141416, roughness:0.42, metalness:0.05, envMapIntensity:0.5});
+const matCopper = new THREE.MeshStandardMaterial({color:0xb87333, roughness:0.28, metalness:1.0, envMapIntensity:1.1});
+const matTinned = new THREE.MeshStandardMaterial({color:0xc8cdd2, roughness:0.3, metalness:0.95, envMapIntensity:1.0});
+const matBlock = new THREE.MeshStandardMaterial({color:0x232327, roughness:0.8, metalness:0.05, envMapIntensity:0.4});
+const matBlockDark = new THREE.MeshStandardMaterial({color:0x0e0e10, roughness:0.9, metalness:0.0});
+const matBolt = new THREE.MeshStandardMaterial({color:0xb2bac2, roughness:0.3, metalness:0.95, envMapIntensity:1.0});
+const matGnYe = new THREE.MeshStandardMaterial({map:gyTex, roughness:0.5, metalness:0.05, envMapIntensity:0.4});
+const matGround = new THREE.MeshStandardMaterial({color:0x2c5230, transparent:true, opacity:0.42, roughness:1.0, metalness:0.0, envMapIntensity:0.05, depthWrite:false});
+const matConcrete = new THREE.MeshStandardMaterial({color:0xc6c5bd, roughness:0.85, metalness:0.0, roughnessMap:roughTex, envMapIntensity:0.25});
+const matConcreteDark = new THREE.MeshStandardMaterial({color:0xaaa9a2, roughness:0.9, metalness:0.0, envMapIntensity:0.2});
+const matRAL7032 = new THREE.MeshStandardMaterial({color:0xb8b09c, roughness:0.82, metalness:0.04, envMapIntensity:0.25});
+const matRedPlate = new THREE.MeshStandardMaterial({color:0xb5533f, roughness:0.72, metalness:0.06, envMapIntensity:0.3});
+const matEpoxy   = new THREE.MeshStandardMaterial({color:0xd6d8d6, roughness:0.35, metalness:0.02, envMapIntensity:0.5});  // lichtgrijze epoxy vloer
+const matMuurwit = new THREE.MeshStandardMaterial({color:0xf4f4f0, roughness:0.9, metalness:0.0, envMapIntensity:0.2});    // watervaste muurverf wit
+const matZichtbeton = new THREE.MeshStandardMaterial({color:0xa9a9a3, roughness:0.95, metalness:0.0, envMapIntensity:0.15});
+let roofGroup;
+// register van alle deuren, zodat ze gezamenlijk open of dicht kunnen (toets D)
+const doors = [];
+let doorsOpen = true;
+function registerDoor(m, openY, dichtY){
+  doors.push({m: m, open: openY, dicht: dichtY});
+  m.rotation.y = openY;
+  return m;
+}
+const matSokkel = new THREE.MeshStandardMaterial({color:0xe9e8e2, roughness:0.86, metalness:0.0, envMapIntensity:0.28});
+const matDoor = new THREE.MeshStandardMaterial({color:0xd3d2ca, roughness:0.7, metalness:0.05, envMapIntensity:0.3});
+const matLouvre = new THREE.MeshStandardMaterial({map:lvTex, roughness:0.7, metalness:0.2, envMapIntensity:0.3});
+const matWhite = new THREE.MeshStandardMaterial({color:0xe9ebed, roughness:0.45, metalness:0.25, envMapIntensity:0.7});
+const matWhiteDoor = new THREE.MeshStandardMaterial({color:0xf2f4f5, roughness:0.4, metalness:0.2, envMapIntensity:0.7});
+const matGrey = new THREE.MeshStandardMaterial({color:0x878d94, roughness:0.5, metalness:0.6, envMapIntensity:0.6});
+const matDark = new THREE.MeshStandardMaterial({color:0x2c2c30, roughness:0.6, metalness:0.3});
+const matInterior = new THREE.MeshStandardMaterial({color:0x4a4c4f, roughness:0.9, metalness:0.0, envMapIntensity:0.15});
+const matPlate = new THREE.MeshStandardMaterial({color:0xd8d8d2, roughness:0.6, metalness:0.2, envMapIntensity:0.3});
+const matBreaker = new THREE.MeshStandardMaterial({color:0x26262a, roughness:0.55, metalness:0.1, envMapIntensity:0.3});
+const matRed = new THREE.MeshStandardMaterial({color:0xcc2222, roughness:0.5, metalness:0.1});
+const matYellow = new THREE.MeshStandardMaterial({color:0xf2c81e, roughness:0.6, metalness:0.0});
+const matGreen = new THREE.MeshStandardMaterial({color:0x2f9e3f, roughness:0.5, metalness:0.1});
+const matPurple = new THREE.MeshStandardMaterial({color:0x6b6e93, roughness:0.6, metalness:0.1});
+const matBrown = new THREE.MeshStandardMaterial({color:0x8a4632, roughness:0.55, metalness:0.15});
+const matOrange = new THREE.MeshStandardMaterial({color:0xe8901a, roughness:0.5, metalness:0.1});
+const matDCp = new THREE.MeshStandardMaterial({color:0x8f2b2b, roughness:0.45, metalness:0.05, envMapIntensity:0.4});
+const matDCn = new THREE.MeshStandardMaterial({color:0x1e1f22, roughness:0.5, metalness:0.05, envMapIntensity:0.35});
+
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(2400, 2400), matGround);
+ground.rotation.x = -Math.PI/2;
+ground.receiveShadow = false;
+scene.add(ground);
+
+let meshTarget = null;               // null = rechtstreeks in de scene
+function mesh(geo, mat, x, y, z){
+  const m = new THREE.Mesh(geo, mat);
+  m.position.set(x, y, z);
+  m.castShadow = false; m.receiveShadow = false;
+  (meshTarget || scene).add(m);
+  return m;
+}
+
+const stZ = 32.4, stFront = stZ - 11.675;
+const H = 6.0;
+const groupXs = [-3.9, -1.3, 1.3, 3.9];   // 2x de onderlinge afstand
+let afdekplaat;
+
+// ============ NIEUWE ROMP (stap 1): correcte verhouding 2475 x 3060 ============
+// lokaal assenstelsel: x = breedte (korte kant), z = diepte (lange kant, LS->TRAFO->MS)
+function buildRomp(){
+  const Bx = 24.75, Dz = 30.6;          // breedte x diepte in eenheden
+  const zc = 36.0;                       // LS-kant op z=20.70 (afstand tot PCS blijft 3,09 m)
+  const Hh = 26.0;                       // hoogte van de kast boven de sokkel
+  const y0 = H;                          // bovenkant sokkel
+  const matRoof = new THREE.MeshStandardMaterial({color:0xb9b8b0, roughness:0.8, metalness:0.06});
+
+  // sokkelbak (600 mm boven maaiveld), rondom dicht
+  for(const [sx, sw] of [[-(Bx/2-2.0), 4.0], [Bx/2-2.0, 4.0]]){
+    mesh(new THREE.BoxGeometry(sw, H, Dz), matSokkel, sx, H/2, zc);   // lange zijwanden
+  }
+  mesh(new THREE.BoxGeometry(Bx, H, 4.0), matSokkel, 0, H/2, zc - Dz/2 + 2.0);  // kop LS-zijde
+  mesh(new THREE.BoxGeometry(Bx, H, 4.0), matSokkel, 0, H/2, zc + Dz/2 - 2.0);  // kop MS-zijde
+  mesh(new THREE.BoxGeometry(Bx, 0.6, Dz), matSokkel, 0, H - 0.3, zc);          // deksel sokkel
+
+  // wanden van de kast: 4 zijden + dak
+  const wt = 0.9;
+  mesh(new THREE.BoxGeometry(wt, Hh, Dz), matConcrete, -Bx/2 + wt/2, y0 + Hh/2, zc);  // lange wand west
+  mesh(new THREE.BoxGeometry(wt, Hh, Dz), matConcrete,  Bx/2 - wt/2, y0 + Hh/2, zc);  // lange wand oost
+  // LS-kopwand met deuropening
+  const opWl = 21.0, opHl = 20.0, lz = zc - Dz/2 + wt/2;
+  mesh(new THREE.BoxGeometry((Bx - opWl)/2, Hh, wt), matConcrete, -(Bx - (Bx-opWl)/2)/2, y0 + Hh/2, lz);
+  mesh(new THREE.BoxGeometry((Bx - opWl)/2, Hh, wt), matConcrete,  (Bx - (Bx-opWl)/2)/2, y0 + Hh/2, lz);
+  mesh(new THREE.BoxGeometry(opWl, Hh - opHl, wt), matConcrete, 0, y0 + opHl + (Hh - opHl)/2, lz);
+  const dWl = opWl/2, dHl = opHl - 0.4;
+  const rdLl = new THREE.BoxGeometry(dWl, dHl, 0.22); rdLl.translate(dWl/2, 0, 0);
+  registerDoor(mesh(rdLl, matDoor, -opWl/2, y0 + opHl/2, lz - 0.5),  2.0, 0);
+  const rdRl = new THREE.BoxGeometry(dWl, dHl, 0.22); rdRl.translate(-dWl/2, 0, 0);
+  registerDoor(mesh(rdRl, matDoor,  opWl/2, y0 + opHl/2, lz - 0.5), -2.0, 0);
+  for(const sx of [-opWl/2, opWl/2]){
+    mesh(new THREE.BoxGeometry(0.5, opHl, 0.5), matSteel, sx, y0 + opHl/2, lz - 0.5);
+  }
+  // MS-kopwand met deuropening (kant van de kabelsleuf)
+  const opW = 21.0, opH = 20.0, mz = zc + Dz/2 - wt/2;
+  mesh(new THREE.BoxGeometry((Bx - opW)/2, Hh, wt), matConcrete, -(Bx - (Bx-opW)/2)/2, y0 + Hh/2, mz);  // links
+  mesh(new THREE.BoxGeometry((Bx - opW)/2, Hh, wt), matConcrete,  (Bx - (Bx-opW)/2)/2, y0 + Hh/2, mz);  // rechts
+  mesh(new THREE.BoxGeometry(opW, Hh - opH, wt), matConcrete, 0, y0 + opH + (Hh - opH)/2, mz);          // latei boven
+  // openslaande deuren, scharnieren aan de buitenranden
+  const dW2 = opW/2, dH2 = opH - 0.4;
+  const rdL = new THREE.BoxGeometry(dW2, dH2, 0.22); rdL.translate(dW2/2, 0, 0);
+  registerDoor(mesh(rdL, matDoor, -opW/2, y0 + opH/2, mz + 0.5), -2.0, 0);
+  const rdR = new THREE.BoxGeometry(dW2, dH2, 0.22); rdR.translate(-dW2/2, 0, 0);
+  registerDoor(mesh(rdR, matDoor,  opW/2, y0 + opH/2, mz + 0.5),  2.0, 0);
+  for(const sx of [-opW/2, opW/2]){
+    mesh(new THREE.BoxGeometry(0.5, opH, 0.5), matSteel, sx, y0 + opH/2, mz + 0.5);   // deurstijlen
+  }
+  mesh(new THREE.BoxGeometry(Bx + 1.2, 1.4, Dz + 1.2), matRoof, 0, y0 + Hh + 0.7, zc);   // overstekend dak
+}
+
+
+// ============ TRAFO (stap 2): in het midden van de nieuwe romp ============
+function buildTrafo(){
+  const trZc = 32.15;              // hart trafo-compartiment (mee met zc)
+  const matTrafoKuip = matGrey;
+  // onderstel op de sokkel
+  mesh(new THREE.BoxGeometry(6.0, 1.0, 11.0), matSteel, 0, H + 0.6, trZc);
+  // trafokuip: breed in x, diep in z, hoog
+  mesh(new THREE.BoxGeometry(11.0, 9.6, 7.6), matTrafoKuip, 0, H + 5.9, trZc);
+  // koelribben langs beide lange zijden (in het x/y-vlak, herhaald over z)
+  for(let kr = 0; kr < 11; kr++){
+    const kz = trZc - 5.4 + kr*1.08;
+    mesh(new THREE.BoxGeometry(11.6, 8.2, 0.22), matSteel, 0, H + 5.9, kz);
+  }
+  // deksel
+  mesh(new THREE.BoxGeometry(10.4, 0.7, 8.4), matSteel, 0, H + 11.0, trZc);
+  // doorvoerbussen bovenop (HS naar de MS-kant, LS naar de LS-kant)
+  for(const dz of [trZc + 3.0, trZc + 3.9, trZc + 4.8]){   // 3 HS-bussen naar MS
+    mesh(new THREE.CylinderGeometry(0.42, 0.5, 2.4, 12), matGrey, -3.0 + (dz-trZc-3.0)*0, H + 12.6, dz);
+  }
+  mesh(new THREE.BoxGeometry(1.6, 1.0, 0.6), matDark, 3.4, H + 10.4, trZc - 4.0);   // Buchholz/thermometer
+}
+
+
+// ============ LS-INSTALLATIE (stap 3): in de LS-ruimte ============
+function buildLS(aux){
+  const zL = 23.9;                 // hart van de LS-installatie (mee met zc)
+  const matBrownR = matBrown;
+  // rode PE-rail onderin, over de breedte, vrij zichtbaar
+  mesh(new THREE.BoxGeometry(21.0, 1.1, 0.9), matRedPlate, 0, H + 2.6, zL + 0.5);
+  for(const px of [-9.6, -4.8, 0, 4.8, 9.6]){          // steunisolatoren
+    mesh(new THREE.CylinderGeometry(0.24, 0.24, 1.3, 10), matBlockDark, px, H + 1.75, zL + 0.5);
+    mesh(new THREE.BoxGeometry(0.8, 0.16, 0.7), matSteel, px, H + 1.05, zL + 0.5);
+  }
+  mesh(new THREE.BoxGeometry(2.2, 0.3, 0.1), matYellow, -9.4, H + 2.6, zL + 0.02);   // PE-markering
+  // invoerbak
+  mesh(new THREE.BoxGeometry(20.0, 2.6, 1.9), matGrey, 0, H + 4.5, zL);
+  const zR = zL - 0.2;
+  // vermogensautomaat bovenin, midden (CS EOS heeft geen NH-stroken)
+  mesh(new THREE.BoxGeometry(6.4, 3.8, 1.1), matPlate, 0, H + 15.0, zR - 0.5);
+  mesh(new THREE.BoxGeometry(4.6, 3.2, 2.0), matBreaker, 0, H + 15.0, zR - 1.6);
+  mesh(new THREE.BoxGeometry(0.5, 0.5, 0.2), matRed, 1.0, H + 15.6, zR - 2.7);
+  mesh(new THREE.BoxGeometry(0.5, 0.5, 0.2), matGreen, 1.0, H + 14.6, zR - 2.7);
+  mesh(new THREE.BoxGeometry(1.5, 0.85, 0.14), matGrey, -1.0, H + 15.9, zR - 2.65);  // display
+  // 3 koperen aansluitrails die naar beneden wijzen (afgaande zijde van de automaat)
+  for(const cx of [-1.8, 0, 1.8]){
+    mesh(new THREE.BoxGeometry(0.7, 5.2, 0.25), matCopper, cx, H + 10.4, zR - 0.3);   // afgaande koperrail
+    mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.4, 8), matBolt, cx, H + 8.2, zR - 0.15)  // aansluitbout onderaan
+      .rotation.x = Math.PI/2;
+  }
+  // bij CS AUX: LS-verdeelrek met koperen faserails en 2 NH-lastscheiders
+  if(aux){
+    // 3 koperen faserails L1/L2/L3, horizontaal over de breedte, boven elkaar
+    for(let f = 0; f < 3; f++){
+      const fy = H + 8.4 + f*1.5;
+      mesh(new THREE.BoxGeometry(20.0, 0.7, 0.28), matCopper, 0, fy, zR - 2.4);   // faserail
+      mesh(new THREE.BoxGeometry(1.2, 0.5, 0.1), matYellow, -9.0, fy, zR - 2.56); // L-markering
+      // steunisolatoren die de faserails dragen
+      for(const ix of [-8.0, 0, 8.0]){
+        mesh(new THREE.CylinderGeometry(0.28, 0.28, 1.3, 10), matBlockDark, ix, fy, zR - 1.7).rotation.x = Math.PI/2;
+      }
+    }
+    // 2 NH-lastscheiders die OP de faserails klemmen (3-polig verticaal)
+    for(const fx of [-5.0, 5.0]){
+      // dragende basis achter de rails
+      mesh(new THREE.BoxGeometry(2.4, 6.4, 0.5), matGrey, fx, H + 11.4, zR - 1.9);       // montageplaat achter de rails
+      for(let p = 0; p < 3; p++){
+        const py = H + 8.4 + p*1.5;                                                       // exact op railhoogte
+        // de patroonhouder zit OVER de faserail heen (zelfde z als de rail)
+        mesh(new THREE.BoxGeometry(1.7, 1.25, 0.9), matDark, fx, py, zR - 2.4);          // NH-patroonhouder op de rail
+        mesh(new THREE.BoxGeometry(1.15, 0.24, 0.12), matYellow, fx, py, zR - 2.9);      // isolerende greep vooraan
+        mesh(new THREE.CylinderGeometry(0.16, 0.16, 1.9, 8), matTinned, fx, py, zR - 2.4).rotation.z = Math.PI/2;  // mescontact op de rail
+      }
+      mesh(new THREE.BoxGeometry(2.0, 0.4, 0.5), matTinned, fx, H + 7.2, zR - 2.4);      // afgaande klem onderaan
+    }
+  }
+  // rijgklemmenbord + groepenkast bovenin
+  mesh(new THREE.BoxGeometry(20.0, 2.4, 1.2), matWhiteDoor, 0, H + 18.4, zR - 0.4);
+  mesh(new THREE.BoxGeometry(7.0, 4.2, 1.4), matWhiteDoor, -6.0, H + 21.6, zR - 0.4);   // groepenkast
+  for(let g = 0; g < 6; g++){
+    mesh(new THREE.BoxGeometry(0.7, 0.5, 0.1), matDark, -8.4 + g*0.95, H + 21.6, zR - 1.1);
+  }
+}
+
+
+// ============ MS-RUIMTE (stap 4): leeg compartiment aan de MS-kop ============
+// In dit project zit hier geen MS-schakelinstallatie; alleen het compartiment.
+function buildMS(){
+  // scheidingswand tussen trafo en MS-ruimte
+  mesh(new THREE.BoxGeometry(24.75 - 1.8, 26.0, 0.6), matPlate, 0, H + 13.0, 42.57);
+}
+
+
+// ============ DOORVOERINGEN (stap 5): MS + aarde in de MS-kopsokkel ============
+function buildDoorvoer(aux){
+  const dz = 49.3;                 // MS-kopsokkel (kant kabelsleuf)
+  const dy = 2.6;                  // in de sokkelbak, onder maaiveld
+  // 3 Hauff HSI-150 instortframes voor de MS-kabels
+  for(const hx of [-2.4, 0, 2.4]){
+    mesh(new THREE.BoxGeometry(2.4, 2.4, 0.9), matBlockDark, hx, dy, dz);
+    mesh(new THREE.CylinderGeometry(0.75, 0.75, 1.1, 16), matDark, hx, dy, dz).rotation.x = Math.PI/2;
+    mesh(new THREE.TorusGeometry(0.82, 0.1, 8, 18), matSteel, hx, dy, dz - 0.45);
+    mesh(new THREE.TorusGeometry(0.82, 0.1, 8, 18), matSteel, hx, dy, dz + 0.45);
+  }
+  // HSI-50 voor de aardelektrode, rechts naast de HSI-150's
+  const aeX = 4.6;
+  mesh(new THREE.BoxGeometry(1.3, 1.3, 0.9), matBlockDark, aeX, dy, dz);
+  mesh(new THREE.CylinderGeometry(0.25, 0.25, 1.1, 12), matDark, aeX, dy, dz).rotation.x = Math.PI/2;
+  mesh(new THREE.TorusGeometry(0.3, 0.07, 8, 14), matSteel, aeX, dy, dz - 0.45);
+  mesh(new THREE.TorusGeometry(0.3, 0.07, 8, 14), matSteel, aeX, dy, dz + 0.45);
+  // aardelektrode: koperen aardstaaf, kop op doorvoerhoogte, de grond in
+  const penL = 100;
+  mesh(new THREE.CylinderGeometry(0.09, 0.05, penL, 8), matCopper, aeX, dy - penL/2, dz + 3.9);
+  for(let sec = 1; sec*15 < penL; sec++){
+    mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.5, 8), matBolt, aeX, dy - sec*15, dz + 3.9);
+  }
+  mesh(new THREE.BoxGeometry(0.4, 0.34, 0.4), matBolt, aeX, dy, dz + 3.9);   // aardklem
+  // bij CS AUX: invoerplaat met 2 x 10 doorvoeringen in de LS-kopsokkel (YMvKas naar de containers)
+  if(aux){
+    const lz = 20.7 + 0.45;
+    mesh(new THREE.BoxGeometry(13.0, 4.6, 0.35), matPlate, 0, dy + 0.4, lz);
+    for(let rij = 0; rij < 2; rij++){
+      for(let k = 0; k < 10; k++){
+        mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.5, 10), matDark,
+             -5.4 + k*1.2, dy + 1.4 - rij*1.9, lz).rotation.x = Math.PI/2;
+      }
+    }
+  }
+  // aardleiding van de elektrode door de HSI-50 het station in en omhoog naar de aardrail
+  (function(){
+    const A = [
+      new THREE.Vector3(aeX, dy, dz + 3.9),
+      new THREE.Vector3(aeX, dy, dz),              // door de HSI-50
+      new THREE.Vector3(aeX, dy, dz - 1.2),
+      new THREE.Vector3(aeX, 5.6, dz - 2.0),       // omhoog het station in
+      new THREE.Vector3(aeX, 8.4, dz - 2.6)
+    ];
+    const cv = new THREE.CatmullRomCurve3(filletPath(A, 1.6, 10), false, 'centripetal');
+    (meshTarget || scene).add(new THREE.Mesh(new THREE.TubeGeometry(cv, 90, 0.13, 8, false), matYellow));
+    mesh(new THREE.BoxGeometry(0.6, 0.5, 0.5), matBolt, aeX, 8.6, dz - 2.6);   // aansluiting op de aardrail
+  })();
+}
+
+
+function filletPath(Win, R, seg){
+  // samenvallende waypoints eruit filteren: die geven een deling door nul (NaN-curve)
+  const W = [Win[0]];
+  for(let q = 1; q < Win.length; q++){
+    if(Win[q].distanceTo(W[W.length - 1]) > 1e-6) W.push(Win[q]);
+  }
+  if(W.length < 3) return W.map(p => p.clone());
+  const out = [W[0].clone()];
+  for(let i = 1; i < W.length - 1; i++){
+    const p = W[i], a = W[i-1], b = W[i+1];
+    const v1 = new THREE.Vector3().subVectors(a, p).normalize();
+    const v2 = new THREE.Vector3().subVectors(b, p).normalize();
+    const ang = Math.acos(Math.max(-1, Math.min(1, v1.dot(v2))));
+    if(ang > Math.PI - 0.01 || ang < 0.01){ out.push(p.clone()); continue; }
+    const t = Math.min(R / Math.tan(ang/2), a.distanceTo(p)*0.49, b.distanceTo(p)*0.49);
+    const rEff = t * Math.tan(ang/2);
+    const P1 = p.clone().addScaledVector(v1, t);
+    const P2 = p.clone().addScaledVector(v2, t);
+    const bis = new THREE.Vector3().addVectors(v1, v2).normalize();
+    const C = p.clone().addScaledVector(bis, rEff / Math.sin(ang/2));
+    const u1 = new THREE.Vector3().subVectors(P1, C);
+    const u2 = new THREE.Vector3().subVectors(P2, C);
+    const axis = new THREE.Vector3().crossVectors(u1, u2).normalize();
+    const total = u1.angleTo(u2);
+    for(let s = 0; s <= seg; s++){
+      out.push(u1.clone().applyAxisAngle(axis, total*s/seg).add(C));
+    }
+  }
+  out.push(W[W.length-1].clone());
+  return out;
+}
+
+// één kabel: expliciet startpunt op de zekering -> tracé -> eindpunt op de containerbout
+
+// ============ BATTERIJCONTAINERS BC1 & BC2 (6.0 x 2.4 x 3.0 m) ============
+const ribC = document.createElement('canvas');
+ribC.width = 64; ribC.height = 64;
+const ribCtx = ribC.getContext('2d');
+ribCtx.fillStyle = '#eceff1'; ribCtx.fillRect(0, 0, 64, 64);
+ribCtx.fillStyle = '#cdd2d6';
+for(let x = 2; x < 64; x += 8) ribCtx.fillRect(x, 0, 3, 64);
+const ribTex = new THREE.CanvasTexture(ribC);
+ribTex.wrapS = ribTex.wrapT = THREE.RepeatWrapping;
+ribTex.repeat.set(14, 1);
+const matRib = new THREE.MeshStandardMaterial({map:ribTex, roughness:0.5, metalness:0.3, envMapIntensity:0.6});
+
+function makeLabel(txt, bg){
+  const c = document.createElement('canvas');
+  c.width = 256; c.height = 128;
+  const g = c.getContext('2d');
+  g.fillStyle = bg || '#f2f4f5'; g.fillRect(0, 0, 256, 128);
+  g.fillStyle = '#2a2e33';
+  g.font = 'bold 84px sans-serif';
+  g.textAlign = 'center';
+  g.fillText(txt, 128, 96);
+  return new THREE.MeshStandardMaterial({map:new THREE.CanvasTexture(c), roughness:0.6, metalness:0.1});
+}
+
+function batContainer(cx, cz, label){
+  // betonnen funderingsbalken in de lengterichting van de container:
+  // lopen aan beide zijden gelijk met de container, dus nergens uitstekend.
+  // In de balk aan de gootzijde zit een sparing voor de kabelinvoer.
+  for(const bz of [-10.2, 10.2]){
+    if(bz < 0){
+      // gootzijde: doorlopende balk; ter plaatse van de kabelinvoer in de breedte
+      // uitgespaard, zodat de balk aan elkaar blijft zitten
+      const spA = cx + 24.6, spB = cx + 30.3;
+      mesh(new THREE.BoxGeometry(spA - (cx - 30.3), LIFT, 6.5), matConcrete,
+           (cx - 30.3 + spA)/2, LIFT/2, cz + bz);
+      mesh(new THREE.BoxGeometry(spB - spA, LIFT, 1.05), matConcrete,
+           (spA + spB)/2, LIFT/2, cz + bz - 2.72);          // strook buitenzijde
+      mesh(new THREE.BoxGeometry(spB - spA, LIFT, 2.45), matConcrete,
+           (spA + spB)/2, LIFT/2, cz + bz + 2.02);          // strook binnenzijde
+    } else {
+      mesh(new THREE.BoxGeometry(60.6, LIFT, 6.5), matConcrete, cx, LIFT/2, cz + bz);
+    }
+  }
+  const cGroup = new THREE.Group();
+  meshTarget = cGroup;
+  mesh(new THREE.BoxGeometry(60.6, 1.2, 24.6), matGrey, cx, 0.6, cz);
+  mesh(new THREE.BoxGeometry(56, 27.6, 24), matWhite, cx - 2, 15.0, cz);
+  mesh(new THREE.BoxGeometry(60.4, 0.35, 24.4), matRib, cx, 29.1, cz);
+  mesh(new THREE.BoxGeometry(60, 27.2, 0.18), matRib, cx, 15.0, cz + 12.05);
+  // deurenwand met 5 panelen aan de andere lange zijde (met sticker en greep, naar foto)
+  for(let k = 0; k < 5; k++){
+    const dxk = cx - 24 + k*12;
+    mesh(new THREE.BoxGeometry(11.0, 25.0, 0.2), matWhiteDoor, dxk, 14.6, cz - 12.05);
+    mesh(new THREE.BoxGeometry(1.1, 1.3, 0.06), matYellow, dxk, 17.5, cz - 12.18);
+    mesh(new THREE.BoxGeometry(0.18, 1.7, 0.14), matDark, dxk + 4.6, 14.0, cz - 12.18);
+    if(k < 4) mesh(new THREE.BoxGeometry(0.14, 25.0, 0.24), matDark, cx - 18 + k*12, 14.6, cz - 12.07);
+  }
+  for(const ex of [-29.6, 29.6]){
+    for(const ez of [-11.6, 11.6]){
+      mesh(new THREE.BoxGeometry(1.0, 28.4, 1.0), matGrey, cx + ex, 15.0, cz + ez);
+      mesh(new THREE.BoxGeometry(1.3, 1.3, 1.3), matDark, cx + ex, 28.9, cz + ez);
+      mesh(new THREE.BoxGeometry(1.3, 1.3, 1.3), matDark, cx + ex, 1.3, cz + ez);
+    }
+  }
+  // voorkant (kop): nis met OPEN deuren en interieur naar de aanzichtfoto
+  mesh(new THREE.BoxGeometry(4, 4.4, 24), matWhite, cx + 28, 26.6, cz);
+  mesh(new THREE.BoxGeometry(4, 23.2, 0.7), matWhite, cx + 28, 13.0, cz - 11.65);
+  mesh(new THREE.BoxGeometry(4, 23.2, 0.7), matWhite, cx + 28, 13.0, cz + 11.65);
+  mesh(new THREE.BoxGeometry(4, 0.3, 22.3), matGrey, cx + 28, 1.35, cz);
+  // horizontale tussenplaat: scheidt het onderste compartiment van het bovenste
+  mesh(new THREE.BoxGeometry(4, 0.35, 22.3), matGrey, cx + 28, 10.4, cz);
+  mesh(new THREE.BoxGeometry(0.3, 0.5, 22.3), matWhiteDoor, cx + 29.9, 10.4, cz);
+  mesh(new THREE.BoxGeometry(0.15, 23, 22.3), matInterior, cx + 26.1, 12.9, cz);
+  const kdL = new THREE.BoxGeometry(0.18, 23, 11.4);
+  kdL.translate(0, 0, 5.7);
+  registerDoor(mesh(kdL, matWhiteDoor, cx + 30, 13.0, cz - 11.6), 2.1, 0);
+  const kdR = new THREE.BoxGeometry(0.18, 23, 11.4);
+  kdR.translate(0, 0, -5.7);
+  registerDoor(mesh(kdR, matWhiteDoor, cx + 30, 13.0, cz + 11.6), -2.1, 0);
+  // interieur: kasten links, bedien-/klemmenveld rechts, onderin het DC-aansluitveld
+  mesh(new THREE.BoxGeometry(0.7, 7.5, 9.0), matPlate, cx + 27.2, 18.6, cz - 5.8);
+  mesh(new THREE.BoxGeometry(0.3, 3.2, 3.6), matDark, cx + 27.7, 20.8, cz - 8.0);
+  mesh(new THREE.BoxGeometry(0.6, 2.6, 2.8), matPurple, cx + 27.4, 24.6, cz - 9.2);
+  mesh(new THREE.BoxGeometry(0.6, 2.2, 3.2), matWhiteDoor, cx + 27.4, 24.6, cz - 4.8);
+  mesh(new THREE.BoxGeometry(0.6, 9.5, 9.6), matPlate, cx + 27.2, 19.0, cz + 5.8);
+  mesh(new THREE.BoxGeometry(0.25, 1.8, 2.4), matGreen, cx + 27.6, 22.4, cz + 3.6);
+  mesh(new THREE.BoxGeometry(0.25, 1.7, 2.4), matOrange, cx + 27.6, 19.9, cz + 3.6);
+  for(const ty of [14.8, 13.2, 11.6]){
+    mesh(new THREE.BoxGeometry(0.4, 0.8, 9.4), matGrey, cx + 27.4, ty, cz + 5.8);
+  }
+  mesh(new THREE.BoxGeometry(0.3, 8.2, 21), matPlate, cx + 26.4, 6.0, cz);
+  // aansluitpunten vereffeningsaarde: plaatje met 2 gaten, onderaan bij beide hoeken
+  for(const ex2 of [-28.6, 28.6]){
+    mesh(new THREE.BoxGeometry(2.0, 1.1, 0.14), matSteel, cx + ex2, 1.95, cz - 12.16);
+    mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.22, 8), matDark, cx + ex2 - 0.45, 1.95, cz - 12.2).rotation.x = Math.PI/2;
+    mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.22, 8), matDark, cx + ex2 + 0.45, 1.95, cz - 12.2).rotation.x = Math.PI/2;
+  }
+  const lbl = new THREE.Mesh(new THREE.PlaneGeometry(8, 4), makeLabel(label));
+  lbl.position.set(cx + 30.05, 26.5, cz - 5.0);
+  lbl.rotation.y = Math.PI/2;
+  (meshTarget || scene).add(lbl);
+  meshTarget = null;
+  cGroup.position.y = LIFT;
+  scene.add(cGroup);
+}
+
+const pcsFace = -10.2, pcsC = pcsFace - 9.455;
+const LIFT = 4.0;
+const fuseBodyBlue = new THREE.MeshStandardMaterial({color:0x2f5aa8, roughness:0.5, metalness:0.15});
+const fuseBodyRed  = new THREE.MeshStandardMaterial({color:0xb23838, roughness:0.5, metalness:0.15});
+const fuseGeoDC = new THREE.BoxGeometry(0.5, 1.5, 0.55);
+const matDuct = new THREE.MeshStandardMaterial({color:0x9aa0a3, roughness:0.8, metalness:0.03});
+const matBracket = new THREE.MeshStandardMaterial({color:0x1c1c1f, roughness:0.6, metalness:0.4});
+function buildPCS(Xc, Zc){
+// ============ PCS: deuren aan beide lange zijden + datadeur achter ============
+// funderingsbalken onder de PCS, in de lengterichting (op maaiveld)
+for(const bx2 of [-4.2, 4.2]){
+  mesh(new THREE.BoxGeometry(3.2, LIFT, 19.5), matConcrete, Xc + bx2, LIFT/2, Zc);
+}
+const pcsGroup = new THREE.Group();
+meshTarget = pcsGroup;
+mesh(new THREE.BoxGeometry(12.3, 0.9, 19.5), matGrey, 0, 0.45, pcsC);
+// voetplaten onder het basisframe (naar foto)
+for(const fx2 of [-4.2, 4.2]){
+  for(const fz2 of [-6.5, 0, 6.5]){
+    mesh(new THREE.BoxGeometry(2.2, 0.5, 1.6), matDark, fx2, 0.25, pcsC + fz2);
+  }
+}
+// overstekende dakrand
+mesh(new THREE.BoxGeometry(12.6, 0.5, 19.8), matWhite, 0, 24.6, pcsC);
+mesh(new THREE.BoxGeometry(9.7, 23.5, 16.4), matWhite, 0.99, 12.65, pcsC + 1.25);
+// nis aan de datacommunicatiezijde afwerken
+mesh(new THREE.BoxGeometry(9.7, 1.6, 2.6), matWhite, 0.99, 23.6, pcsC - 8.2);
+mesh(new THREE.BoxGeometry(9.7, 1.0, 2.6), matWhite, 0.99, 1.3, pcsC - 8.2);
+mesh(new THREE.BoxGeometry(0.7, 23.5, 2.6), matWhite, 5.5, 12.65, pcsC - 8.2);
+// nis aan de DC-zijde netjes afwerken: kopwanden + boven- en onderrand
+mesh(new THREE.BoxGeometry(2.0, 23.5, 0.7), matWhite, -4.85, 12.65, pcsC - 9.1);
+mesh(new THREE.BoxGeometry(2.0, 23.5, 0.7), matWhite, -4.85, 12.65, pcsC + 9.1);
+mesh(new THREE.BoxGeometry(2.0, 1.6, 18.91), matWhite, -4.85, 23.6, pcsC);
+mesh(new THREE.BoxGeometry(2.0, 1.3, 18.91), matWhite, -4.85, 1.55, pcsC);
+// deuren +x zijde (gesloten)
+// deuren +x zijde: 2 grote geribbelde deuren + smal bedieningspaneel (naar foto)
+mesh(new THREE.BoxGeometry(0.16, 20.5, 6.6), matWhiteDoor, 5.93, 12.5, pcsC - 2.1);
+for(let rb = 0; rb < 8; rb++){
+  mesh(new THREE.BoxGeometry(0.06, 20.0, 0.12), matWhite, 6.02, 12.5, pcsC - 2.1 - 2.9 + rb*0.83);
+}
+mesh(new THREE.BoxGeometry(0.16, 20.5, 6.6), matWhiteDoor, 5.93, 12.5, pcsC + 4.9);
+for(let rb = 0; rb < 8; rb++){
+  mesh(new THREE.BoxGeometry(0.06, 20.0, 0.12), matWhite, 6.02, 12.5, pcsC + 4.9 - 2.9 + rb*0.83);
+}
+// handgrepen in het midden tussen de twee deuren
+mesh(new THREE.BoxGeometry(0.3, 3.2, 0.18), matDark, 6.06, 12.6, pcsC + 1.9);
+mesh(new THREE.BoxGeometry(0.3, 3.2, 0.18), matDark, 6.06, 12.6, pcsC + 1.3);
+// smal bedieningspaneel rechts: display + noodstop
+mesh(new THREE.BoxGeometry(0.16, 20.5, 3.4), matWhiteDoor, 5.93, 12.5, pcsC - 6.9);
+mesh(new THREE.BoxGeometry(0.07, 1.6, 1.8), matGrey, 6.03, 16.4, pcsC - 6.9);
+// DC-zijde (-x): nis met OPEN deuren en zichtbaar zekeringcompartiment
+const dLGeo = new THREE.BoxGeometry(0.16, 21, 8.6);
+dLGeo.translate(0, 0, 4.3);
+registerDoor(mesh(dLGeo, matWhiteDoor, -5.9, 12.5, pcsC - 8.8), -2.1, 0);
+const dRGeo = new THREE.BoxGeometry(0.16, 21, 8.6);
+dRGeo.translate(0, 0, -4.3);
+registerDoor(mesh(dRGeo, matWhiteDoor, -5.9, 12.5, pcsC + 8.8), 2.1, 0);
+mesh(new THREE.BoxGeometry(0.15, 21, 16.5), matInterior, -3.7, 12.5, pcsC);
+// ---- DC-compartiment naar figuur 122: 2 velden naast elkaar (BC1 op +z, BC2 op -z) ----
+// hoogtes van onder naar boven (pos 1..7 uit de figuur)
+const yCrail = 2.2;   // pos 1: C-profiel montagerail
+const ySurgeN = 4.4;  // pos 2: DC(-) surge
+const yFuseN = 6.4;   // pos 3: DC(-) zekeringrij (blauw)
+const yBusN = 8.6;    // pos 4: min-koperrail
+const ySurgeP = 12.4; // pos 5: DC(+) surge
+const yFuseP = 14.6;  // pos 6: DC(+) zekeringrij (rood)
+const yBusP = 16.8;   // pos 7: plus-koperrail
+for(const half of [1, -1]){                 // twee velden: +z = BC1, -z = BC2
+  const fc = pcsC + half*4.3;               // veldcentrum
+  // pos 1: C-profiel montagerail
+  mesh(new THREE.BoxGeometry(0.4, 0.5, 7.4), matSteel, -3.85, yCrail, fc);
+  // pos 3: 6 blauwe DC(-) zekeringen + pos 4 min-koperrail
+  for(let i = 0; i < 6; i++){
+    const fz = fc + (i - 2.5)*0.92;
+    mesh(fuseGeoDC, fuseBodyBlue, -4.1, yFuseN, fz);
+    mesh(new THREE.BoxGeometry(0.2, 1.0, 0.25), matCopper, -3.85, yFuseN + 1.1, fz);
+  }
+  mesh(new THREE.BoxGeometry(0.35, 0.55, 6.0), matCopper, -3.9, yBusN, fc);
+  // pos 6: 6 rode DC(+) zekeringen + pos 7 plus-koperrail
+  for(let i = 0; i < 6; i++){
+    const fz = fc + (i - 2.5)*0.92;
+    mesh(fuseGeoDC, fuseBodyRed, -4.1, yFuseP, fz);
+    mesh(new THREE.BoxGeometry(0.2, 1.0, 0.25), matCopper, -3.85, yFuseP + 1.1, fz);
+  }
+  mesh(new THREE.BoxGeometry(0.35, 0.55, 6.0), matCopper, -3.9, yBusP, fc);
+  // pos 2 & 5: surge-afleiders
+}
+// kunststof kabelgoot (data + kleine voeding), rechts naast de blauwe zijde, verticaal omhoog
+const matDuctLid = new THREE.MeshStandardMaterial({color:0x878d90, roughness:0.8, metalness:0.03});
+const ductZ = pcsC - 7.6;
+mesh(new THREE.BoxGeometry(1.0, 19.0, 1.5), matDuct, -4.3, 11.0, ductZ);
+mesh(new THREE.BoxGeometry(0.16, 19.0, 1.5), matWhiteDoor, -3.75, 11.0, ductZ);
+for(let sl = 0; sl < 12; sl++){
+  mesh(new THREE.BoxGeometry(0.06, 0.9, 1.54), matDuct, -3.66, 2.6 + sl*1.55, ductZ);
+}
+const estop = mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.28, 16), matRed, 6.05, 14.2, pcsC - 6.9);
+estop.rotation.z = Math.PI/2;
+// datadeur op de achterzijde (tegenover de AC-aansluiting)
+// datacommunicatiedeur op de kopse kant: OPEN
+const ddGeo = new THREE.BoxGeometry(8.0, 19.0, 0.16);
+ddGeo.translate(4.0, 0, 0);
+const dDoor = mesh(ddGeo, matWhiteDoor, -4.0, 11.5, pcsC - 9.52);
+registerDoor(dDoor, 2.1, 0);   // naar buiten openslaand
+
+// datacompartiment erachter
+mesh(new THREE.BoxGeometry(7.8, 18.6, 0.15), matInterior, 0, 11.5, pcsC - 8.9);
+mesh(new THREE.BoxGeometry(6.4, 8.0, 0.5), matPlate, 0, 15.6, pcsC - 8.6);
+mesh(new THREE.BoxGeometry(2.6, 2.0, 0.7), matDark, -1.6, 17.4, pcsC - 8.3);
+mesh(new THREE.BoxGeometry(1.4, 1.2, 0.5), matGreen, 1.8, 17.4, pcsC - 8.3);
+for(let dr = 0; dr < 3; dr++){
+  mesh(new THREE.BoxGeometry(6.0, 0.7, 0.6), matGrey, 0, 12.6 - dr*1.8, pcsC - 8.4);
+}
+mesh(new THREE.BoxGeometry(1.0, 6.0, 0.9), matDuct, -3.0, 8.0, pcsC - 8.4);
+mesh(new THREE.BoxGeometry(10.2, 7.2, 16.5), matWhite, 0, 28.0, pcsC - 0.4);
+const fanRing = new THREE.Mesh(new THREE.TorusGeometry(3.0, 0.28, 12, 40), matDark);
+fanRing.position.set(5.15, 28.2, pcsC - 0.4);
+fanRing.rotation.y = Math.PI/2;
+(meshTarget || scene).add(fanRing);
+const fanDisc = mesh(new THREE.CylinderGeometry(2.85, 2.85, 0.16, 28), matDark, 5.1, 28.2, pcsC - 0.4);
+fanDisc.rotation.z = Math.PI/2;
+const fanHub = mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.22, 16), matGrey, 5.2, 28.2, pcsC - 0.4);
+fanHub.rotation.z = Math.PI/2;
+mesh(new THREE.BoxGeometry(7.5, 3.2, 11.5), matGrey, 0, 33.2, pcsC - 0.6);
+mesh(new THREE.CylinderGeometry(1.1, 1.1, 2.6, 16), matSteel, 0.6, 36.1, pcsC - 0.4);
+mesh(new THREE.CylinderGeometry(1.35, 1.35, 0.3, 16), matGrey, 0.6, 37.5, pcsC - 0.4);
+
+meshTarget = null;
+pcsGroup.position.set(Xc, LIFT, Zc - pcsC);
+scene.add(pcsGroup);
+// ---- AC-railveld op de PCS (stijgt mee met de balken) ----
+const acGroup = new THREE.Group();
+meshTarget = acGroup;
+const barX = 1.6;
+// AC-veld naar foto: montageplaat met 3 fasepakketten (L1 boven, L2 midden, L3 onder),
+// per fase 2 vlakke rails boven elkaar (h.o.h. 100 mm), lengtes 258/205 mm, zwarte draagbeugels
+const phases = [
+  {yU:11.0, p:0, S:1},    // F1 boven, aansluiting rechts
+  {yU:9.0,  p:1, S:1},    // F2 midden, aansluiting rechts
+  {yU:7.0,  p:2, S:-1}    // F3 onder, aansluiting links
+];
+mesh(new THREE.BoxGeometry(2.9, 7.6, 0.2), matGrey, barX, 8.5, pcsFace + 0.12);
+for(const yb of [12.0, 10.5, 8.5, 6.5, 5.2]){
+  mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.12, 6), matBolt, barX - 1.2, yb, pcsFace + 0.24).rotation.x = Math.PI/2;
+  mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.12, 6), matBolt, barX + 1.2, yb, pcsFace + 0.24).rotation.x = Math.PI/2;
+}
+phases.forEach(ph => {
+  const py = ph.yU - 0.5;
+  // 2 verticale rails per fase, lange rail aan de aansluitzijde, met verbindingsstukken tot één pakket
+  mesh(new THREE.BoxGeometry(0.26, 1.2, 2.58), matTinned, barX + ph.S*0.37, py, pcsFace + 1.29);
+  mesh(new THREE.BoxGeometry(0.26, 1.2, 2.05), matTinned, barX - ph.S*0.37, py, pcsFace + 1.025);
+  mesh(new THREE.BoxGeometry(0.5, 0.95, 0.5), matTinned, barX, py, pcsFace + 0.75);
+  mesh(new THREE.BoxGeometry(0.5, 0.95, 0.4), matTinned, barX, py, pcsFace + 1.65);
+  mesh(new THREE.BoxGeometry(1.5, 1.5, 0.3), matBracket, barX, py, pcsFace + 0.2);
+  const tag = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.55), makeLabel('F' + (ph.p + 1), '#f2c81e'));
+  tag.position.set(barX + 1.16, py + 0.55, pcsFace + 0.30);
+  (meshTarget || scene).add(tag);
+});
+
+meshTarget = null;
+acGroup.position.set(Xc, LIFT, Zc - pcsC);
+scene.add(acGroup);
+}
+
+
+// ============ HEKWERK ============
+const matDeurKozijn = new THREE.MeshStandardMaterial({color:0x5c666d, roughness:0.5, metalness:0.55});
+const matDeurBlad = new THREE.MeshStandardMaterial({color:0x2e7d4f, roughness:0.55, metalness:0.3});
+const matTegel = new THREE.MeshStandardMaterial({color:0x8b9095, roughness:0.9, metalness:0.02});
+const matTegelKop = new THREE.MeshStandardMaterial({color:0xa2a8ac, roughness:0.85, metalness:0.02});
+const matHekGaas = new THREE.MeshStandardMaterial({color:0x9aa4aa, roughness:0.7, metalness:0.35,
+                                                   transparent:true, opacity:0.28, side:THREE.DoubleSide});
+const hekH = 25;
+
+  // een hekdeel tussen twee punten op maaiveld; deuren is een lijst met
+  // afstanden vanaf het startpunt waar een vluchtdeur van 1,20 m komt
+  const deurB = 12.0, deurH = 22.0;
+  function hekDeel(x1, z1, x2, z2, deuren){
+    const dx = x2 - x1, dz = z2 - z1;
+    const L = Math.hypot(dx, dz);
+    const mx = (x1 + x2)/2, mz = (z1 + z2)/2;
+    const hoek = Math.atan2(dx, dz);
+    const g = new THREE.Group();
+    // vakken tussen de deuropeningen
+    const gaten = (deuren || []).map(d => [d - deurB/2 - L/2, d + deurB/2 - L/2])
+                                .sort((a, b) => a[0] - b[0]);
+    const vakken = [];
+    let start = -L/2;
+    for(const [ga, gb] of gaten){ vakken.push([start, ga]); start = gb; }
+    vakken.push([start, L/2]);
+
+    for(const [va, vb] of vakken){
+      const vl = vb - va;
+      if(vl < 0.2) continue;
+      const vm = (va + vb)/2;
+      const bal = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.3, vl), matSteel);
+      bal.position.set(0, 0.15, vm); g.add(bal);                     // grensmarkering
+      for(const hy of [hekH - 1.5, hekH*0.66, hekH*0.33, 2.5]){
+        const li = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, vl), matSteel);
+        li.position.set(0, hy, vm); g.add(li);                        // liggers
+      }
+      const gaas = new THREE.Mesh(new THREE.BoxGeometry(0.05, hekH - 4.0, vl), matHekGaas);
+      gaas.position.set(0, hekH/2 + 0.5, vm); g.add(gaas);
+    }
+    // bovenlicht met gaas boven elke deur
+    for(const [ga, gb] of gaten){
+      const gaas = new THREE.Mesh(new THREE.BoxGeometry(0.05, hekH - deurH - 1.2, gb - ga), matHekGaas);
+      gaas.position.set(0, deurH + 0.6 + (hekH - deurH - 1.2)/2, (ga + gb)/2); g.add(gaas);
+      const li = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, gb - ga), matSteel);
+      li.position.set(0, hekH - 1.5, (ga + gb)/2); g.add(li);
+    }
+    const n = Math.floor(L/15);
+    for(let i = 0; i <= n; i++){
+      const pz = -L/2 + i*(L/n || L);
+      if(gaten.some(([ga, gb]) => pz > ga - 0.8 && pz < gb + 0.8)) continue;  // niet in een deuropening
+      const p = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, hekH, 8), matSteel);
+      p.position.set(0, hekH/2, pz); g.add(p);                        // palen om circa 1,50 m
+    }
+    g.position.set(mx, 0, mz);
+    g.rotation.y = hoek;
+    (meshTarget || scene).add(g);
+  }
+
+  // vluchtdeur op een positie in een hekdeel
+  function vluchtDeur(x, z, hoek){
+    const g = new THREE.Group();
+    for(const s of [-1, 1]){                                          // deurstijlen
+      const st = new THREE.Mesh(new THREE.BoxGeometry(0.34, deurH + 0.4, 0.34), matDeurKozijn);
+      st.position.set(0, (deurH + 0.4)/2, s*deurB/2); g.add(st);
+    }
+    const bov = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.34, deurB), matDeurKozijn);
+    bov.position.set(0, deurH + 0.2, 0); g.add(bov);                  // bovendorpel
+    const bl = new THREE.Mesh(new THREE.BoxGeometry(0.22, deurH - 0.5, deurB - 0.6), matDeurBlad);
+    bl.position.set(0, (deurH - 0.5)/2 + 0.25, 0); g.add(bl);         // deurblad
+    for(const dy of [deurH*0.75, deurH*0.5, deurH*0.25]){             // profilering
+      const rb = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.12, deurB - 1.4), matDeurKozijn);
+      rb.position.set(0, dy, 0); g.add(rb);
+    }
+    const st2 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.5, 4.0), matSteel);
+    st2.position.set(-0.2, deurH*0.5, -1.0); g.add(st2);              // panieksluiting
+    // groen vluchtwegbordje
+    const c = document.createElement('canvas');
+    c.width = 128; c.height = 128;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#0a8043'; ctx.fillRect(0, 0, 128, 128);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 88px system-ui, sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('\u2192', 64, 66);
+    const tex = new THREE.CanvasTexture(c); tex.anisotropy = 8;
+    for(const s of [-1, 1]){
+      const bd = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 3.0),
+        new THREE.MeshBasicMaterial({map: tex, depthTest: false}));
+      bd.position.set(s*0.2, deurH + 3.2, 0);
+      bd.rotation.y = s > 0 ? Math.PI/2 : -Math.PI/2;
+      bd.renderOrder = 996; g.add(bd);
+    }
+    g.position.set(x, 0, z);
+    g.rotation.y = hoek;
+    (meshTarget || scene).add(g);
+  }
+
+// ============ OPSTELLING GETEC (maten in meters, uit de 2D-tekening) ============
+const P = {
+  N: 8,                    // aantal rijen
+  bcL: 6.06, bcB: 2.46,    // container
+  pcsL: 1.98, pcsB: 1.26,  // PCS (L langs de rij)
+  csL: 2.87, csB: 2.34,    // CS EOS Alfen Diabolo 40H (L langs de rij, deuren op de korte zijden)
+  gHekKop: 2.00,           // hek -> kopse kant container (iwell)
+  gBC: 2.00,               // tussen de containers binnen een rij (iwell)
+  gRij: 2.50,              // tussen containers van twee rijen (iwell 2 m + PGS 0,5 m)
+  gHekEind: 2.50,          // hek -> lange zijde eerste/laatste container (iwell 2 m + PGS 0,5 m)
+  gBcCs: 2.20,             // container -> CS EOS (iwell 2 m)
+  gPcsCs: 2.30,            // PCS -> LS-deuren CS EOS (Alfen 1,85 / APS 2,00)
+  gPcsHek: 2.00,           // PCS -> hek onderzijde (APS serviceruimte)
+  gCsAux: 3.70,            // MS-deuren CS 8 <-> LS-deuren CS AUX (2 x 1,85 Alfen)
+  gAuxPcs: 2.00            // MS-deuren CS AUX -> PCS volgende rij (APS 2 m, Alfen 1,85 m)
+};
+const blok = 2*P.bcB + P.gBC;                    // containerblok per rij
+const pitch = blok + P.gRij;                     // rijafstand
+const kolom = P.pcsL + P.gPcsCs + P.csL;         // PCS + CS langs de rij
+const off = (blok - kolom)/2;                    // kolom gecentreerd op het containerblok
+let W = P.gHekEind*2 + P.N*blok + (P.N-1)*P.gRij;
+const yBC1 = P.gHekKop, yBC2 = yBC1 + P.bcL;
+const yCS1 = yBC2 + P.gBcCs, yCS2 = yCS1 + P.csB;
+const yPC1 = yCS1 + (P.csB - P.pcsB)/2, yPC2 = yPC1 + P.pcsB;
+const HT = yPC2 + P.gPcsHek;
+
+const rows = [];
+for(let i = 0; i < P.N; i++){
+  const x0 = P.gHekEind + i*pitch;
+  rows.push({
+    i, x0,
+    bcA:{x1:x0, x2:x0+P.bcB, y1:yBC1, y2:yBC2},
+    bcB:{x1:x0+P.bcB+P.gBC, x2:x0+blok, y1:yBC1, y2:yBC2},
+    pcs:{x1:x0+off, x2:x0+off+P.pcsL, y1:yPC1, y2:yPC2},
+    cs:{x1:x0+off+P.pcsL+P.gPcsCs, x2:x0+off+kolom, y1:yCS1, y2:yCS2}
+  });
+}
+// CS AUX in het midden: tussen rij M en rij M+1
+const M = P.N/2;
+const aux = {x1:rows[M-1].cs.x2 + P.gCsAux, x2:rows[M-1].cs.x2 + P.gCsAux + P.csL, y1:yCS1, y2:yCS2};
+const shift = (aux.x2 + P.gAuxPcs) - rows[M].pcs.x1;
+for(const r of rows.slice(M)){
+  r.x0 += shift;
+  for(const k of ['bcA','bcB','pcs','cs']){ r[k].x1 += shift; r[k].x2 += shift; }
+}
+W += shift;
+// 2D -> 3D: 3D-x = 2D-y (dwars op de rijen), 3D-z = 2D-x (langs de rijen), 1 eenheid = 100 mm
+const X = y => 10*y, Z = x => 10*x;
+const SX = 23.4/24.75, SZ = 28.7/30.6;     // romp schalen naar Alfen Diabolo 40H (2,34 x 2,87 m)
+function placeCS(o, isAux){
+  const inner = new THREE.Group();
+  meshTarget = inner;
+  buildRomp(); buildTrafo(); buildLS(isAux); buildMS(); buildDoorvoer(isAux);
+  mesh(new THREE.BoxGeometry(24.75 - 1.8, 26.0, 0.6), matPlate, 0, H + 13.0, 25.0);
+  meshTarget = null;
+  inner.scale.set(SX, 1, SZ);
+  inner.position.set(X((o.y1+o.y2)/2), 0, Z((o.x1+o.x2)/2) - 36.0*SZ);
+  scene.add(inner);
+}
+ground.position.set(X(HT/2), 0, Z(W/2));
+for(const r of rows){
+  const n = r.i + 1;
+  batContainer(X((yBC1+yBC2)/2), Z((r.bcA.x1+r.bcA.x2)/2), 'BC' + n + '.1');
+  batContainer(X((yBC1+yBC2)/2), Z((r.bcB.x1+r.bcB.x2)/2), 'BC' + n + '.2');
+  buildPCS(X((r.pcs.y1+r.pcs.y2)/2), Z((r.pcs.x1+r.pcs.x2)/2));
+  placeCS(r.cs, false);
+}
+placeCS(aux, true);
+
+// hek rondom met vluchtdeuren (zelfde indeling als de 2D-tekening)
+const hekGroup = new THREE.Group();
+scene.add(hekGroup);
+meshTarget = hekGroup;
+const XH = X(HT), ZW = Z(W);
+const deurX = X(yBC2 + P.gBcCs/2);                         // deuren in de korte zijden
+const deurZ = [];                                          // deuren in de lange zijden
+for(let i = 1; i < P.N; i += 2) deurZ.push(Z(rows[i].x0 + blok + P.gRij/2));
+hekDeel(0, 0, XH, 0, [deurX]);                             // korte zijde begin
+hekDeel(0, ZW, XH, ZW, [deurX]);                           // korte zijde eind
+hekDeel(0, 0, 0, ZW, deurZ);                               // lange zijde bij de containerkoppen
+hekDeel(XH, 0, XH, ZW, deurZ);                             // lange zijde bij PCS en CS
+vluchtDeur(deurX, 0, Math.PI/2);
+vluchtDeur(deurX, ZW, Math.PI/2);
+for(const dz of deurZ){ vluchtDeur(0, dz, 0); vluchtDeur(XH, dz, 0); }
+for(const [hx, hz] of [[0, 0], [XH, 0], [0, ZW], [XH, ZW]]){
+  mesh(new THREE.CylinderGeometry(0.28, 0.28, hekH + 0.6, 8), matSteel, hx, hekH/2, hz);
+}
+meshTarget = null;
+
+// ============ KAARTONDERGROND (toets L) ============
+// Satelliettegels worden live opgehaald rond de opgegeven coordinaat (hart van het park).
+// 1 modeleenheid = 100 mm. Het park ligt evenwijdig aan het veld langs de Kapitein Antiferstraat.
+const MAP = {
+  lat: 52.76792002879231,
+  lon: 6.910966381623293,
+  zoom: 19,            // 19 = circa 18 cm/pixel
+  tiles: 9,            // 9 x 9 tegels = circa 415 x 415 m
+  rotatie: -112.7,     // graden: rijen evenwijdig aan de lange zijde van het veld
+  offsetX: 0, offsetZ: 0
+};
+const lfGroup = new THREE.Group();
+scene.add(lfGroup);
+const mapStatus = {ok: 0, fail: 0, total: 0};
+const mapNote = document.createElement('div');
+mapNote.style.cssText = 'position:fixed;left:16px;top:70px;padding:6px 10px;font:12px system-ui,sans-serif;' +
+  'background:rgba(255,255,255,0.92);border:1px solid #9aa0a3;border-radius:6px;color:#333;z-index:20;max-width:340px';
+document.body.appendChild(mapNote);
+function updateMapNote(){
+  if(!lfGroup.visible){ mapNote.style.display = 'none'; return; }
+  mapNote.style.display = 'block';
+  if(mapStatus.ok === mapStatus.total) mapNote.style.display = 'none';
+  else if(mapStatus.ok > 0) mapNote.textContent = `kaart: ${mapStatus.ok} van ${mapStatus.total} tegels geladen`;
+  else if(mapStatus.fail > 0) mapNote.innerHTML = '<b>Kaartondergrond wordt in deze weergave geblokkeerd.</b><br>Download het bestand en open het in je eigen browser (Chrome/Edge); dan laadt de kaart wel.';
+  else mapNote.textContent = 'kaart laden...';
+}
+(function buildMap(){
+  const d2r = Math.PI/180, n = Math.pow(2, MAP.zoom);
+  const xt = (MAP.lon + 180)/360*n;
+  const yt = (1 - Math.log(Math.tan(MAP.lat*d2r) + 1/Math.cos(MAP.lat*d2r))/Math.PI)/2*n;
+  const mPerPx = 156543.03392*Math.cos(MAP.lat*d2r)/n;
+  const tileU = mPerPx*256*10;
+  const half = Math.floor(MAP.tiles/2);
+  const loader = new THREE.TextureLoader();
+  loader.setCrossOrigin('anonymous');
+  const fb = new THREE.Mesh(new THREE.PlaneGeometry(tileU*MAP.tiles, tileU*MAP.tiles),
+                            new THREE.MeshBasicMaterial({color: 0x7d8473}));
+  fb.rotation.x = -Math.PI/2; fb.position.y = -0.2;
+  lfGroup.add(fb);
+  for(let i = -half; i <= half; i++){
+    for(let j = -half; j <= half; j++){
+      const tx = Math.floor(xt) + i, ty = Math.floor(yt) + j;
+      const url = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${MAP.zoom}/${ty}/${tx}`;
+      mapStatus.total++;
+      const mat = new THREE.MeshBasicMaterial({transparent: true, opacity: 0});
+      const pl = new THREE.Mesh(new THREE.PlaneGeometry(tileU, tileU), mat);
+      pl.rotation.x = -Math.PI/2;
+      pl.position.set((tx + 0.5 - xt)*tileU, -0.1, (ty + 0.5 - yt)*tileU);
+      lfGroup.add(pl);
+      loader.load(url, tex => {
+        tex.encoding = THREE.sRGBEncoding; tex.anisotropy = 8;
+        mat.map = tex; mat.opacity = 1; mat.needsUpdate = true;
+        mapStatus.ok++; updateMapNote();
+      }, undefined, () => { mapStatus.fail++; updateMapNote(); });
+    }
+  }
+})();
+// coordinaat = hart van het park
+function zetKaart(){
+  lfGroup.rotation.y = MAP.rotatie*Math.PI/180;
+  lfGroup.position.set(X(HT/2) + MAP.offsetX, 0, Z(W/2) + MAP.offsetZ);
+}
+zetKaart();
+try {
+  const v = JSON.parse(localStorage.getItem('getecKaartStand') || 'null');
+  if(v){ MAP.offsetX = v.x; MAP.offsetZ = v.z; MAP.rotatie = v.r; zetKaart(); }
+} catch(e) {}
+function kaartBewaren(){
+  try { localStorage.setItem('getecKaartStand', JSON.stringify({x: MAP.offsetX, z: MAP.offsetZ, r: MAP.rotatie})); } catch(e) {}
+  const el = document.getElementById('kaartStand');
+  el.innerHTML = '<b>stand kaart</b><br>offsetX: ' + MAP.offsetX.toFixed(1) + '<br>offsetZ: ' + MAP.offsetZ.toFixed(1) +
+                 '<br>rotatie: ' + MAP.rotatie.toFixed(1) + '&deg;<br><span>bewaard in deze browser</span>';
+  el.style.display = 'block';
+}
+function toggleLucht(){
+  lfGroup.visible = !lfGroup.visible;
+  ground.visible = !lfGroup.visible;
+  const b = document.getElementById('luchtBtn');
+  b.textContent = lfGroup.visible ? 'kaart: aan' : 'kaart: uit';
+  b.classList.toggle('uit', !lfGroup.visible);
+  updateMapNote();
+}
+ground.visible = false;
+updateMapNote();
+document.getElementById('luchtBtn').addEventListener('click', toggleLucht);
+window.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if(k === 'l' && !e.repeat){ toggleLucht(); return; }
+  if(!lfGroup.visible) return;
+  // kaart verschuiven en draaien t.o.v. het park (shift = grote stap)
+  const st = e.shiftKey ? 20 : 4;
+  let bewaar = true;
+  if(e.key === 'ArrowLeft') MAP.offsetZ -= st;
+  else if(e.key === 'ArrowRight') MAP.offsetZ += st;
+  else if(e.key === 'ArrowUp') MAP.offsetX += st;
+  else if(e.key === 'ArrowDown') MAP.offsetX -= st;
+  else if(e.key === ',') MAP.rotatie -= e.shiftKey ? 5 : 1;
+  else if(e.key === '.') MAP.rotatie += e.shiftKey ? 5 : 1;
+  else bewaar = false;
+  if(bewaar){ e.preventDefault(); zetKaart(); kaartBewaren(); }
+});
+
+
+// ============ BENAMING + MAATVOERING ============
+const annos = new THREE.Group();
+scene.add(annos);
+
+function tagSprite(text, x, y, z, px, col){
+  const c = document.createElement('canvas');
+  const ctx = c.getContext('2d');
+  // canvasbreedte volgt de tekstlengte, zodat lange labels niet wegvallen
+  const F = 72;
+  c.height = 140;
+  const probe = c.getContext('2d');
+  probe.font = 'bold ' + F + 'px Helvetica, Arial, sans-serif';
+  c.width = Math.max(512, Math.ceil(probe.measureText(text).width) + 90);
+  const ctx2 = c.getContext('2d');
+  ctx2.font = 'bold ' + F + 'px Helvetica, Arial, sans-serif';
+  ctx2.textAlign = 'center'; ctx2.textBaseline = 'middle';
+  const w = ctx2.measureText(text).width + 54;
+  ctx2.fillStyle = 'rgba(255,255,255,0.95)';
+  ctx2.beginPath();
+  if(ctx2.roundRect) ctx2.roundRect((c.width - w)/2, 16, w, 108, 18);
+  else ctx2.rect((c.width - w)/2, 16, w, 108);
+  ctx2.fill();
+  ctx2.strokeStyle = col; ctx2.lineWidth = 6; ctx2.stroke();
+  ctx2.fillStyle = col;
+  ctx2.fillText(text, c.width/2, 72);
+  const tex = new THREE.CanvasTexture(c);
+  tex.anisotropy = 8;
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map: tex, transparent: true, depthTest: false}));
+  spr.position.set(x, y, z);
+  spr.scale.set(px, px*(c.height/c.width), 1);
+  spr.renderOrder = 999;
+  annos.add(spr);
+  return spr;
+}
+
+const f2 = m => (Math.round(m*100)/100).toFixed(2).replace('.', ',');
+for(const r of rows){
+  const n = r.i + 1;
+  tagSprite('BC' + n + '.1', X((yBC1+yBC2)/2), 36, Z((r.bcA.x1+r.bcA.x2)/2), 16, '#1b4f8a');
+  tagSprite('BC' + n + '.2', X((yBC1+yBC2)/2), 36, Z((r.bcB.x1+r.bcB.x2)/2), 16, '#1b4f8a');
+  tagSprite('PCS ' + n, X((yPC1+yPC2)/2), 47, Z((r.pcs.x1+r.pcs.x2)/2), 14, '#1b4f8a');
+  tagSprite('CS EOS ' + n, X((yCS1+yCS2)/2), H + 31, Z((r.cs.x1+r.cs.x2)/2), 18, '#1b4f8a');
+}
+tagSprite('CS AUX', X((yCS1+yCS2)/2), H + 31, Z((aux.x1+aux.x2)/2), 20, '#8a4a12');
+// maatlijn tussen twee punten op maaiveld, met afstand in meters
+const matDim = new THREE.LineBasicMaterial({color: 0xc23b22, depthTest: false});
+// verticale maatlijn (hoogtes)
+function dimV(x, z, y1, y2, label){
+  const a = new THREE.Vector3(x, y1, z), b = new THREE.Vector3(x, y2, z);
+  const g = new THREE.BufferGeometry().setFromPoints([a, b]);
+  const ln = new THREE.Line(g, matDim); ln.renderOrder = 998; annos.add(ln);
+  for(const p of [a, b]){
+    const t = new THREE.BufferGeometry().setFromPoints([
+      p.clone().add(new THREE.Vector3(2.2, 0, 0)),
+      p.clone().sub(new THREE.Vector3(2.2, 0, 0))]);
+    const tl = new THREE.Line(t, matDim); tl.renderOrder = 998; annos.add(tl);
+  }
+  tagSprite(label, x, (y1 + y2)/2, z, 15, '#c23b22');
+}
+
+function dimLine(x1, z1, x2, z2, y, label){
+  const a = new THREE.Vector3(x1, y, z1), b = new THREE.Vector3(x2, y, z2);
+  const g = new THREE.BufferGeometry().setFromPoints([a, b]);
+  const ln = new THREE.Line(g, matDim); ln.renderOrder = 998; annos.add(ln);
+  // eindstreepjes haaks op de maatlijn
+  const d = new THREE.Vector3().subVectors(b, a).normalize();
+  const n = new THREE.Vector3(-d.z, 0, d.x).multiplyScalar(2.2);
+  for(const p of [a, b]){
+    const t = new THREE.BufferGeometry().setFromPoints([
+      p.clone().add(n), p.clone().sub(n)]);
+    const tl = new THREE.Line(t, matDim); tl.renderOrder = 998; annos.add(tl);
+  }
+  const mid = new THREE.Vector3().addVectors(a, b).multiplyScalar(0.5);
+  tagSprite(label, mid.x, y + 4, mid.z, 17, '#c23b22');
+}
+
+// hoofdmaten
+dimLine(-16, 0, -16, ZW, 1.0, f2(W) + ' m');
+dimLine(0, -16, XH, -16, 1.0, f2(HT) + ' m');
+// rij 1 en 2
+const r0 = rows[0], r1 = rows[1];
+const zBA = Z((r0.bcA.x1+r0.bcA.x2)/2), xBC = X((yBC1+yBC2)/2);
+dimLine(0, zBA, X(yBC1), zBA, 1.0, f2(P.gHekKop));
+dimLine(xBC, 0, xBC, Z(r0.bcA.x1), 1.0, f2(r0.bcA.x1));
+dimLine(xBC, Z(r0.bcA.x2), xBC, Z(r0.bcB.x1), 1.0, f2(P.gBC));
+dimLine(xBC, Z(r0.bcB.x2), xBC, Z(r1.bcA.x1), 1.0, f2(P.gRij));
+const zCS = Z((r0.cs.x1+r0.cs.x2)/2), xP = X((yPC1+yPC2)/2);
+dimLine(X(yBC2), zCS, X(yCS1), zCS, 1.0, f2(P.gBcCs));
+dimLine(X(yCS2), zCS, XH, zCS, 1.0, f2(HT - yCS2));
+dimLine(xP, 0, xP, Z(r0.pcs.x1), 1.0, f2(r0.pcs.x1));
+dimLine(xP, Z(r0.pcs.x2), xP, Z(r0.cs.x1), 1.0, f2(r0.cs.x1 - r0.pcs.x2));
+dimLine(xP, Z(r0.cs.x2), xP, Z(r1.pcs.x1), 1.0, f2(r1.pcs.x1 - r0.cs.x2));
+// rond de CS AUX
+dimLine(xP, Z(rows[M-1].cs.x2), xP, Z(aux.x1), 1.0, f2(aux.x1 - rows[M-1].cs.x2));
+dimLine(xP, Z(aux.x2), xP, Z(rows[M].pcs.x1), 1.0, f2(rows[M].pcs.x1 - aux.x2));
+
+// ============ CONTOURLIJNEN voor leesbaarheid (toets E) ============
+// witte volumes lopen zonder schaduw in elkaar over; randen maken de vorm leesbaar
+const edgeGroup = [];
+const matEdge = new THREE.LineBasicMaterial({color: 0x5a6470, transparent: true, opacity: 0.55});
+(function addEdges(){
+  const targets = [];
+  scene.traverse(o => {
+    if(o.isMesh && o.geometry && o.geometry.attributes && o.geometry.attributes.position){
+      if(!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+      const bb = o.geometry.boundingBox;
+      const sz = new THREE.Vector3(); bb.getSize(sz);
+      // alleen de grotere volumes; kleine details zouden het beeld dichtslibben
+      if(Math.max(sz.x, sz.y, sz.z) > 3.0) targets.push(o);
+    }
+  });
+  for(const m of targets){
+    try{
+      const eg = new THREE.EdgesGeometry(m.geometry, 25);
+      const ls = new THREE.LineSegments(eg, matEdge);
+      m.add(ls);                      // als child: volgt automatisch alle groepstransformaties
+      edgeGroup.push(ls);
+    }catch(err){}
+  }
+})();
+
+
+// ============ KABELS PER RIJ: AC (CS EOS -> PCS over ladderbaan) en DC (PCS -> containers) ============
+// Overgenomen van het Bol-model; trace per rij herberekend op de Getec-afstanden.
+const matOrangeCable = new THREE.MeshStandardMaterial({color:0xd96820, roughness:0.45, metalness:0.05});
+const matDuctLid = new THREE.MeshStandardMaterial({color:0x878d90, roughness:0.8, metalness:0.03});
+const matZandbed = new THREE.MeshStandardMaterial({color:0x6f7378, roughness:0.95, metalness:0.0});
+const L = 1.15;                                   // hoogte ladderbaan
+const a1 = 0.707, a2 = 2.824, a3 = 0.318, a4 = 2.435;
+const lower = new THREE.Shape();
+lower.moveTo(-0.85, 0); lower.lineTo(0.85, 0); lower.lineTo(0.85, 0.28);
+lower.lineTo(0.5, 0.28); lower.lineTo(0.5, 0.34); lower.lineTo(0.342, 0.34);
+lower.absarc(0.19, 0.21, 0.20, a1, a2, true);
+lower.absarc(-0.19, 0.21, 0.20, a3, a4, true);
+lower.lineTo(-0.5, 0.34); lower.lineTo(-0.5, 0.28); lower.lineTo(-0.85, 0.28);
+lower.closePath();
+const lowerGeo = new THREE.ExtrudeGeometry(lower, {depth:0.4, bevelEnabled:true, bevelThickness:0.015, bevelSize:0.015, bevelSegments:2, curveSegments:24});
+const upper = new THREE.Shape();
+upper.moveTo(-0.5, 0.36); upper.lineTo(-0.342, 0.36);
+upper.absarc(-0.19, 0.23, 0.20, a4, a3, true);
+upper.absarc(0.19, 0.23, 0.20, a2, a1, true);
+upper.lineTo(0.5, 0.36); upper.lineTo(0.5, 0.72); upper.lineTo(0.35, 0.85);
+upper.lineTo(-0.35, 0.85); upper.lineTo(-0.5, 0.72);
+upper.closePath();
+const upperHole = new THREE.Path();
+upperHole.absarc(0, 0.54, 0.22, 0, Math.PI*2, true);
+upper.holes.push(upperHole);
+const upperGeo = new THREE.ExtrudeGeometry(upper, {depth:0.4, bevelEnabled:true, bevelThickness:0.015, bevelSize:0.015, bevelSegments:2, curveSegments:24});
+
+const yBase = L + 0.58;
+function trefoilBlock(x, z){
+  mesh(lowerGeo, matBlock, x, yBase, z - 0.2);
+  mesh(upperGeo, matBlock, x, yBase, z - 0.2);
+  for(const zo of [-0.14, -0.05, 0.04, 0.13]){
+    mesh(new THREE.BoxGeometry(0.5, 0.05, 0.055), matBlock, x, yBase + 0.875, z + zo);
+  }
+  for(const s of [-0.675, 0.675]){
+    mesh(new THREE.CylinderGeometry(0.10, 0.10, 0.014, 18), matBlockDark, x + s, yBase + 0.29, z);
+    mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.06, 6), matBolt, x + s, yBase + 0.315, z);
+  }
+}
+
+
+const rC = 0.19;
+const yBot = yBase + 0.21;
+const yTop = yBot + 2*rC*Math.sin(Math.PI/3);
+const barX = 1.6;
+const phases = [{yU:11.0, p:0, S:1}, {yU:9.0, p:1, S:1}, {yU:7.0, p:2, S:-1}];
+const kabelGroup = new THREE.Group();
+scene.add(kabelGroup);
+
+function buildAC(r){
+  const Xc = X((yPC1+yPC2)/2), Zp = Z((r.pcs.x1+r.pcs.x2)/2);
+  const Zf = Zp - pcsC + pcsFace;                 // AC-gevel PCS
+  const Zl = Z(r.cs.x1);                          // LS-gevel CS EOS
+  const k = (Zl - Zf)/30.9;                       // Bol: 30,9 eenheden tussen PCS-gevel en LS-gevel
+  const mz = zb => zb >= 20.7 ? Zl + (zb - 20.7)*SZ : (zb <= -10.2 ? Zf + (zb + 10.2) : Zf + (zb + 10.2)*k);
+  const mx = (xb, zb) => Xc + (zb >= 20.7 ? xb*SX : xb);
+  const V = (xb, y, zb) => new THREE.Vector3(mx(xb, zb), y, mz(zb));
+  meshTarget = kabelGroup;
+  // ladderbaan
+  const zL0 = 19.8, zL1 = -7.7, zMid = (zL0 + zL1)/2, len = mz(zL0) - mz(zL1);
+  for(const s of [-1, 1]){
+    mesh(new THREE.BoxGeometry(0.16, 0.64, len), matSteel, Xc + s*4.72, L + 0.56, mz(zMid));
+    mesh(new THREE.BoxGeometry(0.26, 0.05, len), matSteel, Xc + s*4.60, L + 0.855, mz(zMid));
+    mesh(new THREE.BoxGeometry(0.26, 0.05, len), matSteel, Xc + s*4.60, L + 0.265, mz(zMid));
+  }
+  const rungs = [];
+  for(let z = mz(zL0) - 0.6; z > mz(zL1) + 0.3; z -= 3.0){
+    rungs.push(z);
+    mesh(new THREE.BoxGeometry(9.2, 0.10, 0.34), matSteel, Xc, L + 0.53, z);
+  }
+  // tegelpad 30 x 30 cm onder de ladderbaan
+  const p0 = mz(-9.0), p1 = mz(20.4), nRij = Math.max(1, Math.round((p1 - p0)/3));
+  mesh(new THREE.BoxGeometry(15.2, 0.35, p1 - p0 + 0.2), matZandbed, Xc, -0.32, (p0 + p1)/2);
+  for(let q = 0; q < nRij; q++){
+    for(let t = -2; t <= 2; t++){
+      const tz = p0 + 1.5 + q*3.0;
+      mesh(new THREE.BoxGeometry(2.9, 0.45, 2.9), matTegel, Xc + t*3.0, -0.2, tz);
+      mesh(new THREE.BoxGeometry(2.9, 0.06, 2.9), matTegelKop, Xc + t*3.0, 0.04, tz);
+    }
+  }
+  for(let z = mz(zL0) - 1.4; z > mz(zL1) + 0.6; z -= 4.5){
+    mesh(new THREE.BoxGeometry(10.8, 0.35, 0.9), matSteel, Xc, 1.2, z);
+    for(const s of [-1, 1]){
+      mesh(new THREE.BoxGeometry(1.3, 0.9, 1.3), matBlockDark, Xc + s*4.9, 0.5, z);
+      mesh(new THREE.BoxGeometry(1.3, 0.12, 1.3), matYellow, Xc + s*4.9, 1.01, z);
+    }
+  }
+  // 12 x YMvK 3x240 (4 per fase), van de LS-rails in het station naar de AC-rails op de PCS
+  function runCable(sx, yc, tx, ph, kk, ys){
+    const py = ph.yU - 0.5 + LIFT, S = ph.S;
+    const lx = barX + S*0.78;
+    const lz = pcsFace + ((S > 0) ? (0.32 + kk*0.30) : (0.55 + kk*0.45));
+    const Rb = Math.min(1.6, py - 0.75 - ys);
+    const pts = [
+      V(tx, H + 8.4, stFront + 2.7), V(tx, H + 5.2, stFront + 2.75),
+      V(0.55*sx + 0.45*tx, H + 1.6, stFront + 2.6),
+      V(sx, 4.6, 22.5), V(sx, 2.75, 21.7), V(sx, 2.6, 20.9), V(sx, 2.3, 19.8),
+      V(sx, yc, 18.2), V(sx, yc, 13), V(sx, yc, 7), V(sx, yc, 1), V(sx, yc, -3.2), V(sx, yc, -5.0),
+      V(0.6*sx + 0.4*lx, 0.5*(yc + ys), -5.6), V(lx, ys, -6.4),
+      V(lx, ys, lz + Rb), V(lx, ys + Rb*0.134, lz + Rb*0.5), V(lx, ys + Rb*0.5, lz + Rb*0.134),
+      V(lx, ys + Rb, lz), V(lx, py - 0.55, lz)
+    ];
+    const curve = new THREE.CatmullRomCurve3(pts, false, 'centripetal');
+    kabelGroup.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 160, rC, 12, false), matSheath));
+    const e = V(lx, py, lz);
+    mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.62, 14), matTinned, e.x, py - 0.33, e.z);
+    mesh(new THREE.BoxGeometry(0.5, 0.7, 0.26), matTinned, Xc + barX + S*0.64, py - 0.05, e.z);
+    mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.75, 6), matBolt, Xc + barX + S*0.5, py, e.z).rotation.z = Math.PI/2;
+  }
+  groupXs.forEach((gx, gi) => {
+    runCable(gx - rC, yBot, -2.6 + (gi-1.5)*0.44, phases[0], 4 + gi, 1.45 + (4 + gi)*0.22);
+    runCable(gx + rC, yBot,  0.0 + (gi-1.5)*0.44, phases[1], gi,     1.45 + gi*0.22);
+    runCable(gx,      yTop,  2.6 + (gi-1.5)*0.44, phases[2], gi,     1.45 + gi*0.30);
+    rungs.forEach((z, i) => { if(i % 3 === 1) trefoilBlock(Xc + gx, z); });
+  });
+  meshTarget = null;
+}
+
+// DC: per container 12 kabels (6 plus, 6 min), van de zekering in de PCS naar de bout in de containerkop
+const studGeo = new THREE.CylinderGeometry(0.11, 0.11, 0.95, 8);
+const nutGeo = new THREE.CylinderGeometry(0.2, 0.2, 0.14, 6);
+const palmGeo = new THREE.BoxGeometry(0.5, 0.8, 0.3);
+const plusPlateZ = -3.3, minPlateZ = -6.7;
+function boltZ(plateZ, i, s){ return plateZ + s*(1.20 + i*0.80); }
+function orangeZ(plateZ, m, s){ return plateZ + s*(0.45 - m*0.36); }
+function dcPlate(cx, cz){
+  const y = LIFT;
+  for(const pz of [plusPlateZ, minPlateZ]){
+    const s = (pz === plusPlateZ) ? 1 : -1;
+    mesh(new THREE.BoxGeometry(0.25, 2.8, 4.0), matTinned, cx + 27.45, 7.4 + y, cz + pz + s*0.9);
+    mesh(new THREE.BoxGeometry(0.4, 0.5, 0.5), matGrey, cx + 27.15, 6.1 + y, cz + pz + s*2.6);
+    mesh(new THREE.BoxGeometry(0.4, 0.5, 0.5), matGrey, cx + 27.15, 6.1 + y, cz + pz - s*0.8);
+    for(let i2 = 0; i2 < 3; i2++){
+      const zs = cz + boltZ(pz, i2, s);
+      mesh(studGeo, matBolt, cx + 27.85, 7.4 + y, zs).rotation.z = Math.PI/2;
+      mesh(nutGeo, matBolt, cx + 28.2, 7.4 + y, zs).rotation.z = Math.PI/2;
+    }
+    for(let m = 0; m < 5; m++){
+      const zs = cz + orangeZ(pz, m, s);
+      mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.7, 8), matBolt, cx + 27.85, 7.4 + y, zs).rotation.z = Math.PI/2;
+      const ic = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(cx + 27.8, 7.4 + y, zs), new THREE.Vector3(cx + 27.5, 5.4 + y, zs),
+        new THREE.Vector3(cx + 27.3, 2.8 + y, zs), new THREE.Vector3(cx + 27.3, 0.4 + y, zs)
+      ], false, 'catmullrom', 0.3);
+      kabelGroup.add(new THREE.Mesh(new THREE.TubeGeometry(ic, 30, 0.12, 8, false), matOrangeCable));
+    }
+  }
+  mesh(new THREE.BoxGeometry(3.6, 8.2, 0.25), matWhiteDoor, cx + 28.8, 6.0 + y, cz + 0.2);
+  const gZ = cz - 10.8;
+  mesh(new THREE.BoxGeometry(0.4, 20.0, 0.4), matDuct, cx + 27.4, 11.5 + y, gZ);
+  mesh(new THREE.BoxGeometry(0.1, 20.0, 0.42), matDuctLid, cx + 27.64, 11.5 + y, gZ);
+}
+function buildDC(r){
+  const Xp = X((yPC1+yPC2)/2), Zp = Z((r.pcs.x1+r.pcs.x2)/2);
+  const cx = X((yBC1+yBC2)/2), kop = X(yBC2);
+  const uy = -6.0, Rb = 4.8, v = (x, y, z) => new THREE.Vector3(x, y, z);
+  meshTarget = kabelGroup;
+  // half +1 (hogere z in de PCS) -> container met de hoogste z; half -1 -> de andere
+  for(const [half, c] of [[1, r.bcB], [-1, r.bcA]]){
+    const cz = Z((c.x1 + c.x2)/2);
+    dcPlate(cx, cz);
+    for(const plus of [true, false]){
+      const plateZ = plus ? plusPlateZ : minPlateZ, s = plus ? 1 : -1;
+      const mat = plus ? matDCp : matDCn;
+      const fy = plus ? 14.6 : 6.4;
+      for(let n = 0; n < 6; n++){
+        const fz = Zp + half*4.3 + (n - 2.5)*0.92;
+        const bolt = n % 3, back = n >= 3;
+        const bz = boltZ(plateZ, bolt, s);
+        const gz = cz + bz + (back ? 0.20 : -0.20);
+        const xUp = back ? cx + 26.9 : cx + 28.2;
+        const yStart = plus ? fy : fy - 0.9;
+        const Wp = [
+          v(Xp - 4.1, yStart + LIFT, fz), v(Xp - 4.1, uy, fz), v(Xp - 12, uy, fz),
+          v(kop + 6, uy, gz), v(xUp, uy, gz), v(xUp, 2.6 + LIFT, gz),
+          v(back ? cx + 27.2 : cx + 28.0, 7.4 + LIFT, cz + bz)
+        ];
+        const curve = new THREE.CatmullRomCurve3(filletPath(Wp, Rb, 10), false, 'centripetal');
+        kabelGroup.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 120, 0.19, 10, false), mat));
+        mesh(new THREE.CylinderGeometry(0.3, 0.34, 0.9, 12), matDark, xUp, 0.45 + LIFT, gz);
+        mesh(palmGeo, matTinned, back ? cx + 27.2 : cx + 28.0, 7.4 + LIFT, cz + bz);
+      }
+    }
+  }
+  meshTarget = null;
+}
+for(const r of rows){ buildAC(r); buildDC(r); }
+
+function toggleKabels(){
+  kabelGroup.visible = !kabelGroup.visible;
+  const b = document.getElementById('kabelBtn');
+  b.textContent = kabelGroup.visible ? 'kabels: aan' : 'kabels: uit';
+  b.classList.toggle('uit', !kabelGroup.visible);
+}
+document.getElementById('kabelBtn').addEventListener('click', toggleKabels);
+window.addEventListener('keydown', e => { if(e.key.toLowerCase() === 'k') toggleKabels(); });
+
+
+// ============ CAMERA ============
+const center = new THREE.Vector3(X(HT/2), 6, Z(W/2));
+const target = center.clone();
+let theta = 2.2, phi = 1.0, radius = 760, auto = true;
+function updateCam(){
+  camera.position.set(
+    target.x + radius*Math.sin(phi)*Math.sin(theta),
+    target.y + radius*Math.cos(phi),
+    target.z + radius*Math.sin(phi)*Math.cos(theta)
+  );
+  camera.lookAt(target);
+}
+function bovenaanzicht(){ auto = false; target.copy(center); theta = -Math.PI/2; phi = 0.05; radius = 820; }
+let dragging = false, px = 0, py = 0;
+window.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if(k === '0'){ auto = false; target.copy(center); theta = 2.2; phi = 1.0; radius = 760; }
+  if(k === 'b') bovenaanzicht();
+  if(k === 'c'){ auto = false; target.set(X(yBC2) + 2, 12, Z(r0.bcB.x1 - P.gBC/2)); theta = Math.PI/2; phi = 1.25; radius = 120; }
+  if(k === '1'){ auto = false; target.set(X((yCS1+yCS2)/2), 16, Z(r0.cs.x1)); theta = Math.PI; phi = 1.3; radius = 48; }
+  if(k === 'p'){ auto = false; target.set(X((yPC1+yPC2)/2), 3, Z((r0.pcs.x2 + r0.cs.x1)/2)); theta = Math.PI/2 + 0.5; phi = 0.85; radius = 70; }
+  if(k === 'v'){ auto = false; target.set(X(9.5), 3, Z(r0.x0 + 3)); theta = 0.2; phi = 0.12; radius = 140; }
+  if(k === 'a'){ auto = false; target.set(X((yCS1+yCS2)/2), 16, Z((aux.x1+aux.x2)/2)); theta = 2.4; phi = 1.15; radius = 90; }
+  if(k === 'd'){ doorsOpen = !doorsOpen; doors.forEach(d => d.m.rotation.y = doorsOpen ? d.open : d.dicht); }
+  if(k === 'e'){ edgeGroup.forEach(l => l.visible = !l.visible); }
+  if(k === 'h'){ toggleHek(); }
+  if(k === 'm'){ toggleMaat(); }
+  if(k === 'q'){ toggleMeten(); }
+  if(e.key === 'Escape'){ meetWissen(); }
+  if(e.key === '+' || e.key === '=' || e.key === 'PageUp'){ zoomStap(0.88); e.preventDefault(); }
+  if(e.key === '-' || e.key === '_' || e.key === 'PageDown'){ zoomStap(1.14); e.preventDefault(); }
+});
+let sleepAfstand = 0;
+wrap.addEventListener('pointerdown', e => {
+  dragging = true; auto = false; px = e.clientX; py = e.clientY;
+  sleepAfstand = 0;
+  wrap.style.cursor = meetAan ? 'crosshair' : 'grabbing';
+  wrap.setPointerCapture(e.pointerId);
+});
+wrap.addEventListener('pointerup', e => {
+  if(meetAan && sleepAfstand < 5) meetKlik(e);
+  dragging = false;
+  wrap.style.cursor = 'grab';
+});
+wrap.addEventListener('pointermove', e => {
+  if(meetAan && !dragging) meetVolg(e);
+  if(!dragging) return;
+  sleepAfstand += Math.abs(e.clientX - px) + Math.abs(e.clientY - py);
+  theta -= (e.clientX - px) * 0.006;
+  phi = Math.min(1.5, Math.max(0.03, phi - (e.clientY - py) * 0.005));
+  px = e.clientX; py = e.clientY;
+});
+
+// ---- MEETFUNCTIE: klik twee punten op het maaiveld en lees de afstand af ----
+const meetGroup = new THREE.Group();
+scene.add(meetGroup);
+let meetAan = false, meetPunten = [];
+const meetRay = new THREE.Raycaster();
+const meetVlak = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+const matMeet = new THREE.LineBasicMaterial({color:0xd8322a, depthTest:false});
+const matMeetPunt = new THREE.MeshBasicMaterial({color:0xd8322a, depthTest:false});
+const matMeetStippel = new THREE.LineDashedMaterial({color:0xd8322a, depthTest:false,
+                                                     dashSize:2.2, gapSize:1.6});
+
+function meetSprite(tekst, x, z){
+  const c = document.createElement('canvas');
+  const ctx = c.getContext('2d');
+  ctx.font = 'bold 40px system-ui, sans-serif';
+  const w = Math.ceil(ctx.measureText(tekst).width) + 28;
+  c.width = w; c.height = 62;
+  const g = c.getContext('2d');
+  g.fillStyle = 'rgba(255,255,255,.94)';
+  g.strokeStyle = '#d8322a'; g.lineWidth = 3;
+  g.beginPath();
+  if(g.roundRect) g.roundRect(2, 2, w - 4, 58, 9); else g.rect(2, 2, w - 4, 58);
+  g.fill(); g.stroke();
+  g.fillStyle = '#a8241d';
+  g.font = 'bold 40px system-ui, sans-serif';
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText(tekst, w/2, 33);
+  const tex = new THREE.CanvasTexture(c); tex.anisotropy = 8;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, depthTest:false}));
+  sp.position.set(x, 6.0, z);
+  sp.scale.set(w * 0.055, 3.4, 1);
+  sp.renderOrder = 1002;
+  return sp;
+}
+function meetLabel(tekst, x, z){
+  meetGroup.add(meetSprite(tekst, x, z));
+}
+
+// losse laag voor de meting die meeloopt met de muis
+const meetLive = new THREE.Group();
+scene.add(meetLive);
+function meetLiveWissen(){
+  while(meetLive.children.length) meetLive.remove(meetLive.children[0]);
+}
+function meetVolg(ev){
+  if(!meetAan || meetPunten.length !== 1) return;
+  const r = renderer.domElement.getBoundingClientRect();
+  const muis = new THREE.Vector2(
+    ((ev.clientX - r.left) / r.width) * 2 - 1,
+    -((ev.clientY - r.top) / r.height) * 2 + 1
+  );
+  meetRay.setFromCamera(muis, camera);
+  const p = new THREE.Vector3();
+  if(!meetRay.ray.intersectPlane(meetVlak, p)) return;
+  meetLiveWissen();
+  const a = meetPunten[0];
+  const g = new THREE.BufferGeometry().setFromPoints([a, p]);
+  const ln = new THREE.Line(g, matMeetStippel); ln.computeLineDistances();
+  ln.renderOrder = 1001;
+  meetLive.add(ln);
+  const d = a.distanceTo(p) / 10;
+  meetLive.add(meetSprite(d.toFixed(2) + ' m', (a.x + p.x)/2, (a.z + p.z)/2));
+}
+
+function meetKlik(ev){
+  if(!meetAan) return;
+  const r = renderer.domElement.getBoundingClientRect();
+  const muis = new THREE.Vector2(
+    ((ev.clientX - r.left) / r.width) * 2 - 1,
+    -((ev.clientY - r.top) / r.height) * 2 + 1
+  );
+  meetRay.setFromCamera(muis, camera);
+  const p = new THREE.Vector3();
+  if(!meetRay.ray.intersectPlane(meetVlak, p)) return;
+
+  const bol = new THREE.Mesh(new THREE.SphereGeometry(0.9, 12, 10), matMeetPunt);
+  bol.position.copy(p); bol.renderOrder = 1001;
+  meetGroup.add(bol);
+  meetPunten.push(p.clone());
+
+  if(meetPunten.length === 2){
+    const a = meetPunten[0], b = meetPunten[1];
+    const g = new THREE.BufferGeometry().setFromPoints([a, b]);
+    const ln = new THREE.Line(g, matMeet); ln.renderOrder = 1001;
+    meetGroup.add(ln);
+    const d = a.distanceTo(b) / 10;                       // 1 eenheid = 10 cm
+    meetLabel(d.toFixed(2) + ' m', (a.x + b.x)/2, (a.z + b.z)/2);
+    meetPunten = [];
+    meetLiveWissen();
+  }
+}
+
+function toggleMeten(){
+  meetAan = !meetAan;
+  meetPunten = [];
+  meetLiveWissen();
+  const b = document.getElementById('meetBtn');
+  b.textContent = meetAan ? 'meten: klik 2 punten' : 'meten';
+  b.classList.toggle('actief', meetAan);
+  renderer.domElement.style.cursor = meetAan ? 'crosshair' : '';
+}
+function meetWissen(){
+  while(meetGroup.children.length) meetGroup.remove(meetGroup.children[0]);
+  meetPunten = [];
+  meetLiveWissen();
+}
+document.getElementById('meetBtn').addEventListener('click', toggleMeten);
+document.getElementById('meetWisBtn').addEventListener('click', meetWissen);
+
+
+function toggleHek(){
+  hekGroup.visible = !hekGroup.visible;
+  const b = document.getElementById('hekBtn');
+  b.textContent = hekGroup.visible ? 'hek: aan' : 'hek: uit';
+  b.classList.toggle('uit', !hekGroup.visible);
+}
+function toggleMaat(){
+  annos.visible = !annos.visible;
+  const b = document.getElementById('maatBtn');
+  b.textContent = annos.visible ? 'maatvoering: aan' : 'maatvoering: uit';
+  b.classList.toggle('uit', !annos.visible);
+}
+document.getElementById('hekBtn').addEventListener('click', toggleHek);
+document.getElementById('maatBtn').addEventListener('click', toggleMaat);
+document.getElementById('bovenBtn').addEventListener('click', bovenaanzicht);
+
+function zoomStap(f){ radius = Math.min(1600, Math.max(12, radius * f)); updateCam(); }
+wrap.addEventListener('wheel', e => {
+  e.preventDefault();
+  radius = Math.min(1600, Math.max(12, radius * (1 + e.deltaY * 0.0012)));
+}, {passive:false});
+
+function resize(){
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  renderer.setSize(w, h);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  camera.aspect = w/h;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize);
+resize();
+
+function animate(){
+  requestAnimationFrame(animate);
+  if(auto) theta += 0.0010;
+  updateCam();
+  renderer.render(scene, camera);
+}
+animate();
+</script>
+</body>
+</html>
