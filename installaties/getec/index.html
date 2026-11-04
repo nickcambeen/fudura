@@ -78,8 +78,8 @@
 const wrap = document.getElementById('wrap');
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xdfe4e2);
-scene.fog = new THREE.Fog(0xdfe4e2, 1600, 5200);
-const camera = new THREE.PerspectiveCamera(38, 1, 0.5, 6000);
+scene.fog = new THREE.Fog(0xdfe4e2, 2600, 7500);
+const camera = new THREE.PerspectiveCamera(38, 1, 2, 8000);   // near 2 i.p.v. 0,5: betere diepteprecisie
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.shadowMap.enabled = false;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -985,22 +985,25 @@ function updateMapNote(){
   const loader = new THREE.TextureLoader();
   loader.setCrossOrigin('anonymous');
   const fb = new THREE.Mesh(new THREE.PlaneGeometry(tileU*MAP.tiles, tileU*MAP.tiles),
-                            new THREE.MeshBasicMaterial({color: 0x7d8473}));
-  fb.rotation.x = -Math.PI/2; fb.position.y = -0.2;
+                            new THREE.MeshBasicMaterial({color: 0x7d8473, depthWrite: false}));
+  fb.rotation.x = -Math.PI/2; fb.position.y = -0.6; fb.renderOrder = -2;   // achtergrond onder de tegels, schrijft geen diepte: geen z-fighting
   lfGroup.add(fb);
   for(let i = -half; i <= half; i++){
     for(let j = -half; j <= half; j++){
       const tx = Math.floor(xt) + i, ty = Math.floor(yt) + j;
       const url = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${MAP.zoom}/${ty}/${tx}`;
       mapStatus.total++;
-      const mat = new THREE.MeshBasicMaterial({transparent: true, opacity: 0});
+      const mat = new THREE.MeshBasicMaterial({color: 0xffffff});   // opaak; tegel pas zichtbaar als hij geladen is
       const pl = new THREE.Mesh(new THREE.PlaneGeometry(tileU, tileU), mat);
       pl.rotation.x = -Math.PI/2;
       pl.position.set((tx + 0.5 - xt)*tileU, -0.1, (ty + 0.5 - yt)*tileU);
+      pl.scale.set(1.002, 1.002, 1);   // geen haarlijnen tussen de tegels
+      pl.visible = false;
       lfGroup.add(pl);
       loader.load(url, tex => {
         tex.encoding = THREE.sRGBEncoding; tex.anisotropy = 8;
-        mat.map = tex; mat.opacity = 1; mat.needsUpdate = true;
+        tex.generateMipmaps = true; tex.minFilter = THREE.LinearMipmapLinearFilter;
+        mat.map = tex; mat.needsUpdate = true; pl.visible = true;
         mapStatus.ok++; updateMapNote();
       }, undefined, () => { mapStatus.fail++; updateMapNote(); });
     }
