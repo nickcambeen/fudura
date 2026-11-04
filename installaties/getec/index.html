@@ -854,13 +854,13 @@ const hekH = 25;
 // ============ OPSTELLING GETEC (maten in meters, uit de 2D-tekening) ============
 const P = {
   N: 8,                    // aantal rijen
-  bcL: 6.06, bcB: 2.46,    // container
+  bcL: 6.06, bcB: 2.44,    // container
   pcsL: 1.98, pcsB: 1.26,  // PCS (L langs de rij)
   csL: 2.87, csB: 2.34,    // CS EOS Alfen Diabolo 40H (L langs de rij, deuren op de korte zijden)
-  gHekKop: 2.00,           // hek -> kopse kant container (iwell)
-  gBC: (new URLSearchParams(location.search).get('bc') === '0.3') ? 0.30 : 2.00,               // binnen een rij: type A + type B met de dichte zijden naar elkaar (geen racks/deuren); balken 2,75 m net vrij. Onder voorbehoud van brandtestrapport (UL 9540A), PGS 37-1
-  gRij: 2.50,              // tussen containers van twee rijen (iwell 2 m + PGS 0,5 m)
-  gHekEind: 2.50,          // hek -> lange zijde eerste/laatste container (iwell 2 m + PGS 0,5 m)
+  gHekKop: 3.05,           // hek -> kopse kant container (koelerzijde), iwell-opstelling 3,05 m
+  gBC: (new URLSearchParams(location.search).get('bc') === '2') ? 2.00 : 0.50,               // binnen een rij: type A + type B met de dichte zijden naar elkaar, 0,50 m (gemeten op iwell-opstelling 30 MW/120 MWh); variant 2,00 m (APS 4 MWh-instructie)
+  gRij: 3.05,              // tussen de deurzijden van twee rijen (iwell-opstelling: 3,05 m vrij aan de deurzijde)
+  gHekEind: 3.05,          // hek -> deurzijde eerste/laatste container (iwell 3,05 m)
   gBcCs: 2.20,             // container -> CS EOS (iwell 2 m)
   gPcsCs: 2.30,            // PCS -> LS-deuren CS EOS (Alfen 1,85 / APS 2,00)
   gPcsHek: 2.00,           // PCS -> hek onderzijde (APS serviceruimte)
@@ -868,16 +868,16 @@ const P = {
   gAuxPcs: 2.00            // MS-deuren CS AUX -> PCS volgende rij (APS 2 m, Alfen 1,85 m)
 };
 (function(){
-  const kort = P.gBC < 1;
+  const kort = P.gBC < 1;   // kort = iwell 0,50 m (standaard)
   const b = document.getElementById('bcBtn');
-  b.textContent = 'tussen containers: ' + (kort ? '0,30 m' : '2,00 m');
-  b.onclick = () => { const u = new URL(location.href); if(kort) u.searchParams.delete('bc'); else u.searchParams.set('bc', '0.3'); location.href = u.toString(); };
+  b.textContent = 'tussen containers: ' + (kort ? '0,50 m (iwell)' : '2,00 m');
+  b.onclick = () => { const u = new URL(location.href); if(kort) u.searchParams.set('bc', '2'); else u.searchParams.delete('bc'); location.href = u.toString(); };
   document.getElementById('bcTxt').textContent = kort
-    ? 'Variant 0,30 m: alleen toegestaan met brandtestrapport (UL 9540A) van REPT/iwell en akkoord brandweer (PGS 37-1)'
-    : 'Tussen de containers binnen een rij 2,00 m (opgave iwell)';
+    ? 'Maten volgens iwell-opstelling: dichte zijden 0,50 m, deurzijden en koelerzijde 3,05 m vrij (brandtestrapport opvragen, PGS 37-1)'
+    : 'Variant 2,00 m tussen de containers (APS 4 MWh-instructie: 2 m rondom)';
 })();
 const blok = 2*P.bcB + P.gBC;                    // containerblok per rij
-// rijafstand: containers (deurzijden 2,5 m) of de kolom PCS + CS EOS (2,0 m vrij voor MS-deuren CS / servicezijde PCS), wat het grootst is
+// rijafstand: containers (deurzijden 3,05 m) of de kolom PCS + CS EOS (2,0 m vrij voor MS-deuren CS / servicezijde PCS), wat het grootst is
 const pitch = Math.max(blok + P.gRij, P.pcsL + P.gPcsCs + P.csL + P.gAuxPcs);
 P.gRij = pitch - blok;                           // werkelijke ruimte tussen de containers van twee rijen
 const kolom = P.pcsL + P.gPcsCs + P.csL;         // PCS + CS langs de rij
@@ -1389,7 +1389,9 @@ const MSV = ['K1', 'K2', 'V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V7', 'V8', 'V9', n
 const MSV_INFO = {K1: 'lus in · HSS C12', K2: 'lus uit · HSS C13', V9: 'CS AUX'};
 for(let i = 1; i <= 8; i++) MSV_INFO['V' + i] = 'BESS rij ' + i;
 const msB = 76, msD = 25, msVB = 5.0;               // lengte (lokaal z), diepte (lokaal x), veldbreedte 500 mm
-const msPos = {x: 43, z: ZW + 10 + msD/2 + 1.2};    // 1,0 m buiten het hek aan de eindzijde, vluchtdeur blijft vrij
+// midden van het park, vóór de CS AUX: 1,0 m buiten het hek aan de CS-zijde, deur naar buiten; vluchtdeuren in het hek blijven vrij
+const msPos = {x: XH + 10 + msD/2 + 1.2, z: Z((aux.x1 + aux.x2)/2)};
+for(const d of deurZ){ const vrij = msB/2 + 1.2 + 9; if(Math.abs(msPos.z - d) < vrij) msPos.z = d + vrij*Math.sign(msPos.z - d || 1); }
 (function bouwMsStation(){
   const matHout = new THREE.MeshStandardMaterial({map: (function(){
     const c = document.createElement('canvas'); c.width = 256; c.height = 256; const g = c.getContext('2d');
@@ -1493,11 +1495,11 @@ const msPos = {x: 43, z: ZW + 10 + msD/2 + 1.2};    // 1,0 m buiten het hek aan 
   mesh(new THREE.BoxGeometry(0.06, 0.3, B - 3.0), matCopper, D/2 - 1.3, y0 + 2.6, 0);
   for(const sz of [-1, 1]) mesh(new THREE.BoxGeometry(D - 3.0, 0.3, 0.06), matCopper, 0, y0 + 2.6, sz*(B/2 - 1.5));
   meshTarget = vorig;
-  wg.rotation.y = Math.PI/2;                // deur (lokaal -x) naar buiten, kabelzijde (lokaal +x) naar het park
+  wg.rotation.y = Math.PI;                  // deur (lokaal -x) naar buiten (+x), kabelzijde (lokaal +x) naar het hek; lokaal z -> wereld -z
   wg.position.set(msPos.x, 0, msPos.z);
   msStation.add(wg);
-  // veldposities in wereldcoördinaten (kelderwand kabelzijde)
-  msStation.userData.veldX = MSV.map((n, f) => msPos.x + (-(nV - 1)*msVB/2 + f*msVB + 3));
+  // veldposities (wereld-z) langs de kelderwand aan de kabelzijde
+  msStation.userData.veldZ = MSV.map((n, f) => msPos.z - (-(nV - 1)*msVB/2 + f*msVB + 3));
 })();
 scene.add(msStation);
 
@@ -1505,36 +1507,37 @@ scene.add(msStation);
 (function msKabels(){
   const matK = new THREE.MeshStandardMaterial({color: 0xb3352a, roughness: 0.5, metalness: 0.08});
   const v = (x, y, z) => new THREE.Vector3(x, y, z);
-  const yK = -7.0, zAchter = msPos.z - msD/2 - 0.5;
+  const yK = -7.0, xAchter = msPos.x - msD/2 - 0.5;                       // kelderwand kabelzijde
   const Xt = X(yCS2 + (HT - yCS2)/2);                                      // sleuf tussen CS EOS en hek
   const doelen = [];
   for(let i = 0; i < 8; i++) doelen.push({veld: 'V' + (i + 1), o: rows[i].cs});
   doelen.push({veld: 'V9', o: aux});
-  const vx = msStation.userData.veldX;
+  const vz = msStation.userData.veldZ;
   const buis = (pts, r, m) => { const c = new THREE.CatmullRomCurve3(filletPath(pts, 3.0, 8), false, 'centripetal');
-                                 const t = new THREE.Mesh(new THREE.TubeGeometry(c, 160, r, 8, false), m); msStation.add(t); };
+                                 msStation.add(new THREE.Mesh(new THREE.TubeGeometry(c, 200, r, 8, false), m)); };
   doelen.forEach((d, i) => {
-    const xv = vx[MSV.indexOf(d.veld)];
-    const off = (i - 4)*0.9;                                               // naast elkaar in de sleuf
+    const zv = vz[MSV.indexOf(d.veld)];
     const xc = X((d.o.y1 + d.o.y2)/2), zMS = Z(d.o.x2);                     // MS-kop van de CS
+    const links = zMS + 5 < zv;                                            // doel ligt aan de lage-z kant van het station
+    const off = (links ? -1 : 1)*((i % 5) - 2)*0.9;                         // naast elkaar in de sleuf
+    const xs = Xt + off;
     buis([
-      v(xv, 2.0, zAchter + 0.6), v(xv, yK, zAchter - 1.0), v(xv, yK, zAchter - 6 - i*0.9),
-      v(Xt + off, yK, zAchter - 6 - i*0.9), v(Xt + off, yK, zMS + 5 + i*0.4),
-      v(xc, yK, zMS + 5 + i*0.4), v(xc, yK, zMS + 1.5), v(xc, 2.6, zMS - 1.9)
+      v(xAchter + 2.5, -3.0, zv), v(xAchter + 0.5, -4.0, zv), v(xAchter - 2.0, yK, zv), v(xs, yK, zv),
+      v(xs, yK, zMS + 5 + i*0.4), v(xc, yK, zMS + 5 + i*0.4), v(xc, yK, zMS + 1.5), v(xc, 2.6, zMS - 1.9)
     ], 0.42, matK);
   });
   // K1/K2: lus naar Getec HSS (rail C, velden 12 en 13), voorlopig op een eind gelegd
   ['K1', 'K2'].forEach((k, i) => {
-    const xv = vx[MSV.indexOf(k)];
-    const zEnd = zAchter + 30 + i*1.6;
-    buis([v(xv, 2.0, zAchter + 0.6), v(xv, yK, zAchter - 1.0), v(xv, yK, zAchter - 3 - i*1.4),
-          v(xv - 60 - i*1.4, yK, zAchter - 3 - i*1.4), v(xv - 60 - i*1.4, yK, zEnd)], 0.6, matK);
-    mesh(new THREE.CylinderGeometry(1.0, 1.0, 1.2, 12), matDark, xv - 60 - i*1.4, yK, zEnd).rotation.x = Math.PI/2;
+    const zv = vz[MSV.indexOf(k)], xEnd = msPos.x + 45 + i*1.6;
+    const xk = xAchter - 3 - i*1.4;                                       // tussen hek en station
+    buis([v(xAchter + 2.5, -3.0, zv), v(xAchter + 0.5, -4.0, zv), v(xk, yK, zv),
+          v(xk, yK, zv + 40), v(xEnd, yK, zv + 40)], 0.6, matK);
+    mesh(new THREE.CylinderGeometry(1.0, 1.0, 1.2, 12), matDark, xEnd, yK, zv + 40).rotation.z = Math.PI/2;
   });
   meshTarget = null;
 })();
 tagSprite('MS-station 10 kV · NGX K K + 9 V (buiten scope)', msPos.x, 42, msPos.z, 15, '#c2571a');
-tagSprite('lus naar Getec HSS C12 / C13', msStation.userData.veldX[0] - 61, 10, msPos.z - msD/2 + 30, 11, '#c2571a');
+tagSprite('lus naar Getec HSS C12 / C13', msPos.x + 46, 10, msStation.userData.veldZ[0] + 40, 11, '#c2571a');
 for(let i = 0; i < 2; i++) msStation.add(annos.children[annos.children.length - 1 - i]);   // labels mee aan/uit
 
 msStation.visible = false;                             // standaard uit: niet in de scope
