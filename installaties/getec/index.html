@@ -12,19 +12,20 @@
     background: rgba(255,255,255,0.84); padding: 6px 10px; border-radius: 8px; line-height: 1.5;
     max-width: 1100px;
   }
-  #titel { position: fixed; left: 16px; top: 12px; max-width: calc(100vw - 300px); font: 600 15px/1.3 system-ui, sans-serif; color: #1d2830;
+  #titel { position: fixed; left: 16px; top: 12px; max-width: calc(100vw - 340px); font: 600 15px/1.3 system-ui, sans-serif; color: #1d2830;
     background: rgba(255,255,255,0.86); padding: 7px 12px; border-radius: 8px; }
   #titel span { display: block; font-weight: 400; font-size: 12px; color: #5f6d76; }
-  .knop{position:absolute;right:14px;z-index:20;padding:7px 13px;
+  .knop{display:none!important}
+  .knopOud{position:absolute;right:14px;z-index:20;padding:7px 13px;
     font:600 12px/1.2 system-ui,sans-serif;color:#3f4b52;background:rgba(255,255,255,.88);
     border:1.5px solid #8fa0ab;border-radius:6px;cursor:pointer;letter-spacing:.02em}
   .knop:hover{background:#fff}
   .knop:focus-visible{outline:2px solid #1b4f8a;outline-offset:2px}
   .knop.uit{color:#78838a;border-color:#b3bcc2;background:rgba(255,255,255,.72)}
-  #kaartStand{position:absolute;top:282px;right:14px;z-index:20;display:none;padding:8px 12px;font:500 12px/1.6 ui-monospace,Menlo,monospace;color:#243038;background:rgba(255,255,255,.94);border:1px solid #8fa0ab;border-radius:6px}
+  #kaartStand{position:absolute;top:auto;bottom:130px;right:300px;z-index:20;display:none;padding:8px 12px;font:500 12px/1.6 ui-monospace,Menlo,monospace;color:#243038;background:rgba(255,255,255,.94);border:1px solid #8fa0ab;border-radius:6px}
   #kaartStand span{font:400 10px system-ui,sans-serif;color:#78838a}
   #docBtn{top:14px;right:118px;color:#1b4f8a;border-color:#1b4f8a}
-  #docPaneel{position:fixed;top:52px;right:118px;z-index:30;width:min(400px,calc(100vw - 32px));max-height:calc(100vh - 140px);overflow:auto;
+  #docPaneel{position:fixed;top:14px;right:304px;z-index:30;width:min(400px,calc(100vw - 32px));max-height:calc(100vh - 140px);overflow:auto;
     background:#fff;border:1px solid #8fa0ab;border-radius:8px;box-shadow:0 8px 24px rgba(20,33,61,.18);padding:10px 12px;display:none;font:13px/1.4 system-ui,sans-serif}
   #docPaneel.open{display:block}
   #docPaneel h4{margin:10px 0 4px;font:600 11px/1.2 system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#78838a}
@@ -42,6 +43,33 @@
   #meetBtn{top:204px;color:#a8241d;border-color:#d8322a}
   #meetBtn.actief{color:#fff;background:#d8322a}
   #meetWisBtn{top:242px;padding:6px 11px;font-weight:500;font-size:11px;color:#78838a;border:1px solid #b3bcc2}
+
+  #paneel{position:fixed;top:14px;right:14px;z-index:31;width:272px;background:rgba(255,255,255,.96);border:1px solid #c3ccd2;border-radius:10px;padding:8px 12px 10px;box-shadow:0 4px 16px rgba(0,0,0,.12);font:13px system-ui,sans-serif;color:#243038;max-height:calc(100vh - 28px);overflow-y:auto;box-sizing:border-box;transition:transform .25s ease}
+  #paneel.dicht{transform:translateX(calc(100% + 20px))}
+  #pKop{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+  #pKop h3{margin:0;font-size:11px;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pKnop{border:1px solid #c3ccd2;background:#fff;color:#243038;border-radius:6px;width:26px;height:26px;cursor:pointer;font-size:15px;line-height:1;padding:0}
+  #pOpen{position:fixed;top:14px;right:14px;z-index:30;width:34px;height:34px;font-size:18px;display:none}
+  #pOpen.toon{display:block}
+  #paneel details{border-top:1px solid #e1e6e9;padding:4px 0 2px}
+  #paneel summary{cursor:pointer;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#5d6b73;padding:2px 0;list-style:none}
+  #paneel summary::-webkit-details-marker{display:none}
+  #paneel summary::before{content:'\25B8';display:inline-block;width:12px;transition:transform .15s}
+  #paneel details[open] summary::before{transform:rotate(90deg)}
+  .rij2{display:grid;grid-template-columns:1fr 1fr;column-gap:12px}
+  #paneel label{display:flex;align-items:center;justify-content:space-between;padding:3px 0;cursor:pointer;gap:6px;font-size:12px;white-space:nowrap}
+  #paneel input[type=checkbox]{appearance:none;width:26px;height:15px;border-radius:8px;background:#c3ccd2;position:relative;cursor:pointer;transition:background .2s;flex:none;margin:0}
+  #paneel input[type=checkbox]::after{content:'';position:absolute;top:2px;left:2px;width:11px;height:11px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+  #paneel input[type=checkbox]:checked{background:#1b4f8a}
+  #paneel input[type=checkbox]:checked::after{left:13px}
+  #paneel input.oranje:checked{background:#c2571a}
+  .rijK{display:grid;grid-template-columns:62px 1fr;align-items:start;gap:4px}
+  .rijK>span{padding-top:7px;font:600 9.5px system-ui,sans-serif;color:#8a979e;text-transform:uppercase;letter-spacing:.03em}
+  .knoprij{display:flex;flex-wrap:wrap;gap:4px;padding:2px 0}
+  .knoprij button{font:600 11px system-ui,sans-serif;padding:4px 7px;border:1px solid #9aa6ad;border-radius:5px;background:#fff;color:#3f4b52;cursor:pointer}
+  .knoprij button:hover{background:#eef2f4}
+  .knoprij button.aan{background:#1b4f8a;border-color:#1b4f8a;color:#fff}
+  .pInfo{font-size:11px;color:#5d6b73;line-height:1.35;padding:2px 0}
 </style>
 </head>
 <body>
@@ -78,7 +106,46 @@
 <button class="knop" id="bcBtn" style="top:320px"></button>
 <label class="knop" id="msLbl" style="top:358px;color:#a8431a;border-color:#c2571a;display:flex;align-items:center;gap:6px" title="Niet in de scope (Getec doet de MS zelf); laat zien wat er nodig is"><input type="checkbox" id="msChk" style="margin:0;accent-color:#c2571a"> MS-station (buiten scope)</label>
 <button class="knop" id="msDakBtn" style="top:394px;display:none;color:#a8431a;border-color:#c2571a">dak eraf</button>
-<div id="caption">Sleep om te draaien &middot; scroll of + en &minus; om te zoomen &middot; 0: overzicht &middot; B: bovenaanzicht &middot; C: containerkoppen rij 1 &middot; 1: LS-zijde CS EOS 1 &middot; P: rondlopen (WASD, shift = rennen, Q/E = bukken) &middot; A: CS AUX &middot; N: MS-station (optie) &middot; D: deuren &middot; H: hek &middot; K: kabels &middot; J: ladderbaan rij 1 &middot; V: DC-kabels rij 1 (van boven) &middot; M: maatvoering &middot; E: contouren &middot; Q: meten (Esc wist) &middot; L: kaart aan/uit (pijltjes = kaart schuiven, , en . = draaien)</div>
+<button class="pKnop" id="pOpen" title="Paneel openen">&#9776;</button>
+<div id="paneel">
+  <div id="pKop"><h3><a href="../../" style="color:#1b4f8a;text-decoration:none" title="Hoofdmenu">&lsaquo; menu</a> &nbsp;Getec BESS Emmen</h3><button class="pKnop" id="pDicht" title="Paneel sluiten">&times;</button></div>
+  <details open><summary>Configuratie</summary>
+    <div class="rijK"><span>Containers</span><div class="knoprij" id="cfgBC"><button data-bc="0.5" title="PGS 37-1 typical 3 mét bewijs (afb. 15)">0,50 m</button><button data-bc="2.5" title="PGS 37-1 typical 2 zonder bewijs">2,50 m</button></div></div>
+    <div class="rij2">
+      <label title="Betreedbaar MS-station (buiten scope)">MS-station <input type="checkbox" class="oranje" id="tMs"></label>
+      <label>Dak MS eraf <input type="checkbox" id="tMsDak"></label>
+    </div>
+    <div class="knoprij"><button id="pDoc">documenten</button></div>
+  </details>
+  <details open><summary>Bekijken</summary>
+    <div class="rijK"><span>Park</span><div class="knoprij"><button data-v="0">overzicht</button><button data-v="b">boven</button><button data-v="n">MS-station</button><button data-v="a">CS AUX</button></div></div>
+    <div class="rijK"><span>Rij 1</span><div class="knoprij"><button data-v="c">containers</button><button data-v="1">CS EOS</button><button data-v="j">ladderbaan</button><button data-v="v">DC-kabels</button></div></div>
+  </details>
+  <details open><summary>Bewegen</summary>
+    <div class="rij2"><label title="Als persoon rondlopen: WASD, muis = kijken, shift = rennen">Lopen <input type="checkbox" id="tFP"></label></div>
+    <div class="pInfo">WASD / pijltjes = schuiven, shift = sneller · slepen = draaien · scroll = zoomen</div>
+  </details>
+  <details open><summary>Weergave</summary>
+    <div class="rij2">
+      <label>Luchtfoto <input type="checkbox" id="tKaart" checked></label>
+      <label>Gebouwen BAG <input type="checkbox" id="tBag" checked></label>
+      <label>Hekwerk <input type="checkbox" id="tHek" checked></label>
+      <label>Kabels <input type="checkbox" id="tKabel" checked></label>
+      <label>Maten <input type="checkbox" id="tMaat" checked></label>
+      <label>Contouren <input type="checkbox" id="tEdge" checked></label>
+      <label>Deuren open <input type="checkbox" id="tDeur" checked></label>
+      <label title="PGS 37-1 M50/M52">PGS-zones <input type="checkbox" class="oranje" id="tPgs"></label>
+    </div>
+  </details>
+  <details><summary>Gereedschap</summary>
+    <div class="rij2">
+      <label title="Klik twee punten op het maaiveld">Meten <input type="checkbox" id="tMeet"></label>
+      <label title="Pijltjes = luchtfoto schuiven, , en . = draaien">Kaart uitlijnen <input type="checkbox" id="tUitl"></label>
+    </div>
+    <div class="knoprij"><button id="pMeetWis">wis metingen</button></div>
+  </details>
+</div>
+<div id="caption">Slepen = draaien &middot; scroll = zoomen &middot; WASD / pijltjes = schuiven (shift = sneller) &middot; alle opties in het paneel rechts</div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 // Schaal: 1 eenheid = 100 mm
@@ -1060,8 +1127,7 @@ updateMapNote();
 document.getElementById('luchtBtn').addEventListener('click', toggleLucht);
 window.addEventListener('keydown', e => {
   const k = e.key.toLowerCase();
-  if(k === 'l' && !e.repeat){ toggleLucht(); return; }
-  if(!lfGroup.visible) return;
+  if(!lfGroup.visible || !window.KAART_UITLIJNEN) return;
   // kaart verschuiven en draaien t.o.v. het park (shift = grote stap)
   const st = e.shiftKey ? 20 : 4;
   let bewaar = true;
@@ -1396,7 +1462,7 @@ function toggleKabels(){
   b.classList.toggle('uit', !kabelGroup.visible);
 }
 document.getElementById('kabelBtn').addEventListener('click', toggleKabels);
-window.addEventListener('keydown', e => { if(e.key.toLowerCase() === 'k') toggleKabels(); });
+
 
 
 // ============ CAMERA ============
@@ -1686,8 +1752,7 @@ function updateCam(){
 }
 function bovenaanzicht(){ auto = false; target.copy(center); theta = -Math.PI/2; phi = 0.05; radius = 820; }
 let dragging = false, px = 0, py = 0;
-window.addEventListener('keydown', e => {
-  const k = e.key.toLowerCase();
+function actie(k){
   if(k === '0'){ auto = false; target.copy(center); theta = 2.2; phi = 1.0; radius = 760; }
   if(k === 'b') bovenaanzicht();
   if(k === 'c'){ auto = false; target.set(X(yBC2) + 2, 12, Z(r0.bcB.x1 - P.gBC/2)); theta = Math.PI/2; phi = 1.25; radius = 120; }
@@ -1701,6 +1766,9 @@ window.addEventListener('keydown', e => {
   if(k === 'h'){ toggleHek(); }
   if(k === 'm'){ toggleMaat(); }
   if(k === 'q'){ toggleMeten(); }
+
+}
+window.addEventListener('keydown', e => {
   if(e.key === 'Escape'){ meetWissen(); }
   if(e.key === '+' || e.key === '=' || e.key === 'PageUp'){ zoomStap(0.88); e.preventDefault(); }
   if(e.key === '-' || e.key === '_' || e.key === 'PageDown'){ zoomStap(1.14); e.preventDefault(); }
@@ -1915,10 +1983,56 @@ function stapFP(){
   camera.position.set(FP.pos.x, FP.oog, FP.pos.z);
   camera.lookAt(FP.pos.x - Math.sin(FP.yaw)*Math.cos(FP.pitch), FP.oog + Math.sin(FP.pitch), FP.pos.z - Math.cos(FP.yaw)*Math.cos(FP.pitch));
 }
+// ============ PANEEL RECHTS (zoals bij de AIO): aan/uit-schakelaars i.p.v. sneltoetsen ============
+(function(){
+  const $ = id => document.getElementById(id), paneel = $('paneel');
+  $('pDicht').onclick = () => { paneel.classList.add('dicht'); $('pOpen').classList.add('toon'); };
+  $('pOpen').onclick = () => { paneel.classList.remove('dicht'); $('pOpen').classList.remove('toon'); };
+  ['pointerdown', 'wheel'].forEach(t => paneel.addEventListener(t, e => e.stopPropagation()));
+  // config: tussenafstand
+  document.querySelectorAll('#cfgBC button').forEach(b => { b.classList.toggle('aan', +b.dataset.bc === P.gBC);
+    b.onclick = () => { const u = new URL(location.href); if(b.dataset.bc === '2.5') u.searchParams.set('bc', '2.5'); else u.searchParams.delete('bc'); if(+b.dataset.bc !== P.gBC) location.href = u.toString(); }; });
+  // MS-station
+  $('tMs').onchange = e => { zetMsStation(e.target.checked); if(!e.target.checked) $('tMsDak').checked = false; };
+  $('tMsDak').onchange = e => { if(e.target.checked && !msStation.visible){ zetMsStation(true); $('tMs').checked = true; }
+    msStation.userData.dak.visible = !e.target.checked; if(e.target.checked){ auto = false; target.set(msPos.x, 8, msPos.z); theta = 0.35; phi = 0.55; radius = 120; } };
+  $('pDoc').onclick = e => { e.stopPropagation(); $('docBtn').click(); };
+  // aanzichten
+  document.querySelectorAll('#paneel [data-v]').forEach(b => b.onclick = () => { actie(b.dataset.v); if(b.dataset.v === 'n') $('tMs').checked = true; });
+  // weergave: schakelaar volgt de werkelijke toestand
+  const koppel = (id, staat, zet) => { const c = $(id); c.checked = staat(); c.onchange = () => { if(c.checked !== staat()) zet(c.checked); }; };
+  koppel('tKaart', () => lfGroup.visible, () => toggleLucht());
+  koppel('tBag', () => bagGroup.visible, v => { bagGroup.visible = v; bagMaat.visible = v; bagInfo.style.display = v ? '' : 'none'; });
+  koppel('tHek', () => hekGroup.visible, () => toggleHek());
+  koppel('tKabel', () => kabelGroup.visible, () => toggleKabels());
+  koppel('tMaat', () => annos.visible, () => toggleMaat());
+  koppel('tEdge', () => !edgeGroup.length || edgeGroup[0].visible, v => edgeGroup.forEach(l => l.visible = v));
+  koppel('tDeur', () => doorsOpen, () => actie('d'));
+  koppel('tPgs', () => pgsGroup.visible, () => $('pgsBtn').click());
+  koppel('tMeet', () => meetAan, () => toggleMeten());
+  koppel('tFP', () => FP.aan, v => zetFP(v));
+  $('tUitl').onchange = e => { window.KAART_UITLIJNEN = e.target.checked; $('kaartStand').style.display = e.target.checked ? 'block' : 'none'; if(e.target.checked){ kaartBewaren(); if(!lfGroup.visible){ toggleLucht(); $('tKaart').checked = true; } } };
+  $('pMeetWis').onclick = () => meetWissen();
+  setInterval(() => { $('tFP').checked = FP.aan; $('tMeet').checked = meetAan; }, 400);
+})();
+// vrij schuiven buiten de loopmodus: WASD of pijltjes (shift = sneller); bij 'kaart uitlijnen' schuiven de pijltjes de luchtfoto
+const KO = {};
+const KMAP = {w: 'f', arrowup: 'f', s: 'b', arrowdown: 'b', a: 'l', arrowleft: 'l', d: 'r', arrowright: 'r'};
+window.addEventListener('keydown', e => { if(FP.aan || (e.target.tagName === 'INPUT' && e.target.type !== 'checkbox')) return;
+  const k = e.key.toLowerCase(); if(k === 'shift'){ KO.shift = true; return; }
+  if(window.KAART_UITLIJNEN && k.startsWith('arrow')) return;
+  if(KMAP[k]){ KO[KMAP[k]] = true; auto = false; e.preventDefault(); } });
+window.addEventListener('keyup', e => { const k = e.key.toLowerCase(); if(k === 'shift') KO.shift = false; if(KMAP[k]) KO[KMAP[k]] = false; });
+window.addEventListener('blur', () => { for(const k in KO) KO[k] = false; });
+let tKO = performance.now();
+function schuif(){ const t = performance.now(), dt = Math.min(0.05, (t - tKO)/1000); tKO = t; if(FP.aan) return;
+  const fw = (KO.f ? 1 : 0) - (KO.b ? 1 : 0), sd = (KO.r ? 1 : 0) - (KO.l ? 1 : 0); if(!fw && !sd) return;
+  const v = Math.max(20, Math.min(600, radius))*0.6*dt*(KO.shift ? 2.5 : 1);
+  target.x += (-Math.sin(theta)*fw + Math.cos(theta)*sd)*v; target.z += (-Math.cos(theta)*fw - Math.sin(theta)*sd)*v; }
 function animate(){
   requestAnimationFrame(animate);
   if(auto) theta += 0.0010;
-  stapFP();
+  stapFP(); schuif();
   if(!FP.aan) updateCam();
   renderer.render(scene, camera);
 }
