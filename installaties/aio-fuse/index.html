@@ -2015,15 +2015,24 @@ if(false){ const zc = 0, r = 0.065, mAux = M(0x6d7378, {roughness: 0.55});
     const lok = [V(u.x, JY(1160) - 0.1, u.z), V(u.x, KS + 0.1, u.z), V(u.x, yl + 0.2, u.z), V(zc + (i - 2)*0.0, yl, -KD/2 + 0.6), V(zc, yl, -KD/2 - 0.3)];
     const k = kabel(KAB, [...lok.map(W), V(xe - 1.5, yl, zc + (i % 2 ? 0.06 : -0.06)), V(xe, yl + 0.1, zc), V(xe, SKY + 0.2, ze), V(xe, SKY + 1.05, ze), V(XA(i) - 3.2, SKY + 1.25, AZ + AIO[i].MC.z - 0.05)], r, mAux, 0.35, 8); KABELS.push(k); }); }
 CAT = 'pen';
-// aardpen (verkoperd, 1,5 m) in een aardput naast de junction box, aardkabel 1 x 50 mm² onder de stelconplaat door en via de sparing naar de PE-rail
-{ const px = PX0 - 1.6, pz = KZW + 3.0;                                          // naast de stelconrij in de grond (niet onder de plaat), aardput op maaiveld
-  cyl(KAB, 0.1, 15.0, matKoper, px, -7.8, pz, null, 12); cyl(KAB, 0.16, 0.5, matZink, px, -0.6, pz, null, 10);
-  const put = M(0x6d7177, {roughness: 0.7}); cyl(scene, 1.1, 0.05, put, px, 0.03, pz, null, 28); cyl(scene, 0.9, 0.06, M(0x2b2e31), px, 0.06, pz, null, 6);
-  plak(scene, 1.0, 0.3, lbl('⏚ AARDE', 160, 48, '#3fa34d', '#fff', 'bold 26px Arial'), px, 0.1, pz, 0).rotation.x = -Math.PI/2;
-  CAT = 'aarde'; const xr = SLOTS[5].x + 0.55; railLug(xr, yPEr, 0.085, 'PE'); gland(xr, zF2, 0.085);
-  const top = [V(xr, yPEr - 0.45, zF2), V(xr, KS + 0.1, zF2), V(xr, -0.8, zF2)].map(W);
-  kabel(KAB, [...top, V(top[2].x, -1.2, top[2].z + 0.0), V(px, -1.2, pz + 0.6), V(px + 0.05, -0.8, pz + 0.18)], 0.085, ader.PE, 0.6, 8);
-  const t = sprite('aardpen → PE-rail (vereffening)', V(px, 2.0, pz), 0.6, '#3fa34d'); scene.add(t); LABELS.push(t); }
+// AARDING (Delta 5.8.1, fig. 5-33/5-36/5-37): vereffening alleen is niet genoeg — per kast het achterste aardpunt met 50 mm² gn/ge
+// naar een aardlus (blank Cu 50 mm², 600 mm diep) achter de stelconrij, met aardpennen (verkoperd, 1,5 m) aan beide uiteinden;
+// de aardpen bij de junction box zit in dezelfde lus en gaat ook naar de PE-rail. Eis: aardverspreidingsweerstand < 4 Ω.
+{ const yL = -6.0, zL = -PL/2 - 1.0, px = PX0 - 1.6, pz = KZW + 3.0, pxE = PX1 + 1.6, rL = 0.045;
+  const pen = (x, z, tekstje) => { cyl(KAB, 0.1, 15.0, matKoper, x, -7.8, z, null, 12); cyl(KAB, 0.16, 0.5, matZink, x, -0.6, z, null, 10);
+    const put = M(0x6d7177, {roughness: 0.7}); cyl(scene, 1.1, 0.05, put, x, 0.03, z, null, 28); cyl(scene, 0.9, 0.06, M(0x2b2e31), x, 0.06, z, null, 6);
+    plak(scene, 1.0, 0.3, lbl(tekstje, 160, 48, '#3fa34d', '#fff', 'bold 26px Arial'), x, 0.1, z, 0).rotation.x = -Math.PI/2; };
+  pen(px, pz, '⏚ AARDE 1'); pen(pxE, zL, '⏚ AARDE 2');
+  // aardlus blank koper: pen 1 → achter de rij langs → pen 2
+  kabel(KAB, [V(px, -0.8, pz), V(px, yL, pz), V(px, yL, zL), V(pxE, yL, zL), V(pxE, -0.8, zL)], rL, matKoper, 0.6, 8);
+  // per kast: achterste aardpunt (fig. 5-37) → 50 mm² gn/ge → klemverbinding op de aardlus
+  for(let i = 0; i < N_AIO; i++){ const p = V(XA(i) - 4.62, SKY + 0.45, AZ - AD/2 - 0.12), l = ringLug(KAB, p, '-z', 1.3), xk = p.x;
+    kabel(KAB, [l, V(l.x, l.y - 0.3, l.z - 0.05), V(xk, PL_H + 0.15, AZ - AD/2 - 0.5), V(xk, PL_H + 0.15, -PL/2 - 0.15), V(xk, -0.5, -PL/2 - 0.3), V(xk, yL + 0.15, zL + 0.12)], 0.06, ader.PE, 0.4, 8);
+    cyl(KAB, 0.13, 0.35, matZink, xk, yL, zL, 'x', 10); }                                      // klem op de lus
+  if(!NO_JB){ CAT = 'aarde'; const xr = SLOTS[5].x + 0.55; railLug(xr, yPEr, 0.085, 'PE'); gland(xr, zF2, 0.085);
+    const top = [V(xr, yPEr - 0.45, zF2), V(xr, KS + 0.1, zF2), V(xr, -0.8, zF2)].map(W);
+    kabel(KAB, [...top, V(top[2].x, -1.2, top[2].z + 0.0), V(px, -1.2, pz + 0.6), V(px + 0.05, -0.8, pz + 0.18)], 0.085, ader.PE, 0.6, 8); }
+  const t = sprite('aarding: per kast 50 mm² → aardlus Cu 50 mm² (–600) met 2 aardpennen' + (NO_JB ? '' : ' + PE-rail JB') + ' · Ra < 4 Ω', V((px + pxE)/2, 2.0, zL - 1.5), 0.6, '#3fa34d'); scene.add(t); LABELS.push(t); }
 CAT = null;
 { const t = sprite((NO_JB ? 'voeding per AIO: ' + AIOKAB.txt + ' vanuit de HVK' : 'voeding junction box: ' + VKAB.n + ' × ' + VKAB.txt + ' (gG ' + VKAB.gG + ') door sparing stelconplaat'), W(V(-2.5, 2.0, KD/2 + 150)), 0.75, '#c0281f'); scene.add(t); LABELS.push(t); }
 
