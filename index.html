@@ -32,13 +32,17 @@
   .kaart.later { opacity: .55; border-style: dashed; }
   .kaart.later .voet { color: var(--muted); }
   svg.ico { width: 34px; height: 34px; color: var(--blauw); }
+  .beta-tag { font: 700 13px/1 "Barlow Semi Condensed", Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #fff; background: var(--oranje); padding: 5px 9px; border-radius: 5px; align-self: center; }
+  .beta { display: flex; gap: 10px; align-items: flex-start; background: color-mix(in srgb, var(--oranje) 12%, var(--kaart)); border: 1px solid color-mix(in srgb, var(--oranje) 45%, var(--lijn)); border-radius: 10px; padding: 12px 14px; margin: 0 0 22px; font-size: 14.5px; }
+  .beta b { color: var(--oranje); }
   footer { margin-top: 34px; color: var(--muted); font-size: 13px; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header><h1><span>Fudura</span> · Installaties in 3D</h1></header>
+  <header><h1><span>Fudura</span> · Installaties in 3D</h1><span class="beta-tag">Beta</span></header>
   <p class="sub">Kies een installatie. Alles is in 3D te bekijken en door te lopen, ook op je telefoon.</p>
+  <div class="beta" role="note"><span aria-hidden="true">⚠</span><span><b>Beta-versie.</b> De modellen zijn in ontwikkeling en nog niet alles klopt: maten, componenten en kabels zijn deels voorlopig of aangenomen. Gebruik ze als illustratie en controleer altijd tegen de actuele tekeningen, datasheets en berekeningen.</span></div>
 
   <h2>Type installatie</h2>
   <div class="grid">
