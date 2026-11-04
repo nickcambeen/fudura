@@ -1052,7 +1052,7 @@ function placeCS(o, isAux){
   mesh(new THREE.BoxGeometry(24.75 - 1.8, 26.0, 0.6), matPlate, 0, H + 13.0, 25.0);
   meshTarget = null;
   inner.scale.set(SX, 1, SZ);
-  inner.position.set(X((o.y1+o.y2)/2), 0, Z((o.x1+o.x2)/2) - 36.0*SZ);
+  inner.position.set(X((o.y1+o.y2)/2), isAux ? -6.0 : 0, Z((o.x1+o.x2)/2) - 36.0*SZ);   // CS AUX: betondeel 600 mm ingegraven (zoals bij Bol)
   scene.add(inner);
   (window.DETCS = window.DETCS || []).push({g: inner, aux: !!isAux});
 }
