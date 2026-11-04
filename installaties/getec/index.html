@@ -23,6 +23,17 @@
   .knop.uit{color:#78838a;border-color:#b3bcc2;background:rgba(255,255,255,.72)}
   #kaartStand{position:absolute;top:282px;right:14px;z-index:20;display:none;padding:8px 12px;font:500 12px/1.6 ui-monospace,Menlo,monospace;color:#243038;background:rgba(255,255,255,.94);border:1px solid #8fa0ab;border-radius:6px}
   #kaartStand span{font:400 10px system-ui,sans-serif;color:#78838a}
+  #docBtn{top:14px;right:118px;color:#1b4f8a;border-color:#1b4f8a}
+  #docPaneel{position:fixed;top:52px;right:118px;z-index:30;width:min(400px,calc(100vw - 32px));max-height:calc(100vh - 140px);overflow:auto;
+    background:#fff;border:1px solid #8fa0ab;border-radius:8px;box-shadow:0 8px 24px rgba(20,33,61,.18);padding:10px 12px;display:none;font:13px/1.4 system-ui,sans-serif}
+  #docPaneel.open{display:block}
+  #docPaneel h4{margin:10px 0 4px;font:600 11px/1.2 system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#78838a}
+  #docPaneel h4:first-child{margin-top:2px}
+  #docPaneel a{display:flex;justify-content:space-between;gap:10px;padding:7px 8px;border-radius:6px;color:#1d2830;text-decoration:none}
+  #docPaneel a:hover{background:#eef2f6}
+  #docPaneel a span{color:#78838a;font-size:11px;white-space:nowrap}
+  #docPaneel p{margin:8px 0 0;font-size:11px;color:#78838a}
+  @media (max-width:640px){ #docBtn{right:14px;top:auto;bottom:90px} #docPaneel{right:16px;top:auto;bottom:130px} }
   #luchtBtn{top:14px;color:#2f4f6a;border-color:#4f7590}
   #hekBtn{top:52px;color:#3f5a4a;border-color:#4f7d64}
   #kabelBtn{top:90px;color:#7a2a2a;border-color:#a54a3f}
@@ -36,6 +47,21 @@
 <body>
 <div id="wrap"></div>
 <div id="titel">Getec BESS-park Emmen &middot; 8 rijen<span>8 &times; (CS EOS + PCS + 2 &times; REPT 5 MWh type A + B, dichte zijden naar elkaar) + CS AUX in het midden<br><b id="bcTxt"></b></span></div>
+<button class="knop" id="docBtn" aria-expanded="false" aria-controls="docPaneel">documenten</button>
+<div id="docPaneel" role="dialog" aria-label="Naslag documenten">
+  <h4>Batterijcontainer REPT 5 MWh (iwell)</h4>
+  <a href="docs/REPT_5MWh_typeA_fundering.pdf" target="_blank" rel="noopener">Type A, deuren links: funderingstekening<span>PDF · 1 p</span></a>
+  <a href="docs/REPT_5MWh_typeB_fundering.pdf" target="_blank" rel="noopener">Type B, deuren rechts: funderingstekening<span>PDF · 1 p</span></a>
+  <a href="docs/REPT_TUV_IEC62933-5-2.pdf" target="_blank" rel="noopener">TÜV-certificaat IEC 62933-5-2 (Powtrix2.2)<span>PDF · 3 p</span></a>
+  <h4>PCS WSTECH APS</h4>
+  <a href="docs/WSTECH_APS-ES_130_datasheet.pdf" target="_blank" rel="noopener">APS-ES 130 datasheet 1500 V DC<span>PDF · 39 p</span></a>
+  <a href="docs/WSTECH_APS_technische_data.pdf" target="_blank" rel="noopener">APS additional technical data<span>PDF · 98 p</span></a>
+  <h4>Compactstation CS EOS / CS AUX</h4>
+  <a href="docs/Alfen_D40H_Fudura_type3a-b.pdf" target="_blank" rel="noopener">Alfen Diabolo 40H, Fudura type 3A/B<span>PDF · 8 p</span></a>
+  <h4>Fudura</h4>
+  <a href="docs/Fudura_eenlijnschema_BESS-station_concept_revA.pdf" target="_blank" rel="noopener">Eénlijnschema 10 kV BESS-station (concept rev. A)<span>PDF · 1 p</span></a>
+  <p>Nog op te vragen: datasheet REPT 5 MWh (gewicht, hulpvermogen, DC-bereik) en brandtestrapport UL 9540A.</p>
+</div>
 <button class="knop" id="luchtBtn">kaart: aan</button>
 <div id="kaartStand"></div>
 <button class="knop" id="hekBtn">hek: aan</button>
@@ -1544,6 +1570,15 @@ function resize(){
 window.addEventListener('resize', resize);
 resize();
 
+// documentenpaneel
+(function(){
+  const b = document.getElementById('docBtn'), pn = document.getElementById('docPaneel');
+  const zet = open => { pn.classList.toggle('open', open); b.setAttribute('aria-expanded', open); };
+  b.addEventListener('click', e => { e.stopPropagation(); zet(!pn.classList.contains('open')); });
+  pn.addEventListener('pointerdown', e => e.stopPropagation());
+  document.addEventListener('pointerdown', () => zet(false));
+  window.addEventListener('keydown', e => { if(e.key === 'Escape') zet(false); });
+})();
 // WASD: W/S vooruit/achteruit, A/D draaien, R/F kantelen (shift = sneller)
 const toetsen = {};
 window.addEventListener('keydown', e => {
