@@ -1199,6 +1199,16 @@ function vrijCS(o, label){
   const pts = [[ya, xa], [yb, xa], [yb, xb], [ya, xb], [ya, xa]].map(([y, x]) => new THREE.Vector3(X(y), 0.6, Z(x)));
   const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), matVrijKader); l.computeLineDistances(); annos.add(l);
   tagSprite((label || 'CS') + ' · vrije ruimte Alfen ' + f2(yb - ya) + ' × ' + f2(xb - xa) + ' m', X((ya + yb)/2), 3, Z(xb) - 4, 10, '#1e7a34');
+  maatV(X(yb) + 3, Z(xa), X(yb) + 3, Z(xb), f2(xb - xa) + ' m');            // lengte (langs de rij)
+  maatV(X(ya), Z(xa) - 3, X(yb), Z(xa) - 3, f2(yb - ya) + ' m');            // breedte
+}
+const matMaatV = new THREE.LineBasicMaterial({color: 0x1e7a34, depthTest: false});
+function maatV(x1, z1, x2, z2, label){
+  const a = new THREE.Vector3(x1, 0.8, z1), b = new THREE.Vector3(x2, 0.8, z2);
+  const ln = new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), matMaatV); ln.renderOrder = 998; annos.add(ln);
+  const d = new THREE.Vector3().subVectors(b, a).normalize(), n = new THREE.Vector3(-d.z, 0, d.x).multiplyScalar(1.6);
+  for(const p of [a, b]){ const t = new THREE.Line(new THREE.BufferGeometry().setFromPoints([p.clone().add(n), p.clone().sub(n)]), matMaatV); t.renderOrder = 998; annos.add(t); }
+  const m = a.clone().add(b).multiplyScalar(0.5); tagSprite(label, m.x, 4, m.z, 16, '#1e7a34');
 }
 for(const r of rows) inRij(r, [annos], () => {
   vrijCS(r.cs, 'CS EOS ' + (r.i + 1));
