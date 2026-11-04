@@ -142,7 +142,7 @@
       <label>Kabels <input type="checkbox" id="tKabel" checked></label>
       <label title="Maatvoering en vrije ruimte (groen)">Maten + vrij <input type="checkbox" id="tMaat" checked></label>
       <label>Contouren <input type="checkbox" id="tEdge" checked></label>
-      <label title="Naam boven op elk component, leesbaar in het bovenaanzicht (2D)">Namen op dak <input type="checkbox" id="tNaam" checked></label>
+      <label title="Naam boven op elk component, leesbaar in het bovenaanzicht (2D)">Namen op dak <input type="checkbox" id="tNaam"></label>
       <label>Deuren open <input type="checkbox" id="tDeur"></label>
       <label title="PGS 37-1 M50/M52">PGS-zones <input type="checkbox" class="oranje" id="tPgs"></label>
       <label title="Clusters uitlichten volgens PGS 37-1 M52 (afb. 15)">PGS-clusters <input type="checkbox" class="oranje" id="tClus"></label>
@@ -716,6 +716,29 @@ function batContainer(cx, cz, label, mir){
     mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.22, 8), matDark, cx + ex2 - 0.45, 1.95, cz - 12.2).rotation.x = Math.PI/2;
     mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.22, 8), matDark, cx + ex2 + 0.45, 1.95, cz - 12.2).rotation.x = Math.PI/2;
   }
+  // ---- details volgens REPT-handleiding / iwell TD01 ----
+  meshTarget = cGroup;
+  // explosieluiken (explosion vent plates) op het dak: 3 luiken met kader en waarschuwingsstrook
+  for(const vx of [-19, -1, 17]){
+    mesh(new THREE.BoxGeometry(10.5, 0.35, 8.6), matGrey, cx + vx, 29.42, cz);
+    mesh(new THREE.BoxGeometry(9.6, 0.4, 7.7), matPlate, cx + vx, 29.5, cz);
+    for(const sz of [-3.0, 3.0]) mesh(new THREE.BoxGeometry(8.6, 0.45, 0.25), matDark, cx + vx, 29.55, cz + sz);
+    mesh(new THREE.BoxGeometry(2.2, 0.46, 0.9), matYellow, cx + vx - 3.4, 29.56, cz - 2.2);
+  }
+  // aansluitveld onderin de elektrische ruimte: DATA, AC AUX, DC+, DC− (iwell 'Front view – connections location')
+  const aansl = (t, bg, y, z) => { const pl = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 1.4), makeLabel(t, bg)); pl.position.set(cx + 26.62, y, cz + z); pl.rotation.y = Math.PI/2; if(mir) pl.scale.x = -1; cGroup.add(pl); };
+  aansl('DATA', '#cfe3ff', 9.2, 9.0); aansl('AC AUX', '#d9f2d0', 7.4, 9.0); aansl('DC+', '#f3c4c4', 5.6, 9.0); aansl('DC−', '#c9cbd2', 3.8, 9.0);
+  for(const [y, m] of [[9.2, matSteel], [7.4, matGreen], [5.6, matRed], [3.8, matDark]])
+    mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.6, 12), m, cx + 26.9, y, cz + 6.6).rotation.z = Math.PI/2;      // kabelwartels
+  // tweede bluswateraansluiting (noodwater) en brandhamer op de deur van de elektrische ruimte
+  opDeur(new THREE.CylinderGeometry(0.55, 0.55, 0.5, 12), matSteel, 6.6, -4.0).rotation.z = Math.PI/2;
+  opDeur(new THREE.CylinderGeometry(0.62, 0.62, 0.2, 12), matRed, 6.6, -4.0).rotation.z = Math.PI/2;
+  opDeur(new THREE.BoxGeometry(0.3, 1.4, 1.0), matRed, 13.8, -1.6);
+  // aardaansluitpunten ook aan de andere lange zijde (REPT: 4 × M12, 3 aanbevolen locaties)
+  for(const ex2 of [-28.6, 28.6]){
+    mesh(new THREE.BoxGeometry(2.0, 1.1, 0.14), matSteel, cx + ex2, 1.95, cz + 12.16);
+    for(const dd of [-0.45, 0.45]) mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.22, 8), matDark, cx + ex2 + dd, 1.95, cz + 12.2).rotation.x = Math.PI/2;
+  }
   const lbl = new THREE.Mesh(new THREE.PlaneGeometry(8, 4), makeLabel(label));
   lbl.position.set(cx + 30.05, 26.5, cz - 5.0);
   lbl.rotation.y = Math.PI/2;
@@ -1217,7 +1240,7 @@ window.addEventListener('keydown', e => {
 const annos = new THREE.Group();
 scene.add(annos);
 
-function tagSprite(text, x, y, z, px, col){
+function tagSprite(text, x, y, z, px, col, fill){
   const c = document.createElement('canvas');
   const ctx = c.getContext('2d');
   // canvasbreedte volgt de tekstlengte, zodat lange labels niet wegvallen
@@ -1230,17 +1253,17 @@ function tagSprite(text, x, y, z, px, col){
   ctx2.font = 'bold ' + F + 'px Helvetica, Arial, sans-serif';
   ctx2.textAlign = 'center'; ctx2.textBaseline = 'middle';
   const w = ctx2.measureText(text).width + 54;
-  ctx2.fillStyle = 'rgba(255,255,255,0.95)';
+  ctx2.fillStyle = fill ? col : 'rgba(255,255,255,0.95)';
   ctx2.beginPath();
   if(ctx2.roundRect) ctx2.roundRect((c.width - w)/2, 16, w, 108, 18);
   else ctx2.rect((c.width - w)/2, 16, w, 108);
   ctx2.fill();
-  ctx2.strokeStyle = col; ctx2.lineWidth = 6; ctx2.stroke();
-  ctx2.fillStyle = col;
+  ctx2.strokeStyle = fill ? '#ffffff' : col; ctx2.lineWidth = 6; ctx2.stroke();
+  ctx2.fillStyle = fill ? '#ffffff' : col;
   ctx2.fillText(text, c.width/2, 72);
   const tex = new THREE.CanvasTexture(c);
   tex.anisotropy = 8;
-  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map: tex, transparent: true, depthTest: false}));
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map: tex, transparent: true, depthTest: false, toneMapped: false}));
   spr.position.set(x, y, z);
   spr.scale.set(px, px*(c.height/c.width), 1);
   spr.renderOrder = 999;
@@ -1268,17 +1291,17 @@ function vrijCS(o, label){
   m.rotation.x = -Math.PI/2; m.position.set((X(ya) + X(yb))/2, 0.5, (Z(xa) + Z(xb))/2); m.renderOrder = 994; annos.add(m);
   const pts = [[ya, xa], [yb, xa], [yb, xb], [ya, xb], [ya, xa]].map(([y, x]) => new THREE.Vector3(X(y), 0.6, Z(x)));
   const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), matVrijKader); l.computeLineDistances(); annos.add(l);
-  tagSprite((label || 'CS') + ' · vrije ruimte Alfen ' + f2(yb - ya) + ' × ' + f2(xb - xa) + ' m', X((ya + yb)/2), 3, Z(xb) - 4, 10, '#1e7a34');
+  tagSprite((label || 'CS') + ' · vrije ruimte Alfen ' + f2(yb - ya) + ' × ' + f2(xb - xa) + ' m', X((ya + yb)/2), 3, Z(xb) - 4, 16, '#0b6b2c', true);
   maatV(X(yb) + 3, Z(xa), X(yb) + 3, Z(xb), f2(xb - xa) + ' m');            // lengte (langs de rij)
   maatV(X(ya), Z(xa) - 3, X(yb), Z(xa) - 3, f2(yb - ya) + ' m');            // breedte
 }
-const matMaatV = new THREE.LineBasicMaterial({color: 0x1e7a34, depthTest: false});
+const matMaatV = new THREE.LineBasicMaterial({color: 0x0f8a3a, depthTest: false});
 function maatV(x1, z1, x2, z2, label){
   const a = new THREE.Vector3(x1, 0.8, z1), b = new THREE.Vector3(x2, 0.8, z2);
   const ln = new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), matMaatV); ln.renderOrder = 998; annos.add(ln);
   const d = new THREE.Vector3().subVectors(b, a).normalize(), n = new THREE.Vector3(-d.z, 0, d.x).multiplyScalar(1.6);
   for(const p of [a, b]){ const t = new THREE.Line(new THREE.BufferGeometry().setFromPoints([p.clone().add(n), p.clone().sub(n)]), matMaatV); t.renderOrder = 998; annos.add(t); }
-  const m = a.clone().add(b).multiplyScalar(0.5); tagSprite(label, m.x, 4, m.z, 16, '#1e7a34');
+  const m = a.clone().add(b).multiplyScalar(0.5); tagSprite(label, m.x, 4, m.z, 22, '#0b6b2c', true);
 }
 for(const r of rows) inRij(r, [annos], () => {
   vrijCS(r.cs, 'CS EOS ' + (r.i + 1));
@@ -1298,7 +1321,7 @@ for(const r of rows) inRij(r, [annos], () => {
 });
 naamTags.push(tagSprite('CS AUX', X((yCS1+yCS2)/2), H + 31, Z((aux.x1+aux.x2)/2), 20, '#8a4a12'));
 // maatlijn tussen twee punten op maaiveld, met afstand in meters
-const matDim = new THREE.LineBasicMaterial({color: 0xc23b22, depthTest: false});
+const matDim = new THREE.LineBasicMaterial({color: 0x0b57d0, depthTest: false});
 // verticale maatlijn (hoogtes)
 function dimV(x, z, y1, y2, label){
   const a = new THREE.Vector3(x, y1, z), b = new THREE.Vector3(x, y2, z);
@@ -1310,7 +1333,7 @@ function dimV(x, z, y1, y2, label){
       p.clone().sub(new THREE.Vector3(2.2, 0, 0))]);
     const tl = new THREE.Line(t, matDim); tl.renderOrder = 998; annos.add(tl);
   }
-  tagSprite(label, x, (y1 + y2)/2, z, 15, '#c23b22');
+  tagSprite(label, x, (y1 + y2)/2, z, 22, '#083c9c', true);
 }
 
 function dimLine(x1, z1, x2, z2, y, label){
@@ -1326,7 +1349,7 @@ function dimLine(x1, z1, x2, z2, y, label){
     const tl = new THREE.Line(t, matDim); tl.renderOrder = 998; annos.add(tl);
   }
   const mid = new THREE.Vector3().addVectors(a, b).multiplyScalar(0.5);
-  tagSprite(label, mid.x, y + 4, mid.z, 17, '#c23b22');
+  tagSprite(label, mid.x, y + 4, mid.z, 24, '#083c9c', true);
 }
 
 // hoofdmaten
@@ -2200,7 +2223,7 @@ dakNamen();
   m.position.set((b.min.x + b.max.x)/2, b.max.y + 0.3, (b.min.z + b.max.z)/2); dak.attach(m); naamGroup.userData.ms = m;
 }
 function zetNamen(v){ naamGroup.visible = v; if(naamGroup.userData.ms) naamGroup.userData.ms.visible = v; naamTags.forEach(t => t.visible = !v); }
-zetNamen(true);
+zetNamen(false);
 document.getElementById('tNaam').onchange = e => zetNamen(e.target.checked);
 // ============ GEDETAILLEERDE MODELLEN (uit de Bol-omgeving): CS EOS, CS AUX (Alfen D40H) en PCS (WSTECH APS) ============
 // eenvoudige blokken blijven staan tot de modellen geladen zijn; daarna vervangt een kloon elk blok op exact dezelfde plek
