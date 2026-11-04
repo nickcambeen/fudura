@@ -46,7 +46,7 @@
 </head>
 <body>
 <div id="wrap"></div>
-<div id="titel">Getec BESS-park Emmen &middot; 8 rijen<span>4 blokken van 2 rijen (rij B 180° gedraaid) &middot; per rij CS EOS + PCS + 2 &times; REPT 5 MWh type A + B &middot; CS AUX in het midden<br><b id="bcTxt"></b></span></div>
+<div id="titel">Getec BESS-park Emmen &middot; 8 rijen<span>4 blokken van 2 rijen (rij B 180° gedraaid) &middot; per rij CS EOS + PCS + 2 &times; REPT 5 MWh type A + B &middot; CS AUX aan de korte kant<br><b id="bcTxt"></b></span></div>
 <button class="knop" id="docBtn" aria-expanded="false" aria-controls="docPaneel">documenten</button>
 <div id="docPaneel" role="dialog" aria-label="Naslag documenten">
   <h4>Batterijcontainer REPT Powtrix 2.0, 5 MWh (iwell)</h4>
@@ -910,15 +910,11 @@ for(let i = 0; i < P.N; i++){
     cs:{x1:x0+off+P.pcsL+P.gPcsCs, x2:x0+off+kolom, y1:yCS1, y2:yCS2}
   });
 }
-// CS AUX in het midden: tussen rij M en rij M+1
+// (M = helft van de rijen; CS AUX staat aan de korte kant)
 const M = P.N/2;
-const aux = {x1:rows[M-1].cs.x2 + P.gCsAux, x2:rows[M-1].cs.x2 + P.gCsAux + P.csL, y1:yCS1, y2:yCS2};
-const shift = (aux.x2 + P.gAuxPcs) - rows[M].pcs.x1;
-for(const r of rows.slice(M)){
-  r.x0 += shift;
-  for(const k of ['bcA','bcB','pcs','cs']){ r[k].x1 += shift; r[k].x2 += shift; }
-}
-W += shift;
+// CS AUX aan de korte kant van het park, na de laatste rij (rij 8, A-zijde)
+const aux = {x1:rows[P.N-1].cs.x2 + P.gCsAux, x2:rows[P.N-1].cs.x2 + P.gCsAux + P.csL, y1:yCS1, y2:yCS2};
+W = Math.max(W, aux.x2 + P.gAuxPcs);             // MS-deuren CS AUX vrij tot het hek
 // 2D -> 3D: 3D-x = 2D-y (dwars op de rijen), 3D-z = 2D-x (langs de rijen), 1 eenheid = 100 mm
 const X = y => 10*y, Z = x => 10*x;
 // rij B: 180° gedraaid om de spiegelas (yPiv) en het hart van het containerblok
@@ -1172,8 +1168,8 @@ dimLine(xP, 0, xP, Z(r0.pcs.x1), 1.0, f2(r0.pcs.x1));
 dimLine(xP, Z(r0.pcs.x2), xP, Z(r0.cs.x1), 1.0, f2(r0.cs.x1 - r0.pcs.x2));
 dimLine(xP, Z(r0.cs.x2), xP, Z(r1.pcs.x1), 1.0, f2(r1.pcs.x1 - r0.cs.x2));
 // rond de CS AUX
-dimLine(xP, Z(rows[M-1].cs.x2), xP, Z(aux.x1), 1.0, f2(aux.x1 - rows[M-1].cs.x2));
-dimLine(xP, Z(aux.x2), xP, Z(rows[M].pcs.x1), 1.0, f2(rows[M].pcs.x1 - aux.x2));
+dimLine(xP, Z(rows[P.N-1].cs.x2), xP, Z(aux.x1), 1.0, f2(aux.x1 - rows[P.N-1].cs.x2));
+dimLine(xP, Z(aux.x2), xP, Z(W), 1.0, f2(W - aux.x2));
 
 // ============ CONTOURLIJNEN voor leesbaarheid (toets E) ============
 // witte volumes lopen zonder schaduw in elkaar over; randen maken de vorm leesbaar
@@ -1547,7 +1543,7 @@ scene.add(msStation);
     const eindPre = [[xc, zMS + 5 + i*0.4, yK], [xc, zMS + 1.5, yK], [xc, zMS - 1.9, 2.6]];
     if(d.r && d.r.flip){
       // rij B (180° gedraaid): via een dwarssleuf in de AUX-opening naar de sleuf aan de B-zijde
-      const zc = Z(aux.x1 - P.gCsAux/2) + ((i >> 1) - 1.5)*0.9, XtB = 2*X(yPiv) - Xt - off;
+      const zc = Z(rows[P.N-1].cs.x2 + P.gCsAux/2) + ((i >> 1) - 1.5)*0.9, XtB = 2*X(yPiv) - Xt - off;
       const eind = eindPre.map(([x, z, y]) => { const [xw, zw] = tfRij(d.r, x, z); return v(xw, y, zw); });
       buis([...start, v(xs, yK, zc), v(XtB, yK, zc), v(XtB, yK, eind[0].z), ...eind], 0.42, matK);
     } else {
