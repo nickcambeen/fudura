@@ -1190,14 +1190,23 @@ function vrij(xa, xb, ya, yb){   // 2D: x langs de rijen, y dwars
   const pts = [[ya, xa], [yb, xa], [yb, xb], [ya, xb], [ya, xa]].map(([y, x]) => new THREE.Vector3(X(y), 0.55, Z(x)));
   annos.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), matVrijL));
 }
-function vrijCS(o){ vrij(o.x1 - 1.85, o.x1, o.y1, o.y2); vrij(o.x2, o.x2 + 1.85, o.y1, o.y2); vrij(o.x1, o.x2, o.y1 - 1.10, o.y1); vrij(o.x1, o.x2, o.y2, o.y2 + 1.11); }
+// compactstation: één rechthoek volgens de Alfen-footprint D40H (MS4408A889): 1110 + 2336 + 1100 = 4546 × 1850 + 2870 + 1850 = 6570 mm
+const matVrijKader = new THREE.LineDashedMaterial({color: 0x1e7a34, dashSize: 2.5, gapSize: 1.5});
+function vrijCS(o, label){
+  const xa = o.x1 - 1.85, xb = o.x2 + 1.85, ya = o.y1 - 1.10, yb = o.y2 + 1.11;
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(X(yb) - X(ya), Z(xb) - Z(xa)), matVrij);
+  m.rotation.x = -Math.PI/2; m.position.set((X(ya) + X(yb))/2, 0.5, (Z(xa) + Z(xb))/2); m.renderOrder = 994; annos.add(m);
+  const pts = [[ya, xa], [yb, xa], [yb, xb], [ya, xb], [ya, xa]].map(([y, x]) => new THREE.Vector3(X(y), 0.6, Z(x)));
+  const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), matVrijKader); l.computeLineDistances(); annos.add(l);
+  tagSprite((label || 'CS') + ' · vrije ruimte Alfen ' + f2(yb - ya) + ' × ' + f2(xb - xa) + ' m', X((ya + yb)/2), 3, Z(xb) - 4, 10, '#1e7a34');
+}
 for(const r of rows) inRij(r, [annos], () => {
-  vrijCS(r.cs);
+  vrijCS(r.cs, 'CS EOS ' + (r.i + 1));
   vrij(r.pcs.x1, r.pcs.x2, r.pcs.y1 - 2.0, r.pcs.y1); vrij(r.pcs.x1, r.pcs.x2, r.pcs.y2, r.pcs.y2 + 2.0);
   vrij(r.bcA.x1 - 3.05, r.bcA.x1, r.bcA.y1, r.bcA.y2); vrij(r.bcB.x2, r.bcB.x2 + 3.05, r.bcB.y1, r.bcB.y2);   // deurzijden (buitenkant paar)
   vrij(r.bcA.x1, r.bcB.x2, yBC2, yBC2 + 2.0);                                                                // voorkant (aansluitingen)
 });
-vrijCS(aux);
+vrijCS(aux, 'CS AUX');
 tagSprite('groen = vrije ruimte / vluchtruimte (Alfen 1,85 m · APS 2,0 m · iwell 3,05 m)', X(HT/2), 4, Z(W) + 40, 12, '#2f9e44');
 for(const r of rows) inRij(r, [annos], () => {
   const n = r.i + 1;
