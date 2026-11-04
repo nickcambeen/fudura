@@ -35,7 +35,7 @@
 </head>
 <body>
 <div id="wrap"></div>
-<div id="titel">Getec BESS-park Emmen &middot; 8 rijen<span>8 &times; (CS EOS + PCS + 2 batterijcontainers) + CS AUX in het midden</span></div>
+<div id="titel">Getec BESS-park Emmen &middot; 8 rijen<span>8 &times; (CS EOS + PCS + 2 &times; REPT 5 MWh type A + B, dichte zijden 0,30 m uit elkaar*) + CS AUX in het midden<br>* onder voorbehoud van brandtestrapport (UL 9540A) / PGS 37-1</span></div>
 <button class="knop" id="luchtBtn">kaart: aan</button>
 <div id="kaartStand"></div>
 <button class="knop" id="hekBtn">hek: aan</button>
@@ -473,7 +473,10 @@ function makeLabel(txt, bg){
   return new THREE.MeshStandardMaterial({map:new THREE.CanvasTexture(c), roughness:0.6, metalness:0.1});
 }
 
-function batContainer(cx, cz, label){
+function batContainer(cx, cz, label, mir){
+  // mir = true: type B (deuren aan de andere lange zijde), gespiegeld om het hart van de container
+  const outer = new THREE.Group();
+  const prevT = meshTarget; meshTarget = outer;
   // betonnen funderingsbalken in de lengterichting van de container:
   // lopen aan beide zijden gelijk met de container, dus nergens uitstekend.
   // In de balk aan de gootzijde zit een sparing voor de kabelinvoer.
@@ -493,6 +496,7 @@ function batContainer(cx, cz, label){
     }
   }
   const cGroup = new THREE.Group();
+  outer.add(cGroup);
   meshTarget = cGroup;
   mesh(new THREE.BoxGeometry(60.6, 1.2, 24.6), matGrey, cx, 0.6, cz);
   mesh(new THREE.BoxGeometry(56, 27.6, 24), matWhite, cx - 2, 15.0, cz);
@@ -549,10 +553,12 @@ function batContainer(cx, cz, label){
   const lbl = new THREE.Mesh(new THREE.PlaneGeometry(8, 4), makeLabel(label));
   lbl.position.set(cx + 30.05, 26.5, cz - 5.0);
   lbl.rotation.y = Math.PI/2;
+  if(mir) lbl.scale.x = -1;                         // tekst niet gespiegeld
   (meshTarget || scene).add(lbl);
-  meshTarget = null;
+  meshTarget = prevT;
   cGroup.position.y = LIFT;
-  scene.add(cGroup);
+  if(mir){ outer.scale.z = -1; outer.position.z = 2*cz; }
+  scene.add(outer);
 }
 
 const pcsFace = -10.2, pcsC = pcsFace - 9.455;
@@ -823,7 +829,7 @@ const P = {
   pcsL: 1.98, pcsB: 1.26,  // PCS (L langs de rij)
   csL: 2.87, csB: 2.34,    // CS EOS Alfen Diabolo 40H (L langs de rij, deuren op de korte zijden)
   gHekKop: 2.00,           // hek -> kopse kant container (iwell)
-  gBC: 2.00,               // tussen de containers binnen een rij (iwell)
+  gBC: 0.30,               // binnen een rij: type A + type B met de dichte zijden naar elkaar (geen racks/deuren); balken 2,75 m net vrij. Onder voorbehoud van brandtestrapport (UL 9540A), PGS 37-1
   gRij: 2.50,              // tussen containers van twee rijen (iwell 2 m + PGS 0,5 m)
   gHekEind: 2.50,          // hek -> lange zijde eerste/laatste container (iwell 2 m + PGS 0,5 m)
   gBcCs: 2.20,             // container -> CS EOS (iwell 2 m)
@@ -833,7 +839,9 @@ const P = {
   gAuxPcs: 2.00            // MS-deuren CS AUX -> PCS volgende rij (APS 2 m, Alfen 1,85 m)
 };
 const blok = 2*P.bcB + P.gBC;                    // containerblok per rij
-const pitch = blok + P.gRij;                     // rijafstand
+// rijafstand: containers (deurzijden 2,5 m) of de kolom PCS + CS EOS (2,0 m vrij voor MS-deuren CS / servicezijde PCS), wat het grootst is
+const pitch = Math.max(blok + P.gRij, P.pcsL + P.gPcsCs + P.csL + P.gAuxPcs);
+P.gRij = pitch - blok;                           // werkelijke ruimte tussen de containers van twee rijen
 const kolom = P.pcsL + P.gPcsCs + P.csL;         // PCS + CS langs de rij
 const off = (blok - kolom)/2;                    // kolom gecentreerd op het containerblok
 let W = P.gHekEind*2 + P.N*blok + (P.N-1)*P.gRij;
@@ -879,7 +887,7 @@ ground.position.set(X(HT/2), 0, Z(W/2));
 for(const r of rows){
   const n = r.i + 1;
   batContainer(X((yBC1+yBC2)/2), Z((r.bcA.x1+r.bcA.x2)/2), 'BC' + n + '.1');
-  batContainer(X((yBC1+yBC2)/2), Z((r.bcB.x1+r.bcB.x2)/2), 'BC' + n + '.2');
+  batContainer(X((yBC1+yBC2)/2), Z((r.bcB.x1+r.bcB.x2)/2), 'BC' + n + '.2', true);   // type B: deuren naar buiten
   buildPCS(X((r.pcs.y1+r.pcs.y2)/2), Z((r.pcs.x1+r.pcs.x2)/2));
   placeCS(r.cs, false);
 }
@@ -1274,7 +1282,7 @@ function dcPlate(cx, cz){
         new THREE.Vector3(cx + 27.8, 7.4 + y, zs), new THREE.Vector3(cx + 27.5, 5.4 + y, zs),
         new THREE.Vector3(cx + 27.3, 2.8 + y, zs), new THREE.Vector3(cx + 27.3, 0.4 + y, zs)
       ], false, 'catmullrom', 0.3);
-      kabelGroup.add(new THREE.Mesh(new THREE.TubeGeometry(ic, 30, 0.12, 8, false), matOrangeCable));
+      (meshTarget || kabelGroup).add(new THREE.Mesh(new THREE.TubeGeometry(ic, 30, 0.12, 8, false), matOrangeCable));
     }
   }
   mesh(new THREE.BoxGeometry(3.6, 8.2, 0.25), matWhiteDoor, cx + 28.8, 6.0 + y, cz + 0.2);
@@ -1288,9 +1296,12 @@ function buildDC(r){
   const uy = -6.0, Rb = 4.8, v = (x, y, z) => new THREE.Vector3(x, y, z);
   meshTarget = kabelGroup;
   // half +1 (hogere z in de PCS) -> container met de hoogste z; half -1 -> de andere
-  for(const [half, c] of [[1, r.bcB], [-1, r.bcA]]){
+  for(const [half, c, m] of [[1, r.bcB, -1], [-1, r.bcA, 1]]){
     const cz = Z((c.x1 + c.x2)/2);
-    dcPlate(cx, cz);
+    if(m < 0){                                       // type B: aansluitplaat gespiegeld
+      const D = new THREE.Group(); D.scale.z = -1; D.position.z = 2*cz; kabelGroup.add(D);
+      meshTarget = D; dcPlate(cx, cz); meshTarget = kabelGroup;
+    } else dcPlate(cx, cz);
     for(const plus of [true, false]){
       const plateZ = plus ? plusPlateZ : minPlateZ, s = plus ? 1 : -1;
       const mat = plus ? matDCp : matDCn;
@@ -1299,18 +1310,18 @@ function buildDC(r){
         const fz = Zp + half*4.3 + (n - 2.5)*0.92;
         const bolt = n % 3, back = n >= 3;
         const bz = boltZ(plateZ, bolt, s);
-        const gz = cz + bz + (back ? 0.20 : -0.20);
+        const gz = cz + m*(bz + (back ? 0.20 : -0.20));
         const xUp = back ? cx + 26.9 : cx + 28.2;
         const yStart = plus ? fy : fy - 0.9;
         const Wp = [
           v(Xp - 4.1, yStart + LIFT, fz), v(Xp - 4.1, uy, fz), v(Xp - 12, uy, fz),
           v(kop + 6, uy, gz), v(xUp, uy, gz), v(xUp, 2.6 + LIFT, gz),
-          v(back ? cx + 27.2 : cx + 28.0, 7.4 + LIFT, cz + bz)
+          v(back ? cx + 27.2 : cx + 28.0, 7.4 + LIFT, cz + m*bz)
         ];
         const curve = new THREE.CatmullRomCurve3(filletPath(Wp, Rb, 10), false, 'centripetal');
         kabelGroup.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 120, 0.19, 10, false), mat));
         mesh(new THREE.CylinderGeometry(0.3, 0.34, 0.9, 12), matDark, xUp, 0.45 + LIFT, gz);
-        mesh(palmGeo, matTinned, back ? cx + 27.2 : cx + 28.0, 7.4 + LIFT, cz + bz);
+        mesh(palmGeo, matTinned, back ? cx + 27.2 : cx + 28.0, 7.4 + LIFT, cz + m*bz);
       }
     }
   }
