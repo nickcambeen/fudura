@@ -1843,7 +1843,7 @@ function actie(k){
   if(k === 'v'){ auto = false; target.set(X(9.5), 3, Z(r0.x0 + 3)); theta = 0.2; phi = 0.12; radius = 140; }
   if(k === 'n'){ zetMsStation(true); auto = false; target.set(msPos.x, 12, msPos.z); theta = 0.5; phi = 1.1; radius = 170; }
   if(k === 'x' || k === 'a'){ auto = false; target.set(X((yCS1+yCS2)/2), 16, Z((aux.x1+aux.x2)/2)); theta = 2.4; phi = 1.15; radius = 90; }
-  if(k === 'o' || k === 'd'){ doorsOpen = !doorsOpen; doors.forEach(d => d.m.rotation.y = doorsOpen ? d.open : d.dicht); }
+  if(k === 'o' || k === 'd'){ doorsOpen = !doorsOpen; doors.forEach(d => d.m.rotation[d.as || 'y'] = doorsOpen ? d.open : d.dicht); }
   if(k === 'e'){ edgeGroup.forEach(l => l.visible = !l.visible); }
   if(k === 'h'){ toggleHek(); }
   if(k === 'm'){ toggleMaat(); }
@@ -2118,7 +2118,11 @@ function schuif(){ const t = performance.now(), dt = Math.min(0.05, (t - tKO)/10
   if(!THREE.GLTFLoader) return;
   const ld = new THREE.GLTFLoader();
   const laad = (url, cb) => ld.load(url, g => { try{ cb(g.scene); }catch(e){ console.warn(url, e); } }, undefined, e => console.warn('model niet geladen', url, e));
-  const zet = (sc, ph, pos, scale) => { const k = sc.clone(true); k.position.copy(pos); k.scale.copy(scale); ph.parent.add(k); ph.visible = false; return k; };
+  const zet = (sc, ph, pos, scale) => { const k = sc.clone(true); k.position.copy(pos); k.scale.copy(scale); ph.parent.add(k); ph.visible = false;
+    // beweegbare deuren: knooppunten 'deur_<as>_<open×1000>_<dicht×1000>' uit de export
+    k.traverse(o => { const m = /^deur_([xyz])_(-?\d+)_(-?\d+)/.exec(o.name || ''); if(!m) return;
+      const d = {m: o, as: m[1], open: +m[2]/1000, dicht: +m[3]/1000}; doors.push(d); o.rotation[d.as] = doorsOpen ? d.open : d.dicht; });
+    return k; };
   laad('models/cs_eos.glb', sc => (window.DETCS || []).filter(c => !c.aux).forEach(c => zet(sc, c.g, c.g.position, c.g.scale)));
   laad('models/cs_aux.glb', sc => (window.DETCS || []).filter(c => c.aux).forEach(c => zet(sc, c.g, c.g.position, c.g.scale)));
   laad('models/pcs.glb', sc => (window.DETPCS || []).forEach(c => zet(sc, c.g, new THREE.Vector3(c.Xc, LIFT, c.Zc), new THREE.Vector3(1, 1, -1))));
