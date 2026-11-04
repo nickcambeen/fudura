@@ -12,7 +12,7 @@
     background: rgba(255,255,255,0.84); padding: 6px 10px; border-radius: 8px; line-height: 1.5;
     max-width: 1100px;
   }
-  #titel { position: fixed; left: 16px; top: 12px; font: 600 15px/1.3 system-ui, sans-serif; color: #1d2830;
+  #titel { position: fixed; left: 16px; top: 12px; max-width: calc(100vw - 300px); font: 600 15px/1.3 system-ui, sans-serif; color: #1d2830;
     background: rgba(255,255,255,0.86); padding: 7px 12px; border-radius: 8px; }
   #titel span { display: block; font-weight: 400; font-size: 12px; color: #5f6d76; }
   .knop{position:absolute;right:14px;z-index:20;padding:7px 13px;
@@ -72,6 +72,7 @@
 <button class="knop" id="maatBtn">maatvoering: aan</button>
 <button class="knop" id="bovenBtn">bovenaanzicht</button>
 <button class="knop" id="fpBtn" style="top:432px">rondlopen (P)</button>
+<button class="knop uit" id="pgsBtn" style="top:470px;color:#a8241d;border-color:#d8322a">PGS-zones: uit</button>
 <button class="knop" id="meetBtn">meten</button>
 <button class="knop" id="meetWisBtn">wis metingen</button>
 <button class="knop" id="bcBtn" style="top:320px"></button>
@@ -863,7 +864,7 @@ const P = {
   csL: 2.87, csB: 2.34,    // CS EOS Alfen Diabolo 40H (L langs de rij, deuren op de korte zijden)
   gHekKop: 3.05,           // (niet meer gebruikt in de dubbelrij-opstelling)
   gKoelKop: 3.05,          // tussen de koelerzijden van rij A en rij B in een blok van 4 (iwell 3,05 m; PGS 37-1 M51 in elkaars verlengde min. 2,5 m)
-  gBC: ({'0.5': 0.50, '2': 2.00})[new URLSearchParams(location.search).get('bc')] || 1.00,               // binnen een rij: type A + type B met de dichte zijden naar elkaar, 0,50 m (gemeten op iwell-opstelling 30 MW/120 MWh); variant 2,00 m (APS 4 MWh-instructie)
+  gBC: (new URLSearchParams(location.search).get('bc') === '2.5') ? 2.50 : 0.50,   // PGS 37-1 M52: typical 3 mét bewijs (afb. 15) containers in een cluster tegen elkaar; zonder bewijs 2,5 m               // binnen een rij: type A + type B met de dichte zijden naar elkaar, 0,50 m (gemeten op iwell-opstelling 30 MW/120 MWh); variant 2,00 m (APS 4 MWh-instructie)
   gRij: 3.05,              // tussen de deurzijden van twee rijen (iwell-opstelling: 3,05 m vrij aan de deurzijde)
   gHekEind: 3.05,          // hek -> deurzijde eerste/laatste container (iwell 3,05 m)
   gBcCs: 2.20,             // container -> CS EOS (iwell 2 m)
@@ -873,16 +874,14 @@ const P = {
   gAuxPcs: 2.00            // MS-deuren CS AUX -> PCS volgende rij (APS 2 m, Alfen 1,85 m)
 };
 (function(){
-  const kort = P.gBC < 0.9;
+  const kort = P.gBC < 1;
   const b = document.getElementById('bcBtn');
-  b.textContent = 'dichte zijden: ' + ({0.5: '0,50 m (iwell)', 1: '1,00 m (PGS)', 2: '2,00 m'})[P.gBC];
-  b.onclick = () => { const u = new URL(location.href); const volg = {1: '0.5', 0.5: '2', 2: null}[P.gBC];
-    if(volg) u.searchParams.set('bc', volg); else u.searchParams.delete('bc'); location.href = u.toString(); };
+  b.textContent = 'tussen containers: ' + (kort ? '0,50 m (met bewijs)' : '2,50 m (zonder bewijs)');
+  b.onclick = () => { const u = new URL(location.href); if(kort) u.searchParams.set('bc', '2.5'); else u.searchParams.delete('bc'); location.href = u.toString(); };
   document.getElementById('bcTxt').style.color = kort ? '#b3261e' : '';
-  document.getElementById('bcTxt').textContent = ({
-    1: 'PGS 37-1 M51: zijdelings 1,00 m (dichte zijden), in elkaars verlengde ≥ 2,5 m (koelerzijden 3,05 m) · blok van 4 EOS (max. 6 per cluster) · ⚠ afstand tussen clusters nog te bepalen',
-    0.5: '⚠ NOG NIET GEREGELD: 0,50 m (iwell) mag alleen met bewijs UL 9540A / IEC 62933-5-2 volgens PGS 37-1 afb. 14 en akkoord brandweer',
-    2: 'Variant 2,00 m tussen de dichte zijden'})[P.gBC];
+  document.getElementById('bcTxt').textContent = kort
+    ? 'PGS 37-1 M52 typical 3 (afb. 15): in een cluster mogen containers tegen elkaar (hier 0,50 m, iwell); tussen clusters ≥ hoogte × 1 (≈ 3,2 m) · ⚠ NOG NIET GEREGELD: bewijs IEC 62933-5-2 (aanwezig) + UL 9540A + IEC 62619 + NFPA 68 aanleveren en akkoord brandweer'
+    : 'PGS 37-1 M52 typical 2 (zonder bewijs): ≥ 2,5 m tussen alle EOS\'en, aan één zijde ≥ 4,5 m voor de brandweer';
 })();
 const blok = 2*P.bcB + P.gBC;                    // containerblok per rij
 // rijafstand: containers (deurzijden 3,05 m) of de kolom PCS + CS EOS (2,0 m vrij voor MS-deuren CS / servicezijde PCS), wat het grootst is
@@ -1584,6 +1583,35 @@ document.getElementById('msDakBtn').addEventListener('click', () => {
 });
 
 
+// ============ PGS 37-1 ZONES (knop 'PGS-zones') ============
+// M50: afstand EOS tot begrenzing locatie / ander bouwwerk / brandbare objecten (bomen!): 5–10 m → 30 min brandwerend, ≥ 10 m geen eis
+// M52 afb. 15: weg voor brandweerwagen / afstand tot kavelgrens ≥ 4,5 m langs de clusters; cluster max. 2 rijen en max. 35 m
+const pgsGroup = new THREE.Group(); pgsGroup.visible = false; scene.add(pgsGroup);
+(function(){
+  const x1 = X(2*yPiv - yBC2), x2 = X(yBC2), z1 = Z(rows[0].x0), z2 = Z(rows[P.N - 1].x0 + blok);   // omhullende van alle batterijcontainers
+  const lijn = (pts, kleur, streep) => {
+    const g = new THREE.BufferGeometry().setFromPoints(pts.map(([x, z]) => new THREE.Vector3(x, 0.6, z)));
+    const m = streep ? new THREE.LineDashedMaterial({color: kleur, dashSize: 8, gapSize: 5, depthTest: false})
+                     : new THREE.LineBasicMaterial({color: kleur, depthTest: false});
+    const l = new THREE.Line(g, m); if(streep) l.computeLineDistances(); l.renderOrder = 997; pgsGroup.add(l);
+  };
+  const kader = (d, kleur, streep) => lijn([[x1 - d, z1 - d], [x2 + d, z1 - d], [x2 + d, z2 + d], [x1 - d, z2 + d], [x1 - d, z1 - d]], kleur, streep);
+  const vlak = (xa, xb, za, zb, kleur, op) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(Math.abs(xb - xa), Math.abs(zb - za)),
+      new THREE.MeshBasicMaterial({color: kleur, transparent: true, opacity: op, depthWrite: false})); m.rotation.x = -Math.PI/2; m.position.set((xa + xb)/2, 0.4, (za + zb)/2); m.renderOrder = 996; pgsGroup.add(m); };
+  kader(0, 0x1b4f8a, false);                   // EOS-omhullende
+  kader(50, 0xe8901a, true);                    // 5 m
+  kader(100, 0xd8322a, true);                   // 10 m
+  vlak(x1 - 45, x1, z1, z2, 0xd8322a, 0.10);    // 4,5 m brandweer B-zijde
+  vlak(x2, x2 + 45, z1, z2, 0xd8322a, 0.10);    // 4,5 m brandweer A-zijde
+  const n = annos.children.length;
+  tagSprite('M50: 10 m tot kavelgrens / gebouwen / bomen → geen brandwerendheidseis', (x1 + x2)/2, 6, z1 - 100, 12, '#d8322a');
+  tagSprite('M50: 5–10 m → EOS 30 min brandwerend (tenzij propagatietest)', (x1 + x2)/2, 6, z1 - 50, 12, '#c2571a');
+  tagSprite('M52: ≥ 4,5 m weg brandweer / kavelgrens', x1 - 22, 6, (z1 + z2)/2, 12, '#d8322a');
+  tagSprite('M52: ≥ 4,5 m weg brandweer / kavelgrens', x2 + 22, 6, (z1 + z2)/2, 12, '#d8322a');
+  for(let d = 0; d < ND; d++) tagSprite('cluster ' + (d + 1) + ' · 4 EOS · ' + f2(2*P.bcL + P.gKoelKop) + ' × ' + f2(blok) + ' m', X(yPiv), 34, Z(rows[2*d].x0 + blok/2), 11, '#1b4f8a');
+  annos.children.slice(n).forEach(c => pgsGroup.add(c));
+})();
+document.getElementById('pgsBtn').addEventListener('click', e => { pgsGroup.visible = !pgsGroup.visible; e.target.textContent = 'PGS-zones: ' + (pgsGroup.visible ? 'aan' : 'uit'); e.target.classList.toggle('uit', !pgsGroup.visible); });
 const center = new THREE.Vector3(X(HT/2), 6, Z(W/2));
 const target = center.clone();
 let theta = 2.2, phi = 1.0, radius = 760, auto = true;
