@@ -71,7 +71,8 @@
 <button class="knop" id="meetBtn">meten</button>
 <button class="knop" id="meetWisBtn">wis metingen</button>
 <button class="knop" id="bcBtn" style="top:320px"></button>
-<div id="caption">Sleep om te draaien &middot; scroll of + en &minus; om te zoomen &middot; 0: overzicht &middot; B: bovenaanzicht &middot; C: containerkoppen rij 1 &middot; 1: LS-zijde CS EOS 1 &middot; WASD: lopen/draaien &middot; R/F: kantelen &middot; X: CS AUX &middot; O: deuren &middot; H: hek &middot; K: kabels &middot; P: ladderbaan rij 1 &middot; V: DC-kabels rij 1 (van boven) &middot; M: maatvoering &middot; E: contouren &middot; Q: meten (Esc wist) &middot; L: kaart aan/uit (pijltjes = kaart schuiven, , en . = draaien)</div>
+<button class="knop" id="msBtn" style="top:358px;color:#a8431a;border-color:#c2571a">MS-station: aan</button>
+<div id="caption">Sleep om te draaien &middot; scroll of + en &minus; om te zoomen &middot; 0: overzicht &middot; B: bovenaanzicht &middot; C: containerkoppen rij 1 &middot; 1: LS-zijde CS EOS 1 &middot; WASD: lopen/draaien &middot; R/F: kantelen &middot; X: CS AUX &middot; N: MS-station &middot; O: deuren &middot; H: hek &middot; K: kabels &middot; P: ladderbaan rij 1 &middot; V: DC-kabels rij 1 (van boven) &middot; M: maatvoering &middot; E: contouren &middot; Q: meten (Esc wist) &middot; L: kaart aan/uit (pijltjes = kaart schuiven, , en . = draaien)</div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 // Schaal: 1 eenheid = 100 mm
@@ -1379,6 +1380,173 @@ window.addEventListener('keydown', e => { if(e.key.toLowerCase() === 'k') toggle
 
 
 // ============ CAMERA ============
+// ============ BETREEDBAAR MS-STATION 10 kV: Eaton NGX, KK + 9V (lus in/uit, 8 BESS-rijen + CS AUX) ============
+// Alfen betreedbaar station met kelder, opzet als Bol maar verlengd voor 11 velden + 1 reserve.
+// Maten VOORLOPIG: uitwendig ca. 7,6 x 2,5 m, inwendige hoogte 2,33 m, kelder 1,20 m.
+const msStation = new THREE.Group();
+const MSV = ['K1', 'K2', 'V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V7', 'V8', 'V9', null];   // null = reserve
+const MSV_INFO = {K1: 'lus in · HSS C12', K2: 'lus uit · HSS C13', V9: 'CS AUX'};
+for(let i = 1; i <= 8; i++) MSV_INFO['V' + i] = 'BESS rij ' + i;
+const msB = 76, msD = 25, msVB = 5.0;               // lengte (lokaal z), diepte (lokaal x), veldbreedte 500 mm
+const msPos = {x: 43, z: ZW + 10 + msD/2 + 1.2};    // 1,0 m buiten het hek aan de eindzijde, vluchtdeur blijft vrij
+(function bouwMsStation(){
+  const matHout = new THREE.MeshStandardMaterial({map: (function(){
+    const c = document.createElement('canvas'); c.width = 256; c.height = 256; const g = c.getContext('2d');
+    const t = ['#5a4535', '#614a39', '#55412f', '#6a5240', '#4f3d30', '#735a45'];
+    for(let i = 0; i < 8; i++){ g.fillStyle = t[(i*5 + 3) % t.length]; g.fillRect(i*32, 0, 32, 256); g.fillStyle = '#17110c'; g.fillRect(i*32, 0, 2, 256); }
+    const tx = new THREE.CanvasTexture(c); tx.wrapS = tx.wrapT = THREE.RepeatWrapping; return tx; })(), roughness: 0.85, metalness: 0});
+  const matDeurMS = new THREE.MeshStandardMaterial({color: 0xc6d0d6, roughness: 0.45, metalness: 0.3});
+  const matKoz = new THREE.MeshStandardMaterial({color: 0xc3ccd1, roughness: 0.45, metalness: 0.4});
+  const wg = new THREE.Group();
+  const vorig = meshTarget; meshTarget = wg;
+  const B = msB, D = msD, WD = 0.9, Hi = 23.3, KD = 12.0, y0 = 1.0;
+  // kelder + vloer
+  mesh(new THREE.BoxGeometry(D + 2*WD, KD + 1.2, B + 2*WD), matSokkel, 0, y0 - KD/2 - 0.6, 0);
+  mesh(new THREE.BoxGeometry(D - 1.0, KD, B - 1.0), matZichtbeton, 0, y0 - KD/2 + 0.3, 0);
+  for(let r = 0; r < 3; r++) for(let c = 0; c < 14; c++)            // Hauff HSI-150 in de kelderwand (kabelzijde)
+    mesh(new THREE.BoxGeometry(0.35, 1.7, 1.7), matBlockDark, D/2 - 0.4, y0 - 3.0 - r*3.4, -B/2 + 8 + c*4.6);
+  for(let t = 0; t < 7; t++)                                          // trap naar de kelder
+    mesh(new THREE.BoxGeometry(5.5, 0.5, 1.9), matConcrete, -D/2 + 4.4, y0 - 1.2 - t*1.65, B/2 - 4.2 - t*1.9);
+  mesh(new THREE.BoxGeometry(D, 0.7, B), matConcrete, 0, y0 + 0.35, 0);
+  mesh(new THREE.BoxGeometry(D - 2.0, 0.12, B - 2.0), matEpoxy, 0, y0 + 0.76, 0);
+  // wanden
+  for(const sz of [-1, 1]) mesh(new THREE.BoxGeometry(D, Hi, WD), matRAL7032, 0, y0 + Hi/2 + 0.7, sz*(B/2 - WD/2));
+  mesh(new THREE.BoxGeometry(WD, Hi, B), matRAL7032, D/2 - WD/2, y0 + Hi/2 + 0.7, 0);
+  const dW = 11.5, dH = 20.7, dz = -B/2 + 14, xF = -D/2 + WD/2;      // deur bediengang, 1,15 x 2,07 m
+  mesh(new THREE.BoxGeometry(WD, Hi, (dz - dW/2) + B/2), matRAL7032, xF, y0 + Hi/2 + 0.7, ((dz - dW/2) - B/2)/2);
+  mesh(new THREE.BoxGeometry(WD, Hi, B/2 - (dz + dW/2)), matRAL7032, xF, y0 + Hi/2 + 0.7, (B/2 + dz + dW/2)/2);
+  mesh(new THREE.BoxGeometry(WD, Hi - dH, dW), matRAL7032, xF, y0 + dH + (Hi - dH)/2 + 0.7, dz);
+  const dg = new THREE.BoxGeometry(0.3, dH, dW); dg.translate(0, 0, dW/2);
+  registerDoor(mesh(dg, matDeurMS, -D/2 - 1.05, y0 + dH/2 + 0.7, dz - dW/2), -115*Math.PI/180, 0);
+  mesh(new THREE.BoxGeometry(0.12, 2.0, 2.6), matYellow, xF - 0.82, y0 + 15.5, dz + 2.6);
+  // dak (afneembaar kuipdak): knop MS-station -> 'dak eraf'
+  const msDak = new THREE.Group(); wg.add(msDak); msStation.userData.dak = msDak; meshTarget = msDak;
+  mesh(new THREE.BoxGeometry(D + 1.6, 1.2, B + 1.6), matZichtbeton, 0, y0 + Hi + 1.3, 0);
+  mesh(new THREE.BoxGeometry(D + 2.2, 0.7, B + 2.2), new THREE.MeshStandardMaterial({color: 0xc9cac6, roughness: 0.9}), 0, y0 + Hi + 2.5, 0);
+  meshTarget = wg;
+  // houten gevelbekleding rondom, met deuropening en rooster
+  const xO = -D/2 - 1.2, xA = D/2 + 1.2, zO = -B/2 - 1.2, zA = B/2 + 1.2, yP = y0 + 0.7, yT = y0 + Hi + 2.9;
+  const hT = yT - yP, yM = (yT + yP)/2;
+  function bek(w, h, x, y, z, ry){
+    const geo = new THREE.PlaneGeometry(w, h); const uv = geo.attributes.uv;
+    for(let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i)*w/12.8, uv.getY(i)*h/27);
+    const m = new THREE.Mesh(geo, matHout); m.position.set(x, y, z); m.rotation.y = ry; wg.add(m);
+  }
+  const dz0 = dz - dW/2 - 0.25, dz1 = dz + dW/2 + 0.25, yDb = y0 + dH + 1.1;
+  bek(dz0 - zO, hT, xO, yM, (zO + dz0)/2, -Math.PI/2);
+  bek(zA - dz1, hT, xO, yM, (dz1 + zA)/2, -Math.PI/2);
+  bek(dz1 - dz0, yT - yDb, xO, (yT + yDb)/2, dz, -Math.PI/2);
+  bek(zA - zO, hT, xA, yM, 0, Math.PI/2);
+  bek(xA - xO, hT, 0, yM, zO, Math.PI);
+  bek(xA - xO, hT, 0, yM, zA, 0);
+  for(const zz of [dz0, dz1]) mesh(new THREE.BoxGeometry(1.2, yDb - yP, 0.15), matKoz, xO + 0.6, (yDb + yP)/2, zz);
+  mesh(new THREE.BoxGeometry(1.2, 0.15, dz1 - dz0), matKoz, xO + 0.6, yDb, dz);
+  mesh(new THREE.BoxGeometry(xA - xO - 0.4, yP + 0.3, zA - zO - 0.4), matSokkel, 0, (yP - 0.3)/2, 0);
+  for(const rz of [B/2 - 14, 4]){                                     // 2 lamellenroosters (warmteafvoer 11 velden)
+    mesh(new THREE.BoxGeometry(0.5, 20.3, 16.8), matKoz, xO - 0.1, 4.0 + 9.75, rz);
+    const ro = new THREE.Mesh(new THREE.PlaneGeometry(16, 19.5), matLouvre); ro.position.set(xO - 0.37, 4.0 + 9.75, rz); ro.rotation.y = -Math.PI/2; wg.add(ro);
+  }
+  // naamplaat
+  const np = document.createElement('canvas'); np.width = 512; np.height = 128; const ng = np.getContext('2d');
+  ng.fillStyle = '#fff'; ng.fillRect(0, 0, 512, 128); ng.strokeStyle = '#222'; ng.lineWidth = 8; ng.strokeRect(4, 4, 504, 120);
+  ng.fillStyle = '#111'; ng.font = 'bold 54px Arial'; ng.textAlign = 'center'; ng.textBaseline = 'middle'; ng.fillText('BESS 10 kV', 256, 68);
+  const npm = new THREE.Mesh(new THREE.PlaneGeometry(6, 1.5), new THREE.MeshStandardMaterial({map: new THREE.CanvasTexture(np)}));
+  npm.position.set(xO - 0.4, y0 + 22.2, dz); npm.rotation.y = -Math.PI/2; wg.add(npm);
+  // ---- 12-VELDS EATON NGX tegen de achterwand: K1 K2 V1..V9 + reserve ----
+  const nV = MSV.length;
+  function veldTekst(t, sub, geel){
+    const c = document.createElement('canvas'); c.width = 256; c.height = 256; const g = c.getContext('2d');
+    g.fillStyle = geel ? '#ffd21e' : '#c9ced1'; g.fillRect(0, 0, 256, 256);
+    g.strokeStyle = '#101114'; g.lineWidth = 14; g.strokeRect(7, 7, 242, 242);
+    g.fillStyle = '#101114'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.font = 'bold ' + (t.length > 2 ? 78 : 130) + 'px Helvetica, Arial, sans-serif'; g.fillText(t, 128, sub ? 108 : 132);
+    if(sub){ g.font = 'bold 30px Helvetica, Arial, sans-serif'; g.fillText(sub, 128, 205); }
+    const tx = new THREE.CanvasTexture(c); tx.anisotropy = 8;
+    return new THREE.MeshBasicMaterial({map: tx, polygonOffset: true, polygonOffsetFactor: -2});
+  }
+  for(let f = 0; f < nV; f++){
+    const fz = -(nV - 1)*msVB/2 + f*msVB + 3;                         // iets naar de deurloze kop
+    const naam = MSV[f];
+    if(!naam){
+      mesh(new THREE.BoxGeometry(0.18, 18.0, msVB - 0.6), matGrey, 0.75, y0 + 10.2, fz);
+      const bp = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 3.4), veldTekst('RES.', null, false)); bp.position.set(0.6, y0 + 14.0, fz); bp.rotation.y = -Math.PI/2; wg.add(bp);
+      continue;
+    }
+    mesh(new THREE.BoxGeometry(11.0, 19.0, msVB - 0.15), matPlate, 6.0, y0 + 10.2, fz);
+    mesh(new THREE.BoxGeometry(0.25, 18.4, msVB - 0.4), matWhiteDoor, 0.6, y0 + 10.2, fz);
+    mesh(new THREE.BoxGeometry(0.3, 4.0, msVB - 1.4), matGrey, 0.48, y0 + 15.0, fz);                 // relais / mimic
+    mesh(new THREE.BoxGeometry(0.3, 1.6, 1.6), naam[0] === 'K' ? matGreen : matDark, 0.42, y0 + 15.0, fz);   // K: groen, V: VS-relais
+    mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.3, 12), matDark, 0.42, y0 + 11.4, fz).rotation.z = Math.PI/2;
+    mesh(new THREE.BoxGeometry(0.3, 1.3, msVB - 2.6), matDark, 0.48, y0 + 7.8, fz);
+    const pl = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 3.4), veldTekst(naam, MSV_INFO[naam], true));
+    pl.position.set(0.3, y0 + 17.8, fz); pl.rotation.y = -Math.PI/2; wg.add(pl);
+  }
+  mesh(new THREE.BoxGeometry(6.5, 2.2, nV*msVB), matPlate, 6.0, y0 + 20.6, 3);                        // railkoker
+  // verlichting, groepenkastje, kachel, datakast
+  mesh(new THREE.BoxGeometry(1.6, 0.5, 20.0), matWhiteDoor, -4.0, y0 + Hi - 0.5, 0);
+  mesh(new THREE.BoxGeometry(1.6, 4.4, 3.2), matWhiteDoor, -D/2 + 1.7, y0 + 15.0, dz + 9.5);
+  mesh(new THREE.BoxGeometry(1.4, 4.0, 8.0), matWhiteDoor, -D/2 + 1.6, y0 + 6.0, dz + 20);
+  mesh(new THREE.BoxGeometry(1.7, 6.4, 5.0), matPlate, -D/2 + 1.75, y0 + 11.0, B/2 - 6);
+  mesh(new THREE.BoxGeometry(2.2, 9.0, 4.0), matGrey, -D/2 + 2.0, y0 + 5.5, B/2 - 12);               // 110 V DC-hulpspanning (batterij + lader)
+  // aardrail Ecu 30 x 6 rondom
+  mesh(new THREE.BoxGeometry(0.06, 0.3, B - 3.0), matCopper, D/2 - 1.3, y0 + 2.6, 0);
+  for(const sz of [-1, 1]) mesh(new THREE.BoxGeometry(D - 3.0, 0.3, 0.06), matCopper, 0, y0 + 2.6, sz*(B/2 - 1.5));
+  meshTarget = vorig;
+  wg.rotation.y = Math.PI/2;                // deur (lokaal -x) naar buiten, kabelzijde (lokaal +x) naar het park
+  wg.position.set(msPos.x, 0, msPos.z);
+  msStation.add(wg);
+  // veldposities in wereldcoördinaten (kelderwand kabelzijde)
+  msStation.userData.veldX = MSV.map((n, f) => msPos.x + (-(nV - 1)*msVB/2 + f*msVB + 3));
+})();
+scene.add(msStation);
+
+// ---- MS-kabels 3×1×240 Al (V) en 3×1×630 Al (K) in trefoil, ondergronds via een sleuf langs de CS-zijde ----
+(function msKabels(){
+  const matK = new THREE.MeshStandardMaterial({color: 0xb3352a, roughness: 0.5, metalness: 0.08});
+  const v = (x, y, z) => new THREE.Vector3(x, y, z);
+  const yK = -7.0, zAchter = msPos.z - msD/2 - 0.5;
+  const Xt = X(yCS2 + (HT - yCS2)/2);                                      // sleuf tussen CS EOS en hek
+  const doelen = [];
+  for(let i = 0; i < 8; i++) doelen.push({veld: 'V' + (i + 1), o: rows[i].cs});
+  doelen.push({veld: 'V9', o: aux});
+  const vx = msStation.userData.veldX;
+  const buis = (pts, r, m) => { const c = new THREE.CatmullRomCurve3(filletPath(pts, 3.0, 8), false, 'centripetal');
+                                 const t = new THREE.Mesh(new THREE.TubeGeometry(c, 160, r, 8, false), m); msStation.add(t); };
+  doelen.forEach((d, i) => {
+    const xv = vx[MSV.indexOf(d.veld)];
+    const off = (i - 4)*0.9;                                               // naast elkaar in de sleuf
+    const xc = X((d.o.y1 + d.o.y2)/2), zMS = Z(d.o.x2);                     // MS-kop van de CS
+    buis([
+      v(xv, 2.0, zAchter + 0.6), v(xv, yK, zAchter - 1.0), v(xv, yK, zAchter - 6 - i*0.9),
+      v(Xt + off, yK, zAchter - 6 - i*0.9), v(Xt + off, yK, zMS + 5 + i*0.4),
+      v(xc, yK, zMS + 5 + i*0.4), v(xc, yK, zMS + 1.5), v(xc, 2.6, zMS - 1.9)
+    ], 0.42, matK);
+  });
+  // K1/K2: lus naar Getec HSS (rail C, velden 12 en 13), voorlopig op een eind gelegd
+  ['K1', 'K2'].forEach((k, i) => {
+    const xv = vx[MSV.indexOf(k)];
+    const zEnd = zAchter + 30 + i*1.6;
+    buis([v(xv, 2.0, zAchter + 0.6), v(xv, yK, zAchter - 1.0), v(xv, yK, zAchter - 3 - i*1.4),
+          v(xv - 60 - i*1.4, yK, zAchter - 3 - i*1.4), v(xv - 60 - i*1.4, yK, zEnd)], 0.6, matK);
+    mesh(new THREE.CylinderGeometry(1.0, 1.0, 1.2, 12), matDark, xv - 60 - i*1.4, yK, zEnd).rotation.x = Math.PI/2;
+  });
+  meshTarget = null;
+})();
+tagSprite('MS-station 10 kV · NGX K K + 9 V', msPos.x, 42, msPos.z, 15, '#c2571a');
+tagSprite('lus naar Getec HSS C12 / C13', msStation.userData.veldX[0] - 61, 10, msPos.z - msD/2 + 30, 11, '#c2571a');
+
+let msStand = 0;                                    // 0 = aan, 1 = dak eraf (velden zichtbaar), 2 = uit
+function toggleMsStation(){
+  msStand = (msStand + 1) % 3;
+  msStation.visible = msStand < 2;
+  msStation.userData.dak.visible = msStand === 0;
+  const b = document.getElementById('msBtn');
+  b.textContent = ['MS-station: aan', 'MS-station: dak eraf', 'MS-station: uit'][msStand];
+  b.classList.toggle('uit', msStand === 2);
+  if(msStand === 1){ auto = false; target.set(msPos.x, 8, msPos.z); theta = 0.35; phi = 0.55; radius = 120; }
+}
+document.getElementById('msBtn').addEventListener('click', toggleMsStation);
+
 const center = new THREE.Vector3(X(HT/2), 6, Z(W/2));
 const target = center.clone();
 let theta = 2.2, phi = 1.0, radius = 760, auto = true;
@@ -1400,6 +1568,7 @@ window.addEventListener('keydown', e => {
   if(k === '1'){ auto = false; target.set(X((yCS1+yCS2)/2), 16, Z(r0.cs.x1)); theta = Math.PI; phi = 1.3; radius = 48; }
   if(k === 'p'){ auto = false; target.set(X((yPC1+yPC2)/2), 3, Z((r0.pcs.x2 + r0.cs.x1)/2)); theta = Math.PI/2 + 0.5; phi = 0.85; radius = 70; }
   if(k === 'v'){ auto = false; target.set(X(9.5), 3, Z(r0.x0 + 3)); theta = 0.2; phi = 0.12; radius = 140; }
+  if(k === 'n'){ auto = false; target.set(msPos.x, 12, msPos.z); theta = 0.5; phi = 1.1; radius = 170; }
   if(k === 'x'){ auto = false; target.set(X((yCS1+yCS2)/2), 16, Z((aux.x1+aux.x2)/2)); theta = 2.4; phi = 1.15; radius = 90; }
   if(k === 'o'){ doorsOpen = !doorsOpen; doors.forEach(d => d.m.rotation.y = doorsOpen ? d.open : d.dicht); }
   if(k === 'e'){ edgeGroup.forEach(l => l.visible = !l.visible); }
