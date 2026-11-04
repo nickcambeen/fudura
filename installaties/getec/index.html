@@ -35,7 +35,7 @@
 </head>
 <body>
 <div id="wrap"></div>
-<div id="titel">Getec BESS-park Emmen &middot; 8 rijen<span>8 &times; (CS EOS + PCS + 2 &times; REPT 5 MWh type A + B, dichte zijden 0,30 m uit elkaar*) + CS AUX in het midden<br>* onder voorbehoud van brandtestrapport (UL 9540A) / PGS 37-1</span></div>
+<div id="titel">Getec BESS-park Emmen &middot; 8 rijen<span>8 &times; (CS EOS + PCS + 2 &times; REPT 5 MWh type A + B, dichte zijden naar elkaar) + CS AUX in het midden<br><b id="bcTxt"></b></span></div>
 <button class="knop" id="luchtBtn">kaart: aan</button>
 <div id="kaartStand"></div>
 <button class="knop" id="hekBtn">hek: aan</button>
@@ -44,7 +44,8 @@
 <button class="knop" id="bovenBtn">bovenaanzicht</button>
 <button class="knop" id="meetBtn">meten</button>
 <button class="knop" id="meetWisBtn">wis metingen</button>
-<div id="caption">Sleep om te draaien &middot; scroll of + en &minus; om te zoomen &middot; 0: overzicht &middot; B: bovenaanzicht &middot; C: containerkoppen rij 1 &middot; 1: LS-zijde CS EOS 1 &middot; A: CS AUX &middot; D: deuren &middot; H: hek &middot; K: kabels &middot; P: ladderbaan rij 1 &middot; V: DC-kabels rij 1 (van boven) &middot; M: maatvoering &middot; E: contouren &middot; Q: meten (Esc wist) &middot; L: kaart aan/uit (pijltjes = kaart schuiven, , en . = draaien)</div>
+<button class="knop" id="bcBtn" style="top:320px"></button>
+<div id="caption">Sleep om te draaien &middot; scroll of + en &minus; om te zoomen &middot; 0: overzicht &middot; B: bovenaanzicht &middot; C: containerkoppen rij 1 &middot; 1: LS-zijde CS EOS 1 &middot; WASD: lopen/draaien &middot; R/F: kantelen &middot; X: CS AUX &middot; O: deuren &middot; H: hek &middot; K: kabels &middot; P: ladderbaan rij 1 &middot; V: DC-kabels rij 1 (van boven) &middot; M: maatvoering &middot; E: contouren &middot; Q: meten (Esc wist) &middot; L: kaart aan/uit (pijltjes = kaart schuiven, , en . = draaien)</div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 // Schaal: 1 eenheid = 100 mm
@@ -829,7 +830,7 @@ const P = {
   pcsL: 1.98, pcsB: 1.26,  // PCS (L langs de rij)
   csL: 2.87, csB: 2.34,    // CS EOS Alfen Diabolo 40H (L langs de rij, deuren op de korte zijden)
   gHekKop: 2.00,           // hek -> kopse kant container (iwell)
-  gBC: 0.30,               // binnen een rij: type A + type B met de dichte zijden naar elkaar (geen racks/deuren); balken 2,75 m net vrij. Onder voorbehoud van brandtestrapport (UL 9540A), PGS 37-1
+  gBC: (new URLSearchParams(location.search).get('bc') === '0.3') ? 0.30 : 2.00,               // binnen een rij: type A + type B met de dichte zijden naar elkaar (geen racks/deuren); balken 2,75 m net vrij. Onder voorbehoud van brandtestrapport (UL 9540A), PGS 37-1
   gRij: 2.50,              // tussen containers van twee rijen (iwell 2 m + PGS 0,5 m)
   gHekEind: 2.50,          // hek -> lange zijde eerste/laatste container (iwell 2 m + PGS 0,5 m)
   gBcCs: 2.20,             // container -> CS EOS (iwell 2 m)
@@ -838,6 +839,15 @@ const P = {
   gCsAux: 3.70,            // MS-deuren CS 8 <-> LS-deuren CS AUX (2 x 1,85 Alfen)
   gAuxPcs: 2.00            // MS-deuren CS AUX -> PCS volgende rij (APS 2 m, Alfen 1,85 m)
 };
+(function(){
+  const kort = P.gBC < 1;
+  const b = document.getElementById('bcBtn');
+  b.textContent = 'tussen containers: ' + (kort ? '0,30 m' : '2,00 m');
+  b.onclick = () => { const u = new URL(location.href); if(kort) u.searchParams.delete('bc'); else u.searchParams.set('bc', '0.3'); location.href = u.toString(); };
+  document.getElementById('bcTxt').textContent = kort
+    ? 'Variant 0,30 m: alleen toegestaan met brandtestrapport (UL 9540A) van REPT/iwell en akkoord brandweer (PGS 37-1)'
+    : 'Tussen de containers binnen een rij 2,00 m (opgave iwell)';
+})();
 const blok = 2*P.bcB + P.gBC;                    // containerblok per rij
 // rijafstand: containers (deurzijden 2,5 m) of de kolom PCS + CS EOS (2,0 m vrij voor MS-deuren CS / servicezijde PCS), wat het grootst is
 const pitch = Math.max(blok + P.gRij, P.pcsL + P.gPcsCs + P.csL + P.gAuxPcs);
@@ -1361,8 +1371,8 @@ window.addEventListener('keydown', e => {
   if(k === '1'){ auto = false; target.set(X((yCS1+yCS2)/2), 16, Z(r0.cs.x1)); theta = Math.PI; phi = 1.3; radius = 48; }
   if(k === 'p'){ auto = false; target.set(X((yPC1+yPC2)/2), 3, Z((r0.pcs.x2 + r0.cs.x1)/2)); theta = Math.PI/2 + 0.5; phi = 0.85; radius = 70; }
   if(k === 'v'){ auto = false; target.set(X(9.5), 3, Z(r0.x0 + 3)); theta = 0.2; phi = 0.12; radius = 140; }
-  if(k === 'a'){ auto = false; target.set(X((yCS1+yCS2)/2), 16, Z((aux.x1+aux.x2)/2)); theta = 2.4; phi = 1.15; radius = 90; }
-  if(k === 'd'){ doorsOpen = !doorsOpen; doors.forEach(d => d.m.rotation.y = doorsOpen ? d.open : d.dicht); }
+  if(k === 'x'){ auto = false; target.set(X((yCS1+yCS2)/2), 16, Z((aux.x1+aux.x2)/2)); theta = 2.4; phi = 1.15; radius = 90; }
+  if(k === 'o'){ doorsOpen = !doorsOpen; doors.forEach(d => d.m.rotation.y = doorsOpen ? d.open : d.dicht); }
   if(k === 'e'){ edgeGroup.forEach(l => l.visible = !l.visible); }
   if(k === 'h'){ toggleHek(); }
   if(k === 'm'){ toggleMaat(); }
@@ -1534,9 +1544,34 @@ function resize(){
 window.addEventListener('resize', resize);
 resize();
 
+// WASD: W/S vooruit/achteruit, A/D draaien, R/F kantelen (shift = sneller)
+const toetsen = {};
+window.addEventListener('keydown', e => {
+  if(e.target.tagName === 'INPUT') return;
+  const k = e.key.toLowerCase();
+  if('wasdrf'.includes(k) && k.length === 1){ toetsen[k] = true; auto = false; }
+  toetsen.shift = e.shiftKey;
+});
+window.addEventListener('keyup', e => { toetsen[e.key.toLowerCase()] = false; toetsen.shift = e.shiftKey; });
+window.addEventListener('blur', () => { for(const k in toetsen) toetsen[k] = false; });
+let tVorig = performance.now();
+function beweeg(){
+  const nu = performance.now(), dt = Math.min(0.1, (nu - tVorig)/1000); tVorig = nu;
+  const f = toetsen.shift ? 3 : 1;
+  if(toetsen.a) theta += 1.4*f*dt;
+  if(toetsen.d) theta -= 1.4*f*dt;
+  if(toetsen.r) phi = Math.max(0.05, phi - 0.9*f*dt);
+  if(toetsen.f) phi = Math.min(1.5, phi + 0.9*f*dt);
+  const v = (toetsen.w ? 1 : 0) - (toetsen.s ? 1 : 0);
+  if(v){
+    const sp = Math.max(40, radius*0.9) * f * dt * v;      // snelheid schaalt met de zoomafstand
+    target.x -= Math.sin(theta)*sp; target.z -= Math.cos(theta)*sp;
+  }
+}
 function animate(){
   requestAnimationFrame(animate);
   if(auto) theta += 0.0010;
+  beweeg();
   updateCam();
   renderer.render(scene, camera);
 }
