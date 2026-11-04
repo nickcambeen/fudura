@@ -876,8 +876,9 @@ const P = {
   const b = document.getElementById('bcBtn');
   b.textContent = 'tussen containers: ' + (kort ? '0,50 m (iwell)' : '2,00 m');
   b.onclick = () => { const u = new URL(location.href); if(kort) u.searchParams.set('bc', '2'); else u.searchParams.delete('bc'); location.href = u.toString(); };
+  document.getElementById('bcTxt').style.color = kort ? '#b3261e' : '';
   document.getElementById('bcTxt').textContent = kort
-    ? 'Maten volgens iwell-opstelling: dichte zijden 0,50 m, deurzijden en koelerzijde 3,05 m vrij (brandtestrapport opvragen, PGS 37-1)'
+    ? '⚠ NOG NIET GEREGELD: 0,50 m tussen de containers (iwell-opstelling) is een werkuitgangspunt. Brandtestrapport (UL 9540A / CSA C800) opgevraagd bij REPT/iwell; akkoord brandweer (PGS 37-1) volgt nog.'
     : 'Variant 2,00 m tussen de containers (APS 4 MWh-instructie: 2 m rondom)';
 })();
 const blok = 2*P.bcB + P.gBC;                    // containerblok per rij
