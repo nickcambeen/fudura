@@ -1033,6 +1033,7 @@ function updateMapNote(){
 function zetKaart(){
   lfGroup.rotation.y = MAP.rotatie*Math.PI/180;
   lfGroup.position.set(X(HT/2) + MAP.offsetX, 0, Z(W/2) + MAP.offsetZ);
+  if(window.bagSync) window.bagSync();
 }
 zetKaart();
 try {
@@ -1602,6 +1603,76 @@ const pgsGroup = new THREE.Group(); pgsGroup.visible = false; scene.add(pgsGroup
   annos.children.slice(n).forEach(c => pgsGroup.add(c));
 })();
 document.getElementById('pgsBtn').addEventListener('click', e => { pgsGroup.visible = !pgsGroup.visible; e.target.textContent = 'PGS-zones: ' + (pgsGroup.visible ? 'aan' : 'uit'); e.target.classList.toggle('uit', !pgsGroup.visible); });
+// ============ GEBOUWEN: BAG-panden (PDOK WFS, RD) met hoogte uit 3DBAG — liggen vast op de luchtfoto ============
+// RD -> kaartstelsel (oost/zuid in eenheden van 100 mm rond MAP.lat/lon) via de lokale Jacobiaan van WGS84 -> RD
+function wgsRd(lat, lon){ const p = 0.36*(lat - 52.15517440), l = 0.36*(lon - 5.38720621);
+  const Xr = 155000 + 190094.945*l - 11832.228*p*l - 114.221*p*p*l - 32.391*l*l*l - 0.705*p - 2.340*p*p*p*l - 0.608*p*l*l*l - 0.008*l*l + 0.148*p*p*l*l*l;
+  const Yr = 463000 + 309056.544*p + 3638.893*l*l + 73.077*p*p - 157.984*p*l*l + 59.788*p*p*p + 0.433*l - 6.439*p*p*l*l - 0.032*p*l + 0.092*l*l*l*l - 0.054*p*l*l*l*l; return [Xr, Yr]; }
+const bagGroup = new THREE.Group(); scene.add(bagGroup);
+const bagMaat = new THREE.Group(); scene.add(bagMaat);
+const bagInfo = document.createElement('div');
+bagInfo.style.cssText = 'position:fixed;left:16px;bottom:78px;z-index:20;padding:5px 10px;font:12px system-ui,sans-serif;background:rgba(255,255,255,0.9);border:1px solid #9aa0a3;border-radius:6px;color:#333;max-width:520px';
+bagInfo.textContent = 'BAG-gebouwen laden…'; document.body.appendChild(bagInfo);
+const BAGR = [];                                   // ringen in kaartstelsel (lokaal x, z)
+(function(){
+  const [X0, Y0] = wgsRd(MAP.lat, MAP.lon), d2r = Math.PI/180;
+  const dLon = 1/(111320*Math.cos(MAP.lat*d2r)), dLat = 1/110574;
+  const [Xe, Ye] = wgsRd(MAP.lat, MAP.lon + dLon), [Xn, Yn] = wgsRd(MAP.lat + dLat, MAP.lon);
+  const a = Xe - X0, b = Xn - X0, c = Ye - Y0, d = Yn - Y0, det = a*d - b*c;     // [dX dY] = [[a b][c d]] [e n]
+  window.rdLok = (Xr, Yr) => { const dx = Xr - X0, dy = Yr - Y0; const e = ( d*dx - b*dy)/det, n = (-c*dx + a*dy)/det; return [e*10, -n*10]; };
+  window.RD0 = [X0, Y0];
+})();
+const matBagWand = new THREE.MeshStandardMaterial({color: 0xd8d6cf, roughness: 0.85, transparent: true, opacity: 0.85});
+const matBagDak = new THREE.MeshStandardMaterial({color: 0x55595d, roughness: 0.9});
+(async function laadBag(){
+  const [X0, Y0] = RD0, R = 260, bb = [X0 - R, Y0 - R, X0 + R, Y0 + R].map(v => v.toFixed(0)).join(',');
+  let fc;
+  try{ fc = await fetch('https://service.pdok.nl/lv/bag/wfs/v2_0?service=WFS&version=2.0.0&request=GetFeature&typeName=bag:pand&outputFormat=application/json&srsName=EPSG:28992&count=1000&bbox=' + bb + ',urn:ogc:def:crs:EPSG::28992').then(r => r.json()); }
+  catch(e){ bagInfo.textContent = 'BAG-gebouwen konden niet geladen worden (geen internet of geblokkeerd in deze weergave)'; return; }
+  const PER = {}; let n = 0;
+  (fc.features || []).forEach(f => { const g = f.geometry, p = f.properties || {}; if(!g) return;
+    if(p.status && /gesloopt|niet gerealiseerd/i.test(p.status)) return;
+    (g.type === 'Polygon' ? [g.coordinates] : g.coordinates).forEach(rings => {
+      const loc = rings[0].map(([x, y]) => rdLok(x, y)); BAGR.push({r: loc, id: p.identificatie});
+      const sh = new THREE.Shape(loc.map(([x, z]) => new THREE.Vector2(x, -z)));
+      const m = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, {depth: 1, bevelEnabled: false}), [matBagDak, matBagWand]);
+      m.rotation.x = -Math.PI/2; m.scale.z = 70; bagGroup.add(m); n++;
+      m.userData.id = p.identificatie; (PER[p.identificatie] = PER[p.identificatie] || []).push(m);
+    }); });
+  bagInfo.textContent = n + ' BAG-panden geladen (PDOK) · hoogtes uit 3DBAG laden…';
+  window.bagSync();
+  let nh = 0, url = 'https://api.3dbag.nl/collections/pand/items?bbox=' + [X0 - 150, Y0 - 150, X0 + 150, Y0 + 150].map(v => v.toFixed(0)).join(',') + '&limit=100', pag = 0;
+  try{ while(url && pag++ < 15){ const j = await fetch(url).then(r => r.json());
+      (j.features || []).forEach(f => Object.entries(f.CityObjects || {}).forEach(([k, o]) => { const at = o.attributes || {}; const id = k.split('.').pop().replace(/-\d+$/, '');
+        if(at.b3_h_dak_70p == null || at.b3_h_maaiveld == null || !PER[id]) return; const h = at.b3_h_dak_70p - at.b3_h_maaiveld; if(!(h > 0.5)) return;
+        PER[id].forEach(m => { if(!m.userData.h3){ m.userData.h3 = true; m.scale.z = h*10; nh++; } }); }));
+      const nx = (j.links || []).find(l => l.rel === 'next'); url = nx ? nx.href : null; } }catch(e){ console.warn('3DBAG', e); }
+  window.bagSync();
+})();
+// maatvoering: kortste afstand hek -> gebouw en batterijcontainers (EOS) -> gebouw (PGS 37-1 M50)
+window.bagSync = function(){
+  bagGroup.position.copy(lfGroup.position); bagGroup.rotation.copy(lfGroup.rotation); bagGroup.updateMatrixWorld(true);
+  while(bagMaat.children.length) bagMaat.remove(bagMaat.children[0]);
+  if(!BAGR.length) return;
+  const cs = Math.cos(bagGroup.rotation.y), sn = Math.sin(bagGroup.rotation.y), P0 = bagGroup.position;
+  const W2 = ([x, z]) => [P0.x + x*cs + z*sn, P0.z - x*sn + z*cs];      // lokale kaartcoördinaten -> wereld (rotatie om y)
+  const rects = {hek: [0, XH, 0, ZW], eos: [X(2*yPiv - yBC2), X(yBC2), Z(rows[0].x0), Z(rows[P.N - 1].x0 + blok)]};
+  const naast = (px, pz, [x1, x2, z1, z2]) => [Math.min(Math.max(px, x1), x2), Math.min(Math.max(pz, z1), z2)];
+  const res = {};
+  for(const k in rects){ let best = {d: 1e9};
+    for(const g of BAGR){ const w = g.r.map(W2);
+      for(let i = 0; i < w.length - 1; i++){ const [ax, az] = w[i], [bx, bz] = w[i + 1];
+        for(let t = 0; t <= 1.0001; t += 0.05){ const px = ax + (bx - ax)*t, pz = az + (bz - az)*t, [qx, qz] = naast(px, pz, rects[k]); const dd = Math.hypot(px - qx, pz - qz);
+          if(dd < best.d) best = {d: dd, p: [px, pz], q: [qx, qz], id: g.id}; } } }
+    res[k] = best; }
+  const n0 = annos.children.length;
+  if(res.hek.d < 2000) dimLine(res.hek.q[0], res.hek.q[1], res.hek.p[0], res.hek.p[1], 1.2, f2(res.hek.d/10) + ' m hek – gebouw');
+  if(res.eos.d < 2000) dimLine(res.eos.q[0], res.eos.q[1], res.eos.p[0], res.eos.p[1], 2.4, f2(res.eos.d/10) + ' m container – gebouw');
+  annos.children.slice(n0).forEach(c => bagMaat.add(c));
+  const e = res.eos.d/10, oordeel = e >= 10 ? 'M50: ≥ 10 m, geen brandwerendheidseis' : e >= 5 ? 'M50: 5–10 m → 30 min brandwerend (tenzij propagatietest)' : 'M50: < 5 m tot gebouw!';
+  bagInfo.innerHTML = 'BAG ' + BAGR.length + ' panden · dichtstbijzijnd pand ' + (res.eos.id || '') + ': <b>' + f2(res.hek.d/10) + ' m</b> vanaf het hek, <b>' + f2(e) + ' m</b> vanaf de containers · ' + oordeel;
+};
+window.bagSync();
 const center = new THREE.Vector3(X(HT/2), 6, Z(W/2));
 const target = center.clone();
 let theta = 2.2, phi = 1.0, radius = 760, auto = true;
