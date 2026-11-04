@@ -133,7 +133,7 @@
       <label>Kabels <input type="checkbox" id="tKabel" checked></label>
       <label>Maten <input type="checkbox" id="tMaat" checked></label>
       <label>Contouren <input type="checkbox" id="tEdge" checked></label>
-      <label>Deuren open <input type="checkbox" id="tDeur" checked></label>
+      <label>Deuren open <input type="checkbox" id="tDeur"></label>
       <label title="PGS 37-1 M50/M52">PGS-zones <input type="checkbox" class="oranje" id="tPgs"></label>
     </div>
   </details>
@@ -277,10 +277,10 @@ const matZichtbeton = new THREE.MeshStandardMaterial({color:0xa9a9a3, roughness:
 let roofGroup;
 // register van alle deuren, zodat ze gezamenlijk open of dicht kunnen (toets D)
 const doors = [];
-let doorsOpen = true;
+let doorsOpen = false;                 // standaard dicht (paneel: 'Deuren open')
 function registerDoor(m, openY, dichtY){
   doors.push({m: m, open: openY, dicht: dichtY});
-  m.rotation.y = openY;
+  m.rotation.y = doorsOpen ? openY : dichtY;
   return m;
 }
 const matSokkel = new THREE.MeshStandardMaterial({color:0xe9e8e2, roughness:0.86, metalness:0.0, envMapIntensity:0.28});
