@@ -1587,7 +1587,7 @@ for(let i = 1; i <= 8; i++) MSV_INFO['V' + i] = 'BESS rij ' + i;
 const msB = 76, msD = 25, msVB = 5.0;               // lengte (lokaal z), diepte (lokaal x), veldbreedte 500 mm
 // binnen het hek op de lege plek tegenover de CS AUX (B-zijde, achter het laatste cluster):
 // 3,05 m vrij voor de deurzijde van de containers, lange zijde dwars op de rijen, deur naar het hek
-const msPos = {x: X(yPiv/2), z: Z(rows[P.N-1].x0 + blok) + 30.5 + msD/2 + 1.2};
+const msPos = {x: X(yPiv/2), z: Z((aux.x1 + aux.x2)/2)};          // op één lijn met CS AUX
 (function bouwMsStation(){
   const matHout = new THREE.MeshStandardMaterial({map: (function(){
     const c = document.createElement('canvas'); c.width = 256; c.height = 256; const g = c.getContext('2d');
