@@ -71,12 +71,13 @@
 <button class="knop" id="kabelBtn">kabels: aan</button>
 <button class="knop" id="maatBtn">maatvoering: aan</button>
 <button class="knop" id="bovenBtn">bovenaanzicht</button>
+<button class="knop" id="fpBtn" style="top:432px">rondlopen (P)</button>
 <button class="knop" id="meetBtn">meten</button>
 <button class="knop" id="meetWisBtn">wis metingen</button>
 <button class="knop" id="bcBtn" style="top:320px"></button>
 <label class="knop" id="msLbl" style="top:358px;color:#a8431a;border-color:#c2571a;display:flex;align-items:center;gap:6px" title="Niet in de scope (Getec doet de MS zelf); laat zien wat er nodig is"><input type="checkbox" id="msChk" style="margin:0;accent-color:#c2571a"> MS-station (buiten scope)</label>
 <button class="knop" id="msDakBtn" style="top:394px;display:none;color:#a8431a;border-color:#c2571a">dak eraf</button>
-<div id="caption">Sleep om te draaien &middot; scroll of + en &minus; om te zoomen &middot; 0: overzicht &middot; B: bovenaanzicht &middot; C: containerkoppen rij 1 &middot; 1: LS-zijde CS EOS 1 &middot; WASD: lopen/draaien &middot; R/F: kantelen &middot; X: CS AUX &middot; N: MS-station (optie) &middot; O: deuren &middot; H: hek &middot; K: kabels &middot; P: ladderbaan rij 1 &middot; V: DC-kabels rij 1 (van boven) &middot; M: maatvoering &middot; E: contouren &middot; Q: meten (Esc wist) &middot; L: kaart aan/uit (pijltjes = kaart schuiven, , en . = draaien)</div>
+<div id="caption">Sleep om te draaien &middot; scroll of + en &minus; om te zoomen &middot; 0: overzicht &middot; B: bovenaanzicht &middot; C: containerkoppen rij 1 &middot; 1: LS-zijde CS EOS 1 &middot; P: rondlopen (WASD, shift = rennen, Q/E = bukken) &middot; A: CS AUX &middot; N: MS-station (optie) &middot; D: deuren &middot; H: hek &middot; K: kabels &middot; J: ladderbaan rij 1 &middot; V: DC-kabels rij 1 (van boven) &middot; M: maatvoering &middot; E: contouren &middot; Q: meten (Esc wist) &middot; L: kaart aan/uit (pijltjes = kaart schuiven, , en . = draaien)</div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 // Schaal: 1 eenheid = 100 mm
@@ -1577,11 +1578,11 @@ window.addEventListener('keydown', e => {
   if(k === 'b') bovenaanzicht();
   if(k === 'c'){ auto = false; target.set(X(yBC2) + 2, 12, Z(r0.bcB.x1 - P.gBC/2)); theta = Math.PI/2; phi = 1.25; radius = 120; }
   if(k === '1'){ auto = false; target.set(X((yCS1+yCS2)/2), 16, Z(r0.cs.x1)); theta = Math.PI; phi = 1.3; radius = 48; }
-  if(k === 'p'){ auto = false; target.set(X((yPC1+yPC2)/2), 3, Z((r0.pcs.x2 + r0.cs.x1)/2)); theta = Math.PI/2 + 0.5; phi = 0.85; radius = 70; }
+  if(k === 'j'){ auto = false; target.set(X((yPC1+yPC2)/2), 3, Z((r0.pcs.x2 + r0.cs.x1)/2)); theta = Math.PI/2 + 0.5; phi = 0.85; radius = 70; }
   if(k === 'v'){ auto = false; target.set(X(9.5), 3, Z(r0.x0 + 3)); theta = 0.2; phi = 0.12; radius = 140; }
   if(k === 'n'){ zetMsStation(true); auto = false; target.set(msPos.x, 12, msPos.z); theta = 0.5; phi = 1.1; radius = 170; }
-  if(k === 'x'){ auto = false; target.set(X((yCS1+yCS2)/2), 16, Z((aux.x1+aux.x2)/2)); theta = 2.4; phi = 1.15; radius = 90; }
-  if(k === 'o'){ doorsOpen = !doorsOpen; doors.forEach(d => d.m.rotation.y = doorsOpen ? d.open : d.dicht); }
+  if(k === 'x' || k === 'a'){ auto = false; target.set(X((yCS1+yCS2)/2), 16, Z((aux.x1+aux.x2)/2)); theta = 2.4; phi = 1.15; radius = 90; }
+  if(k === 'o' || k === 'd'){ doorsOpen = !doorsOpen; doors.forEach(d => d.m.rotation.y = doorsOpen ? d.open : d.dicht); }
   if(k === 'e'){ edgeGroup.forEach(l => l.visible = !l.visible); }
   if(k === 'h'){ toggleHek(); }
   if(k === 'm'){ toggleMaat(); }
@@ -1606,6 +1607,7 @@ wrap.addEventListener('pointermove', e => {
   if(meetAan && !dragging) meetVolg(e);
   if(!dragging) return;
   sleepAfstand += Math.abs(e.clientX - px) + Math.abs(e.clientY - py);
+  if(FP.aan){ FP.yaw -= (e.clientX - px)*0.004; FP.pitch = Math.max(-1.3, Math.min(1.3, FP.pitch - (e.clientY - py)*0.004)); px = e.clientX; py = e.clientY; return; }
   theta -= (e.clientX - px) * 0.0028;
   phi = Math.min(1.5, Math.max(0.03, phi - (e.clientY - py) * 0.0024));
   px = e.clientX; py = e.clientY;
@@ -1740,6 +1742,7 @@ document.getElementById('bovenBtn').addEventListener('click', bovenaanzicht);
 function zoomStap(f){ radius = Math.min(1600, Math.max(12, radius * f)); updateCam(); }
 wrap.addEventListener('wheel', e => {
   e.preventDefault();
+  if(FP.aan){ FP.pos.addScaledVector(new THREE.Vector3(-Math.sin(FP.yaw), 0, -Math.cos(FP.yaw)), -e.deltaY*0.02); return; }
   radius = Math.min(1600, Math.max(12, radius * (1 + e.deltaY * 0.0012)));
 }, {passive:false});
 
@@ -1753,6 +1756,7 @@ function resize(){
 window.addEventListener('resize', resize);
 resize();
 
+document.getElementById('fpBtn').addEventListener('click', e => { e.stopPropagation(); zetFP(!FP.aan); e.target.blur(); });
 // documentenpaneel
 (function(){
   const b = document.getElementById('docBtn'), pn = document.getElementById('docPaneel');
@@ -1762,37 +1766,46 @@ resize();
   document.addEventListener('pointerdown', () => zet(false));
   window.addEventListener('keydown', e => { if(e.key === 'Escape') zet(false); });
 })();
-// WASD: W/S vooruit/achteruit, A/D draaien, R/F kantelen (shift = sneller)
-const toetsen = {};
-window.addEventListener('keydown', e => {
-  if(e.target.tagName === 'INPUT') return;
+// ============ RONDLOPEN (P): als persoon (ooghoogte 1,70 m) met WASD, kijken met de muis — zelfde als Bol ============
+const FP = {aan: false, pos: new THREE.Vector3(), yaw: 0, pitch: 0, oog: 17, keys: {}};
+const fpHud = document.createElement('div');
+fpHud.style.cssText = 'position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:25;display:none;padding:6px 12px;font:12px system-ui,sans-serif;background:rgba(29,40,48,.85);color:#fff;border-radius:6px';
+fpHud.textContent = 'Rondlopen: W A S D lopen · muis slepen = kijken · shift = rennen · Q / E = bukken / opstaan · P of Esc = stoppen';
+document.body.appendChild(fpHud);
+function zetFP(aan){
+  if(aan === FP.aan) return;
+  FP.aan = aan; fpHud.style.display = aan ? 'block' : 'none';
+  if(aan){ auto = false; const h = new THREE.Vector3(camera.position.x - target.x, 0, camera.position.z - target.z); const L = h.length() || 1; h.multiplyScalar(Math.min(L, 40)/L);
+    FP.pos.set(target.x + h.x, 0, target.z + h.z); FP.yaw = Math.atan2(h.x, h.z); FP.pitch = -0.05; FP.oog = 17; camera.near = 0.3; }
+  else { target.set(FP.pos.x - Math.sin(FP.yaw)*30, 8, FP.pos.z - Math.cos(FP.yaw)*30); radius = 60; theta = FP.yaw; phi = 1.25; camera.near = 2; }
+  camera.updateProjectionMatrix();
+  const b = document.getElementById('fpBtn'); if(b){ b.textContent = aan ? 'stop rondlopen' : 'rondlopen (P)'; b.classList.toggle('actief', aan); }
+}
+const FPKEYS = ['w', 'a', 's', 'd', 'q', 'e', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift'];
+document.addEventListener('keydown', e => {
   const k = e.key.toLowerCase();
-  if('wasdrf'.includes(k) && k.length === 1){ toetsen[k] = true; auto = false; }
-  toetsen.shift = e.shiftKey;
-});
-window.addEventListener('keyup', e => { toetsen[e.key.toLowerCase()] = false; toetsen.shift = e.shiftKey; });
-window.addEventListener('blur', () => { for(const k in toetsen) toetsen[k] = false; });
-let tVorig = performance.now();
-const vel = {f: 0, rot: 0, tilt: 0};                       // huidige snelheden, vloeiend op- en afbouwen
-function beweeg(){
-  const nu = performance.now(), dt = Math.min(0.05, (nu - tVorig)/1000); tVorig = nu;
-  const f = toetsen.shift ? 2.5 : 1;
-  const wil = {
-    f: ((toetsen.w ? 1 : 0) - (toetsen.s ? 1 : 0)) * Math.max(25, radius*0.45) * f,   // eenheden/s, schaalt met zoom
-    rot: ((toetsen.a ? 1 : 0) - (toetsen.d ? 1 : 0)) * 0.9 * f,                         // rad/s
-    tilt: ((toetsen.f ? 1 : 0) - (toetsen.r ? 1 : 0)) * 0.6 * f
-  };
-  const k = 1 - Math.exp(-dt*7);                           // ca. 0,15 s om op snelheid te komen / uit te rollen
-  for(const n of ['f', 'rot', 'tilt']) vel[n] += (wil[n] - vel[n])*k;
-  if(Math.abs(vel.rot) > 1e-4) theta += vel.rot*dt;
-  if(Math.abs(vel.tilt) > 1e-4) phi = Math.max(0.05, Math.min(1.5, phi + vel.tilt*dt));
-  if(Math.abs(vel.f) > 1e-3){ target.x -= Math.sin(theta)*vel.f*dt; target.z -= Math.cos(theta)*vel.f*dt; }
+  if(e.target.tagName === 'INPUT' && e.target.type !== 'checkbox') return;
+  if(k === 'p'){ zetFP(!FP.aan); e.stopPropagation(); e.preventDefault(); return; }
+  if(FP.aan){ if(FPKEYS.includes(k)){ FP.keys[k] = true; e.stopPropagation(); e.preventDefault(); } else if(k === 'escape' || k === '0'){ zetFP(false); } }
+}, true);
+document.addEventListener('keyup', e => { FP.keys[e.key.toLowerCase()] = false; }, true);
+window.addEventListener('blur', () => FP.keys = {});
+let tVorigFP = performance.now();
+function stapFP(){
+  const t = performance.now(), dt = Math.min(0.05, (t - tVorigFP)/1000); tVorigFP = t;
+  if(!FP.aan) return;
+  const k = FP.keys, v = (k.shift ? 45 : 18)*dt, f = new THREE.Vector3(-Math.sin(FP.yaw), 0, -Math.cos(FP.yaw)), rt = new THREE.Vector3(-f.z, 0, f.x);
+  if(k.w || k.arrowup) FP.pos.addScaledVector(f, v); if(k.s || k.arrowdown) FP.pos.addScaledVector(f, -v);
+  if(k.d || k.arrowright) FP.pos.addScaledVector(rt, v); if(k.a || k.arrowleft) FP.pos.addScaledVector(rt, -v);
+  if(k.q) FP.oog = Math.max(6, FP.oog - 20*dt); if(k.e) FP.oog = Math.min(17, FP.oog + 20*dt);
+  camera.position.set(FP.pos.x, FP.oog, FP.pos.z);
+  camera.lookAt(FP.pos.x - Math.sin(FP.yaw)*Math.cos(FP.pitch), FP.oog + Math.sin(FP.pitch), FP.pos.z - Math.cos(FP.yaw)*Math.cos(FP.pitch));
 }
 function animate(){
   requestAnimationFrame(animate);
   if(auto) theta += 0.0010;
-  beweeg();
-  updateCam();
+  stapFP();
+  if(!FP.aan) updateCam();
   renderer.render(scene, camera);
 }
 animate();
