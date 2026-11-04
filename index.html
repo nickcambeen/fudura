@@ -26,8 +26,10 @@
   a.kaart, div.kaart { display: flex; flex-direction: column; gap: 6px; background: var(--kaart); border: 1px solid var(--lijn); border-radius: 10px; padding: 18px 18px 16px; color: inherit; text-decoration: none; transition: border-color .15s, transform .15s; min-height: 170px; }
   a.kaart:hover { border-color: var(--blauw); transform: translateY(-2px); }
   .kaart .type { font: 600 12px "Barlow Semi Condensed", Arial, sans-serif; text-transform: uppercase; letter-spacing: .07em; color: var(--oranje); }
-  .kaart h3 { font: 700 24px/1.15 "Barlow Semi Condensed", Arial, sans-serif; margin: 0; }
+  .kaart h3 { font: 700 24px/1.15 "Barlow Semi Condensed", Arial, sans-serif; margin: 0; overflow-wrap: anywhere; hyphens: auto; }
   .kaart p { margin: 0; color: var(--muted); font-size: 14.5px; }
+  .kaart ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: 14.5px; display: flex; flex-direction: column; gap: 2px; }
+  .kaart li::marker { color: var(--oranje); }
   .kaart .voet { margin-top: auto; padding-top: 10px; font-weight: 600; color: var(--blauw); font-size: 14px; }
   .kaart.later { opacity: .55; border-style: dashed; }
   .kaart.later .voet { color: var(--muted); }
@@ -50,35 +52,35 @@
       <svg class="ico" viewBox="0 0 34 34" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="7" height="22" rx="1"/><rect x="12" y="7" width="7" height="22" rx="1"/><rect x="21" y="7" width="10" height="22" rx="1"/><path d="M6.5 12h0M15.5 12h0" stroke-linecap="round" stroke-width="3"/><path d="M24 13h4M24 17h4M24 21h4"/></svg>
       <span class="type">BESS · Low Voltage</span>
       <h3>AIO + FUSE kast</h3>
-      <p>1–5 × Delta AIO 125 kW / 261 kWh met junction box, HVK, EMS-kast en kabelsleuf. Aantal AIO's kiesbaar.</p>
+      <ul><li>1–5 × Delta AIO 125 kW / 261 kWh, aantal kiesbaar</li><li>Junction box, HVK en EMS-kast</li><li>Kabelsleuf, aarding en vereffening</li><li>Delta-manual en 2D-tekening in het paneel</li></ul>
       <span class="voet">Openen →</span>
     </a>
     <a class="kaart" href="installaties/ems/">
       <svg class="ico" viewBox="0 0 34 34" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="3" width="24" height="28" rx="2"/><path d="M17 3v28M5 18h24"/><path d="M9 8h5M9 11h5M21 8h4" stroke-linecap="round"/><circle cx="11" cy="24" r="2.5"/></svg>
       <span class="type">EMS · Besturing</span>
       <h3>EMS-kast</h3>
-      <p>EMS Groot met voeding, UPS, router/switch en WTG-controller. Binnen aan de wand of buiten in een veldkast.</p>
+      <ul><li>EMS Groot met voeding en UPS</li><li>Router/switch en WTG-controller</li><li>Binnen aan de wand of buiten in een veldkast</li></ul>
       <span class="voet">Openen →</span>
     </a>
     <a class="kaart" href="installaties/xiria/">
       <svg class="ico" viewBox="0 0 34 34" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="6" width="26" height="24" rx="2"/><path d="M19 9l-6 9h6l-4 9" stroke-linejoin="round"/></svg>
       <span class="type">MS · Veiligheid</span>
       <h3>Xiria kortsluitvastheid</h3>
-      <p>Simulatie van aarden op een gevoede kabel: kortsluitstroom en boogduur getoetst aan de installatie.</p>
+      <ul><li>Simulatie van aarden op een gevoede kabel</li><li>Kortsluitstroom en boogduur</li><li>Getoetst aan de installatie</li></ul>
       <span class="voet">Openen →</span>
     </a>
     <a class="kaart" href="installaties/sungrow-idc80e/">
       <svg class="ico" viewBox="0 0 34 34" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="4" width="14" height="16" rx="2"/><path d="M12 9h8M16 11l-2 3h4l-2 3" stroke-linejoin="round"/><path d="M13 20v9h6v-9"/></svg>
       <span class="type">Laadinfra · DC 80 kW</span>
       <h3>Sungrow IDC80E</h3>
-      <p>Alles-in-één DC-lader 80 kW (2 × CCS2) op voet. 1–4 laders, vrije ruimte, fundering, aansluiting en risicoscreening.</p>
+      <ul><li>Alles-in-één DC-lader 80 kW (2 × CCS2) op voet</li><li>1–4 laders</li><li>Vrije ruimte, fundering en aansluiting</li><li>Risicoscreening</li></ul>
       <span class="voet">Openen →</span>
     </a>
     <a class="kaart" href="installaties/sungrow-cdc1000e/">
       <svg class="ico" viewBox="0 0 34 34" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="14" height="24" rx="1"/><path d="M10 5v24M6 10h2M13 10h2"/><rect x="22" y="12" width="8" height="17" rx="1"/><path d="M17 26h5"/></svg>
       <span class="type">Laadinfra · DC 1 MW</span>
       <h3>Sungrow CDC1000E</h3>
-      <p>ChargeStack: power cabinet 2 × 500 kW met 1–6 vloeistofgekoelde dispensers. Vrije ruimte, fundering, aansluiting en risicoscreening.</p>
+      <ul><li>ChargeStack: power cabinet 2 × 500 kW</li><li>1–6 vloeistofgekoelde dispensers</li><li>Vrije ruimte, fundering en aansluiting</li><li>Risicoscreening</li></ul>
       <span class="voet">Openen →</span>
     </a>
   </div>
@@ -89,21 +91,21 @@
       <svg class="ico" viewBox="0 0 34 34" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="14" width="13" height="14" rx="1"/><rect x="17" y="14" width="13" height="14" rx="1"/><path d="M5 10h22M9 6h14"/><path d="M6 19h5M21 19h5"/></svg>
       <span class="type">BESS · MS-aansluiting</span>
       <h3>Bol — 2,5 MW</h3>
-      <p>Batterijsysteem met PCS, 2 batterijcontainers en compactstation, inclusief kabeltracés en simulatie. Met de iwell APS 4 MWh-containers: <b>dit type is vervallen</b>, de opvolger is de 5 MWh-container (zie Getec).</p>
+      <ul><li>PCS, 2 batterijcontainers en compactstation</li><li>Kabeltracés en simulatie</li><li>iwell APS 4 MWh-containers: <b>dit type is vervallen</b>, opvolger is de 5 MWh-container (zie Getec)</li></ul>
       <span class="voet">Openen →</span>
     </a>
     <a class="kaart" href="installaties/hema/">
       <svg class="ico" viewBox="0 0 34 34" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="15" width="12" height="12" rx="1"/><path d="M19 27V12l5-4 5 4v15"/><path d="M24 15v5M6 19h6M6 23h6"/><path d="M2 30h30"/></svg>
       <span class="type">Project · Energieplein</span>
       <h3>HEMA DC Utrecht</h3>
-      <p>EOS (5 × AIO), PV met 5 omvormers, 2 snelladers voor trucks en ZVK, op de luchtfoto met BAG-gebouwen.</p>
+      <ul><li>EOS met 5 × AIO</li><li>PV met 5 omvormers</li><li>2 snelladers voor trucks en ZVK</li><li>Op de luchtfoto met BAG-gebouwen</li></ul>
       <span class="voet">Openen →</span>
     </a>
     <a class="kaart" href="installaties/getec/">
       <svg class="ico" viewBox="0 0 34 34" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="5" height="12" rx="1"/><rect x="9" y="6" width="5" height="12" rx="1"/><rect x="20" y="6" width="5" height="12" rx="1"/><rect x="27" y="6" width="5" height="12" rx="1"/><rect x="14.5" y="22" width="5" height="7" rx="1"/><path d="M2 31h30"/></svg>
       <span class="type">BESS · 10 kV</span>
       <h3>Getec Emmen — 8 rijen</h3>
-      <p>8 × (CS EOS + PCS + 2 × REPT 5 MWh) met CS AUX in het midden, hekwerk, kabels en maatvoering op de luchtfoto. <b>Deels geregeld:</b> 0,50 m tussen de containers onderbouwd met UL 9540- en IEC 62933-5-2-certificaat; onderbouwing explosieluiken en akkoord brandweer (PGS 37-1) nog open.</p>
+      <ul><li>8 × (CS EOS + PCS + 2 × REPT 5 MWh), CS AUX in het midden</li><li>Hekwerk, kabels en maatvoering op de luchtfoto</li><li><b>Geregeld:</b> 0,50 m tussen de containers (UL 9540 / IEC 62933-5-2)</li><li><b>Open:</b> onderbouwing explosieluiken en akkoord brandweer (PGS 37-1)</li></ul>
       <span class="voet">Openen →</span>
     </a>
   </div>
@@ -114,28 +116,28 @@
       <svg class="ico" viewBox="0 0 34 34" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="8" height="24" rx="1"/><rect x="13" y="5" width="8" height="16" rx="1"/><rect x="23" y="5" width="8" height="20" rx="1"/></svg>
       <span class="type">Team PER · Met toegangscode</span>
       <h3>Projectmanagement systeem</h3>
-      <p>Alle projecten per fase, met activiteiten, behandelaar, notities en contactmomenten.</p>
+      <ul><li>Alle projecten per fase</li><li>Activiteiten en behandelaar</li><li>Notities en contactmomenten</li></ul>
       <span class="voet">Openen →</span>
     </a>
     <div class="kaart later">
       <svg class="ico" viewBox="0 0 34 34" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3h13l6 6v22H8z"/><path d="M21 3v6h6M12 16h11M12 21h11M12 26h7"/></svg>
       <span class="type">Team PER</span>
       <h3>Projectplan generator</h3>
-      <p>Projectplan samenstellen per project en type installatie.</p>
+      <ul><li>Projectplan per project</li><li>Per type installatie</li></ul>
       <span class="voet">Binnenkort</span>
     </div>
     <div class="kaart later">
       <svg class="ico" viewBox="0 0 34 34" fill="none" stroke="currentColor" stroke-width="2"><circle cx="17" cy="6" r="3"/><circle cx="7" cy="27" r="3"/><circle cx="27" cy="27" r="3"/><path d="M17 9v8M17 17L9 25M17 17l8 8M4 17h26"/></svg>
       <span class="type">Netberekening</span>
       <h3>Vision generator</h3>
-      <p>Netmodel voor Vision opbouwen uit de projectgegevens.</p>
+      <ul><li>Netmodel voor Vision</li><li>Opgebouwd uit de projectgegevens</li></ul>
       <span class="voet">Binnenkort</span>
     </div>
     <div class="kaart later">
       <svg class="ico" viewBox="0 0 34 34" fill="none" stroke="currentColor" stroke-width="2"><circle cx="17" cy="17" r="12"/><circle cx="12" cy="14" r="2.5"/><circle cx="22" cy="14" r="2.5"/><circle cx="17" cy="22" r="2.5"/></svg>
       <span class="type">NEN 1010</span>
       <h3>Kabelberekeningprogramma</h3>
-      <p>Kabels dimensioneren volgens NEN 1010: stroom, spanningsval, kortsluiting en beveiliging.</p>
+      <ul><li>Kabels dimensioneren volgens NEN 1010</li><li>Stroom en spanningsval</li><li>Kortsluiting en beveiliging</li></ul>
       <span class="voet">Binnenkort</span>
     </div>
   </div>
