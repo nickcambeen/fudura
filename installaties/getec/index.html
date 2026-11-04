@@ -99,7 +99,7 @@
   <a href="docs/Alfen_D40H_Fudura_type3a-b.pdf" target="_blank" rel="noopener">Alfen Diabolo 40H, Fudura type 3A/B<span>PDF · 8 p</span></a>
   <h4>Fudura</h4>
   <a href="docs/Fudura_eenlijnschema_BESS-station_concept_revA.pdf" target="_blank" rel="noopener">Eénlijnschema 10 kV BESS-station (concept rev. A)<span>PDF · 1 p</span></a>
-  <p>Nog op te vragen: het UL 9540A-rapport (brandpropagatie) en de minimale vrije ruimtes rondom (staan niet in de handleiding).</p>
+  <p>Brandpropagatie: volgens iwell is het UL 9540-certificaat het bewijs (UL 9540:2023 omvat de UL 9540A-test). Nog op te vragen: het onderliggende UL 9540A-rapport (als de brandweer erom vraagt), de onderbouwing van de explosieluiken (NFPA 68) en het opgenomen hulpvermogen per container (continu/piek).</p>
 </div>
 <button class="knop" id="luchtBtn">kaart: aan</button>
 <div id="kaartStand"></div>
@@ -141,6 +141,7 @@
       <label>Kabels <input type="checkbox" id="tKabel" checked></label>
       <label title="Maatvoering en vrije ruimte (groen)">Maten + vrij <input type="checkbox" id="tMaat" checked></label>
       <label>Contouren <input type="checkbox" id="tEdge" checked></label>
+      <label title="Naam boven op elk component, leesbaar in het bovenaanzicht (2D)">Namen op dak <input type="checkbox" id="tNaam" checked></label>
       <label>Deuren open <input type="checkbox" id="tDeur"></label>
       <label title="PGS 37-1 M50/M52">PGS-zones <input type="checkbox" class="oranje" id="tPgs"></label>
       <label title="Clusters uitlichten volgens PGS 37-1 M52 (afb. 15)">PGS-clusters <input type="checkbox" class="oranje" id="tClus"></label>
@@ -152,6 +153,17 @@
       <label title="Pijltjes = luchtfoto schuiven, , en . = draaien">Kaart uitlijnen <input type="checkbox" id="tUitl"></label>
     </div>
     <div class="knoprij"><button id="pMeetWis">wis metingen</button></div>
+    <details class="sub" id="reptLijst"><summary>Installatie-eisen REPT 5 MWh-container</summary>
+      <ul style="margin:4px 0 2px;padding-left:16px;font-size:11.5px;line-height:1.45;color:#3f4b52">
+        <li><b>Fundering</b>: 300 mm boven maaiveld; iwell TD01: 2 betonbalken 6200 × 450 mm, buitenwerks 2750 mm (in het model). REPT §7.1.1: alternatief 6 korte poeren. Bovenvlakken gelijk, max. 3 mm hoogteverschil; definitief na grondonderzoek.</li>
+        <li><b>DC</b>: per pool 6 × M16, 6 × 240 mm² (P+ / P−), 1040–1500 V DC, 130,6 kA bij 12 strings (13,6 kA per string).</li>
+        <li><b>Aarding (IT-stelsel)</b>: 3 aansluitpunten 4 × M12 (2 aan A-zijde, 1 aan B-zijde), 80–120 Nm, ≥ 250 mm² Cu. De punten dienen als beschermingsvereffening van de frames. Eén doorlopende aardring onder alle containers, PCS en CS. Ra &lt; 4 Ω (eis REPT). NEN 1010 411.6: eerste fout RA × Id ≤ 50 V, isolatiebewaking (IMD) verplicht, tweede fout afschakelen volgens TN-voorwaarden.</li>
+        <li><b>Hulpvoeding</b>: 3-fase 380–480 V AC (L1-L3 + N + PE), klemmen Ø35 mm² (kabel ≥ 25 mm²), N 16 mm²; 24 V DC intern. Koeling 60 kW (koelvermogen). ⚠ Opgenomen vermogen per container (continu/piek) opvragen bij iwell, nodig voor het dimensioneren van CS AUX.</li>
+        <li><b>Hijsen</b>: 44,5 t; hijsen aan de vier bovenste hoekstukken, stroppen ≥ 50 t, container waterpas houden, niet bij harde wind, zware regen of mist (REPT §7.1.2). Kraanopstelplaats en draagkracht van de ondergrond vooraf vaststellen.</li>
+        <li><b>Opstelling</b>: in het model staan de dichte achterkanten tegen elkaar (0,50 m), de koelerzijde naar de PCS/CS en 3,05 m onderhoudsruimte aan de deurzijden. Variant iwell: dichte zijden naar buiten, geluidszijde naar binnen. In het gangpad tellen de bronnen dan op (≈ +3 dB), maar de containers schermen af naar de omgeving. Geluid bij 0,25P ≈ 47–49 dB(A).</li>
+        <li style="color:#8a979e">Bron: REPT Product use and maintenance manual, iwell TD01/specsheet, TÜV-certificaten (zie documenten).</li>
+      </ul>
+    </details>
     <details class="sub" id="pgsLijst"><summary>Toegepaste PGS 37-1-regels</summary>
       <ul style="margin:4px 0 2px;padding-left:16px;font-size:11.5px;line-height:1.45;color:#3f4b52">
         <li><b>Typical 3</b>: niet-betreedbare EOS'en in de open lucht, groot EOS-park (&gt; 6 EOS'en, hier 16) → <b>M52</b>.</li>
@@ -159,7 +171,7 @@
         <li><b>M52 tussen clusters</b>: ≥ hoogte boven maaiveld × 1, min. 1,5 m → ≈ 3,20 m (2,90 m container + 0,30 m fundering); aanwezig 3,77 m ✓.</li>
         <li><b>M52 zonder bewijs (typical 2)</b>: ≥ 2,5 m tussen alle EOS'en en aan één zijde ≥ 4,5 m — schakelaar "2,50 m".</li>
         <li><b>M52 brandweer</b>: ≥ 4,5 m weg / afstand tot kavelgrens langs de clusters (PGS-zones, rood) — ⚠ af te stemmen met de brandweer.</li>
-        <li><b>Bewijs</b>: IEC 62933-5-2 (TÜV, aanwezig) + UL 9540A + IEC 62619 + NFPA 68 — ⚠ rapporten opgevraagd bij REPT.</li>
+        <li><b>Bewijs</b>: IEC 62933-5-2 (TÜV) ✓ · IEC 62619 (iwell-specsheet) ✓ · UL 9540:2023 (TÜV CU 72405957, volgens iwell de brandpropagatietest; UL 9540 vereist de UL 9540A-test) ✓ · NFPA 68 explosieluiken ⚠ onderbouwing nog op te vragen. Brandweer kan het onderliggende UL 9540A-rapport (unit level) willen zien.</li>
         <li><b>M50</b>: EOS tot kavelgrens / ander bouwwerk / brandbaar object (bomen) ≥ 10 m geen eis, 5–10 m → 30 min brandwerend (PGS-zones, oranje en rood; BAG-maat tot het gebouw).</li>
         <li><b>M9</b>: brandwerendheid vervalt bij geslaagde brandpropagatietest (typical 1–3).</li>
         <li><b>M28 / M29 / M63</b>: hekwerk ≥ 1,8 m, onbrandbaar, min. twee tegenover elkaar gelegen toegangen (vluchtdeuren in beide korte en lange zijden).</li>
@@ -611,19 +623,18 @@ function batContainer(cx, cz, label, mir){
   // betonnen funderingsbalken in de lengterichting van de container:
   // lopen aan beide zijden gelijk met de container, dus nergens uitstekend.
   // In de balk aan de gootzijde zit een sparing voor de kabelinvoer.
-  for(const bz of [-10.2, 10.2]){
+  // iwell funderingstekening (TD01, 27-05-2026): 2 betonbalken 6200 × 450 mm, buitenwerks 2750 mm, 300 mm boven maaiveld.
+  // REPT-handleiding §7.1.1: alternatief 6 korte poeren; bovenvlakken op gelijke hoogte, max. 3 mm hoogteverschil.
+  const balken = [];
+  for(const bz of [-11.5, 11.5]){
     if(bz < 0){
-      // gootzijde: doorlopende balk; ter plaatse van de kabelinvoer in de breedte
-      // uitgespaard, zodat de balk aan elkaar blijft zitten
-      const spA = cx + 24.6, spB = cx + 30.3;
-      mesh(new THREE.BoxGeometry(spA - (cx - 30.3), LIFT, 6.5), matConcrete,
-           (cx - 30.3 + spA)/2, LIFT/2, cz + bz);
-      mesh(new THREE.BoxGeometry(spB - spA, LIFT, 1.05), matConcrete,
-           (spA + spB)/2, LIFT/2, cz + bz - 2.72);          // strook buitenzijde
-      mesh(new THREE.BoxGeometry(spB - spA, LIFT, 2.45), matConcrete,
-           (spA + spB)/2, LIFT/2, cz + bz + 2.02);          // strook binnenzijde
+      // gootzijde: sparing in de balk ter plaatse van de verticale kabelgoot (kabelinvoer van onderen)
+      const spA = cx + 24.6, spB = cx + 31.0;
+      balken.push(mesh(new THREE.BoxGeometry(spA - (cx - 31.0), BCH, 4.5), matConcrete, (cx - 31.0 + spA)/2, BCH/2, cz + bz));
+      balken.push(mesh(new THREE.BoxGeometry(spB - spA, BCH, 2.15), matConcrete, (spA + spB)/2, BCH/2, cz - 12.675));   // strook buitenzijde
+      balken.push(mesh(new THREE.BoxGeometry(spB - spA, BCH, 0.75), matConcrete, (spA + spB)/2, BCH/2, cz - 9.625));    // strook binnenzijde
     } else {
-      mesh(new THREE.BoxGeometry(60.6, LIFT, 6.5), matConcrete, cx, LIFT/2, cz + bz);
+      balken.push(mesh(new THREE.BoxGeometry(62.0, BCH, 4.5), matConcrete, cx, BCH/2, cz + bz));
     }
   }
   const cGroup = new THREE.Group();
@@ -710,13 +721,17 @@ function batContainer(cx, cz, label, mir){
   if(mir) lbl.scale.x = -1;                         // tekst niet gespiegeld
   (meshTarget || scene).add(lbl);
   meshTarget = prevT;
-  cGroup.position.y = LIFT;
+  cGroup.position.y = BCH;
+  // onderdelen buiten de romp (aardplaatjes, label, goot) zijn op LIFT getekend: mee omlaag naar de funderingshoogte
+  outer.children.forEach(ch => { if(ch !== cGroup && !balken.includes(ch)) ch.position.y -= LIFT - BCH; });
   if(mir){ outer.scale.z = -1; outer.position.z = 2*cz; }
   scene.add(outer);
+  (window.DETBC = window.DETBC || []).push({g: outer, naam: label});
 }
 
 const pcsFace = -10.2, pcsC = pcsFace - 9.455;
-const LIFT = 4.0;
+const LIFT = 4.0;                  // PCS-fundering
+const BCH = 3.0;                   // batterijcontainer: 300 mm boven maaiveld (REPT §7.1.1 / iwell TD01)
 const fuseBodyBlue = new THREE.MeshStandardMaterial({color:0x2f5aa8, roughness:0.5, metalness:0.15});
 const fuseBodyRed  = new THREE.MeshStandardMaterial({color:0xb23838, roughness:0.5, metalness:0.15});
 const fuseGeoDC = new THREE.BoxGeometry(0.5, 1.5, 0.55);
@@ -1001,7 +1016,7 @@ const P = {
   b.onclick = () => { const u = new URL(location.href); if(kort) u.searchParams.set('bc', '2.5'); else u.searchParams.delete('bc'); location.href = u.toString(); };
   document.getElementById('bcTxt').style.color = kort ? '#b3261e' : '';
   document.getElementById('bcTxt').textContent = kort
-    ? 'PGS 37-1 M52 typical 3 (afb. 15): in een cluster mogen containers tegen elkaar (hier 0,50 m tussen de dichte zijden én tussen de achterkanten); tussen clusters ≥ hoogte × 1 (≈ 3,2 m) · ⚠ NOG NIET GEREGELD: bewijs IEC 62933-5-2 (aanwezig) + UL 9540A + IEC 62619 + NFPA 68 aanleveren en akkoord brandweer'
+    ? 'PGS 37-1 M52 typical 3 (afb. 15): in een cluster mogen containers tegen elkaar (hier 0,50 m tussen de dichte zijden én tussen de achterkanten); tussen clusters ≥ hoogte × 1 (≈ 3,2 m) · bewijs: IEC 62933-5-2 ✓ · IEC 62619 ✓ · UL 9540:2023 ✓ (certificaat, incl. UL 9540A-brandtest) · ⚠ NOG OPEN: onderbouwing explosieluiken (NFPA 68) en akkoord brandweer'
     : 'PGS 37-1 M52 typical 2 (zonder bewijs): ≥ 2,5 m tussen alle EOS\'en (ook tussen de achterkanten), aan één zijde ≥ 4,5 m voor de brandweer';
 })();
 const blok = 2*P.bcB + P.gBC;                    // containerblok per rij
@@ -1272,14 +1287,15 @@ for(const r of rows) inRij(r, [annos], () => {
 });
 vrijCS(aux, 'CS AUX');
 tagSprite('groen = vrije ruimte / vluchtruimte (Alfen 1,85 m · APS 2,0 m · iwell 3,05 m)', X(HT/2), 4, Z(W) + 40, 12, '#2f9e44');
+const naamTags = [];   // zwevende naamlabels: verborgen zodra de namen op het dak aan staan
 for(const r of rows) inRij(r, [annos], () => {
   const n = r.i + 1;
-  tagSprite('BC' + n + '.1', X((yBC1+yBC2)/2), 36, Z((r.bcA.x1+r.bcA.x2)/2), 16, '#1b4f8a');
-  tagSprite('BC' + n + '.2', X((yBC1+yBC2)/2), 36, Z((r.bcB.x1+r.bcB.x2)/2), 16, '#1b4f8a');
-  tagSprite('PCS ' + n, X((yPC1+yPC2)/2), 47, Z((r.pcs.x1+r.pcs.x2)/2), 14, '#1b4f8a');
-  tagSprite('CS EOS ' + n, X((yCS1+yCS2)/2), H + 31, Z((r.cs.x1+r.cs.x2)/2), 18, '#1b4f8a');
+  [tagSprite('BC' + n + '.1', X((yBC1+yBC2)/2), 36, Z((r.bcA.x1+r.bcA.x2)/2), 16, '#1b4f8a'),
+   tagSprite('BC' + n + '.2', X((yBC1+yBC2)/2), 36, Z((r.bcB.x1+r.bcB.x2)/2), 16, '#1b4f8a'),
+   tagSprite('PCS ' + n, X((yPC1+yPC2)/2), 47, Z((r.pcs.x1+r.pcs.x2)/2), 14, '#1b4f8a'),
+   tagSprite('CS EOS ' + n, X((yCS1+yCS2)/2), H + 31, Z((r.cs.x1+r.cs.x2)/2), 18, '#1b4f8a')].forEach(t => naamTags.push(t));
 });
-tagSprite('CS AUX', X((yCS1+yCS2)/2), H + 31, Z((aux.x1+aux.x2)/2), 20, '#8a4a12');
+naamTags.push(tagSprite('CS AUX', X((yCS1+yCS2)/2), H + 31, Z((aux.x1+aux.x2)/2), 20, '#8a4a12'));
 // maatlijn tussen twee punten op maaiveld, met afstand in meters
 const matDim = new THREE.LineBasicMaterial({color: 0xc23b22, depthTest: false});
 // verticale maatlijn (hoogtes)
@@ -1484,7 +1500,7 @@ const plusPlateZ = -3.3, minPlateZ = -6.7;
 function boltZ(plateZ, i, s){ return plateZ + s*(1.20 + i*0.80); }
 function orangeZ(plateZ, m, s){ return plateZ + s*(0.45 - m*0.36); }
 function dcPlate(cx, cz){
-  const y = LIFT;
+  const y = BCH;
   for(const pz of [plusPlateZ, minPlateZ]){
     const s = (pz === plusPlateZ) ? 1 : -1;
     mesh(new THREE.BoxGeometry(0.25, 2.8, 4.0), matTinned, cx + 27.45, 7.4 + y, cz + pz + s*0.9);
@@ -1535,13 +1551,13 @@ function buildDC(r){
         const yStart = plus ? fy : fy - 0.9;
         const Wp = [
           v(Xp - 4.1, yStart + LIFT, fz), v(Xp - 4.1, uy, fz), v(Xp - 12, uy, fz),
-          v(kop + 6, uy, gz), v(xUp, uy, gz), v(xUp, 2.6 + LIFT, gz),
-          v(back ? cx + 27.2 : cx + 28.0, 7.4 + LIFT, cz + m*bz)
+          v(kop + 6, uy, gz), v(xUp, uy, gz), v(xUp, 2.6 + BCH, gz),
+          v(back ? cx + 27.2 : cx + 28.0, 7.4 + BCH, cz + m*bz)
         ];
         const curve = new THREE.CatmullRomCurve3(filletPath(Wp, Rb, 10), false, 'centripetal');
         kabelGroup.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 120, 0.19, 10, false), mat));
-        mesh(new THREE.CylinderGeometry(0.3, 0.34, 0.9, 12), matDark, xUp, 0.45 + LIFT, gz);
-        mesh(palmGeo, matTinned, back ? cx + 27.2 : cx + 28.0, 7.4 + LIFT, cz + m*bz);
+        mesh(new THREE.CylinderGeometry(0.3, 0.34, 0.9, 12), matDark, xUp, 0.45 + BCH, gz);
+        mesh(palmGeo, matTinned, back ? cx + 27.2 : cx + 28.0, 7.4 + BCH, cz + m*bz);
       }
     }
   }
@@ -2145,6 +2161,46 @@ function schuif(){ const t = performance.now(), dt = Math.min(0.05, (t - tKO)/10
   const fw = (KO.f ? 1 : 0) - (KO.b ? 1 : 0), sd = (KO.r ? 1 : 0) - (KO.l ? 1 : 0); if(!fw && !sd) return;
   const v = Math.max(20, Math.min(600, radius))*0.6*dt*(KO.shift ? 2.5 : 1);
   target.x += (-Math.sin(theta)*fw + Math.cos(theta)*sd)*v; target.z += (-Math.cos(theta)*fw - Math.sin(theta)*sd)*v; }
+// ============ NAMEN OP HET DAK: plat label op elk component, leesbaar in het bovenaanzicht (2D-tekening) ============
+const naamGroup = new THREE.Group(); scene.add(naamGroup);
+function naamMat(txt){
+  const c = document.createElement('canvas'), g = c.getContext('2d'), fs = 96;
+  g.font = 'bold ' + fs + 'px system-ui, sans-serif';
+  const w = Math.ceil(g.measureText(txt).width) + 48; c.width = w; c.height = fs + 40;
+  g.fillStyle = 'rgba(255,255,255,0.92)'; g.fillRect(0, 0, w, c.height);
+  g.strokeStyle = '#1d2830'; g.lineWidth = 6; g.strokeRect(3, 3, w - 6, c.height - 6);
+  g.font = 'bold ' + fs + 'px system-ui, sans-serif'; g.fillStyle = '#1d2830'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText(txt, w/2, c.height/2 + 4);
+  const t = new THREE.CanvasTexture(c); t.anisotropy = 4;
+  return {m: new THREE.MeshBasicMaterial({map: t, transparent: true, polygonOffset: true, polygonOffsetFactor: -4}), asp: w/c.height};
+}
+const dakLijst = [];
+(window.DETBC || []).forEach(c => dakLijst.push({o: c, naam: c.naam}));
+(window.DETPCS || []).forEach((c, i) => dakLijst.push({o: c, naam: 'PCS' + (i + 1)}));
+{ let n = 0; (window.DETCS || []).forEach(c => dakLijst.push({o: c, naam: c.aux ? 'CS AUX' : 'CS EOS' + (++n)})); }
+function dakNamen(){
+  scene.updateMatrixWorld(true);
+  dakLijst.forEach(d => {
+    const b = new THREE.Box3().setFromObject(d.o.g); if(d.o.k) b.union(new THREE.Box3().setFromObject(d.o.k));
+    const dx = b.max.x - b.min.x, dz = b.max.z - b.min.z;
+    if(!d.mesh){ const nm = naamMat(d.naam); d.asp = nm.asp; d.mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), nm.m); d.mesh.rotation.set(-Math.PI/2, 0, -Math.PI/2); naamGroup.add(d.mesh); }
+    // tekst loopt in het bovenaanzicht van links naar rechts (wereld +z), maximaal 85% van het dak
+    let w = 0.85*dz, h = w/d.asp; if(h > 0.5*dx){ h = 0.5*dx; w = h*d.asp; }
+    d.mesh.scale.set(w, h, 1);
+    d.mesh.position.set((b.min.x + b.max.x)/2, b.max.y + 0.3, (b.min.z + b.max.z)/2);
+  });
+}
+dakNamen();
+{ // MS-station: label op het dak, verdwijnt met 'Dak MS eraf'
+  scene.updateMatrixWorld(true);
+  const dak = msStation.userData.dak || msStation, b = new THREE.Box3().setFromObject(dak), nm = naamMat('MS-station 10 kV');
+  const dx = b.max.x - b.min.x, dz = b.max.z - b.min.z; let w = 0.6*Math.max(dx, dz), h = w/nm.asp;
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), nm.m); m.rotation.set(-Math.PI/2, 0, dz >= dx ? -Math.PI/2 : 0);
+  m.position.set((b.min.x + b.max.x)/2, b.max.y + 0.3, (b.min.z + b.max.z)/2); dak.attach(m); naamGroup.userData.ms = m;
+}
+function zetNamen(v){ naamGroup.visible = v; if(naamGroup.userData.ms) naamGroup.userData.ms.visible = v; naamTags.forEach(t => t.visible = !v); }
+zetNamen(true);
+document.getElementById('tNaam').onchange = e => zetNamen(e.target.checked);
 // ============ GEDETAILLEERDE MODELLEN (uit de Bol-omgeving): CS EOS, CS AUX (Alfen D40H) en PCS (WSTECH APS) ============
 // eenvoudige blokken blijven staan tot de modellen geladen zijn; daarna vervangt een kloon elk blok op exact dezelfde plek
 (function(){
@@ -2156,9 +2212,9 @@ function schuif(){ const t = performance.now(), dt = Math.min(0.05, (t - tKO)/10
     k.traverse(o => { const m = /^deur_([xyz])_(-?\d+)_(-?\d+)/.exec(o.name || ''); if(!m) return;
       const d = {m: o, as: m[1], open: +m[2]/1000, dicht: +m[3]/1000}; doors.push(d); o.rotation[d.as] = doorsOpen ? d.open : d.dicht; });
     return k; };
-  laad('models/cs_eos.glb', sc => (window.DETCS || []).filter(c => !c.aux).forEach(c => zet(sc, c.g, c.g.position, c.g.scale)));
-  laad('models/cs_aux.glb', sc => (window.DETCS || []).filter(c => c.aux).forEach(c => zet(sc, c.g, c.g.position, c.g.scale)));
-  laad('models/pcs.glb', sc => (window.DETPCS || []).forEach(c => zet(sc, c.g, new THREE.Vector3(c.Xc, LIFT, c.Zc), new THREE.Vector3(1, 1, -1))));
+  laad('models/cs_eos.glb', sc => { (window.DETCS || []).filter(c => !c.aux).forEach(c => c.k = zet(sc, c.g, c.g.position, c.g.scale)); dakNamen(); });
+  laad('models/cs_aux.glb', sc => { (window.DETCS || []).filter(c => c.aux).forEach(c => c.k = zet(sc, c.g, c.g.position, c.g.scale)); dakNamen(); });
+  laad('models/pcs.glb', sc => { (window.DETPCS || []).forEach(c => c.k = zet(sc, c.g, new THREE.Vector3(c.Xc, LIFT, c.Zc), new THREE.Vector3(1, 1, -1))); dakNamen(); });
 })();
 function animate(){
   requestAnimationFrame(animate);
