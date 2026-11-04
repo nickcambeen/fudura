@@ -1,6 +1,6 @@
 // Toegangscode voor de hele Fudura-site (Vercel Routing Middleware, draait op de server).
 // De code zelf staat hier niet in, alleen de SHA-256-hash ervan.
-const CODE_HASH = '5813a57e18eed74a39d0273dc28bb5f694e4ba1360087d7781ba961939524e55';
+const CODE_HASH = 'ce8457d59078a699acb70416f88155a96a906b7b7aad43708402e3a3bcc8a4b4';
 const COOKIE = 'fudura_toegang';
 
 async function sha256(tekst) {
