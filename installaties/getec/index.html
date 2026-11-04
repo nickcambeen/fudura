@@ -63,6 +63,8 @@
   #paneel input[type=checkbox]:checked{background:#1b4f8a}
   #paneel input[type=checkbox]:checked::after{left:13px}
   #paneel input.oranje:checked{background:#c2571a}
+  #paneel details.sub{border-top:1px dashed #e5eaed;padding:3px 0 0;margin-top:3px}
+  #paneel details.sub summary{text-transform:none;letter-spacing:0;font-size:11.5px;color:#3f4b52;font-weight:600}
   .rijK{display:grid;grid-template-columns:62px 1fr;align-items:start;gap:4px}
   .rijK>span{padding-top:7px;font:600 9.5px system-ui,sans-serif;color:#8a979e;text-transform:uppercase;letter-spacing:.03em}
   .knoprij{display:flex;flex-wrap:wrap;gap:4px;padding:2px 0}
@@ -144,10 +146,27 @@
       <label title="Pijltjes = luchtfoto schuiven, , en . = draaien">Kaart uitlijnen <input type="checkbox" id="tUitl"></label>
     </div>
     <div class="knoprij"><button id="pMeetWis">wis metingen</button></div>
+    <details class="sub" id="pgsLijst"><summary>Toegepaste PGS 37-1-regels</summary>
+      <ul style="margin:4px 0 2px;padding-left:16px;font-size:11.5px;line-height:1.45;color:#3f4b52">
+        <li><b>Typical 3</b>: niet-betreedbare EOS'en in de open lucht, groot EOS-park (&gt; 6 EOS'en, hier 16) → <b>M52</b>.</li>
+        <li><b>M52 / afb. 15 (met bewijs)</b>: clusters van max. 2 rijen en max. 35 m; containers in een cluster mogen tegen elkaar (hier 0,50 m dichte zijden én achterkanten).</li>
+        <li><b>M52 tussen clusters</b>: ≥ hoogte boven maaiveld × 1, min. 1,5 m → ≈ 3,20 m (2,90 m container + 0,30 m fundering); aanwezig 3,77 m ✓.</li>
+        <li><b>M52 zonder bewijs (typical 2)</b>: ≥ 2,5 m tussen alle EOS'en en aan één zijde ≥ 4,5 m — schakelaar "2,50 m".</li>
+        <li><b>M52 brandweer</b>: ≥ 4,5 m weg / afstand tot kavelgrens langs de clusters (PGS-zones, rood) — ⚠ af te stemmen met de brandweer.</li>
+        <li><b>Bewijs</b>: IEC 62933-5-2 (TÜV, aanwezig) + UL 9540A + IEC 62619 + NFPA 68 — ⚠ rapporten opgevraagd bij REPT.</li>
+        <li><b>M50</b>: EOS tot kavelgrens / ander bouwwerk / brandbaar object (bomen) ≥ 10 m geen eis, 5–10 m → 30 min brandwerend (PGS-zones, oranje en rood; BAG-maat tot het gebouw).</li>
+        <li><b>M9</b>: brandwerendheid vervalt bij geslaagde brandpropagatietest (typical 1–3).</li>
+        <li><b>M28 / M29 / M63</b>: hekwerk ≥ 1,8 m, onbrandbaar, min. twee tegenover elkaar gelegen toegangen (vluchtdeuren in beide korte en lange zijden).</li>
+        <li><b>M56</b>: bluswateraansluiting ≥ 1 000 l/min (Storz) als brandpropagatie niet is aangetoond — ⚠ n.t.b.</li>
+        <li><b>M61</b>: EOS altijd bereikbaar voor hulpdiensten; ruimte tussen EOS'en vlak en vrij van obstakels.</li>
+        <li style="color:#8a979e">Bron: PGS 37-1:2023 versie 1.1 (april 2026), §7.6.</li>
+      </ul>
+    </details>
   </details>
 </div>
 <div id="caption">Slepen = draaien &middot; scroll = zoomen &middot; WASD / pijltjes = schuiven (shift = sneller) &middot; alle opties in het paneel rechts</div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script>
 // Schaal: 1 eenheid = 100 mm
 const wrap = document.getElementById('wrap');
@@ -792,6 +811,7 @@ mesh(new THREE.CylinderGeometry(1.35, 1.35, 0.3, 16), matGrey, 0.6, 37.5, pcsC -
 meshTarget = null;
 pcsGroup.position.set(Xc, LIFT, Zc - pcsC);
 scene.add(pcsGroup);
+(window.DETPCS = window.DETPCS || []).push({g: pcsGroup, Xc, Zc});
 // ---- AC-railveld op de PCS (stijgt mee met de balken) ----
 const acGroup = new THREE.Group();
 meshTarget = acGroup;
@@ -1007,6 +1027,7 @@ function placeCS(o, isAux){
   inner.scale.set(SX, 1, SZ);
   inner.position.set(X((o.y1+o.y2)/2), 0, Z((o.x1+o.x2)/2) - 36.0*SZ);
   scene.add(inner);
+  (window.DETCS = window.DETCS || []).push({g: inner, aux: !!isAux});
 }
 ground.position.set(X(HT/2), 0, Z(W/2));
 for(const r of rows) inRij(r, [scene], () => {
@@ -2091,6 +2112,17 @@ function schuif(){ const t = performance.now(), dt = Math.min(0.05, (t - tKO)/10
   const fw = (KO.f ? 1 : 0) - (KO.b ? 1 : 0), sd = (KO.r ? 1 : 0) - (KO.l ? 1 : 0); if(!fw && !sd) return;
   const v = Math.max(20, Math.min(600, radius))*0.6*dt*(KO.shift ? 2.5 : 1);
   target.x += (-Math.sin(theta)*fw + Math.cos(theta)*sd)*v; target.z += (-Math.cos(theta)*fw - Math.sin(theta)*sd)*v; }
+// ============ GEDETAILLEERDE MODELLEN (uit de Bol-omgeving): CS EOS, CS AUX (Alfen D40H) en PCS (WSTECH APS) ============
+// eenvoudige blokken blijven staan tot de modellen geladen zijn; daarna vervangt een kloon elk blok op exact dezelfde plek
+(function(){
+  if(!THREE.GLTFLoader) return;
+  const ld = new THREE.GLTFLoader();
+  const laad = (url, cb) => ld.load(url, g => { try{ cb(g.scene); }catch(e){ console.warn(url, e); } }, undefined, e => console.warn('model niet geladen', url, e));
+  const zet = (sc, ph, pos, scale) => { const k = sc.clone(true); k.position.copy(pos); k.scale.copy(scale); ph.parent.add(k); ph.visible = false; return k; };
+  laad('models/cs_eos.glb', sc => (window.DETCS || []).filter(c => !c.aux).forEach(c => zet(sc, c.g, c.g.position, c.g.scale)));
+  laad('models/cs_aux.glb', sc => (window.DETCS || []).filter(c => c.aux).forEach(c => zet(sc, c.g, c.g.position, c.g.scale)));
+  laad('models/pcs.glb', sc => (window.DETPCS || []).forEach(c => zet(sc, c.g, new THREE.Vector3(c.Xc, LIFT, c.Zc), new THREE.Vector3(1, 1, -1))));
+})();
 function animate(){
   requestAnimationFrame(animate);
   if(auto) theta += 0.0010;
