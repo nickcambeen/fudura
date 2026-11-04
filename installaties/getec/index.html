@@ -978,7 +978,7 @@ const MAP = {
   zoom: 19,            // 19 = circa 18 cm/pixel
   tiles: 9,            // 9 x 9 tegels = circa 415 x 415 m
   rotatie: -114.6,     // graden: rijen evenwijdig aan de weg (bijgesteld 04-11)
-  offsetX: -39, offsetZ: 0    // park midden tussen bomenrij en weg
+  offsetX: -39, offsetZ: -180  // park ca. 18 m naar het westen, tegen het pad (04-11)
 };
 const lfGroup = new THREE.Group();
 scene.add(lfGroup);
@@ -1036,11 +1036,11 @@ function zetKaart(){
 }
 zetKaart();
 try {
-  const v = JSON.parse(localStorage.getItem('getecKaartStand2') || 'null');
+  const v = JSON.parse(localStorage.getItem('getecKaartStand3') || 'null');
   if(v){ MAP.offsetX = v.x; MAP.offsetZ = v.z; MAP.rotatie = v.r; zetKaart(); }
 } catch(e) {}
 function kaartBewaren(){
-  try { localStorage.setItem('getecKaartStand2', JSON.stringify({x: MAP.offsetX, z: MAP.offsetZ, r: MAP.rotatie})); } catch(e) {}
+  try { localStorage.setItem('getecKaartStand3', JSON.stringify({x: MAP.offsetX, z: MAP.offsetZ, r: MAP.rotatie})); } catch(e) {}
   const el = document.getElementById('kaartStand');
   el.innerHTML = '<b>stand kaart</b><br>offsetX: ' + MAP.offsetX.toFixed(1) + '<br>offsetZ: ' + MAP.offsetZ.toFixed(1) +
                  '<br>rotatie: ' + MAP.rotatie.toFixed(1) + '&deg;<br><span>bewaard in deze browser</span>';
