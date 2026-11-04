@@ -104,7 +104,7 @@
 <button class="knop" id="meetBtn">meten</button>
 <button class="knop" id="meetWisBtn">wis metingen</button>
 <button class="knop" id="bcBtn" style="top:320px"></button>
-<label class="knop" id="msLbl" style="top:358px;color:#a8431a;border-color:#c2571a;display:flex;align-items:center;gap:6px" title="Niet in de scope (Getec doet de MS zelf); laat zien wat er nodig is"><input type="checkbox" id="msChk" style="margin:0;accent-color:#c2571a"> MS-station (buiten scope)</label>
+<label class="knop" id="msLbl" style="top:358px;color:#a8431a;border-color:#c2571a;display:flex;align-items:center;gap:6px" title="Niet in de scope (Getec doet de MS zelf); laat zien wat er nodig is"><input type="checkbox" id="msChk" checked style="margin:0;accent-color:#c2571a"> MS-station (buiten scope)</label>
 <button class="knop" id="msDakBtn" style="top:394px;display:none;color:#a8431a;border-color:#c2571a">dak eraf</button>
 <button class="pKnop" id="pOpen" title="Paneel openen">&#9776;</button>
 <div id="paneel">
@@ -112,7 +112,7 @@
   <details open><summary>Configuratie</summary>
     <div class="rijK"><span>Containers</span><div class="knoprij" id="cfgBC"><button data-bc="0.5" title="PGS 37-1 typical 3 mét bewijs (afb. 15)">0,50 m</button><button data-bc="2.5" title="PGS 37-1 typical 2 zonder bewijs">2,50 m</button></div></div>
     <div class="rij2">
-      <label title="Betreedbaar MS-station (buiten scope)">MS-station <input type="checkbox" class="oranje" id="tMs"></label>
+      <label title="Betreedbaar MS-station (buiten scope)">MS-station <input type="checkbox" class="oranje" id="tMs" checked></label>
       <label>Dak MS eraf <input type="checkbox" id="tMsDak"></label>
     </div>
     <div class="knoprij"><button id="pDoc">documenten</button></div>
@@ -1665,7 +1665,7 @@ tagSprite('MS-station 10 kV · NGX K K + 9 V (buiten scope)', msPos.x, 42, msPos
 tagSprite('lus naar Getec HSS C12 / C13', -27, 10, ZW + 60, 11, '#c2571a');
 for(let i = 0; i < 2; i++) msStation.add(annos.children[annos.children.length - 1 - i]);   // labels mee aan/uit
 
-msStation.visible = false;                             // standaard uit: niet in de scope
+msStation.visible = true;                              // standaard aan (wel buiten de scope van Fudura)
 function zetMsStation(aan){
   msStation.visible = aan;
   document.getElementById('msChk').checked = aan;
