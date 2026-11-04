@@ -930,7 +930,7 @@ const P = {
   pcsL: 1.98, pcsB: 1.26,  // PCS (L langs de rij)
   csL: 2.87, csB: 2.34,    // CS EOS Alfen Diabolo 40H (L langs de rij, deuren op de korte zijden)
   gHekKop: 3.05,           // (niet meer gebruikt in de dubbelrij-opstelling)
-  gKoelKop: 3.05,          // tussen de koelerzijden van rij A en rij B in een blok van 4 (iwell 3,05 m; PGS 37-1 M51 in elkaars verlengde min. 2,5 m)
+  gKoelKop: (new URLSearchParams(location.search).get('bc') === '2.5') ? 2.50 : 0.50,   // tussen de achterkanten (dichte kopse kant, geen koeler/aansluitingen) van rij A en rij B: 0,50 m met bewijs (PGS afb. 15), 2,50 m zonder (M52)
   gBC: (new URLSearchParams(location.search).get('bc') === '2.5') ? 2.50 : 0.50,   // PGS 37-1 M52: typical 3 mét bewijs (afb. 15) containers in een cluster tegen elkaar; zonder bewijs 2,5 m               // binnen een rij: type A + type B met de dichte zijden naar elkaar, 0,50 m (gemeten op iwell-opstelling 30 MW/120 MWh); variant 2,00 m (APS 4 MWh-instructie)
   gRij: 3.05,              // tussen de deurzijden van twee rijen (iwell-opstelling: 3,05 m vrij aan de deurzijde)
   gHekEind: 3.05,          // hek -> deurzijde eerste/laatste container (iwell 3,05 m)
@@ -947,8 +947,8 @@ const P = {
   b.onclick = () => { const u = new URL(location.href); if(kort) u.searchParams.set('bc', '2.5'); else u.searchParams.delete('bc'); location.href = u.toString(); };
   document.getElementById('bcTxt').style.color = kort ? '#b3261e' : '';
   document.getElementById('bcTxt').textContent = kort
-    ? 'PGS 37-1 M52 typical 3 (afb. 15): in een cluster mogen containers tegen elkaar (hier 0,50 m, iwell); tussen clusters ≥ hoogte × 1 (≈ 3,2 m) · ⚠ NOG NIET GEREGELD: bewijs IEC 62933-5-2 (aanwezig) + UL 9540A + IEC 62619 + NFPA 68 aanleveren en akkoord brandweer'
-    : 'PGS 37-1 M52 typical 2 (zonder bewijs): ≥ 2,5 m tussen alle EOS\'en, aan één zijde ≥ 4,5 m voor de brandweer';
+    ? 'PGS 37-1 M52 typical 3 (afb. 15): in een cluster mogen containers tegen elkaar (hier 0,50 m tussen de dichte zijden én tussen de achterkanten); tussen clusters ≥ hoogte × 1 (≈ 3,2 m) · ⚠ NOG NIET GEREGELD: bewijs IEC 62933-5-2 (aanwezig) + UL 9540A + IEC 62619 + NFPA 68 aanleveren en akkoord brandweer'
+    : 'PGS 37-1 M52 typical 2 (zonder bewijs): ≥ 2,5 m tussen alle EOS\'en (ook tussen de achterkanten), aan één zijde ≥ 4,5 m voor de brandweer';
 })();
 const blok = 2*P.bcB + P.gBC;                    // containerblok per rij
 // rijafstand: containers (deurzijden 3,05 m) of de kolom PCS + CS EOS (2,0 m vrij voor MS-deuren CS / servicezijde PCS), wat het grootst is
