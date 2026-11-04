@@ -135,6 +135,7 @@
       <label>Contouren <input type="checkbox" id="tEdge" checked></label>
       <label>Deuren open <input type="checkbox" id="tDeur"></label>
       <label title="PGS 37-1 M50/M52">PGS-zones <input type="checkbox" class="oranje" id="tPgs"></label>
+      <label title="Clusters uitlichten volgens PGS 37-1 M52 (afb. 15)">PGS-clusters <input type="checkbox" class="oranje" id="tClus"></label>
     </div>
   </details>
   <details><summary>Gereedschap</summary>
@@ -1668,6 +1669,27 @@ const pgsGroup = new THREE.Group(); pgsGroup.visible = false; scene.add(pgsGroup
   for(let d = 0; d < ND; d++) tagSprite('cluster ' + (d + 1) + ' · 4 EOS · ' + f2(2*P.bcL + P.gKoelKop) + ' × ' + f2(blok) + ' m', X(yPiv), 34, Z(rows[2*d].x0 + blok/2), 11, '#1b4f8a');
   annos.children.slice(n).forEach(c => pgsGroup.add(c));
 })();
+// clusters uitlichten (PGS 37-1 M52, afb. 15): per cluster een doorzichtig volume + maat tussen de clusters met toets
+const clusterGroup = new THREE.Group(); clusterGroup.visible = false; scene.add(clusterGroup);
+(function(){
+  const kl = [0xe8901a, 0x2f9e44, 0x1b4f8a, 0xb23b8a];
+  const x1 = X(2*yPiv - yBC2), x2 = X(yBC2), hC = (2.896 + 0.30)*10, nodig = Math.max(1.5, 2.896 + 0.30);
+  const n0 = annos.children.length;
+  for(let d = 0; d < ND; d++){
+    const z1 = Z(rows[2*d].x0) - 1, z2 = Z(rows[2*d].x0 + blok) + 1;
+    const geo = new THREE.BoxGeometry(x2 - x1 + 2, hC + 2, z2 - z1);
+    const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({color: kl[d % 4], transparent: true, opacity: 0.22, depthWrite: false}));
+    m.position.set((x1 + x2)/2, (hC + 2)/2, (z1 + z2)/2); m.renderOrder = 995; clusterGroup.add(m);
+    const e = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({color: kl[d % 4]})); e.position.copy(m.position); clusterGroup.add(e);
+    tagSprite('CLUSTER ' + (d + 1) + ' · 4 EOS · ' + f2(2*P.bcL + P.gKoelKop) + ' × ' + f2(blok) + ' m', (x1 + x2)/2, hC + 10, (z1 + z2)/2, 15, '#' + kl[d % 4].toString(16).padStart(6, '0'));
+    if(d < ND - 1){
+      const zA = Z(rows[2*d].x0 + blok), zB = Z(rows[2*d + 2].x0), g = (zB - zA)/10;
+      dimLine((x1 + x2)/2, zA, (x1 + x2)/2, zB, hC + 1, f2(g) + ' m ' + (g >= nodig ? '≥' : '<') + ' ' + f2(nodig) + ' m ' + (g >= nodig ? '✓' : '✗'));
+    }
+  }
+  tagSprite('PGS 37-1 M52 afb. 15: max. 2 rijen · max. 35 m · tussen clusters ≥ hoogte (' + f2(nodig) + ' m)', (x1 + x2)/2, hC + 22, Z(W/2), 13, '#243038');
+  annos.children.slice(n0).forEach(c => clusterGroup.add(c));
+})();
 document.getElementById('pgsBtn').addEventListener('click', e => { pgsGroup.visible = !pgsGroup.visible; e.target.textContent = 'PGS-zones: ' + (pgsGroup.visible ? 'aan' : 'uit'); e.target.classList.toggle('uit', !pgsGroup.visible); });
 // ============ GEBOUWEN: BAG-panden (PDOK WFS, RD) met hoogte uit 3DBAG — liggen vast op de luchtfoto ============
 // RD -> kaartstelsel (oost/zuid in eenheden van 100 mm rond MAP.lat/lon) via de lokale Jacobiaan van WGS84 -> RD
@@ -2009,6 +2031,7 @@ function stapFP(){
   koppel('tEdge', () => !edgeGroup.length || edgeGroup[0].visible, v => edgeGroup.forEach(l => l.visible = v));
   koppel('tDeur', () => doorsOpen, () => actie('d'));
   koppel('tPgs', () => pgsGroup.visible, () => $('pgsBtn').click());
+  koppel('tClus', () => clusterGroup.visible, v => { clusterGroup.visible = v; if(v){ auto = false; actie('0'); } });
   koppel('tMeet', () => meetAan, () => toggleMeten());
   koppel('tFP', () => FP.aan, v => zetFP(v));
   $('tUitl').onchange = e => { window.KAART_UITLIJNEN = e.target.checked; $('kaartStand').style.display = e.target.checked ? 'block' : 'none'; if(e.target.checked){ kaartBewaren(); if(!lfGroup.visible){ toggleLucht(); $('tKaart').checked = true; } } };
