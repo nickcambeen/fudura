@@ -46,7 +46,7 @@
 </head>
 <body>
 <div id="wrap"></div>
-<div id="titel">Getec BESS-park Emmen &middot; 8 rijen<span>8 &times; (CS EOS + PCS + 2 &times; REPT 5 MWh type A + B, dichte zijden naar elkaar) + CS AUX in het midden<br><b id="bcTxt"></b></span></div>
+<div id="titel">Getec BESS-park Emmen &middot; 8 rijen<span>4 blokken van 2 rijen (rij B 180° gedraaid) &middot; per rij CS EOS + PCS + 2 &times; REPT 5 MWh type A + B &middot; CS AUX in het midden<br><b id="bcTxt"></b></span></div>
 <button class="knop" id="docBtn" aria-expanded="false" aria-controls="docPaneel">documenten</button>
 <div id="docPaneel" role="dialog" aria-label="Naslag documenten">
   <h4>Batterijcontainer REPT Powtrix 2.0, 5 MWh (iwell)</h4>
@@ -861,8 +861,9 @@ const P = {
   bcL: 6.06, bcB: 2.44,    // container
   pcsL: 1.98, pcsB: 1.26,  // PCS (L langs de rij)
   csL: 2.87, csB: 2.34,    // CS EOS Alfen Diabolo 40H (L langs de rij, deuren op de korte zijden)
-  gHekKop: 3.05,           // hek -> kopse kant container (koelerzijde), iwell-opstelling 3,05 m
-  gBC: (new URLSearchParams(location.search).get('bc') === '2') ? 2.00 : 0.50,               // binnen een rij: type A + type B met de dichte zijden naar elkaar, 0,50 m (gemeten op iwell-opstelling 30 MW/120 MWh); variant 2,00 m (APS 4 MWh-instructie)
+  gHekKop: 3.05,           // (niet meer gebruikt in de dubbelrij-opstelling)
+  gKoelKop: 3.05,          // tussen de koelerzijden van rij A en rij B in een blok van 4 (iwell 3,05 m; PGS 37-1 M51 in elkaars verlengde min. 2,5 m)
+  gBC: ({'0.5': 0.50, '2': 2.00})[new URLSearchParams(location.search).get('bc')] || 1.00,               // binnen een rij: type A + type B met de dichte zijden naar elkaar, 0,50 m (gemeten op iwell-opstelling 30 MW/120 MWh); variant 2,00 m (APS 4 MWh-instructie)
   gRij: 3.05,              // tussen de deurzijden van twee rijen (iwell-opstelling: 3,05 m vrij aan de deurzijde)
   gHekEind: 3.05,          // hek -> deurzijde eerste/laatste container (iwell 3,05 m)
   gBcCs: 2.20,             // container -> CS EOS (iwell 2 m)
@@ -872,14 +873,16 @@ const P = {
   gAuxPcs: 2.00            // MS-deuren CS AUX -> PCS volgende rij (APS 2 m, Alfen 1,85 m)
 };
 (function(){
-  const kort = P.gBC < 1;   // kort = iwell 0,50 m (standaard)
+  const kort = P.gBC < 0.9;
   const b = document.getElementById('bcBtn');
-  b.textContent = 'tussen containers: ' + (kort ? '0,50 m (iwell)' : '2,00 m');
-  b.onclick = () => { const u = new URL(location.href); if(kort) u.searchParams.set('bc', '2'); else u.searchParams.delete('bc'); location.href = u.toString(); };
+  b.textContent = 'dichte zijden: ' + ({0.5: '0,50 m (iwell)', 1: '1,00 m (PGS)', 2: '2,00 m'})[P.gBC];
+  b.onclick = () => { const u = new URL(location.href); const volg = {1: '0.5', 0.5: '2', 2: null}[P.gBC];
+    if(volg) u.searchParams.set('bc', volg); else u.searchParams.delete('bc'); location.href = u.toString(); };
   document.getElementById('bcTxt').style.color = kort ? '#b3261e' : '';
-  document.getElementById('bcTxt').textContent = kort
-    ? '⚠ NOG NIET GEREGELD: 0,50 m tussen de containers (iwell-opstelling) is een werkuitgangspunt. Brandtestrapport (UL 9540A / CSA C800) opgevraagd bij REPT/iwell; akkoord brandweer (PGS 37-1) volgt nog.'
-    : 'Variant 2,00 m tussen de containers (APS 4 MWh-instructie: 2 m rondom)';
+  document.getElementById('bcTxt').textContent = ({
+    1: 'PGS 37-1 M51: zijdelings 1,00 m (dichte zijden), in elkaars verlengde ≥ 2,5 m (koelerzijden 3,05 m) · blok van 4 EOS (max. 6 per cluster) · ⚠ afstand tussen clusters nog te bepalen',
+    0.5: '⚠ NOG NIET GEREGELD: 0,50 m (iwell) mag alleen met bewijs UL 9540A / IEC 62933-5-2 volgens PGS 37-1 afb. 14 en akkoord brandweer',
+    2: 'Variant 2,00 m tussen de dichte zijden'})[P.gBC];
 })();
 const blok = 2*P.bcB + P.gBC;                    // containerblok per rij
 // rijafstand: containers (deurzijden 3,05 m) of de kolom PCS + CS EOS (2,0 m vrij voor MS-deuren CS / servicezijde PCS), wat het grootst is
@@ -887,17 +890,21 @@ const pitch = Math.max(blok + P.gRij, P.pcsL + P.gPcsCs + P.csL + P.gAuxPcs);
 P.gRij = pitch - blok;                           // werkelijke ruimte tussen de containers van twee rijen
 const kolom = P.pcsL + P.gPcsCs + P.csL;         // PCS + CS langs de rij
 const off = (blok - kolom)/2;                    // kolom gecentreerd op het containerblok
-let W = P.gHekEind*2 + P.N*blok + (P.N-1)*P.gRij;
-const yBC1 = P.gHekKop, yBC2 = yBC1 + P.bcL;
+// DUBBELRIJEN: rij A en rij B (180° gedraaid) vormen een blok van 4 containers met de koelerzijden naar elkaar
+const ND = P.N/2;                                // aantal blokken
+let W = P.gHekEind*2 + ND*blok + (ND-1)*P.gRij;
+const staart = P.bcL + P.gBcCs + (P.csB + P.pcsB)/2 + P.gPcsHek;   // van koelerzijde container tot hek aan de PCS-zijde
+const yBC1 = staart + P.gKoelKop, yBC2 = yBC1 + P.bcL;
+const yPiv = yBC1 - P.gKoelKop/2;                // spiegelas tussen rij A en rij B
 const yCS1 = yBC2 + P.gBcCs, yCS2 = yCS1 + P.csB;
 const yPC1 = yCS1 + (P.csB - P.pcsB)/2, yPC2 = yPC1 + P.pcsB;
 const HT = yPC2 + P.gPcsHek;
 
 const rows = [];
 for(let i = 0; i < P.N; i++){
-  const x0 = P.gHekEind + i*pitch;
+  const x0 = P.gHekEind + (i >> 1)*pitch;
   rows.push({
-    i, x0,
+    i, x0, flip: i % 2 === 1,
     bcA:{x1:x0, x2:x0+P.bcB, y1:yBC1, y2:yBC2},
     bcB:{x1:x0+P.bcB+P.gBC, x2:x0+blok, y1:yBC1, y2:yBC2},
     pcs:{x1:x0+off, x2:x0+off+P.pcsL, y1:yPC1, y2:yPC2},
@@ -915,6 +922,18 @@ for(const r of rows.slice(M)){
 W += shift;
 // 2D -> 3D: 3D-x = 2D-y (dwars op de rijen), 3D-z = 2D-x (langs de rijen), 1 eenheid = 100 mm
 const X = y => 10*y, Z = x => 10*x;
+// rij B: 180° gedraaid om de spiegelas (yPiv) en het hart van het containerblok
+const tfRij = (r, x, z) => r.flip ? [2*X(yPiv) - x, 2*Z(r.x0 + blok/2) - z] : [x, z];
+function inRij(r, ouders, fn){
+  const L = ouders.map(o => o.children.length);
+  fn();
+  if(!r.flip) return;
+  ouders.forEach((o, k) => {
+    const nieuw = o.children.slice(L[k]); if(!nieuw.length) return;
+    const g = new THREE.Group(); g.position.set(2*X(yPiv), 0, 2*Z(r.x0 + blok/2)); g.rotation.y = Math.PI;
+    nieuw.forEach(c => g.add(c)); o.add(g);
+  });
+}
 const SX = 23.4/24.75, SZ = 28.7/30.6;     // romp schalen naar Alfen Diabolo 40H (2,34 x 2,87 m)
 function placeCS(o, isAux){
   const inner = new THREE.Group();
@@ -927,13 +946,13 @@ function placeCS(o, isAux){
   scene.add(inner);
 }
 ground.position.set(X(HT/2), 0, Z(W/2));
-for(const r of rows){
+for(const r of rows) inRij(r, [scene], () => {
   const n = r.i + 1;
   batContainer(X((yBC1+yBC2)/2), Z((r.bcA.x1+r.bcA.x2)/2), 'BC' + n + '.1');
   batContainer(X((yBC1+yBC2)/2), Z((r.bcB.x1+r.bcB.x2)/2), 'BC' + n + '.2', true);   // type B: deuren naar buiten
   buildPCS(X((r.pcs.y1+r.pcs.y2)/2), Z((r.pcs.x1+r.pcs.x2)/2));
   placeCS(r.cs, false);
-}
+});
 placeCS(aux, true);
 
 // hek rondom met vluchtdeuren (zelfde indeling als de 2D-tekening)
@@ -941,15 +960,14 @@ const hekGroup = new THREE.Group();
 scene.add(hekGroup);
 meshTarget = hekGroup;
 const XH = X(HT), ZW = Z(W);
-const deurX = X(yBC2 + P.gBcCs/2);                         // deuren in de korte zijden
-const deurZ = [];                                          // deuren in de lange zijden
-for(let i = 1; i < P.N; i += 2) deurZ.push(Z(rows[i].x0 + blok + P.gRij/2));
-hekDeel(0, 0, XH, 0, [deurX]);                             // korte zijde begin
-hekDeel(0, ZW, XH, ZW, [deurX]);                           // korte zijde eind
+const deurX = X(yBC2 + P.gBcCs/2), deurX2 = 2*X(yPiv) - deurX;   // deuren in de korte zijden (rij A- en rij B-kant)
+const deurZ = [];                                          // deuren in de lange zijden, tussen de blokken
+for(let d = 1; d < ND; d++) deurZ.push(Z(rows[2*d].x0 - P.gRij/2));
+hekDeel(0, 0, XH, 0, [deurX2, deurX]);                     // korte zijde begin
+hekDeel(0, ZW, XH, ZW, [deurX2, deurX]);                   // korte zijde eind
 hekDeel(0, 0, 0, ZW, deurZ);                               // lange zijde bij de containerkoppen
 hekDeel(XH, 0, XH, ZW, deurZ);                             // lange zijde bij PCS en CS
-vluchtDeur(deurX, 0, Math.PI/2);
-vluchtDeur(deurX, ZW, Math.PI/2);
+for(const dx of [deurX, deurX2]){ vluchtDeur(dx, 0, Math.PI/2); vluchtDeur(dx, ZW, Math.PI/2); }
 for(const dz of deurZ){ vluchtDeur(0, dz, 0); vluchtDeur(XH, dz, 0); }
 for(const [hx, hz] of [[0, 0], [XH, 0], [0, ZW], [XH, ZW]]){
   mesh(new THREE.CylinderGeometry(0.28, 0.28, hekH + 0.6, 8), matSteel, hx, hekH/2, hz);
@@ -1098,13 +1116,13 @@ function tagSprite(text, x, y, z, px, col){
 }
 
 const f2 = m => (Math.round(m*100)/100).toFixed(2).replace('.', ',');
-for(const r of rows){
+for(const r of rows) inRij(r, [annos], () => {
   const n = r.i + 1;
   tagSprite('BC' + n + '.1', X((yBC1+yBC2)/2), 36, Z((r.bcA.x1+r.bcA.x2)/2), 16, '#1b4f8a');
   tagSprite('BC' + n + '.2', X((yBC1+yBC2)/2), 36, Z((r.bcB.x1+r.bcB.x2)/2), 16, '#1b4f8a');
   tagSprite('PCS ' + n, X((yPC1+yPC2)/2), 47, Z((r.pcs.x1+r.pcs.x2)/2), 14, '#1b4f8a');
   tagSprite('CS EOS ' + n, X((yCS1+yCS2)/2), H + 31, Z((r.cs.x1+r.cs.x2)/2), 18, '#1b4f8a');
-}
+});
 tagSprite('CS AUX', X((yCS1+yCS2)/2), H + 31, Z((aux.x1+aux.x2)/2), 20, '#8a4a12');
 // maatlijn tussen twee punten op maaiveld, met afstand in meters
 const matDim = new THREE.LineBasicMaterial({color: 0xc23b22, depthTest: false});
@@ -1142,9 +1160,9 @@ function dimLine(x1, z1, x2, z2, y, label){
 dimLine(-16, 0, -16, ZW, 1.0, f2(W) + ' m');
 dimLine(0, -16, XH, -16, 1.0, f2(HT) + ' m');
 // rij 1 en 2
-const r0 = rows[0], r1 = rows[1];
+const r0 = rows[0], r1 = rows[2];
 const zBA = Z((r0.bcA.x1+r0.bcA.x2)/2), xBC = X((yBC1+yBC2)/2);
-dimLine(0, zBA, X(yBC1), zBA, 1.0, f2(P.gHekKop));
+dimLine(X(yBC1 - P.gKoelKop), zBA, X(yBC1), zBA, 1.0, f2(P.gKoelKop));
 dimLine(xBC, 0, xBC, Z(r0.bcA.x1), 1.0, f2(r0.bcA.x1));
 dimLine(xBC, Z(r0.bcA.x2), xBC, Z(r0.bcB.x1), 1.0, f2(P.gBC));
 dimLine(xBC, Z(r0.bcB.x2), xBC, Z(r1.bcA.x1), 1.0, f2(P.gRij));
@@ -1373,7 +1391,7 @@ function buildDC(r){
   }
   meshTarget = null;
 }
-for(const r of rows){ buildAC(r); buildDC(r); }
+for(const r of rows) inRij(r, [scene, kabelGroup], () => { buildAC(r); buildDC(r); });
 
 function toggleKabels(){
   kabelGroup.visible = !kabelGroup.visible;
@@ -1515,7 +1533,7 @@ scene.add(msStation);
   const yK = -7.0, xAchter = msPos.x - msD/2 - 0.5;                       // kelderwand kabelzijde
   const Xt = X(yCS2 + (HT - yCS2)/2);                                      // sleuf tussen CS EOS en hek
   const doelen = [];
-  for(let i = 0; i < 8; i++) doelen.push({veld: 'V' + (i + 1), o: rows[i].cs});
+  for(let i = 0; i < 8; i++) doelen.push({veld: 'V' + (i + 1), o: rows[i].cs, r: rows[i]});
   doelen.push({veld: 'V9', o: aux});
   const vz = msStation.userData.veldZ;
   const buis = (pts, r, m) => { const c = new THREE.CatmullRomCurve3(filletPath(pts, 3.0, 8), false, 'centripetal');
@@ -1526,10 +1544,16 @@ scene.add(msStation);
     const links = zMS + 5 < zv;                                            // doel ligt aan de lage-z kant van het station
     const off = (links ? -1 : 1)*((i % 5) - 2)*0.9;                         // naast elkaar in de sleuf
     const xs = Xt + off;
-    buis([
-      v(xAchter + 2.5, -3.0, zv), v(xAchter + 0.5, -4.0, zv), v(xAchter - 2.0, yK, zv), v(xs, yK, zv),
-      v(xs, yK, zMS + 5 + i*0.4), v(xc, yK, zMS + 5 + i*0.4), v(xc, yK, zMS + 1.5), v(xc, 2.6, zMS - 1.9)
-    ], 0.42, matK);
+    const start = [v(xAchter + 2.5, -3.0, zv), v(xAchter + 0.5, -4.0, zv), v(xAchter - 2.0, yK, zv), v(xs, yK, zv)];
+    const eindPre = [[xc, zMS + 5 + i*0.4, yK], [xc, zMS + 1.5, yK], [xc, zMS - 1.9, 2.6]];
+    if(d.r && d.r.flip){
+      // rij B (180° gedraaid): via een dwarssleuf in de AUX-opening naar de sleuf aan de B-zijde
+      const zc = Z(aux.x1 - P.gCsAux/2) + ((i >> 1) - 1.5)*0.9, XtB = 2*X(yPiv) - Xt - off;
+      const eind = eindPre.map(([x, z, y]) => { const [xw, zw] = tfRij(d.r, x, z); return v(xw, y, zw); });
+      buis([...start, v(xs, yK, zc), v(XtB, yK, zc), v(XtB, yK, eind[0].z), ...eind], 0.42, matK);
+    } else {
+      buis([...start, v(xs, yK, zMS + 5 + i*0.4), ...eindPre.map(([x, z, y]) => v(x, y, z))], 0.42, matK);
+    }
   });
   // K1/K2: lus naar Getec HSS (rail C, velden 12 en 13), voorlopig op een eind gelegd
   ['K1', 'K2'].forEach((k, i) => {
