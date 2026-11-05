@@ -1293,14 +1293,24 @@ function vrij(xa, xb, ya, yb, kleur = 0x2f9e44, laag = 0, lf = 0.5, naam = ''){ 
   maatK(X(ya), Z(xa) + o, X(yb), Z(xa) + o, null, kd);                          // dwars (y)
   tagSprite(naam + f2(Math.max(dl, db)) + ' × ' + f2(Math.min(dl, db)) + ' m', X(ya + lf*(yb - ya)), 4.5, (Z(xa) + Z(xb))/2, 15, hexK(kd), true);
 }
+// gevulde pijlpunt op p, wijzend in richting d (genormaliseerd), lengte s
+const _mP = {};
+function pijl(p, d, kleur, s, grp){
+  const mat = _mP[kleur] || (_mP[kleur] = new THREE.MeshBasicMaterial({color: kleur, depthTest: false, side: THREE.DoubleSide}));
+  let n = new THREE.Vector3().crossVectors(d, new THREE.Vector3(0, 1, 0));
+  if(n.lengthSq() < 1e-6) n.set(1, 0, 0); n.normalize().multiplyScalar(s*0.32);
+  const b = p.clone().sub(d.clone().multiplyScalar(s));
+  const g = new THREE.BufferGeometry().setFromPoints([p, b.clone().add(n), b.clone().sub(n)]);
+  const m = new THREE.Mesh(g, mat); m.renderOrder = 999; (grp || annos).add(m);
+}
+function pijlen(a, b, kleur, s, grp){ const d = new THREE.Vector3().subVectors(b, a).normalize(); pijl(b, d, kleur, s, grp); pijl(a, d.clone().negate(), kleur, s, grp); }
 const donker = k => { const c = new THREE.Color(k).multiplyScalar(0.62); return c.getHex(); };
 const _mM = {};
 function maatK(x1, z1, x2, z2, label, kleur){   // maatlijn met eindstreepjes in een eigen kleur
   const mat = _mM[kleur] || (_mM[kleur] = new THREE.LineBasicMaterial({color: kleur, depthTest: false}));
   const a = new THREE.Vector3(x1, 0.85, z1), b = new THREE.Vector3(x2, 0.85, z2);
   const ln = new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), mat); ln.renderOrder = 998; annos.add(ln);
-  const d = new THREE.Vector3().subVectors(b, a).normalize(), n = new THREE.Vector3(-d.z, 0, d.x).multiplyScalar(1.2);
-  for(const p of [a, b]){ const t = new THREE.Line(new THREE.BufferGeometry().setFromPoints([p.clone().add(n), p.clone().sub(n)]), mat); t.renderOrder = 998; annos.add(t); }
+  pijlen(a, b, kleur, Math.min(3.2, a.distanceTo(b)*0.3));
   if(label){ const m = a.clone().add(b).multiplyScalar(0.5); tagSprite(label, m.x, 4, m.z, 18, hexK(kleur), true); }
 }
 // compactstation: één rechthoek volgens de Alfen-footprint D40H (MS4408A889): 1110 + 2336 + 1100 = 4546 × 1850 + 2870 + 1850 = 6570 mm
@@ -1319,8 +1329,7 @@ const matMaatV = new THREE.LineBasicMaterial({color: 0x0f8a3a, depthTest: false}
 function maatV(x1, z1, x2, z2, label){
   const a = new THREE.Vector3(x1, 0.8, z1), b = new THREE.Vector3(x2, 0.8, z2);
   const ln = new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), matMaatV); ln.renderOrder = 998; annos.add(ln);
-  const d = new THREE.Vector3().subVectors(b, a).normalize(), n = new THREE.Vector3(-d.z, 0, d.x).multiplyScalar(1.6);
-  for(const p of [a, b]){ const t = new THREE.Line(new THREE.BufferGeometry().setFromPoints([p.clone().add(n), p.clone().sub(n)]), matMaatV); t.renderOrder = 998; annos.add(t); }
+  pijlen(a, b, 0x0f8a3a, Math.min(3.6, a.distanceTo(b)*0.3));
   const m = a.clone().add(b).multiplyScalar(0.5); tagSprite(label, m.x, 4, m.z, 22, '#0b6b2c', true);
 }
 for(const r of rows) inRij(r, [annos], () => {
@@ -1333,9 +1342,6 @@ for(const r of rows) inRij(r, [annos], () => {
 });
 vrijCS(aux, 'CS AUX');
 tagSprite('vrije ruimte / vluchtruimte: containers in de kleur van hun cluster (3,05 m deurzijde · 2,0 m voorkant)', X(HT/2), 4, Z(W) + 40, 12, '#243038');
-tagSprite('PCS 2,0 m (APS)', X(HT/2) - 90, 4, Z(W) + 58, 13, hexK(KL_PCS), true);
-tagSprite('compactstation 1,85 m (Alfen)', X(HT/2) + 60, 4, Z(W) + 58, 13, '#8a6a00', true);
-for(let d = 0; d < 4; d++) tagSprite('cluster ' + (d + 1), X(HT/2) - 120 + d*80, 4, Z(W) + 76, 13, hexK(KL_CLUS[d]), true);
 const naamTags = [];   // zwevende naamlabels: verborgen zodra de namen op het dak aan staan
 for(const r of rows) inRij(r, [annos], () => {
   const n = r.i + 1;
@@ -1365,14 +1371,8 @@ function dimLine(x1, z1, x2, z2, y, label){
   const a = new THREE.Vector3(x1, y, z1), b = new THREE.Vector3(x2, y, z2);
   const g = new THREE.BufferGeometry().setFromPoints([a, b]);
   const ln = new THREE.Line(g, matDim); ln.renderOrder = 998; annos.add(ln);
-  // eindstreepjes haaks op de maatlijn
-  const d = new THREE.Vector3().subVectors(b, a).normalize();
-  const n = new THREE.Vector3(-d.z, 0, d.x).multiplyScalar(2.2);
-  for(const p of [a, b]){
-    const t = new THREE.BufferGeometry().setFromPoints([
-      p.clone().add(n), p.clone().sub(n)]);
-    const tl = new THREE.Line(t, matDim); tl.renderOrder = 998; annos.add(tl);
-  }
+  // pijlpunten aan beide einden
+  pijlen(a, b, 0x0b57d0, Math.min(4.5, a.distanceTo(b)*0.3));
   const mid = new THREE.Vector3().addVectors(a, b).multiplyScalar(0.5);
   tagSprite(label, mid.x, y + 4, mid.z, 24, '#083c9c', true);
 }
@@ -2249,6 +2249,32 @@ function dakNamen(){
   });
 }
 dakNamen();
+// ============ HOOGTEMATEN: verticale maatlijn met pijlen bij het eerste object van elk type + MS-station ============
+const hoogteGroup = new THREE.Group(); annos.add(hoogteGroup);
+const matHoogte = new THREE.LineBasicMaterial({color: 0x7a2e8a, depthTest: false});
+function hoogteMaten(){
+  scene.updateMatrixWorld(true);
+  while(hoogteGroup.children.length) hoogteGroup.remove(hoogteGroup.children[0]);
+  const lijst = [];
+  const bc = (window.DETBC || [])[0]; if(bc) lijst.push({o: bc, t: 'container'});
+  const pc = (window.DETPCS || [])[0]; if(pc) lijst.push({o: pc, t: 'PCS'});
+  const cs = (window.DETCS || []).find(c => !c.aux); if(cs) lijst.push({o: cs, t: 'CS EOS'});
+  const ax = (window.DETCS || []).find(c => c.aux); if(ax) lijst.push({o: ax, t: 'CS AUX'});
+  lijst.push({o: {g: msStation.children[0]}, t: 'MS-station'});
+  for(const it of lijst){
+    const b = new THREE.Box3().setFromObject(it.o.g); if(it.o.k) b.union(new THREE.Box3().setFromObject(it.o.k));
+    const h = b.max.y;                                                    // boven maaiveld (y = 0)
+    const px = b.min.x - 2.5, pz = b.min.z - 2.5;                         // naast de hoek van het object
+    const a = new THREE.Vector3(px, 0, pz), t = new THREE.Vector3(px, h, pz);
+    const ln = new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, t]), matHoogte); ln.renderOrder = 998; hoogteGroup.add(ln);
+    for(const y of [0, h]){ const hl = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(px - 1.5, y, pz), new THREE.Vector3(b.min.x, y, b.min.z)]), matHoogte); hl.renderOrder = 998; hoogteGroup.add(hl); }
+    pijlen(a, t, 0x7a2e8a, 3.0, hoogteGroup);
+    const n0 = annos.children.length;
+    tagSprite('h ' + it.t + ' ' + f2(h/10) + ' m', px - 1, h/2, pz, 16, '#7a2e8a', true);
+    annos.children.slice(n0).forEach(c => hoogteGroup.add(c));
+  }
+}
+hoogteMaten();
 { // MS-station: label op het dak, verdwijnt met 'Dak MS eraf'
   scene.updateMatrixWorld(true);
   const dak = msStation.userData.dak || msStation, b = new THREE.Box3().setFromObject(dak), nm = naamMat('MS-station 10 kV');
@@ -2270,9 +2296,9 @@ document.getElementById('tNaam').onchange = e => zetNamen(e.target.checked);
     k.traverse(o => { const m = /^deur_([xyz])_(-?\d+)_(-?\d+)/.exec(o.name || ''); if(!m) return;
       const d = {m: o, as: m[1], open: +m[2]/1000, dicht: +m[3]/1000}; doors.push(d); o.rotation[d.as] = doorsOpen ? d.open : d.dicht; });
     return k; };
-  laad('models/cs_eos.glb', sc => { (window.DETCS || []).filter(c => !c.aux).forEach(c => c.k = zet(sc, c.g, c.g.position, c.g.scale)); dakNamen(); });
-  laad('models/cs_aux.glb', sc => { (window.DETCS || []).filter(c => c.aux).forEach(c => c.k = zet(sc, c.g, c.g.position, c.g.scale)); dakNamen(); });
-  laad('models/pcs.glb', sc => { (window.DETPCS || []).forEach(c => c.k = zet(sc, c.g, new THREE.Vector3(c.Xc, LIFT, c.Zc), new THREE.Vector3(1, 1, -1))); dakNamen(); });
+  laad('models/cs_eos.glb', sc => { (window.DETCS || []).filter(c => !c.aux).forEach(c => c.k = zet(sc, c.g, c.g.position, c.g.scale)); dakNamen(); hoogteMaten(); });
+  laad('models/cs_aux.glb', sc => { (window.DETCS || []).filter(c => c.aux).forEach(c => c.k = zet(sc, c.g, c.g.position, c.g.scale)); dakNamen(); hoogteMaten(); });
+  laad('models/pcs.glb', sc => { (window.DETPCS || []).forEach(c => c.k = zet(sc, c.g, new THREE.Vector3(c.Xc, LIFT, c.Zc), new THREE.Vector3(1, 1, -1))); dakNamen(); hoogteMaten(); });
 })();
 function animate(){
   requestAnimationFrame(animate);
