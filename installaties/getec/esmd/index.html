@@ -191,7 +191,7 @@
       <tr><td>Exacte typecode en firmware PCS (APS2500-ES-2-690-5?), op/afregelsnelheid, LFSM-U-functie</td><td>WSTECH</td><td>Lijstcontrole, regelsnelheid, LFSM-U</td></tr>
       <tr><td>Hulpvermogen per container en PCS (continu)</td><td>iwell / WSTECH</td><td>Max. productie- en opnamecapaciteit</td></tr>
       <tr><td>Beveiligingsinstellingen NGX-velden en invoeding rail C (selectiviteit)</td><td>Fudura / Getec</td><td>U&lt;, U&gt;, I&gt;, I&gt;&gt;, f&lt;, f&gt;</td></tr>
-      <tr><td>Rol EMS (GridSync): regelt het P/Q op het overdrachtspunt? Dan geldt het als parkregelaar.</td><td>Fudura EMS</td><td>Parkregelaar, LFSM-O-simulatie</td></tr>
+      <tr><td>Interface BESS-besturing ↔ park-EMS van Getec / Eneco (protocol, setpoints, meting per batterijveld). Wie regelt P/Q op het overdrachtspunt (parkregelaar)?</td><td>Getec / Fudura / Eneco</td><td>Parkregelaar, LFSM-O-simulatie, vraagsturing</td></tr>
       <tr><td>Vraagsturing: via aggregator (Eneco) en voor welke diensten?</td><td>Eneco</td><td>Vraagsturing</td></tr>
       <tr><td>Planning: onder spanning, eerste eenheid, 20 %, vol vermogen, testen</td><td>Fudura / Getec</td><td>Datum inbedrijfname, planning ESMD</td></tr>
       <tr><td>Partij voor de testen op locatie (bijv. DNV) en het testplan</td><td>Fudura</td><td>Bijlage 2</td></tr>
@@ -254,7 +254,7 @@ const SECTIES = [
     V('somv', 'Nominaal vermogen per omvormer', '2,5', 'ok', 'Smax APS2500 op 690 V.', 'MVA'),
     V('merk', 'Merk/fabrikant', 'WSTECH', 'ok', ''),
     V('type', 'Type-aanduiding', 'APS2500-ES-2-690-5', 'aanname', 'Op de NBNL-lijst als <b>APS2500-XX-2-690-5</b> (2-9-2026) → bijlage 1 niet nodig. Exacte code bevestigen bij WSTECH.'),
-    V('park', 'Parkregelaar (merk/type)', '', 'open', 'Alleen als het EMS (GridSync) P/Q op het overdrachtspunt regelt. Dan op de lijst laten toetsen of bewijs aanleveren, en LFSM-O simuleren.'),
+    V('park', 'Parkregelaar (merk/type)', '', 'open', 'Uitgangspunt: Fudura levert de BESS-besturing en de meting per batterijveld; de parkregeling (WKK’s, belastingen, overdrachtspunt) blijft bij Getec. Regelt een regelaar P/Q op het overdrachtspunt, dan is dat de parkregelaar: merk/type opgeven, op de lijst laten toetsen of bewijs aanleveren, en LFSM-O simuleren.'),
   ]),
   S('Transformatoren', [
     V('t1s', 'TR MS/LS type 1: vermogen', '2,5 (8 ×)', 'ok', 'Trafo in de CS EOS (Alfen D40H, Fudura type 3B).', 'MVA'),
