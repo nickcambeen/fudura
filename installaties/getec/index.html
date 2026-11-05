@@ -147,6 +147,7 @@
       <label title="PGS 37-1 M50/M52">PGS-zones <input type="checkbox" class="oranje" id="tPgs"></label>
       <label title="Clusters uitlichten volgens PGS 37-1 M52 (afb. 15)">PGS-clusters <input type="checkbox" class="oranje" id="tClus"></label>
     </div>
+    <button id="pgsAnBtn" style="margin-top:8px;width:100%;padding:7px;border:1px solid #d8322a;border-radius:7px;background:#fff5f4;color:#a8241d;font:600 13px system-ui,sans-serif;cursor:pointer">PGS 37-1 analyse</button>
   </details>
   <details><summary>Gereedschap</summary>
     <div class="rij2">
@@ -1338,6 +1339,9 @@ for(const r of rows) inRij(r, [annos], () => {
   vrij(r.pcs.x1 - 2.0, r.pcs.x1, r.pcs.y1, r.pcs.y2, KL_PCS, 3);                                       // smalle zijde met datadeur (tegenover AC)
   vrij(r.bcA.x1 - 3.05, r.bcA.x1, r.bcA.y1, r.bcA.y2, kc, 0, 0.3); vrij(r.bcB.x2, r.bcB.x2 + 3.05, r.bcB.y1, r.bcB.y2, kc, 1, 0.7);   // deurzijden (buitenkant paar)
   vrij(r.bcA.x1, r.bcB.x2, yBC2, yBC2 + 2.0, kc, 0);                                                                        // voorkant (aansluitingen)
+  { const yy = X(yBC2 + 2.0 - 0.45), kd = donker(kc);                                                                    // breedte per container aan de kopse kant
+    maatK(yy, Z(r.bcA.x1), yy, Z(r.bcA.x2), f2(P.bcB) + ' m', kd); maatK(yy, Z(r.bcB.x1), yy, Z(r.bcB.x2), f2(P.bcB) + ' m', kd);
+    maatK(yy, Z(r.bcA.x2), yy, Z(r.bcB.x1), f2(P.gBC), kd); }
 });
 vrijCS(aux, 'CS AUX');
 tagSprite('vrije ruimte / vluchtruimte: containers in de kleur van hun cluster (3,05 m deurzijde · 2,0 m voorkant)', X(HT/2), 4, Z(W) + 40, 12, '#243038');
@@ -1921,6 +1925,7 @@ window.bagSync = function(){
     res[k] = best; }
   const n0 = annos.children.length;
   if(res.hek.d < 2000) dimLine(res.hek.q[0], res.hek.q[1], res.hek.p[0], res.hek.p[1], 1.2, f2(res.hek.d/10) + ' m hek – gebouw');
+  window.pgsBagRes = res;
   if(res.eos.d < 2000) dimLine(res.eos.q[0], res.eos.q[1], res.eos.p[0], res.eos.p[1], 2.4, f2(res.eos.d/10) + ' m container – gebouw');
   annos.children.slice(n0).forEach(c => bagMaat.add(c));
   const e = res.eos.d/10, oordeel = e >= 10 ? 'M50: ≥ 10 m, geen brandwerendheidseis' : e >= 5 ? 'M50: 5–10 m → 30 min brandwerend (tenzij propagatietest)' : 'M50: < 5 m tot gebouw!';
@@ -2303,6 +2308,109 @@ document.getElementById('tNaam').onchange = e => zetNamen(e.target.checked);
   laad('models/cs_eos.glb', sc => { (window.DETCS || []).filter(c => !c.aux).forEach(c => c.k = zet(sc, c.g, c.g.position, c.g.scale)); dakNamen(); hoogteMaten(); });
   laad('models/cs_aux.glb', sc => { (window.DETCS || []).filter(c => c.aux).forEach(c => c.k = zet(sc, c.g, c.g.position, c.g.scale)); dakNamen(); hoogteMaten(); });
   laad('models/pcs.glb', sc => { (window.DETPCS || []).forEach(c => c.k = zet(sc, c.g, new THREE.Vector3(c.Xc, LIFT, c.Zc), new THREE.Vector3(1, 1, -1))); dakNamen(); hoogteMaten(); });
+})();
+
+// ============ PGS 37-1 ANALYSE: lijst met toetsen; klik = camera ernaartoe + markering in het model ============
+(function(){
+  const st = document.createElement('style');
+  st.textContent = `#pgsAn{position:fixed;left:14px;top:14px;z-index:32;width:360px;max-height:calc(100vh - 28px);overflow-y:auto;background:rgba(255,255,255,.97);border:1px solid #c3ccd2;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.14);font:13px/1.35 system-ui,sans-serif;color:#243038;display:none;box-sizing:border-box}
+  #pgsAn h3{margin:0;font-size:15px;padding:10px 12px 4px} #pgsAn .sub{padding:0 12px 8px;font-size:11.5px;color:#5a6470}
+  #pgsAn .tot{display:flex;gap:6px;padding:0 12px 8px;flex-wrap:wrap} #pgsAn .tot span{font-size:11.5px;padding:2px 7px;border-radius:10px;color:#fff}
+  #pgsAn .it{border-top:1px solid #e3e8eb;padding:8px 12px;cursor:pointer;display:grid;grid-template-columns:22px 1fr;gap:6px}
+  #pgsAn .it:hover{background:#f3f6f8} #pgsAn .it.act{background:#eef4fb;box-shadow:inset 3px 0 0 #1b4f8a}
+  #pgsAn .ic{width:20px;height:20px;border-radius:50%;color:#fff;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center}
+  #pgsAn .t{font-weight:600} #pgsAn .r{font-size:12px;color:#3b4750} #pgsAn .w{font-size:12px;margin-top:2px}
+  #pgsAn .x{position:absolute;right:8px;top:6px;border:0;background:none;font-size:20px;cursor:pointer;color:#5a6470}
+  #pgsAn .voet{padding:8px 12px 10px;font-size:11px;color:#5a6470;border-top:1px solid #e3e8eb}`;
+  document.head.appendChild(st);
+  const box = document.createElement('div'); box.id = 'pgsAn'; document.body.appendChild(box);
+  const KL = {ok: '#2f9e44', let: '#e8901a', nok: '#d8322a', info: '#1b4f8a'}, IC = {ok: '✓', let: '!', nok: '✗', info: 'i'};
+  const KLH = {ok: 0x2f9e44, let: 0xe8901a, nok: 0xd8322a, info: 0x1b4f8a};
+  const mark = new THREE.Group(); mark.visible = false; scene.add(mark);
+  const bx = o => { scene.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(o.g || o); if(o.k) b.union(new THREE.Box3().setFromObject(o.k)); return b; };
+  const dXZ = (a, b) => Math.hypot(Math.max(0, a.min.x - b.max.x, b.min.x - a.max.x), Math.max(0, a.min.z - b.max.z, b.min.z - a.max.z));
+  const R2 = (x1, x2, z1, z2, h) => ({x1: Math.min(x1, x2), x2: Math.max(x1, x2), z1: Math.min(z1, z2), z2: Math.max(z1, z2), h: h || 30});
+
+  function toetsen(){
+    const T = [];
+    const ex1 = X(2*yPiv - yBC2), ex2 = X(yBC2), ez1 = Z(rows[0].x0), ez2 = Z(rows[P.N - 1].x0 + blok);
+    const nEOS = 2*P.N, cl = 2*P.bcL + P.gKoelKop, metBewijs = P.gBC < 1;
+    const bBC = (window.DETBC || []).map(bx), hBC = bBC.length ? bBC[0].max.y/10 : 3.20, nodig = Math.max(1.5, hBC);
+    T.push({c: 'Typical 3 · groot EOS-park', s: 'info', r: nEOS + ' niet-betreedbare EOS\'en in de open lucht (> 6) → maatregel M52 van toepassing.', b: R2(ex1, ex2, ez1, ez2, 40)});
+    T.push({c: 'M52 · clustergrootte', s: (cl <= 35 ? 'ok' : 'nok'), r: ND + ' clusters van 2 rijen × 2 containers, ' + f2(cl) + ' × ' + f2(blok) + ' m. Eis: max. 2 rijen en max. 35 m.', b: R2(ex1, ex2, Z(rows[0].x0), Z(rows[0].x0 + blok), 40)});
+    const g = P.gRij, zA = Z(rows[0].x0 + blok), zB = Z(rows[2].x0);
+    T.push({c: 'M52 · afstand tussen clusters', s: g >= nodig - 1e-6 ? 'ok' : 'nok', r: 'Aanwezig ' + f2(g) + ' m. Eis: ≥ hoogte EOS × 1 (min. 1,5 m) = ' + f2(nodig) + ' m (hoogte uit het model, incl. fundering en explosieluiken).', b: R2(ex1, ex2, zA, zB, 36), m: [X(yBC2) - 15, zA, X(yBC2) - 15, zB, f2(g) + ' m ≥ ' + f2(nodig) + ' m']});
+    T.push({c: 'M52 / afb. 15 · binnen een cluster', s: metBewijs ? 'let' : 'ok', r: metBewijs ? f2(P.gBC) + ' m tussen de containers mag alleen mét bewijs: IEC 62933-5-2 ✓, IEC 62619 ✓, UL 9540 (incl. 9540A) ✓.' : '2,50 m tussen alle EOS\'en (zonder bewijs).', w: metBewijs ? 'Nog open: onderbouwing explosieluiken (NFPA 68) en akkoord brandweer.' : '', b: R2(ex1, ex2, Z(rows[0].x0 + P.bcB), Z(rows[0].x0 + P.bcB + P.gBC), 36)});
+    const dLang = Math.min(HT - yBC2, 2*yPiv - yBC2), dKop = P.gHekEind;
+    T.push({c: 'M52 · ruimte voor de brandweer', s: 'let', r: 'Containers → hek: ' + f2(dLang) + ' m aan de PCS/CS-zijden, ' + f2(dKop) + ' m aan de kopse kanten. Eis: ≥ 4,5 m weg of afstand tot de kavelgrens langs de clusters.', w: 'Het hek is geen kavelgrens: de brandweerweg ligt buiten het hek. Opstelplaats en route afstemmen met de brandweer (Veiligheidsregio Drenthe).', b: R2(0, XH, 0, Z(P.gHekEind), 30), m: [X(yBC2) - 15, 0, X(yBC2) - 15, Z(P.gHekEind), f2(dKop) + ' m < 4,50 m']});
+    const br = window.pgsBagRes && window.pgsBagRes.eos;
+    if(br && br.d < 1e8){ const e = br.d/10;
+      T.push({c: 'M50 · afstand tot gebouwen (BAG)', s: e >= 10 ? 'ok' : e >= 5 ? 'let' : 'nok', r: 'Dichtstbijzijnd pand ' + f2(e) + ' m vanaf de containers. ≥ 10 m: geen eis · 5–10 m: 30 min brandwerend · < 5 m: niet toegestaan zonder maatregelen.', w: e < 10 ? 'Brandwerendheid vervalt bij een geslaagde brandpropagatietest (M9).' : '', b: R2(br.p[0], br.q[0], br.p[1], br.q[1], 30)});
+    } else T.push({c: 'M50 · afstand tot gebouwen (BAG)', s: 'let', r: 'BAG-panden nog niet geladen of buiten bereik: zet "Gebouwen BAG" aan en open de analyse opnieuw.', b: R2(ex1, ex2, ez1, ez2, 30)});
+    const bMS = msStation.visible ? bx(msStation.children[0]) : null;
+    if(bMS){ let dm = 1e9, bb = null; bBC.forEach(b => { const d = dXZ(b, bMS); if(d < dm){ dm = d; bb = b; } }); dm /= 10;
+      const cl = (v, a, b) => Math.max(a, Math.min(b, v)), cB = bMS.getCenter(new THREE.Vector3());
+      const q = [cl(cB.x, bb.min.x, bb.max.x), cl(cB.z, bb.min.z, bb.max.z)], pq = [cl(q[0], bMS.min.x, bMS.max.x), cl(q[1], bMS.min.z, bMS.max.z)];
+      T.push({c: 'M50 · MS-station (ander bouwwerk)', s: dm >= 10 ? 'ok' : 'let', r: 'Betreedbaar MS-station op ' + f2(dm) + ' m van de dichtstbijzijnde container. Bij < 10 m: 30 min brandwerendheid of geslaagde propagatietest (M9). De deur ligt aan de hekzijde, van de containers af.', w: dm < 10 ? 'Het MS-station hoort bij de installatie, maar is wel betreedbaar: afstemmen met de brandweer of het als "ander bouwwerk" telt.' : '', b: R2(bMS.min.x, bMS.max.x, bMS.min.z, bMS.max.z, 34), m: [q[0], q[1], pq[0], pq[1], f2(dm) + ' m']}); }
+    T.push({c: 'M28 / M29 · hekwerk', s: hekH >= 18 ? 'ok' : 'nok', r: 'Hek ' + f2(hekH/10) + ' m hoog, staal (onbrandbaar). Eis: ≥ 1,8 m, onbrandbaar.', b: R2(0, XH, ZW - 3, ZW, hekH + 4)});
+    T.push({c: 'M63 · twee tegenover elkaar gelegen toegangen', s: 'ok', r: 'Vluchtdeuren in beide korte zijden (' + 2*2 + ') en in beide lange zijden (' + 2*deurZ.length + ').', b: R2(deurX - 8, deurX + 8, -4, 4, 26)});
+    T.push({c: 'M56 · bluswatervoorziening', s: 'let', r: 'Storz-koppelingen op de containers. Eis: ≥ 1 000 l/min bluswater als brandpropagatie niet is aangetoond.', w: 'Afstand tot de dichtstbijzijnde brandkraan en capaciteit nog bepalen.', b: bBC.length ? R2(bBC[0].min.x, bBC[0].max.x, bBC[0].min.z, bBC[0].max.z, 36) : null});
+    T.push({c: 'M61 · bereikbaarheid hulpdiensten', s: 'ok', r: 'Gangpaden tussen de clusters ' + f2(P.gRij) + ' m en ' + f2(P.gHekEind) + ' m langs het hek, vlak en vrij van obstakels.', b: R2(ex1, ex2, Z(rows[2].x0 + blok), Z(rows[4].x0), 30)});
+    // vrije ruimte / vluchtruimte fabrikanten (geen PGS-eis, wel voorwaarde voor bediening en vluchten)
+    const vrijPcsCs = P.gPcsCs, kolGap = pitch - kolom;
+    const zK1 = Z(rows[0].x0 + off + kolom), zK2 = Z(rows[2].x0 + off);
+    T.push({c: 'Vluchtruimte · PCS datadeur ↔ MS-deuren CS EOS', s: kolGap >= 2.0 - 1e-6 ? 'ok' : 'nok', r: 'Tussen de kolommen ' + f2(kolGap) + ' m. Eis: APS 2,0 m en Alfen 1,85 m (gedeelde vrije ruimte).', b: R2(X(yCS1), X(yCS2), zK1, zK2, 30), m: [X((yCS1 + yCS2)/2), zK1, X((yCS1 + yCS2)/2), zK2, f2(kolGap) + ' m']});
+    T.push({c: 'Vluchtruimte · PCS ↔ LS-deuren CS EOS', s: vrijPcsCs >= 2.0 - 1e-6 ? 'ok' : 'nok', r: 'Aanwezig ' + f2(vrijPcsCs) + ' m. Eis: APS 2,0 m / Alfen 1,85 m.', b: R2(X(yCS1), X(yCS2), Z(rows[0].pcs.x2), Z(rows[0].cs.x1), 30), m: [X((yCS1 + yCS2)/2), Z(rows[0].pcs.x2), X((yCS1 + yCS2)/2), Z(rows[0].cs.x1), f2(vrijPcsCs) + ' m']});
+    T.push({c: 'Vluchtruimte · CS EOS 8 ↔ CS AUX', s: P.gCsAux >= 3.70 - 1e-6 ? 'ok' : 'nok', r: 'Aanwezig ' + f2(P.gCsAux) + ' m. Eis: 2 × 1,85 m (MS-deuren CS 8 en LS-deuren CS AUX).', b: R2(X(yCS1), X(yCS2), Z(rows[P.N - 1].cs.x2), Z(aux.x1), 30), m: [X((yCS1 + yCS2)/2), Z(rows[P.N - 1].cs.x2), X((yCS1 + yCS2)/2), Z(aux.x1), f2(P.gCsAux) + ' m']});
+    if(bMS){ const dh = (ZW - bMS.max.z)/10;
+      T.push({c: 'Vluchtruimte · deur MS-station → hek', s: dh >= 2.0 - 1e-6 ? 'ok' : 'nok', r: 'Aanwezig ' + f2(dh) + ' m voor de deur. Aanname: ≥ 2,0 m (deurzwaai 1,15 m + vluchtweg).', b: R2(bMS.min.x, bMS.max.x, bMS.max.z, ZW, 26), m: [(bMS.min.x + bMS.max.x)/2, bMS.max.z, (bMS.min.x + bMS.max.x)/2, ZW, f2(dh) + ' m']}); }
+    T.push({c: 'Explosieontlasting (NFPA 68)', s: 'let', r: '3 explosieluiken per container (REPT). Onderbouwing volgens NFPA 68 opvragen bij iwell/REPT; nodig voor het bewijs bij M52 afb. 15.', b: bBC.length ? R2(bBC[0].min.x, bBC[0].max.x, bBC[0].min.z, bBC[0].max.z, 40) : null});
+    return T;
+  }
+
+  let T = [], act = -1;
+  function markeer(i){
+    while(mark.children.length) mark.remove(mark.children[0]);
+    const t = T[i]; if(!t || !t.b) { mark.visible = false; return; }
+    const b = t.b, k = KLH[t.s], w = Math.max(b.x2 - b.x1, 4), d = Math.max(b.z2 - b.z1, 4);
+    const geo = new THREE.BoxGeometry(w + 4, b.h, d + 4);
+    const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({color: k, transparent: true, opacity: 0.3, depthWrite: false, depthTest: false}));
+    m.position.set((b.x1 + b.x2)/2, b.h/2, (b.z1 + b.z2)/2); m.renderOrder = 1000; mark.add(m);
+    const e = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({color: k, depthTest: false})); e.position.copy(m.position); e.renderOrder = 1001; mark.add(e);
+    // pin met nummer boven de markering
+    const top = new THREE.Vector3(m.position.x, b.h + 22, m.position.z);
+    mark.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(m.position.x, b.h, m.position.z), top]), new THREE.LineBasicMaterial({color: k, depthTest: false})));
+    pijl(new THREE.Vector3(m.position.x, b.h, m.position.z), new THREE.Vector3(0, -1, 0), k, 8, mark);
+    const n0 = annos.children.length;
+    tagSprite(IC[t.s] + ' ' + (i + 1), top.x, top.y + 4, top.z, 34, KL[t.s], true);
+    if(t.m){ const [x1, z1, x2, z2, lab] = t.m, a = new THREE.Vector3(x1, 2, z1), c = new THREE.Vector3(x2, 2, z2);
+      const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, c]), new THREE.LineBasicMaterial({color: k, depthTest: false})); l.renderOrder = 1002; mark.add(l);
+      pijlen(a, c, k, Math.min(5, a.distanceTo(c)*0.3), mark);
+      const mm = a.clone().lerp(c, 0.5); tagSprite(lab, mm.x, 5, mm.z, 26, KL[t.s], true); }
+    annos.children.slice(n0).forEach(c => mark.add(c));
+    mark.visible = true;
+    auto = false; target.set(m.position.x, 6, m.position.z); radius = Math.min(700, Math.max(160, 2.6*Math.max(w, d, b.h))); phi = Math.min(phi, 1.0);
+  }
+  setInterval(() => { if(mark.visible && mark.children[0]) mark.children[0].material.opacity = 0.18 + 0.14*(1 + Math.sin(Date.now()/300)); }, 60);
+
+  function teken(){
+    T = toetsen();
+    const n = s => T.filter(t => t.s === s).length;
+    box.innerHTML = '<button class="x" title="Sluiten">&times;</button><h3>PGS 37-1 analyse</h3><div class="sub">PGS 37-1:2023 v1.1 §7.6 · berekend uit de huidige opstelling (' + (P.gBC < 1 ? 'containers 0,50 m, met bewijs' : 'containers 2,50 m, zonder bewijs') + '). Klik op een regel om hem in het model aan te wijzen.</div>' +
+      '<div class="tot">' + ['ok', 'let', 'nok', 'info'].filter(s => n(s)).map(s => '<span style="background:' + KL[s] + '">' + n(s) + ' ' + {ok: 'voldoet', let: 'aandacht', nok: 'voldoet niet', info: 'info'}[s] + '</span>').join('') + '</div>' +
+      T.map((t, i) => '<div class="it' + (i === act ? ' act' : '') + '" data-i="' + i + '"><div class="ic" style="background:' + KL[t.s] + '">' + IC[t.s] + '</div><div><div class="t">' + (i + 1) + '. ' + t.c + '</div><div class="r">' + t.r + '</div>' + (t.w ? '<div class="w" style="color:' + KL[t.s] + '">⚠ ' + t.w + '</div>' : '') + '</div></div>').join('') +
+      '<div class="voet">Indicatieve toets in het ontwerpmodel, geen vervanging van de beoordeling door het bevoegd gezag en de brandweer. Vluchtruimtes volgens fabrikant (Alfen, WSTECH APS, REPT/iwell).</div>';
+    box.querySelector('.x').onclick = () => toon(false);
+    box.querySelectorAll('.it').forEach(el => el.onclick = () => { act = +el.dataset.i; markeer(act); box.querySelectorAll('.it').forEach(x => x.classList.toggle('act', +x.dataset.i === act)); });
+  }
+  let annosWas = true;
+  function toon(aan){
+    box.style.display = aan ? 'block' : 'none';
+    if(aan){ annosWas = annos.visible; annos.visible = false; teken(); }          // maatvoering even uit, zodat de markering opvalt
+    else { mark.visible = false; act = -1; annos.visible = annosWas; }
+  }
+  document.getElementById('pgsAnBtn').onclick = () => toon(box.style.display !== 'block');
+  window.pgsAnalyse = toon;
 })();
 function animate(){
   requestAnimationFrame(animate);
