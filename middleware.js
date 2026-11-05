@@ -2,6 +2,10 @@
 // De code zelf staat hier niet in, alleen de SHA-256-hash ervan.
 const CODE_HASH = 'ce8457d59078a699acb70416f88155a96a906b7b7aad43708402e3a3bcc8a4b4';
 const COOKIE = 'fudura_toegang';
+// Aparte code voor de Getec-omgeving (/installaties/getec/...): eigen hash en eigen cookie
+const GETEC_HASH = '1fbf39bd330ded2b51f890570f2d5d149b19b9e69e389be7e4958aef854b4e71';
+const GETEC_COOKIE = 'fudura_getec';
+const GETEC_PAD = /^\/installaties\/getec(\/|$)/;
 
 async function sha256(tekst) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(tekst));
@@ -10,7 +14,7 @@ async function sha256(tekst) {
 
 const doorgaan = () => new Response(null, { headers: { 'x-middleware-next': '1' } });
 
-function loginPagina(fout) {
+function loginPagina(fout, titel) {
   return new Response(`<!doctype html><html lang="nl"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>Fudura – toegang</title>
 <style>
@@ -23,29 +27,32 @@ function loginPagina(fout) {
   button{margin-top:12px;width:100%;padding:11px;font-size:15px;font-weight:600;border:0;border-radius:8px;background:var(--accent);color:#fff;cursor:pointer}
   .fout{color:var(--fout);font-size:13px;margin-top:10px}
 </style></head><body>
-<form method="POST"><h1>Fudura</h1><p>Deze omgeving is afgeschermd. Voer de toegangscode in.</p>
+<form method="POST"><h1>${titel || 'Fudura'}</h1><p>Deze omgeving is afgeschermd. Voer de toegangscode in.</p>
 <input type="password" name="code" autocomplete="current-password" placeholder="Toegangscode" autofocus required>
 <button type="submit">Openen</button>${fout ? '<div class="fout">Onjuiste code, probeer het opnieuw.</div>' : ''}</form>
 </body></html>`, { status: 401, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } });
 }
 
 export default async function middleware(request) {
-  const sessie = await sha256('fudura-sessie:' + CODE_HASH);
+  const pad = new URL(request.url).pathname;
+  const getec = GETEC_PAD.test(pad);
+  const hash = getec ? GETEC_HASH : CODE_HASH, naam = getec ? GETEC_COOKIE : COOKIE;
+  const sessie = await sha256((getec ? 'getec-sessie:' : 'fudura-sessie:') + hash);
   const cookies = request.headers.get('cookie') || '';
-  if (cookies.split(/;\s*/).includes(`${COOKIE}=${sessie}`)) return doorgaan();
+  if (cookies.split(/;\s*/).includes(`${naam}=${sessie}`)) return doorgaan();
 
   if (request.method === 'POST') {
     let code = '';
     try { code = String((await request.formData()).get('code') || '').trim(); } catch (e) {}
-    if (code && await sha256(code) === CODE_HASH) {
+    if (code && await sha256(code) === hash) {
       return new Response(null, { status: 303, headers: {
-        location: new URL(request.url).pathname,
-        'set-cookie': `${COOKIE}=${sessie}; Path=/; Max-Age=2592000; HttpOnly; Secure; SameSite=Lax`,
+        location: pad,
+        'set-cookie': `${naam}=${sessie}; Path=${getec ? '/installaties/getec' : '/'}; Max-Age=2592000; HttpOnly; Secure; SameSite=Lax`,
         'cache-control': 'no-store' } });
     }
-    return loginPagina(true);
+    return loginPagina(true, getec ? 'Getec BESS Emmen' : '');
   }
-  return loginPagina(false);
+  return loginPagina(false, getec ? 'Getec BESS Emmen' : '');
 }
 
 export const config = { matcher: '/:path*' };

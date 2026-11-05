@@ -172,7 +172,7 @@
         <li><b>M52 / afb. 15 (met bewijs)</b>: clusters van max. 2 rijen en max. 35 m; containers in een cluster mogen tegen elkaar (hier 0,50 m dichte zijden én achterkanten).</li>
         <li><b>M52 tussen clusters</b>: ≥ hoogte boven maaiveld × 1, min. 1,5 m → ≈ 3,20 m (2,90 m container + 0,30 m fundering); aanwezig 3,77 m ✓.</li>
         <li><b>M52 zonder bewijs (typical 2)</b>: ≥ 2,5 m tussen alle EOS'en en aan één zijde ≥ 4,5 m — schakelaar "2,50 m".</li>
-        <li><b>M52 brandweer</b>: ≥ 4,5 m weg / afstand tot kavelgrens langs de clusters (PGS-zones, rood) — ⚠ af te stemmen met de brandweer.</li>
+        <li><b>M52 rondom de clusters</b>: ≥ 4,5 m tot hek/kavelgrens: kopse kant 4,50 m (verwerkt), PCS/CS-zijden 6,00 m (PGS-zones, rood). Opstelplaats brandweer buiten het hek afstemmen.</li>
         <li><b>Bewijs</b>: IEC 62933-5-2 (TÜV) ✓ · IEC 62619 (iwell-specsheet) ✓ · UL 9540:2023 (TÜV CU 72405957, volgens iwell de brandpropagatietest; UL 9540 vereist de UL 9540A-test) ✓ · NFPA 68 explosieluiken ⚠ onderbouwing nog op te vragen. Brandweer kan het onderliggende UL 9540A-rapport (unit level) willen zien.</li>
         <li><b>M50</b>: EOS tot kavelgrens / ander bouwwerk / brandbaar object (bomen) ≥ 10 m geen eis, 5–10 m → 30 min brandwerend (PGS-zones, oranje en rood; BAG-maat tot het gebouw).</li>
         <li><b>M9</b>: brandwerendheid vervalt bij geslaagde brandpropagatietest (typical 1–3).</li>
@@ -1027,7 +1027,7 @@ const P = {
   gKoelKop: (new URLSearchParams(location.search).get('bc') === '2.5') ? 2.50 : 0.50,   // tussen de achterkanten (dichte kopse kant, geen koeler/aansluitingen) van rij A en rij B: 0,50 m met bewijs (PGS afb. 15), 2,50 m zonder (M52)
   gBC: (new URLSearchParams(location.search).get('bc') === '2.5') ? 2.50 : 0.50,   // PGS 37-1 M52: typical 3 mét bewijs (afb. 15) containers in een cluster tegen elkaar; zonder bewijs 2,5 m               // binnen een rij: type A + type B met de dichte zijden naar elkaar, 0,50 m (gemeten op iwell-opstelling 30 MW/120 MWh); variant 2,00 m (APS 4 MWh-instructie)
   gRij: 3.05,              // tussen de deurzijden van twee rijen (iwell-opstelling: 3,05 m vrij aan de deurzijde)
-  gHekEind: 3.05,          // hek -> deurzijde eerste/laatste container (iwell 3,05 m)
+  gHekEind: 4.50,          // hek -> deurzijde eerste/laatste container: PGS 37-1 M52 ≥ 4,5 m langs de clusters (iwell vraagt 3,05 m)
   gBcCs: 2.20,             // container -> CS EOS (iwell 2 m)
   gPcsCs: 2.30,            // PCS -> LS-deuren CS EOS (Alfen 1,85 / APS 2,00)
   gPcsHek: 2.00,           // PCS -> hek onderzijde (APS serviceruimte)
@@ -2370,8 +2370,8 @@ document.getElementById('tNaam').onchange = e => zetNamen(e.target.checked);
     const g = P.gRij, zA = Z(rows[0].x0 + blok), zB = Z(rows[2].x0);
     T.push({c: 'M52 · afstand tussen clusters', s: g >= nodig - 1e-6 ? 'ok' : 'nok', r: 'Aanwezig ' + f2(g) + ' m. Eis: ≥ hoogte EOS × 1 (min. 1,5 m) = ' + f2(nodig) + ' m (hoogte uit het model, incl. fundering en explosieluiken).', b: R2(ex1, ex2, zA, zB, 36), m: [X(yBC2) - 15, zA, X(yBC2) - 15, zB, f2(g) + ' m ≥ ' + f2(nodig) + ' m'], hm: [X(yBC2) - 50, zA - 2, hBC*10, 'hoogte ' + f2(hBC) + ' m']});
     T.push({c: 'M52 / afb. 15 · binnen een cluster', s: metBewijs ? 'let' : 'ok', r: metBewijs ? f2(P.gBC) + ' m tussen de containers mag alleen mét bewijs: IEC 62933-5-2 ✓, IEC 62619 ✓, UL 9540 (incl. 9540A) ✓.' : '2,50 m tussen alle EOS\'en (zonder bewijs).', w: metBewijs ? 'Nog open: onderbouwing explosieluiken (NFPA 68) en akkoord brandweer.' : '', b: R2(ex1, ex2, Z(rows[0].x0 + P.bcB), Z(rows[0].x0 + P.bcB + P.gBC), 36)});
-    const dLang = Math.min(HT - yBC2, 2*yPiv - yBC2), dKop = P.gHekEind;
-    T.push({c: 'M52 · ruimte voor de brandweer', s: 'let', r: 'Containers → hek: ' + f2(dLang) + ' m aan de PCS/CS-zijden, ' + f2(dKop) + ' m aan de kopse kanten. Eis: ≥ 4,5 m weg of afstand tot de kavelgrens langs de clusters.', w: 'Het hek is geen kavelgrens. Aan de lange zijden is 6,00 m binnen het hek; aan de kopse kanten 3,05 m. Alleen verlengen (+1,45 m per kant, terrein 45,33 → 48,23 m) als de brandweer aan de kopse kant binnen het hek wil opstellen. Eerst afstemmen met Veiligheidsregio Drenthe.', b: R2(0, XH, 0, Z(P.gHekEind), 30), m: [X(yBC2) - 15, 0, X(yBC2) - 15, Z(P.gHekEind), f2(dKop) + ' m < 4,50 m']});
+    const dLang = Math.min(HT - yBC2, 2*yPiv - yBC2), dKop1 = P.gHekEind, dKop2 = W - (rows[P.N - 1].x0 + blok), dKop = Math.min(dKop1, dKop2), okB = Math.min(dLang, dKop) >= 4.5 - 1e-6;
+    T.push({c: 'M52 · ruimte rondom de clusters (4,5 m)', s: okB ? 'ok' : 'nok', r: 'Containers → hek: ' + f2(dLang) + ' m aan de PCS/CS-zijden, ' + f2(dKop1) + ' m aan de kopse kant bij cluster 1 en ' + f2(dKop2) + ' m aan de kant van de CS AUX. Eis: ≥ 4,5 m rondom de clusters.', w: 'Het hek is geen kavelgrens: opstelplaats van de brandweer buiten het hek afstemmen met Veiligheidsregio Drenthe.', b: R2(0, XH, 0, Z(P.gHekEind), 30), m: [X(yBC2) - 15, 0, X(yBC2) - 15, Z(P.gHekEind), f2(dKop1) + ' m ' + (dKop1 >= 4.5 - 1e-6 ? '≥' : '<') + ' 4,50 m']});
     const br = window.pgsBagRes && window.pgsBagRes.eos;
     let best = null;                                                           // maatgevend: BAG-pand of zelf ingetekend object
     if(br && br.d < 1e8) best = {d: br.d/10, p: br.p, q: br.q, wat: 'BAG-pand'};
