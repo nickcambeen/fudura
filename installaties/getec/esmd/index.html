@@ -240,7 +240,7 @@ const SECTIES = [
     V('rampup', 'Max. opregelsnelheid P', '100', 'aanname', 'Waarde uit het Bol.com-ESMD (zelfde PCS-familie). Bevestigen bij WSTECH, en of het EMS een helling begrenst.', '%/s'),
     V('rampdn', 'Max. afregelsnelheid P', '100', 'aanname', 'Idem.', '%/s'),
     V('energie', 'Maximale energie-inhoud', '80,26', 'ok', '16 × 5 015,96 kWh (REPT datasheet). In het Bol.com-formulier staat 8.146,94 MWh: dat is de waarde in kWh (≈ 8,15 MWh, Bol-containers van ca. 4 MWh). Voor Getec dus niet overnemen.', 'MWh'),
-    V('uc', 'Contractspanning Uc', '', 'open', 'Uit de ATO. Hangt af van waar het overdrachtspunt ligt (10 kV of 110 kV).', 'kV'),
+    V('uc', 'Contractspanning Uc', '110', 'ok', 'Overdrachtspunt op 110 kV. Gevolg: TR HS/MS (EGD1/2) invullen en de blindvermogenseis geldt op 110 kV.', 'kV'),
     V('isc', 'Isc/In en Isc', '≈ 1,0 · ≈ 1,1 kA (op 10,5 kV)', 'aanname', 'WSTECH: I”k = 2 × 1060 A per APS2500 op 690 V, In = 2 092 A → ≈ 1,01. Acht omvormers, teruggerekend naar 10,5 kV: ≈ 1,1 kA. Op 110 kV ≈ 0,1 kA. (Vision gaf ≈ 1,5 kA met een conservatiever omvormermodel.)'),
     V('uon', 'Onderspanning U< (instelling · tijd)', '', 'open', 'Tip (DNV-cursus): vertraging minimaal 2 s, anders afkeur. Waarde uit de beveiligingsinstellingen halen.'),
     V('uov', 'Overspanning U> (instelling · tijd)', '', 'open', 'Tip (DNV-cursus): vertraging minimaal 2 s, anders afkeur. Waarde uit de beveiligingsinstellingen halen.'),
