@@ -259,9 +259,9 @@ const SECTIES = [
   S('Transformatoren', [
     V('t1s', 'TR MS/LS type 1: vermogen', '2,5 (8 ×)', 'ok', 'Trafo in de CS EOS (Alfen D40H, Fudura type 3B).', 'MVA'),
     V('t1u', 'TR MS/LS: spanning prim./sec.', '10,75 / 0,69', 'aanname', 'Uit het RFI-plan (10,75 kV / 0,69 kV). Bol.com-formulier noemt 10,5 kV.', 'kV'),
-    V('t1uk', 'TR MS/LS: kortsluitspanning', '6', 'aanname', 'Waarde uit het Bol.com-formulier; bevestigen met de datasheet.', '%'),
-    V('t1pk', 'TR MS/LS: koperverliezen', '18,5', 'aanname', 'Bol.com-formulier (Ecodesign Tier 2). Bevestigen.', 'kW'),
-    V('t1p0', 'TR MS/LS: nullastverliezen', '1,575', 'aanname', 'Idem.', 'kW'),
+    V('t1uk', 'TR MS/LS: kortsluitspanning', '6', 'aanname', 'Standaard voor 2500 kVA Ecodesign Tier 2 (ook in het Bol.com-formulier en bij Siemens FITformer). Bevestigen op de datasheet.', '%'),
+    V('t1pk', 'TR MS/LS: koperverliezen', '18,5', 'aanname', 'Ecodesign Tier 2-waarde voor 2500 kVA (Bol.com-formulier, Siemens FITformer: 18 500 W). Bevestigen.', 'kW'),
+    V('t1p0', 'TR MS/LS: nullastverliezen', '1,575', 'aanname', 'Ecodesign Tier 2-waarde voor 2500 kVA (1 575 W). Geluid: LwA ≤ 62 dB(A) volgens EN 50588-1.', 'kW'),
     V('t1sg', 'TR MS/LS: schakelgroep', 'Dd0', 'aanname', 'Secundair in driehoek (Dd), net als bij Bol.com: de PCS-zijde is een IT-stelsel zonder nul. Klokgetal bevestigen op de naamplaat. Het RFI-plan noemde Dyn5; dat is niet meer actueel. Een geaard sterpunt aan de primaire zijde is niet toegestaan; met D primair is dat in orde.'),
     V('t1tap', 'TR MS/LS: regelschakelaar', 'Offline, ±2 × 2,5 %, stand …', 'open', 'Stand bepalen met de Vision-simulatie (verschuift het Q-U-venster).'),
     V('ths', 'TR HS/MS (indien van toepassing)', '', 'open', 'Alleen als het overdrachtspunt op 110 kV ligt: EGD1/2 van Getec (vermogen, uk, verliezen, aftakken).'),
