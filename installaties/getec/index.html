@@ -1869,7 +1869,7 @@ function wgsRd(lat, lon){ const p = 0.36*(lat - 52.15517440), l = 0.36*(lon - 5.
 const bagGroup = new THREE.Group(); scene.add(bagGroup);
 const bagMaat = new THREE.Group(); scene.add(bagMaat);
 const bagInfo = document.createElement('div');
-bagInfo.style.cssText = 'position:fixed;left:16px;bottom:78px;z-index:20;padding:5px 10px;font:12px system-ui,sans-serif;background:rgba(255,255,255,0.9);border:1px solid #9aa0a3;border-radius:6px;color:#333;max-width:520px';
+bagInfo.style.cssText = 'position:fixed;left:16px;bottom:112px;z-index:20;padding:5px 10px;font:12px system-ui,sans-serif;background:rgba(255,255,255,0.9);border:1px solid #9aa0a3;border-radius:6px;color:#333;max-width:520px';
 bagInfo.textContent = 'BAG-gebouwen laden…'; document.body.appendChild(bagInfo);
 const BAGR = [];                                   // ringen in kaartstelsel (lokaal x, z)
 (function(){
@@ -2355,8 +2355,9 @@ document.getElementById('tNaam').onchange = e => zetNamen(e.target.checked);
     const bol = new THREE.Mesh(new THREE.SphereGeometry(1.2, 12, 10), new THREE.MeshBasicMaterial({color: 0x8a5a2b, depthTest: false})); bol.position.copy(p); bol.renderOrder = 1003; objGroup.add(bol);
     if(tekenP.length === 2){ const [a, b] = tekenP;
       objs.push({x1: Math.min(a.x, b.x), x2: Math.max(a.x, b.x), z1: Math.min(a.z, b.z), z2: Math.max(a.z, b.z)});
-      bewaar(); tekenModus = false; tekenP = []; wrap.style.cursor = 'grab'; tekenObjs(); teken(); kies(5); }
-    else { const tip = box.querySelector('.tip'); if(tip) tip.textContent = 'Klik nu de tegenoverliggende hoek.'; }
+      bewaar(); tekenModus = false; tekenP = []; wrap.style.cursor = 'grab'; tekenObjs(); balk();
+      if(box.style.display === 'block'){ teken(); kies(5); } }
+    else { const tip = box.querySelector('.tip'); if(tip) tip.textContent = 'Klik nu de tegenoverliggende hoek.'; balk('Klik nu de tegenoverliggende hoek.'); }
   });
 
   function toetsen(){
@@ -2446,11 +2447,41 @@ document.getElementById('tNaam').onchange = e => zetNamen(e.target.checked);
       '<div class="voet">Indicatieve toets in het ontwerpmodel, geen vervanging van de beoordeling door het bevoegd gezag en de brandweer. Vluchtruimtes volgens fabrikant (Alfen, WSTECH APS, REPT/iwell).</div>';
     box.querySelector('.x').onclick = () => toon(false);
     box.querySelectorAll('.it').forEach(el => el.onclick = () => kies(+el.dataset.i));
-    const nw = box.querySelector('.objNieuw'); if(nw) nw.onclick = e => { e.stopPropagation(); tekenModus = true; tekenP = []; wrap.style.cursor = 'crosshair';
+    const nw = box.querySelector('.objNieuw'); if(nw) nw.onclick = e => { e.stopPropagation(); if(meetAan) toggleMeten(); tekenModus = true; tekenP = []; wrap.style.cursor = 'crosshair'; balk();
       auto = false; target.copy(center); theta = -Math.PI/2; phi = 0.05; radius = 1100; mark.visible = false;            // bovenaanzicht met omgeving
       const tip = box.querySelector('.tip'); if(tip) tip.textContent = 'Klik in het model de eerste hoek van het object.'; };
-    const ws = box.querySelector('.objWis'); if(ws) ws.onclick = e => { e.stopPropagation(); objs = []; bewaar(); tekenObjs(); teken(); kies(5); };
+    const ws = box.querySelector('.objWis'); if(ws) ws.onclick = e => { e.stopPropagation(); objs = []; bewaar(); tekenObjs(); balk(); teken(); kies(5); };
   }
+  // ---- werkbalk in het hoofdscherm: meten, metingen wissen, object intekenen, objecten wissen, PGS-analyse ----
+  const wb = document.createElement('div'); wb.id = 'werkbalk';
+  const st2 = document.createElement('style');
+  st2.textContent = `#werkbalk{position:fixed;left:50%;transform:translateX(-50%);bottom:52px;z-index:33;display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center;
+    background:rgba(255,255,255,.96);border:1px solid #c3ccd2;border-radius:10px;padding:6px 8px;box-shadow:0 4px 14px rgba(0,0,0,.12);font:13px system-ui,sans-serif;max-width:calc(100vw - 32px);box-sizing:border-box}
+  #werkbalk button{font:600 12.5px system-ui,sans-serif;padding:6px 10px;border:1px solid #c3ccd2;border-radius:7px;background:#fff;color:#243038;cursor:pointer}
+  #werkbalk button.aan{background:#d8322a;border-color:#d8322a;color:#fff} #werkbalk button.obj.aan{background:#8a5a2b;border-color:#8a5a2b}
+  #werkbalk button.pgs{border-color:#d8322a;color:#a8241d;background:#fff5f4} #werkbalk .sep{width:1px;height:22px;background:#d6dde1}
+  #werkbalk .wtip{font-size:12px;color:#5a3a1b;padding:0 4px;max-width:260px}`;
+  document.head.appendChild(st2); document.body.appendChild(wb);
+  wb.innerHTML = '<button class="meet" title="Klik twee punten op het maaiveld (Q)">📏 Meten</button><button class="meetWis" title="Esc">Wis metingen</button><span class="sep"></span>' +
+    '<button class="obj" title="Gebouw of brandbaar object intekenen voor PGS M50: klik twee tegenoverliggende hoeken">⬛ Object intekenen</button><button class="objWisB">Wis objecten</button><span class="sep"></span>' +
+    '<button class="pgs">PGS 37-1 analyse</button><span class="wtip"></span>';
+  function balk(tip){
+    wb.querySelector('.meet').classList.toggle('aan', meetAan);
+    wb.querySelector('.obj').classList.toggle('aan', tekenModus);
+    wb.querySelector('.objWisB').textContent = 'Wis objecten' + (objs.length ? ' (' + objs.length + ')' : '');
+    wb.querySelector('.objWisB').disabled = !objs.length; wb.querySelector('.objWisB').style.opacity = objs.length ? 1 : 0.45;
+    wb.querySelector('.wtip').textContent = tip || (meetAan ? 'Klik twee punten om te meten.' : tekenModus ? 'Klik de eerste hoek van het object.' : '');
+    const tm = document.getElementById('tMeet'); if(tm) tm.checked = meetAan;
+  }
+  wb.querySelector('.meet').onclick = () => { if(tekenModus){ tekenModus = false; tekenP = []; } toggleMeten(); balk(); };
+  wb.querySelector('.meetWis').onclick = () => { meetWissen(); balk(); };
+  wb.querySelector('.obj').onclick = () => { if(meetAan) toggleMeten(); tekenModus = !tekenModus; tekenP = []; wrap.style.cursor = tekenModus ? 'crosshair' : 'grab'; auto = false; balk(); };
+  wb.querySelector('.objWisB').onclick = () => { objs = []; bewaar(); tekenObjs(); balk(); if(box.style.display === 'block'){ teken(); kies(5); } };
+  wb.querySelector('.pgs').onclick = () => toon(box.style.display !== 'block');
+  balk();
+  const _tm = document.getElementById('tMeet'); if(_tm) _tm.addEventListener('change', () => setTimeout(balk, 0));
+  window.addEventListener('keydown', e => { if(e.key === 'q' || e.key === 'Q' || e.key === 'Escape') setTimeout(balk, 0); });
+
   function kies(i){ act = i; markeer(act); box.querySelectorAll('.it').forEach(x => x.classList.toggle('act', +x.dataset.i === act)); }
   let annosWas = true;
   function toon(aan){
