@@ -2331,6 +2331,34 @@ document.getElementById('tNaam').onchange = e => zetNamen(e.target.checked);
   const dXZ = (a, b) => Math.hypot(Math.max(0, a.min.x - b.max.x, b.min.x - a.max.x), Math.max(0, a.min.z - b.max.z, b.min.z - a.max.z));
   const R2 = (x1, x2, z1, z2, h) => ({x1: Math.min(x1, x2), x2: Math.max(x1, x2), z1: Math.min(z1, z2), z2: Math.max(z1, z2), h: h || 30});
 
+  // ---- zelf ingetekende objecten voor M50 (gebouw / brandbaar object dat de BAG niet kent) ----
+  let objs = []; try { objs = JSON.parse(localStorage.getItem('getecM50obj') || '[]'); } catch(e) {}
+  const bewaar = () => { try { localStorage.setItem('getecM50obj', JSON.stringify(objs)); } catch(e) {} };
+  const objGroup = new THREE.Group(); scene.add(objGroup);
+  const matObj = new THREE.MeshBasicMaterial({color: 0x8a5a2b, transparent: true, opacity: 0.45, depthWrite: false});
+  function tekenObjs(){
+    while(objGroup.children.length) objGroup.remove(objGroup.children[0]);
+    objs.forEach((o, i) => { const w = Math.max(o.x2 - o.x1, 1), d = Math.max(o.z2 - o.z1, 1);
+      const g = new THREE.BoxGeometry(w, 30, d), m = new THREE.Mesh(g, matObj); m.position.set((o.x1 + o.x2)/2, 15, (o.z1 + o.z2)/2); objGroup.add(m);
+      const e = new THREE.LineSegments(new THREE.EdgesGeometry(g), new THREE.LineBasicMaterial({color: 0x5a3a1b})); e.position.copy(m.position); objGroup.add(e);
+      const n0 = annos.children.length; tagSprite('object ' + (i + 1) + ' (M50)', m.position.x, 34, m.position.z, 16, '#5a3a1b', true); annos.children.slice(n0).forEach(c => objGroup.add(c)); });
+  }
+  tekenObjs();
+  let tekenModus = false, tekenP = [];
+  const ray = new THREE.Raycaster(), vlak = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+  wrap.addEventListener('pointerup', ev => {
+    if(!tekenModus || sleepAfstand >= 5) return;
+    const r = renderer.domElement.getBoundingClientRect();
+    ray.setFromCamera(new THREE.Vector2((ev.clientX - r.left)/r.width*2 - 1, -(ev.clientY - r.top)/r.height*2 + 1), camera);
+    const p = new THREE.Vector3(); if(!ray.ray.intersectPlane(vlak, p)) return;
+    tekenP.push(p.clone());
+    const bol = new THREE.Mesh(new THREE.SphereGeometry(1.2, 12, 10), new THREE.MeshBasicMaterial({color: 0x8a5a2b, depthTest: false})); bol.position.copy(p); bol.renderOrder = 1003; objGroup.add(bol);
+    if(tekenP.length === 2){ const [a, b] = tekenP;
+      objs.push({x1: Math.min(a.x, b.x), x2: Math.max(a.x, b.x), z1: Math.min(a.z, b.z), z2: Math.max(a.z, b.z)});
+      bewaar(); tekenModus = false; tekenP = []; wrap.style.cursor = 'grab'; tekenObjs(); teken(); kies(5); }
+    else { const tip = box.querySelector('.tip'); if(tip) tip.textContent = 'Klik nu de tegenoverliggende hoek.'; }
+  });
+
   function toetsen(){
     const T = [];
     const ex1 = X(2*yPiv - yBC2), ex2 = X(yBC2), ez1 = Z(rows[0].x0), ez2 = Z(rows[P.N - 1].x0 + blok);
@@ -2344,9 +2372,17 @@ document.getElementById('tNaam').onchange = e => zetNamen(e.target.checked);
     const dLang = Math.min(HT - yBC2, 2*yPiv - yBC2), dKop = P.gHekEind;
     T.push({c: 'M52 · ruimte voor de brandweer', s: 'let', r: 'Containers → hek: ' + f2(dLang) + ' m aan de PCS/CS-zijden, ' + f2(dKop) + ' m aan de kopse kanten. Eis: ≥ 4,5 m weg of afstand tot de kavelgrens langs de clusters.', w: 'Het hek is geen kavelgrens. Aan de lange zijden is 6,00 m binnen het hek; aan de kopse kanten 3,05 m. Alleen verlengen (+1,45 m per kant, terrein 45,33 → 48,23 m) als de brandweer aan de kopse kant binnen het hek wil opstellen. Eerst afstemmen met Veiligheidsregio Drenthe.', b: R2(0, XH, 0, Z(P.gHekEind), 30), m: [X(yBC2) - 15, 0, X(yBC2) - 15, Z(P.gHekEind), f2(dKop) + ' m < 4,50 m']});
     const br = window.pgsBagRes && window.pgsBagRes.eos;
-    if(br && br.d < 1e8){ const e = br.d/10;
-      T.push({c: 'M50 · afstand tot gebouwen (BAG)', s: e >= 10 ? 'ok' : e >= 5 ? 'let' : 'nok', r: 'Dichtstbijzijnd pand ' + f2(e) + ' m vanaf de containers. ≥ 10 m: geen eis · 5–10 m: 30 min brandwerend · < 5 m: niet toegestaan zonder maatregelen.', w: e < 10 ? 'Brandwerendheid vervalt bij een geslaagde brandpropagatietest (M9).' : '', b: R2(br.p[0], br.q[0], br.p[1], br.q[1], 30)});
-    } else T.push({c: 'M50 · afstand tot gebouwen (BAG)', s: 'let', r: 'BAG-panden nog niet geladen of buiten bereik: zet "Gebouwen BAG" aan en open de analyse opnieuw.', b: R2(ex1, ex2, ez1, ez2, 30)});
+    let best = null;                                                           // maatgevend: BAG-pand of zelf ingetekend object
+    if(br && br.d < 1e8) best = {d: br.d/10, p: br.p, q: br.q, wat: 'BAG-pand'};
+    const klem = (v, a, b) => Math.max(a, Math.min(b, v));
+    objs.forEach((o, i) => { const ob = new THREE.Box3(new THREE.Vector3(o.x1, 0, o.z1), new THREE.Vector3(o.x2, 30, o.z2));
+      bBC.forEach(b => { const d = dXZ(b, ob)/10; if(!best || d < best.d){ const c = ob.getCenter(new THREE.Vector3()), q = [klem(c.x, b.min.x, b.max.x), klem(c.z, b.min.z, b.max.z)];
+        best = {d, q, p: [klem(q[0], o.x1, o.x2), klem(q[1], o.z1, o.z2)], wat: 'object ' + (i + 1) + ' (ingetekend)'}; } }); });
+    const bagTxt = br && br.d < 1e8 ? 'BAG-pand ' + f2(br.d/10) + ' m' : 'BAG niet geladen';
+    const objTxt = objs.length ? objs.length + ' ingetekend object' + (objs.length > 1 ? 'en' : '') : 'geen ingetekende objecten';
+    if(best){ const e = best.d;
+      T.push({c: 'M50 · afstand tot gebouwen / brandbare objecten', s: e >= 10 ? 'ok' : e >= 5 ? 'let' : 'nok', r: 'Maatgevend: ' + best.wat + ' op ' + f2(e) + ' m van de containers (' + bagTxt + ', ' + objTxt + '). ≥ 10 m: geen eis · 5–10 m: 30 min brandwerend · < 5 m: niet zonder maatregelen.', w: e < 10 ? 'Met een geaccepteerde brandpropagatietest (M9) vervalt de brandwerendheidseis.' : '', knop: true, b: R2(best.p[0], best.q[0], best.p[1], best.q[1], 30), m: [best.q[0], best.q[1], best.p[0], best.p[1], f2(e) + ' m']});
+    } else T.push({c: 'M50 · afstand tot gebouwen / brandbare objecten', s: 'let', r: 'BAG nog niet geladen en geen objecten ingetekend.', knop: true, b: R2(ex1, ex2, ez1, ez2, 30)});
     const bMS = msStation.visible ? bx(msStation.children[0]) : null;
     if(bMS){ let dm = 1e9, bb = null; bBC.forEach(b => { const d = dXZ(b, bMS); if(d < dm){ dm = d; bb = b; } }); dm /= 10;
       const cl = (v, a, b) => Math.max(a, Math.min(b, v)), cB = bMS.getCenter(new THREE.Vector3());
@@ -2354,9 +2390,9 @@ document.getElementById('tNaam').onchange = e => zetNamen(e.target.checked);
       T.push({c: 'M50 · MS-station (ander bouwwerk)', s: dm >= 10 ? 'ok' : 'let', r: 'Betreedbaar MS-station op ' + f2(dm) + ' m van de dichtstbijzijnde container. M50 is een alternatief voor M9: met een geaccepteerde brandpropagatietest (UL 9540A) geldt geen afstandseis; zonder test is 5–10 m → 30 min brandwerend en ≥ 10 m vrij.', w: dm < 10 ? '10 m haalt het station alleen buiten het hek of met een groter terrein. Afstemmen met de brandweer: telt het betreedbare station als "ander bouwwerk", en is de 9540A-test voldoende?' : '', b: R2(bMS.min.x, bMS.max.x, bMS.min.z, bMS.max.z, 34), m: [q[0], q[1], pq[0], pq[1], f2(dm) + ' m']}); }
     T.push({c: 'M28 / M29 · hekwerk', s: hekH >= 18 ? 'ok' : 'nok', r: 'Hek ' + f2(hekH/10) + ' m hoog, staal (onbrandbaar). Eis: ≥ 1,8 m, onbrandbaar.', b: R2(0, XH, ZW - 3, ZW, hekH + 4)});
     T.push({c: 'M63 · twee tegenover elkaar gelegen toegangen', s: 'ok', r: 'Vluchtdeuren in beide korte zijden (' + 2*2 + ') en in beide lange zijden (' + 2*deurZ.length + ').', b: R2(deurX - 8, deurX + 8, -4, 4, 26)});
-    T.push({c: 'M56 · bluswatervoorziening', s: 'let', r: 'Alleen verplicht als het EOS niet aantoonbaar beveiligd is tegen brandpropagatie (M55). Dan: aansluiting ≥ 1 000 l/min, Storz (nok81 of in overleg), 0,5–1 m boven maaiveld, water boven de hoogste energiedrager, container bestand tegen de waterdruk.', w: 'Bij iwell/REPT navragen of de Storz-aansluiting hieraan voldoet; bij Getec/brandweer: dichtstbijzijnde brandkraan en capaciteit.', b: bBC.length ? R2(bBC[0].min.x, bBC[0].max.x, bBC[0].min.z, bBC[0].max.z, 36) : null});
+    T.push({c: 'M56 · bluswatervoorziening', s: 'ok', r: 'Vervalt: met de UL 9540A-test is het EOS aantoonbaar beveiligd tegen brandpropagatie (M55). Zonder dat bewijs zou gelden: Dan: aansluiting ≥ 1 000 l/min, Storz (nok81 of in overleg), 0,5–1 m boven maaiveld, water boven de hoogste energiedrager, container bestand tegen de waterdruk.', w: 'Voorwaarde: het 9540A-rapport op unit level (geen overslag naar de naastgelegen unit) wordt door de brandweer geaccepteerd. Bluswater voor het koelen van de omgeving blijft een punt voor de brandweer (M61).', b: bBC.length ? R2(bBC[0].min.x, bBC[0].max.x, bBC[0].min.z, bBC[0].max.z, 36) : null});
     { const smal = pitch - kolom, zS1 = Z(rows[2].x0 + off + kolom), zS2 = Z(rows[4].x0 + off), xm = X((yCS1 + yCS2)/2);
-      T.push({c: 'M61 · bereikbaarheid hulpdiensten', s: smal >= 2.0 - 1e-6 ? 'let' : 'nok', r: 'Gangpad tussen de clusters: ' + f2(P.gRij) + ' m tussen de containers, maar ter hoogte van de PCS/CS-kolom (breder dan het containerblok) maar ' + f2(smal) + ' m. Langs het hek ' + f2(P.gHekEind) + ' m.', w: 'Te voet bereikbaar, niet met een voertuig. De PCS/CS staan niet tussen de containers, dus de clusterafstand (regel 3) blijft 3,77 m.', b: R2(X(yCS1), X(yCS2), zS1, zS2, 30), m: [xm, zS1, xm, zS2, f2(smal) + ' m']}); }
+      T.push({c: 'M61 · bereikbaarheid hulpdiensten', s: smal >= 1.5 ? 'ok' : 'nok', r: 'Het terrein binnen het hek is te voet bereikbaar: gangpad tussen de containers ' + f2(P.gRij) + ' m, ter hoogte van de PCS/CS-kolom ' + f2(smal) + ' m, langs het hek ' + f2(P.gHekEind) + ' m. Brandweervoertuigen blijven buiten het hek en bereiken het park via de toegangen.', w: 'Geen rijroute binnen het hek nodig; wel opstelplaats en bluswater buiten het hek afstemmen met de brandweer. De PCS/CS staan niet tussen de containers, dus de clusterafstand (regel 3) blijft 3,77 m.', b: R2(X(yCS1), X(yCS2), zS1, zS2, 30), m: [xm, zS1, xm, zS2, f2(smal) + ' m']}); }
     // vrije ruimte / vluchtruimte fabrikanten (geen PGS-eis, wel voorwaarde voor bediening en vluchten)
     const vrijPcsCs = P.gPcsCs, kolGap = pitch - kolom;
     const zK1 = Z(rows[0].x0 + off + kolom), zK2 = Z(rows[2].x0 + off);
@@ -2402,11 +2438,20 @@ document.getElementById('tNaam').onchange = e => zetNamen(e.target.checked);
     const n = s => T.filter(t => t.s === s).length;
     box.innerHTML = '<button class="x" title="Sluiten">&times;</button><h3>PGS 37-1 analyse</h3><div class="sub">PGS 37-1:2023 v1.1 §7.6 · berekend uit de huidige opstelling (' + (P.gBC < 1 ? 'containers 0,50 m, met bewijs' : 'containers 2,50 m, zonder bewijs') + '). Klik op een regel om hem in het model aan te wijzen.</div>' +
       '<div class="tot">' + ['ok', 'let', 'nok', 'info'].filter(s => n(s)).map(s => '<span style="background:' + KL[s] + '">' + n(s) + ' ' + {ok: 'voldoet', let: 'aandacht', nok: 'voldoet niet', info: 'info'}[s] + '</span>').join('') + '</div>' +
-      T.map((t, i) => '<div class="it' + (i === act ? ' act' : '') + '" data-i="' + i + '"><div class="ic" style="background:' + KL[t.s] + '">' + IC[t.s] + '</div><div><div class="t">' + (i + 1) + '. ' + t.c + '</div><div class="r">' + t.r + '</div>' + (t.w ? '<div class="w" style="color:' + KL[t.s] + '">⚠ ' + t.w + '</div>' : '') + '</div></div>').join('') +
+      T.map((t, i) => '<div class="it' + (i === act ? ' act' : '') + '" data-i="' + i + '"><div class="ic" style="background:' + KL[t.s] + '">' + IC[t.s] + '</div><div><div class="t">' + (i + 1) + '. ' + t.c + '</div><div class="r">' + t.r + '</div>' + (t.w ? '<div class="w" style="color:' + KL[t.s] + '">⚠ ' + t.w + '</div>' : '') +
+        (t.knop ? '<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap"><button class="objNieuw" style="font:600 12px system-ui;padding:4px 8px;border:1px solid #8a5a2b;border-radius:6px;background:#fbf4ec;color:#5a3a1b;cursor:pointer">+ object intekenen</button>' +
+                  (objs.length ? '<button class="objWis" style="font:12px system-ui;padding:4px 8px;border:1px solid #c3ccd2;border-radius:6px;background:#fff;cursor:pointer">wis objecten (' + objs.length + ')</button>' : '') +
+                  '<div class="tip" style="width:100%;font-size:11.5px;color:#5a3a1b">' + (tekenModus ? 'Klik in het model de eerste hoek van het object.' : 'Teken een gebouw of brandbaar object dat de BAG mist: klik twee tegenoverliggende hoeken op het maaiveld.') + '</div></div>' : '') +
+        '</div></div>').join('') +
       '<div class="voet">Indicatieve toets in het ontwerpmodel, geen vervanging van de beoordeling door het bevoegd gezag en de brandweer. Vluchtruimtes volgens fabrikant (Alfen, WSTECH APS, REPT/iwell).</div>';
     box.querySelector('.x').onclick = () => toon(false);
-    box.querySelectorAll('.it').forEach(el => el.onclick = () => { act = +el.dataset.i; markeer(act); box.querySelectorAll('.it').forEach(x => x.classList.toggle('act', +x.dataset.i === act)); });
+    box.querySelectorAll('.it').forEach(el => el.onclick = () => kies(+el.dataset.i));
+    const nw = box.querySelector('.objNieuw'); if(nw) nw.onclick = e => { e.stopPropagation(); tekenModus = true; tekenP = []; wrap.style.cursor = 'crosshair';
+      auto = false; target.copy(center); theta = -Math.PI/2; phi = 0.05; radius = 1100; mark.visible = false;            // bovenaanzicht met omgeving
+      const tip = box.querySelector('.tip'); if(tip) tip.textContent = 'Klik in het model de eerste hoek van het object.'; };
+    const ws = box.querySelector('.objWis'); if(ws) ws.onclick = e => { e.stopPropagation(); objs = []; bewaar(); tekenObjs(); teken(); kies(5); };
   }
+  function kies(i){ act = i; markeer(act); box.querySelectorAll('.it').forEach(x => x.classList.toggle('act', +x.dataset.i === act)); }
   let annosWas = true;
   function toon(aan){
     box.style.display = aan ? 'block' : 'none';
