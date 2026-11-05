@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ESMD Getec BESS</title>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+  :root { --bg:#eef1f2; --kaart:#ffffff; --fg:#1b2a36; --muted:#5d6b73; --lijn:#d3d9dc; --blauw:#1b4f8a; --oranje:#c25a12; --groen:#2f7d46; --rood:#b3261e; --zacht:#f5f7f8; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#12181c; --kaart:#1b232a; --fg:#e6ebee; --muted:#93a1a9; --lijn:#2c363d; --blauw:#6fa4e0; --oranje:#f08a3c; --groen:#6cc489; --rood:#f2867f; --zacht:#161d22; } }
+  :root[data-theme="dark"] { --bg:#12181c; --kaart:#1b232a; --fg:#e6ebee; --muted:#93a1a9; --lijn:#2c363d; --blauw:#6fa4e0; --oranje:#f08a3c; --groen:#6cc489; --rood:#f2867f; --zacht:#161d22; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.5 Barlow, system-ui, sans-serif; }
+  .wrap { max-width:1120px; margin:0 auto; padding:max(24px, env(safe-area-inset-top)) 16px 48px; }
+  a { color:var(--blauw); }
+  .terug { font:600 14px "Barlow Semi Condensed", Arial, sans-serif; text-decoration:none; }
+  h1 { font:700 clamp(28px, 5vw, 42px)/1.08 "Barlow Semi Condensed", Arial, sans-serif; margin:8px 0 4px; }
+  h1 span { color:var(--blauw); }
+  .sub { color:var(--muted); margin:0 0 18px; max-width:820px; }
+  h2 { font:700 26px/1.2 "Barlow Semi Condensed", Arial, sans-serif; margin:28px 0 10px; }
+  h3 { font:700 19px/1.25 "Barlow Semi Condensed", Arial, sans-serif; margin:22px 0 8px; }
+  .tabs { display:flex; gap:6px; flex-wrap:wrap; border-bottom:1px solid var(--lijn); margin:10px 0 18px; position:sticky; top:0; background:var(--bg); padding-top:8px; z-index:5; }
+  .tabs button { font:600 15px "Barlow Semi Condensed", Arial, sans-serif; letter-spacing:.02em; border:1px solid var(--lijn); border-bottom:none; background:var(--kaart); color:var(--muted); padding:9px 14px; border-radius:8px 8px 0 0; cursor:pointer; }
+  .tabs button.aan { color:var(--blauw); border-color:var(--blauw); box-shadow:inset 0 -3px 0 var(--blauw); }
+  .paneel { display:none; } .paneel.aan { display:block; }
+  .kaart { background:var(--kaart); border:1px solid var(--lijn); border-radius:10px; padding:16px 18px; }
+  .rij { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:12px; }
+  .getal { font:700 30px/1.1 "Barlow Semi Condensed", Arial, sans-serif; color:var(--blauw); }
+  .klein { color:var(--muted); font-size:14px; }
+  .let { border-left:4px solid var(--oranje); background:color-mix(in srgb, var(--oranje) 9%, var(--kaart)); padding:12px 14px; border-radius:6px; margin:12px 0; }
+  .let b { color:var(--oranje); }
+  .info { border-left:4px solid var(--blauw); background:color-mix(in srgb, var(--blauw) 8%, var(--kaart)); padding:12px 14px; border-radius:6px; margin:12px 0; }
+  table { width:100%; border-collapse:collapse; background:var(--kaart); border:1px solid var(--lijn); border-radius:10px; overflow:hidden; font-size:15px; }
+  th, td { text-align:left; vertical-align:top; padding:9px 11px; border-bottom:1px solid var(--lijn); }
+  th { font:600 13px "Barlow Semi Condensed", Arial, sans-serif; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); background:var(--zacht); }
+  .tabelwrap { overflow-x:auto; }
+  .st { display:inline-block; font:700 12px "Barlow Semi Condensed", Arial, sans-serif; letter-spacing:.05em; text-transform:uppercase; padding:2px 8px; border-radius:10px; white-space:nowrap; color:#fff; }
+  .st.ok { background:var(--groen); } .st.aanname { background:var(--oranje); } .st.open { background:var(--rood); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .st { color:#12181c; } }
+  .veld { display:grid; grid-template-columns:minmax(180px, 1.1fr) minmax(200px, 1.3fr) minmax(220px, 1.6fr); gap:10px 14px; padding:12px 0; border-bottom:1px solid var(--lijn); align-items:start; }
+  .veld:last-child { border-bottom:none; }
+  .veld .lab { font-weight:600; }
+  .veld .lab small { display:block; font-weight:400; color:var(--muted); font-size:13px; }
+  .veld input, .veld textarea { width:100%; font:15px Barlow, system-ui, sans-serif; color:var(--fg); background:var(--zacht); border:1px solid var(--lijn); border-radius:6px; padding:7px 9px; }
+  .veld textarea { min-height:38px; resize:vertical; }
+  .veld .toel { font-size:14px; color:var(--muted); }
+  .veld .toel b { color:var(--fg); font-weight:600; }
+  .sectie { margin:16px 0; }
+  .sectie > .kop { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+  .balk { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:8px 0 4px; }
+  .knop { font:600 14px "Barlow Semi Condensed", Arial, sans-serif; border:1px solid var(--blauw); color:var(--blauw); background:var(--kaart); padding:7px 12px; border-radius:7px; cursor:pointer; text-decoration:none; }
+  .knop.vol { background:var(--blauw); color:#fff; }
+  .teller span { margin-right:10px; }
+  ol.stap { counter-reset:s; list-style:none; padding:0; margin:0; display:grid; gap:8px; }
+  ol.stap li { counter-increment:s; background:var(--kaart); border:1px solid var(--lijn); border-radius:8px; padding:10px 12px 10px 52px; position:relative; }
+  ol.stap li::before { content:counter(s); position:absolute; left:12px; top:9px; width:28px; height:28px; border-radius:50%; background:var(--blauw); color:#fff; font:700 15px/28px "Barlow Semi Condensed", Arial, sans-serif; text-align:center; }
+  ol.stap li b { display:block; }
+  .docs a { display:flex; justify-content:space-between; gap:12px; padding:10px 12px; border-bottom:1px solid var(--lijn); text-decoration:none; color:var(--fg); }
+  .docs a:last-child { border-bottom:none; }
+  .docs a span { color:var(--muted); font-size:14px; white-space:nowrap; }
+  .docs a:hover { background:var(--zacht); }
+  footer { margin-top:34px; color:var(--muted); font-size:13px; }
+  @media (max-width:760px) { .veld { grid-template-columns:1fr; } }
+  @media print { .tabs, .balk, .terug { display:none !important; } .paneel { display:block !important; } body { background:#fff; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="terug" href="../">‹ terug naar Getec BESS (3D)</a>
+  <h1><span>PGMD / ESMD</span> · Getec BESS Emmen</h1>
+  <p class="sub">Conformiteit van het batterijsysteem (20 MW / 80 MWh) volgens de Systeemcode elektriciteit en het NBNL ESM-verificatiedocument v2.0. Met een invulhulp per veld van het ESMD-formulier, het proces en wat er nog nodig is.</p>
+
+  <div class="tabs" role="tablist">
+    <button data-t="overzicht" class="aan">Overzicht</button>
+    <button data-t="invul">ESMD invulhulp</button>
+    <button data-t="proces">Proces &amp; eisen</button>
+    <button data-t="pgmd">PGMD (opwek)</button>
+    <button data-t="open">Open punten</button>
+    <button data-t="docs">Documenten</button>
+  </div>
+
+  <!-- ================= OVERZICHT ================= -->
+  <section class="paneel aan" id="p-overzicht">
+    <div class="rij">
+      <div class="kaart"><div class="klein">Soort document</div><div class="getal">ESMD</div><div class="klein">Elektriciteitsopslageenheid Document. Geen PGMD: er komt geen nieuwe opwekeenheid bij.</div></div>
+      <div class="kaart"><div class="klein">Type opslageenheid</div><div class="getal">Type B</div><div class="klein">ESM 1–50 MW. Voor opslag telt alleen het vermogen, niet het spanningsniveau.</div></div>
+      <div class="kaart"><div class="klein">Testen op locatie</div><div class="getal">Ja</div><div class="klein">Pmax ≥ 5 MW: LFSM-O, LFSM-U, blindvermogen en wederinschakeling.</div></div>
+      <div class="kaart"><div class="klein">Omvormer</div><div class="getal">Op de lijst</div><div class="klein">WSTECH APS2500-XX-2-690-5 staat op de NBNL-lijst opslageenheden type B (2-9-2026).</div></div>
+    </div>
+
+    <h3>Zo zit het voor Getec</h3>
+    <div class="kaart">
+      <ul style="margin:0;padding-left:20px;display:grid;gap:6px">
+        <li><b>Eén ESMD voor het hele systeem.</b> Alle niet-synchrone eenheden achter één overdrachtspunt vormen samen één opslageenheid: 8 × WSTECH APS2500 (2,5 MVA), 16 × REPT 5 MWh.</li>
+        <li><b>Bijlage 1 (typetesten) vervalt</b> als het exacte omvormertype op de NBNL-lijst staat. Te bevestigen: typecode en firmware bij WSTECH.</li>
+        <li><b>Bijlage 2 is wel nodig:</b> simulatie van het blindvermogen en testen op locatie, omdat Pmax ≥ 5 MW.</li>
+        <li><b>De BLOS-tool past niet.</b> Het park is geen basispark: het BESS zit achter het eigen 10 kV-net van Getec, met smoorspoelen, WKC-generatoren en belastingen. De simulatie gaat daarom in Vision, met de berekening Productie-eenheid op ons bestaande Getec-model. De rapportage kan in de BLOR-rapporttool.</li>
+        <li><b>Wie dient in:</b> de eigenaar (Getec) dient in bij de relevante netbeheerder. Fudura kan het formulier en de bijlagen voorbereiden.</li>
+      </ul>
+    </div>
+
+    <div class="let"><b>Let op, Pmax op het overdrachtspunt:</b> de eis is blindvermogen van 0,33 × Pmax (cos φ ≈ 0,95) tussen 0,2 en 1 pu werkzaam vermogen. Een PCS van 2,5 MVA kan dan maximaal ≈ 2,37 MW leveren (2,5 / √(1 + 0,33²)). Voor 8 PCS is dat ≈ 19,0 MW op de omvormerklemmen, en minder na trafo- en kabelverliezen en eigen verbruik. Reken dus niet met 20 MW als gedeclareerde maximumcapaciteit. De Vision-berekening bepaalt de exacte waarde.</div>
+    <div class="let"><b>Let op, wie is de netbeheerder:</b> Getec heeft een eigen park-net met meerdere afnemers en eigen 110/10 kV-trafo’s. Stem vooraf af bij wie het ESMD wordt ingediend (regionale netbeheerder, TenneT of Getec zelf als beheerder van een gesloten distributiesysteem) en wat daar als overdrachtspunt geldt. Dat bepaalt ook de contractspanning Uc en welke HS/MS-trafo in het formulier komt.</div>
+  </section>
+
+  <!-- ================= INVULHULP ================= -->
+  <section class="paneel" id="p-invul">
+    <div class="info">Per veld van het ESMD-formulier (Q4-2024) staan hier de waarde die we nu verwachten, de bron en de status. De waarden kun je aanpassen; ze worden alleen in jouw browser bewaard. Met <b>Kopieer als tekst</b> zet je alles op het klembord om in het PDF-formulier over te nemen.</div>
+    <div class="balk">
+      <span class="teller" id="teller"></span>
+      <button class="knop vol" id="kopieer">Kopieer als tekst</button>
+      <button class="knop" id="reset">Terug naar standaardwaarden</button>
+      <button class="knop" onclick="window.print()">Afdrukken / PDF</button>
+      <span class="klein" id="melding"></span>
+    </div>
+    <div id="velden"></div>
+  </section>
+
+  <!-- ================= PROCES ================= -->
+  <section class="paneel" id="p-proces">
+    <h2>Proces aansluiting en compliance (Type B)</h2>
+    <ol class="stap">
+      <li><b>Aansluiting aanvragen</b>De eigenaar vraagt de (aangepaste) aansluiting aan. De netbeheerder toetst de netcapaciteit.</li>
+      <li><b>Omvormer op de NBNL-lijst?</b>Ja: WSTECH APS2500-XX-2-690-5. Dan is geen typetestbewijs (bijlage 1) nodig.</li>
+      <li><b>Technische gegevens en planning</b>Eenlijnschema met kabels, trafo’s en beveiliging. Planning van onder spanning zetten, eerste eenheid, 20 % en volle capaciteit, en de testen op locatie.</li>
+      <li><b>Simulatie blindvermogen</b>Loadflowcases volgens de CVD (hoekpunten Q-U en P-Q), in Vision (Productie-eenheid). Rapporteren met de BLOR-tool of als eigen rapport.</li>
+      <li><b>Netbeheerder zet onder spanning</b>Daarna stelt de eigenaar de omvormers in bedrijf.</li>
+      <li><b>Testen op locatie (Pmax ≥ 5 MW)</b>Volgens het NBNL Type B test protocol: LFSM-O (stap en helling), LFSM-U opslag (stap en helling), blindvermogenscapaciteit en wederinschakeling na afschakeling.</li>
+      <li><b>Definitief ESMD met bijlagen</b>Inclusief testresultaten en gespecificeerde conformiteitsverklaring. Indienen ruim voor inbedrijfname (richtlijn: ≥ 3 maanden).</li>
+      <li><b>Acceptatie</b>De netbeheerder beoordeelt en geeft de acceptatieverklaring van het ESMD (RfG art. 32(3)).</li>
+    </ol>
+
+    <h2>Eisen voor een niet-synchrone opslageenheid, Type B</h2>
+    <div class="tabelwrap"><table>
+      <tr><th style="width:30%">Eis (CVD)</th><th style="width:38%">Inhoud</th><th style="width:32%">Bewijs</th></tr>
+      <tr><td>LFSM-O</td><td>Vermogen omlaag bij overfrequentie</td><td>Typetest omvormer (lijst) · test op locatie ≥ 5 MW · simulatie alleen bij een parkregelaar</td></tr>
+      <tr><td>LFSM-U opslag</td><td>Onder 49,8 Hz laden proportioneel afregelen met statiek 1 %, doorschakelen naar ontladen. Kan dat niet: bij 49,7 Hz binnen 10 s afschakelen, bij 49,3 Hz direct.</td><td>Simulatie · test op locatie ≥ 5 MW</td></tr>
+      <tr><td>Frequentie- en spanningsbereik</td><td>In bedrijf blijven binnen de bereiken van de Systeemcode</td><td>Typetest / certificaat omvormer</td></tr>
+      <tr><td>Blindvermogenscapaciteit</td><td>0,33 × Pmax (cos φ ≈ 0,95) inductief en capacitief op het overdrachtspunt, binnen de U-vensters</td><td>Loadflowsimulatie (Vision) · test op locatie ≥ 5 MW</td></tr>
+      <tr><td>Fault-ride-through en herstel</td><td>In bedrijf blijven bij netfouten, daarna vermogen herstellen</td><td>Typetest omvormer (FRT, snelle foutstroominjectie)</td></tr>
+      <tr><td>Wederinschakelen</td><td>Voorwaarden en helling na afschakeling door een netstoring</td><td>Simulatie · test op locatie ≥ 5 MW</td></tr>
+      <tr><td>Power quality</td><td>Flicker en harmonischen</td><td>Typetest (EN 50549-2 heeft de voorkeur)</td></tr>
+    </table></div>
+
+    <h3>Simulatie blindvermogen in Vision</h3>
+    <div class="kaart">
+      <p style="margin:0 0 8px">Gebruik <b>Berekenen › Speciaal › Productie-eenheid</b> op het Getec-model, met het overdrachtspunt als netvoeding. Vision rekent 14 loadflows door (Uref 0,85–1,1 pu, p 0–1 pu, q −0,33 / 0 / +0,33 pu) en toont per geval spanningen, belastinggraad en P/Q.</p>
+      <ul style="margin:0;padding-left:20px;display:grid;gap:4px">
+        <li>Op het overdrachtspunt moet aan Pmax en Q voldaan zijn, zonder overschrijding van stroom of S van de omvormers.</li>
+        <li>De spanning bij elke omvormer moet binnen de triplimieten blijven (bereik WSTECH: ca. 85–110 %).</li>
+        <li>Kabels en trafo’s mogen licht overbelast raken, mits verklaard.</li>
+        <li>Aftakstand van de CS-trafo’s afstemmen. Elke trap verschuift het Q-U-venster met 2,5 %.</li>
+        <li>Hoe de WKC-generatoren en belastingen meegenomen worden, vooraf afstemmen met de netbeheerder.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================= PGMD ================= -->
+  <section class="paneel" id="p-pgmd">
+    <h2>PGMD: alleen bij nieuwe opwek</h2>
+    <div class="kaart">
+      <p style="margin:0 0 8px">Het PGMD (Elektriciteitsproductie-eenheid Document) is voor nieuwe opwekeenheden zoals PV, wind of een generator. Voor het BESS is het ESMD nodig. Komt er naast de batterij ook nieuwe opwek, dan zijn beide formulieren nodig. Een batterij bij een zonnepark wordt altijd apart geregistreerd.</p>
+      <p style="margin:0">De bestaande WKC van Getec valt hier niet onder, zolang die niet wordt gewijzigd. Bij een wijziging die de conformiteit raakt: melden ≥ 2 maanden vooraf (Type B) of ≥ 4 maanden (Type C/D).</p>
+    </div>
+    <h3>Typen opwekeenheid (PGM) in Nederland</h3>
+    <div class="tabelwrap"><table>
+      <tr><th>Type</th><th>PGM (opwek)</th><th>ESM (opslag)</th><th>Document</th></tr>
+      <tr><td>A</td><td>0,8 kW – 1 MW en &lt; 110 kV</td><td>0,8 kW – 1 MW</td><td>Certificaat / aanmelding</td></tr>
+      <tr><td>B</td><td>1 – 50 MW en &lt; 110 kV</td><td>1 – 50 MW</td><td>PGMD / ESMD</td></tr>
+      <tr><td>C</td><td>50 – 60 MW en &lt; 110 kV</td><td>50 – 60 MW</td><td>PGMD / ESMD</td></tr>
+      <tr><td>D</td><td>≥ 60 MW <b>of</b> aangesloten op ≥ 110 kV</td><td>≥ 60 MW</td><td>EON / ION / FON</td></tr>
+    </table></div>
+    <div class="let"><b>Let op bij nieuwe opwek op een park met een 110 kV-aansluiting:</b> een opwekeenheid in een industriële installatie die op 110 kV of hoger is aangesloten, is volgens de RfG altijd Type D, ook als hij klein is. Voor opslag geldt dat (nog) niet: daar telt alleen het vermogen. De herziening van de RfG (verwacht 2026–2027) kan dat veranderen.</div>
+    <h3>BLOS-tool (basispark)</h3>
+    <div class="kaart klein">De BLOS-tool van NBNL is alleen bruikbaar voor een basispark: één omvormertype, één trafotype, radiaal net met een centraal MS-station, LS ≤ 500 m, MS-TR ≤ 2 km, OP-MS ≤ 10 km en geen compensatie. Voldoet een park daar niet aan, dan is een loadflowprogramma (Vision) nodig. De tool zelf delen we niet op deze site, omdat de licentie alleen gebruik richting de netbeheerder toestaat.</div>
+  </section>
+
+  <!-- ================= OPEN PUNTEN ================= -->
+  <section class="paneel" id="p-open">
+    <h2>Open punten voor het ESMD</h2>
+    <div class="tabelwrap"><table>
+      <tr><th style="width:46%">Wat</th><th style="width:20%">Van wie</th><th style="width:34%">Nodig voor</th></tr>
+      <tr><td>Bij wie indienen, en waar ligt het overdrachtspunt (10 kV of 110 kV)? Contractspanning Uc uit de ATO.</td><td>Getec / netbeheerder</td><td>Uc, TR HS/MS, Isc op het overdrachtspunt, simulatie</td></tr>
+      <tr><td>Postcode, en of het BESS onder de bestaande EAN valt</td><td>Getec</td><td>Algemene gegevens</td></tr>
+      <tr><td>Datasheet HS/MS-trafo’s EGD1/2 (uk, verliezen, aftakken)</td><td>Getec</td><td>TR HS/MS, Vision</td></tr>
+      <tr><td>Datasheet CS-trafo 2,5 MVA: uk, Pk, P0, schakelgroep, aftakken</td><td>Alfen / Fudura inkoop</td><td>TR MS/LS</td></tr>
+      <tr><td>Exacte typecode en firmware PCS (APS2500-ES-2-690-5?), op/afregelsnelheid, LFSM-U-functie</td><td>WSTECH</td><td>Lijstcontrole, regelsnelheid, LFSM-U</td></tr>
+      <tr><td>Hulpvermogen per container en PCS (continu)</td><td>iwell / WSTECH</td><td>Max. productie- en opnamecapaciteit</td></tr>
+      <tr><td>Beveiligingsinstellingen NGX-velden en invoeding rail C (selectiviteit)</td><td>Fudura / Getec</td><td>U&lt;, U&gt;, I&gt;, I&gt;&gt;, f&lt;, f&gt;</td></tr>
+      <tr><td>Rol EMS (GridSync): regelt het P/Q op het overdrachtspunt? Dan geldt het als parkregelaar.</td><td>Fudura EMS</td><td>Parkregelaar, LFSM-O-simulatie</td></tr>
+      <tr><td>Vraagsturing: via aggregator (Eneco) en voor welke diensten?</td><td>Eneco</td><td>Vraagsturing</td></tr>
+      <tr><td>Planning: onder spanning, eerste eenheid, 20 %, vol vermogen, testen</td><td>Fudura / Getec</td><td>Datum inbedrijfname, planning ESMD</td></tr>
+      <tr><td>Partij voor de testen op locatie (bijv. DNV) en het testplan</td><td>Fudura</td><td>Bijlage 2</td></tr>
+    </table></div>
+    <div class="info" style="margin-top:14px">Advies uit het interne onderzoek PGMD/ESMD: beleg het opstellen in de engineeringfase en leg in het contract vast of Fudura het ESMD (en de testen) als dienst levert.</div>
+  </section>
+
+  <!-- ================= DOCUMENTEN ================= -->
+  <section class="paneel" id="p-docs">
+    <h2>Documenten</h2>
+    <div class="kaart docs" style="padding:0">
+      <a href="docs/ESMD-invulformulier_Q4-2024.pdf" target="_blank" rel="noopener">ESMD-invulformulier (NBNL, Q4-2024)<span>PDF · 11 p</span></a>
+      <a href="docs/NBNL_ESM_compliance_verification_v2.0.pdf" target="_blank" rel="noopener">ESM compliance verification document v2.0<span>PDF · 34 p</span></a>
+      <a href="docs/NBNL_RfG_compliance_verification_v2.0.pdf" target="_blank" rel="noopener">RfG compliance verification document v2.0 (PGM)<span>PDF · 165 p</span></a>
+      <a href="docs/NBNL_lijst_opslageenheden_type_B_2026-09-02.pdf" target="_blank" rel="noopener">Lijst toegelaten opslageenheden type B (2-9-2026)<span>PDF</span></a>
+      <a href="docs/NBNL_lijst_opwekeenheden_type_B_2026-09-02.pdf" target="_blank" rel="noopener">Lijst toegelaten opwekeenheden type B (2-9-2026)<span>PDF</span></a>
+      <a href="docs/NBNL_Type_B_test_protocol.xlsx" target="_blank" rel="noopener">Type B test protocol (testen op locatie)<span>Excel</span></a>
+      <a href="docs/PGMD-invulformulier_met_handleiding.pdf" target="_blank" rel="noopener">PGMD-invulformulier met handleiding<span>PDF · 15 p</span></a>
+      <a href="../docs/Fudura_eenlijnschema_BESS-station_concept_revA.pdf" target="_blank" rel="noopener">Eenlijnschema BESS-station (concept, Fudura)<span>PDF</span></a>
+      <a href="../docs/WSTECH_APS-ES_130_datasheet.pdf" target="_blank" rel="noopener">WSTECH APS-ES datasheet<span>PDF</span></a>
+      <a href="https://www.netbeheernederland.nl/requirements-generators" target="_blank" rel="noopener">Netbeheer Nederland: eisen opwek, opslag (BLOS/BLOR-tools)<span>website</span></a>
+    </div>
+    <p class="klein">Niet op deze site: de BLOS/BLOR-tools (licentie), het ingevulde Bol.com-ESMD (klantgegevens) en het DNV-cursusmateriaal.</p>
+  </section>
+
+  <footer>Concept · Fudura Engineering MS/LS · bijgewerkt 5-11-2026 · waarden zijn indicatief tot de open punten zijn ingevuld.</footer>
+</div>
+
+<script>
+// ---- velden ESMD (volgorde en namen als in het formulier Q4-2024) ----
+const S = (t, velden) => ({t, velden});
+const V = (id, lab, w, st, toel, eenheid = '') => ({id, lab, w, st, toel, eenheid});
+const SECTIES = [
+  S('Algemene gegevens', [
+    V('adres', 'Straat + huisnummer', 'Eerste Bokslootweg 17', 'aanname', 'Adres Getec Park Emmen. Locatie zoals in de ATO.'),
+    V('pc', 'Postcode', '', 'open', 'Uit de ATO halen.'),
+    V('plaats', 'Woonplaats', 'Emmen', 'ok', ''),
+    V('ean', 'EAN-code aansluiting', '871694831000001013', 'aanname', 'EAN van de parkaansluiting (contract 26 799 kW, fysiek 60 000 kVA). Bevestigen dat het BESS hieronder valt.'),
+    V('datum', 'Datum inbedrijfname', '', 'open', 'Geplande datum volle capaciteit. Indienen richtlijn ≥ 3 maanden vooraf.'),
+  ]),
+  S('Gegevens opslageenheid (op het overdrachtspunt)', [
+    V('eld', 'Eenlijnschema (bijlage)', 'Fudura_eenlijnschema_BESS-station_concept_revA.pdf', 'aanname', 'Van overdrachtspunt tot omvormers, <b>met beveiligingen, kabels (type, lengte) en trafogegevens</b>. Het concept moet nog worden aangevuld met de instellingen en het deel overdrachtspunt → rail C.'),
+    V('tech', 'Gebruikte technologie', 'Elektrochemisch (batterijen, LFP)', 'ok', 'REPT Powtrix 5 MWh, LFP-cellen CB75 314 Ah.'),
+    V('pprod', 'Maximum productiecapaciteit', '≈ 18,5–19', 'aanname', 'Continue P minus eigen verbruik, <b>niet</b> de aansluitcapaciteit. 8 × 2,5 MVA = 20 MVA, maar met de eis Q = 0,33 × P blijft ≈ 19,0 MW op de omvormers over, minus verliezen en hulpvoeding. Exact uit Vision.', 'MW'),
+    V('popn', 'Maximale opnamecapaciteit', '≈ 19–20', 'aanname', 'Continue opname plus eigen verbruik. Hulpvermogen per container nog op te vragen bij iwell.', 'MW'),
+    V('rampup', 'Max. opregelsnelheid P', '100', 'aanname', 'Waarde uit het Bol.com-ESMD (zelfde PCS-familie). Bevestigen bij WSTECH, en of het EMS een helling begrenst.', '%/s'),
+    V('rampdn', 'Max. afregelsnelheid P', '100', 'aanname', 'Idem.', '%/s'),
+    V('energie', 'Maximale energie-inhoud', '80,26', 'ok', '16 × 5 015,96 kWh (REPT datasheet). Let op: in het Bol.com-formulier staat 8.146,94 MWh; dat is vermoedelijk een komma-fout.', 'MWh'),
+    V('uc', 'Contractspanning Uc', '', 'open', 'Uit de ATO. Hangt af van waar het overdrachtspunt ligt (10 kV of 110 kV).', 'kV'),
+    V('isc', 'Isc/In en Isc', '≈ 1,0 · ≈ 1,1 kA (op 10,5 kV)', 'aanname', 'WSTECH: I”k = 2 × 1060 A per APS2500 op 690 V, In = 2 092 A → ≈ 1,01. Acht omvormers, teruggerekend naar 10,5 kV: ≈ 1,1 kA. Op 110 kV ≈ 0,1 kA. (Vision gaf ≈ 1,5 kA met een conservatiever omvormermodel.)'),
+    V('uon', 'Onderspanning U< (instelling · tijd)', '', 'open', 'Resulterend gedrag van de MS-beveiliging op het overdrachtspunt. Ter vergelijking, Bol.com: 80 % · 3 s. Mag niet botsen met FRT.'),
+    V('uov', 'Overspanning U> (instelling · tijd)', '', 'open', 'Bol.com: 120 % · 5 s. Afstemmen met netbeheerder/ATO.'),
+    V('i1', 'Overstroom I> (kA · s)', '', 'open', 'Uit de selectiviteitsstudie NGX / rail C. Bij inverse karakteristiek of richting: aparte bijlage.'),
+    V('i2', 'Overstroom I>> (kA · s)', '', 'open', 'Idem.'),
+    V('fon', 'Onderfrequentie f< (Hz · s)', '', 'open', 'Bol.com: 47 Hz · 0,1 s. Bevestigen tegen het frequentiebereik van de Systeemcode.'),
+    V('fov', 'Overfrequentie f> (Hz · s)', '', 'open', 'Bol.com: 51,5 Hz · 0,1 s.'),
+  ]),
+  S('Gegevens van de opslageenheden (omvormers)', [
+    V('nomv', 'Aantal omvormers', '8', 'ok', 'Eén WSTECH APS per rij (CS EOS).'),
+    V('somv', 'Nominaal vermogen per omvormer', '2,5', 'ok', 'Smax APS2500 op 690 V.', 'MVA'),
+    V('merk', 'Merk/fabrikant', 'WSTECH', 'ok', ''),
+    V('type', 'Type-aanduiding', 'APS2500-ES-2-690-5', 'aanname', 'Op de NBNL-lijst als <b>APS2500-XX-2-690-5</b> (2-9-2026) → bijlage 1 niet nodig. Exacte code bevestigen bij WSTECH.'),
+    V('park', 'Parkregelaar (merk/type)', '', 'open', 'Alleen als het EMS (GridSync) P/Q op het overdrachtspunt regelt. Dan op de lijst laten toetsen of bewijs aanleveren, en LFSM-O simuleren.'),
+  ]),
+  S('Transformatoren', [
+    V('t1s', 'TR MS/LS type 1: vermogen', '2,5 (8 ×)', 'ok', 'Trafo in de CS EOS (Alfen D40H, Fudura type 3B).', 'MVA'),
+    V('t1u', 'TR MS/LS: spanning prim./sec.', '10,75 / 0,69', 'aanname', 'Uit het RFI-plan (10,75 kV / 0,69 kV). Bol.com-formulier noemt 10,5 kV.', 'kV'),
+    V('t1uk', 'TR MS/LS: kortsluitspanning', '6', 'aanname', 'Waarde uit het Bol.com-formulier; bevestigen met de datasheet.', '%'),
+    V('t1pk', 'TR MS/LS: koperverliezen', '18,5', 'aanname', 'Bol.com-formulier (Ecodesign Tier 2). Bevestigen.', 'kW'),
+    V('t1p0', 'TR MS/LS: nullastverliezen', '1,575', 'aanname', 'Idem.', 'kW'),
+    V('t1sg', 'TR MS/LS: schakelgroep', 'Dyn5', 'aanname', 'RFI-plan: Dyn5. In het Bol.com-formulier staat Dd; controleren. Een sterpunt aan de primaire zijde mag niet geaard zijn; bij D primair is dat in orde.'),
+    V('t1tap', 'TR MS/LS: regelschakelaar', 'Offline, ±2 × 2,5 %, stand …', 'open', 'Stand bepalen met de Vision-simulatie (verschuift het Q-U-venster).'),
+    V('ths', 'TR HS/MS (indien van toepassing)', '', 'open', 'Alleen als het overdrachtspunt op 110 kV ligt: EGD1/2 van Getec (vermogen, uk, verliezen, aftakken).'),
+  ]),
+  S('Vraagsturing en LFSM-U', [
+    V('vs', 'Vraagsturing', 'Ja, via aggregator (Eneco), werkzaam vermogen', 'aanname', 'Afstemmen met Eneco welke diensten (handel, FCR/aFRR, congestie).'),
+    V('lfsmu', 'Automatisch overschakelen opslag → opwek', 'Ja', 'aanname', 'Onder 49,8 Hz laden afregelen met 1 % statiek en doorschakelen naar ontladen. PCS en EMS moeten dit ondersteunen; aantonen in de test op locatie.'),
+  ]),
+  S('Conformiteit en bijlagen', [
+    V('b1', 'Bijlage 1: typetestrapporten / certificaten', 'Niet nodig (omvormer op lijst)', 'aanname', 'Wel nodig voor een parkregelaar die niet op de lijst staat.'),
+    V('b2s', 'Bijlage 2: simulaties', 'LFSM-U, blindvermogen, wederinschakelen (+ LFSM-O bij parkregelaar)', 'open', 'Blindvermogen in Vision (Productie-eenheid), rapport via BLOR of eigen rapport.'),
+    V('b2t', 'Bijlage 2: testen op locatie', 'LFSM-O, LFSM-U, blindvermogen, wederinschakelen', 'open', 'Verplicht bij Pmax ≥ 5 MW. NBNL Type B test protocol; testplan vooraf laten goedkeuren.'),
+  ]),
+  S('Contactgegevens aangeslotene', [
+    V('naam', 'Naam / bedrijf', 'GETEC Park Emmen', 'aanname', 'De eigenaar tekent. Fudura bereidt voor.'),
+    V('cont', 'Contactpersoon, telefoon, e-mail', '', 'open', ''),
+  ]),
+];
+const SLEUTEL = 'getec-esmd-v1';
+let eigen = {}; try { eigen = JSON.parse(localStorage.getItem(SLEUTEL) || '{}'); } catch(e) {}
+const bewaar = () => { try { localStorage.setItem(SLEUTEL, JSON.stringify(eigen)); } catch(e) {} };
+const LAB = {ok: 'ingevuld', aanname: 'aanname', open: 'open'};
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function teken(){
+  const doel = document.getElementById('velden'); doel.innerHTML = '';
+  const tel = {ok: 0, aanname: 0, open: 0};
+  SECTIES.forEach(sec => {
+    const k = document.createElement('div'); k.className = 'kaart sectie';
+    k.innerHTML = '<div class="kop"><h3 style="margin:0">' + esc(sec.t) + '</h3></div>';
+    sec.velden.forEach(v => {
+      const w = eigen[v.id] !== undefined ? eigen[v.id] : v.w;
+      const st = eigen[v.id] !== undefined && eigen[v.id] !== v.w ? (eigen[v.id] ? 'aanname' : 'open') : v.st;
+      tel[st]++;
+      const r = document.createElement('div'); r.className = 'veld';
+      r.innerHTML = '<div class="lab">' + esc(v.lab) + (v.eenheid ? ' <small>[' + esc(v.eenheid) + ']</small>' : '') + '</div>' +
+        '<div><input value="' + esc(w) + '" aria-label="' + esc(v.lab) + '"></div>' +
+        '<div class="toel"><span class="st ' + st + '">' + LAB[st] + '</span> ' + v.toel + '</div>';
+      r.querySelector('input').addEventListener('change', e => { eigen[v.id] = e.target.value; bewaar(); teken(); });
+      k.appendChild(r);
+    });
+    doel.appendChild(k);
+  });
+  document.getElementById('teller').innerHTML = '<span class="st ok">' + tel.ok + ' ingevuld</span><span class="st aanname">' + tel.aanname + ' aanname</span><span class="st open">' + tel.open + ' open</span>';
+}
+teken();
+document.getElementById('reset').onclick = () => { eigen = {}; bewaar(); teken(); };
+document.getElementById('kopieer').onclick = async () => {
+  const regels = ['ESMD Getec BESS Emmen (concept Fudura)', ''];
+  SECTIES.forEach(sec => { regels.push('## ' + sec.t); sec.velden.forEach(v => { const w = eigen[v.id] !== undefined ? eigen[v.id] : v.w; regels.push(v.lab + ': ' + (w || '[open]') + (w && v.eenheid ? ' ' + v.eenheid : '')); }); regels.push(''); });
+  const m = document.getElementById('melding');
+  try { await navigator.clipboard.writeText(regels.join('\n')); m.textContent = 'Gekopieerd.'; }
+  catch(e) { m.textContent = 'Kopiëren lukt niet in deze browser.'; }
+  setTimeout(() => m.textContent = '', 2500);
+};
+// ---- tabs (onthoudt de laatst gekozen tab) ----
+const kies = t => { document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('aan', b.dataset.t === t)); document.querySelectorAll('.paneel').forEach(p => p.classList.toggle('aan', p.id === 'p-' + t)); try { localStorage.setItem('getec-esmd-tab', t); } catch(e) {} };
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => kies(b.dataset.t));
+try { const t = (location.hash || '').slice(1) || localStorage.getItem('getec-esmd-tab'); if(t && document.getElementById('p-' + t)) kies(t); } catch(e) {}
+</script>
+</body>
+</html>
