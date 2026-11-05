@@ -52,6 +52,9 @@
   #pOpen{position:fixed;top:14px;right:14px;z-index:30;width:34px;height:34px;font-size:18px;display:none}
   #pOpen.toon{display:block}
   #paneel details{border-top:1px solid #e1e6e9;padding:4px 0 2px}
+  #paneel .pSub{font-size:11px;color:#6b7a83;margin:-2px 0 6px}
+  #paneel .pBreed{margin:6px 0 4px;width:100%;padding:7px;border:1px solid #d8322a;border-radius:7px;background:#fff5f4;color:#a8241d;font:600 13px system-ui,sans-serif;cursor:pointer}
+  #paneel .pBreed:hover{background:#ffe9e7}
   #paneel summary{cursor:pointer;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#5d6b73;padding:2px 0;list-style:none}
   #paneel summary::-webkit-details-marker{display:none}
   #paneel summary::before{content:'\25B8';display:inline-block;width:12px;transition:transform .15s}
@@ -119,21 +122,10 @@
 <button class="pKnop" id="pOpen" title="Paneel openen">&#9776;</button>
 <div id="paneel">
   <div id="pKop"><h3><a href="../../" style="color:#1b4f8a;text-decoration:none" title="Hoofdmenu">&lsaquo; menu</a> &nbsp;Getec BESS Emmen</h3><button class="pKnop" id="pDicht" title="Paneel sluiten">&times;</button></div>
-  <details open><summary>Configuratie</summary>
-    <div class="rijK"><span>Containers</span><div class="knoprij" id="cfgBC"><button data-bc="0.5" title="PGS 37-1 typical 3 mét bewijs (afb. 15)">0,50 m</button><button data-bc="2.5" title="PGS 37-1 typical 2 zonder bewijs">2,50 m</button></div></div>
-    <div class="rij2">
-      <label title="Betreedbaar MS-station (buiten scope)">MS-station <input type="checkbox" class="oranje" id="tMs" checked></label>
-      <label>Dak MS eraf <input type="checkbox" id="tMsDak"></label>
-    </div>
-    <div class="knoprij"><button id="pDoc">documenten</button></div>
-  </details>
+  <div class="pSub">20 MW / 80 MWh · 16 × REPT 5 MWh · 8 × CS EOS + PCS · NGX MS-station</div>
   <details open><summary>Bekijken</summary>
     <div class="rijK"><span>Park</span><div class="knoprij"><button data-v="0">overzicht</button><button data-v="b">boven</button><button data-v="n">MS-station</button><button data-v="a">CS AUX</button></div></div>
     <div class="rijK"><span>Rij 1</span><div class="knoprij"><button data-v="c">containers</button><button data-v="1">CS EOS</button><button data-v="j">ladderbaan</button><button data-v="v">DC-kabels</button></div></div>
-  </details>
-  <details open><summary>Bewegen</summary>
-    <div class="rij2"><label title="Als persoon rondlopen: WASD, muis = kijken, shift = rennen">Lopen <input type="checkbox" id="tFP"></label></div>
-    <div class="pInfo">WASD / pijltjes = schuiven, shift = sneller · slepen = draaien · scroll = zoomen</div>
   </details>
   <details open><summary>Weergave</summary>
     <div class="rij2">
@@ -145,17 +137,24 @@
       <label>Contouren <input type="checkbox" id="tEdge" checked></label>
       <label title="Naam boven op elk component, leesbaar in het bovenaanzicht (2D)">Namen op dak <input type="checkbox" id="tNaam"></label>
       <label>Deuren open <input type="checkbox" id="tDeur"></label>
-      <label title="PGS 37-1 M50/M52">PGS-zones <input type="checkbox" class="oranje" id="tPgs"></label>
-      <label title="Clusters uitlichten volgens PGS 37-1 M52 (afb. 15)">PGS-clusters <input type="checkbox" class="oranje" id="tClus"></label>
+      <label title="Betreedbaar MS-station (buiten scope, Getec doet de MS)">MS-station <input type="checkbox" class="oranje" id="tMs" checked></label>
+      <label>Dak MS eraf <input type="checkbox" id="tMsDak"></label>
     </div>
-    <button id="pgsAnBtn" style="margin-top:8px;width:100%;padding:7px;border:1px solid #d8322a;border-radius:7px;background:#fff5f4;color:#a8241d;font:600 13px system-ui,sans-serif;cursor:pointer">PGS 37-1 analyse</button>
   </details>
-  <details><summary>Gereedschap</summary>
+  <details open><summary>PGS 37-1</summary>
     <div class="rij2">
-      <label title="Klik twee punten op het maaiveld">Meten <input type="checkbox" id="tMeet"></label>
-      <label title="Pijltjes = luchtfoto schuiven, , en . = draaien">Kaart uitlijnen <input type="checkbox" id="tUitl"></label>
+      <label title="PGS 37-1 M50/M52: afstandszones">Zones <input type="checkbox" class="oranje" id="tPgs"></label>
+      <label title="Clusters uitlichten volgens PGS 37-1 M52 (afb. 15)">Clusters <input type="checkbox" class="oranje" id="tClus"></label>
     </div>
-    <div class="knoprij"><button id="pMeetWis">wis metingen</button></div>
+    <button id="pgsAnBtn" class="pBreed">PGS 37-1 analyse</button>
+  </details>
+  <details><summary>Bewegen</summary>
+    <div class="rij2"><label title="Als persoon rondlopen: WASD, muis = kijken, shift = rennen">Lopen <input type="checkbox" id="tFP"></label>
+      <label title="Pijltjes = luchtfoto schuiven, , en . = draaien">Kaart uitlijnen <input type="checkbox" id="tUitl"></label></div>
+    <div class="pInfo">WASD / pijltjes = schuiven, shift = sneller · slepen = draaien · scroll = zoomen · meten en intekenen: werkbalk onderin</div>
+  </details>
+  <details><summary>Informatie</summary>
+    <div class="knoprij" style="margin:4px 0 6px"><button id="pDoc">documenten</button></div>
     <details class="sub" id="reptLijst"><summary>Installatie-eisen REPT 5 MWh-container</summary>
       <ul style="margin:4px 0 2px;padding-left:16px;font-size:11.5px;line-height:1.45;color:#3f4b52">
         <li><b>Fundering</b>: 300 mm boven maaiveld; iwell TD01: 2 betonbalken 6200 × 450 mm, buitenwerks 2750 mm (in het model). REPT §7.1.1: alternatief 6 korte poeren. Bovenvlakken gelijk, max. 3 mm hoogteverschil; definitief na grondonderzoek.</li>
@@ -171,14 +170,13 @@
       <ul style="margin:4px 0 2px;padding-left:16px;font-size:11.5px;line-height:1.45;color:#3f4b52">
         <li><b>Typical 3</b>: niet-betreedbare EOS'en in de open lucht, groot EOS-park (&gt; 6 EOS'en, hier 16) → <b>M52</b>.</li>
         <li><b>M52 / afb. 15 (met bewijs)</b>: clusters van max. 2 rijen en max. 35 m; containers in een cluster mogen tegen elkaar (hier 0,50 m dichte zijden én achterkanten).</li>
-        <li><b>M52 tussen clusters</b>: ≥ hoogte boven maaiveld × 1, min. 1,5 m → ≈ 3,20 m (2,90 m container + 0,30 m fundering); aanwezig 3,77 m ✓.</li>
-        <li><b>M52 zonder bewijs (typical 2)</b>: ≥ 2,5 m tussen alle EOS'en en aan één zijde ≥ 4,5 m — schakelaar "2,50 m".</li>
+        <li><b>M52 tussen clusters</b>: ≥ hoogte boven maaiveld × 1, min. 1,5 m → 3,28 m (container + fundering + explosieluiken); aanwezig 3,77 m ✓.</li>
         <li><b>M52 rondom de clusters</b>: ≥ 4,5 m tot hek/kavelgrens: kopse kant 4,50 m (verwerkt), PCS/CS-zijden 6,00 m (PGS-zones, rood). Opstelplaats brandweer buiten het hek afstemmen.</li>
         <li><b>Bewijs</b>: IEC 62933-5-2 (TÜV) ✓ · IEC 62619 (iwell-specsheet) ✓ · UL 9540:2023 (TÜV CU 72405957; UL 9540A cel/module/unit: CN234568 001 / CN241BQ6 002 / CN240QMQ 002) ✓ · NFPA 68 explosieluiken (TÜV CN267M2L 001: 4 panelen, Pred 0,269 ≤ 0,333 bar-g) ✓. Brandweer kan het UL 9540A-rapport op unit level willen zien.</li>
         <li><b>M50</b>: EOS tot kavelgrens / ander bouwwerk / brandbaar object (bomen) ≥ 10 m geen eis, 5–10 m → 30 min brandwerend (PGS-zones, oranje en rood; BAG-maat tot het gebouw).</li>
         <li><b>M9</b>: brandwerendheid vervalt bij geslaagde brandpropagatietest (typical 1–3).</li>
         <li><b>M28 / M29 / M63</b>: hekwerk ≥ 1,8 m, onbrandbaar, min. twee tegenover elkaar gelegen toegangen (vluchtdeuren in beide korte en lange zijden).</li>
-        <li><b>M56</b>: bluswateraansluiting ≥ 1 000 l/min (Storz) als brandpropagatie niet is aangetoond — ⚠ n.t.b.</li>
+        <li><b>M56</b>: bluswateraansluiting ≥ 1 000 l/min (Storz) als brandpropagatie niet is aangetoond — vervalt met UL 9540A (M55)</li>
         <li><b>M61</b>: EOS altijd bereikbaar voor hulpdiensten; ruimte tussen EOS'en vlak en vrij van obstakels.</li>
         <li style="color:#8a979e">Bron: PGS 37-1:2023 versie 1.1 (april 2026), §7.6.</li>
       </ul>
@@ -1025,8 +1023,8 @@ const P = {
   pcsL: 1.98, pcsB: 1.26,  // PCS (L langs de rij)
   csL: 2.87, csB: 2.34,    // CS EOS Alfen Diabolo 40H (L langs de rij, deuren op de korte zijden)
   gHekKop: 3.05,           // (niet meer gebruikt in de dubbelrij-opstelling)
-  gKoelKop: (new URLSearchParams(location.search).get('bc') === '2.5') ? 2.50 : 0.50,   // tussen de achterkanten (dichte kopse kant, geen koeler/aansluitingen) van rij A en rij B: 0,50 m met bewijs (PGS afb. 15), 2,50 m zonder (M52)
-  gBC: (new URLSearchParams(location.search).get('bc') === '2.5') ? 2.50 : 0.50,   // PGS 37-1 M52: typical 3 mét bewijs (afb. 15) containers in een cluster tegen elkaar; zonder bewijs 2,5 m               // binnen een rij: type A + type B met de dichte zijden naar elkaar, 0,50 m (gemeten op iwell-opstelling 30 MW/120 MWh); variant 2,00 m (APS 4 MWh-instructie)
+  gKoelKop: 0.50,   // tussen de achterkanten (dichte kopse kant, geen koeler/aansluitingen) van rij A en rij B: 0,50 m met bewijs (PGS afb. 15), 2,50 m zonder (M52)
+  gBC: 0.50,   // PGS 37-1 M52: typical 3 mét bewijs (afb. 15) containers in een cluster tegen elkaar; zonder bewijs 2,5 m               // binnen een rij: type A + type B met de dichte zijden naar elkaar, 0,50 m (gemeten op iwell-opstelling 30 MW/120 MWh); variant 2,00 m (APS 4 MWh-instructie)
   gRij: 3.05,              // tussen de deurzijden van twee rijen (iwell-opstelling: 3,05 m vrij aan de deurzijde)
   gHekEind: 4.50,          // hek -> deurzijde eerste/laatste container: PGS 37-1 M52 ≥ 4,5 m langs de clusters (iwell vraagt 3,05 m)
   gBcCs: 2.20,             // container -> CS EOS (iwell 2 m)
@@ -1039,10 +1037,9 @@ const P = {
   const kort = P.gBC < 1;
   const b = document.getElementById('bcBtn');
   b.textContent = 'tussen containers: ' + (kort ? '0,50 m (met bewijs)' : '2,50 m (zonder bewijs)');
-  b.onclick = () => { const u = new URL(location.href); if(kort) u.searchParams.set('bc', '2.5'); else u.searchParams.delete('bc'); location.href = u.toString(); };
   document.getElementById('bcTxt').style.color = kort ? '#b3261e' : '';
   document.getElementById('bcTxt').textContent = kort
-    ? 'PGS 37-1 M52 typical 3 (afb. 15): in een cluster mogen containers tegen elkaar (hier 0,50 m tussen de dichte zijden én tussen de achterkanten); tussen clusters ≥ hoogte × 1 (≈ 3,2 m) · bewijs: IEC 62933-5-2 ✓ · IEC 62619 ✓ · UL 9540:2023 ✓ (certificaat, incl. UL 9540A-brandtest) · NFPA 68 ✓ (TÜV CN267M2L 001) · ⚠ NOG OPEN: akkoord brandweer'
+    ? 'PGS 37-1 M52 typical 3 (afb. 15): 0,50 m tussen de containers in een cluster · tussen clusters 3,77 m ≥ hoogte 3,28 m · bewijs compleet: IEC 62933-5-2, IEC 62619, UL 9540/9540A, NFPA 68 · ⚠ nog: akkoord brandweer'
     : 'PGS 37-1 M52 typical 2 (zonder bewijs): ≥ 2,5 m tussen alle EOS\'en (ook tussen de achterkanten), aan één zijde ≥ 4,5 m voor de brandweer';
 })();
 const blok = 2*P.bcB + P.gBC;                    // containerblok per rij
@@ -2183,9 +2180,6 @@ function stapFP(){
   $('pDicht').onclick = () => { paneel.classList.add('dicht'); $('pOpen').classList.add('toon'); };
   $('pOpen').onclick = () => { paneel.classList.remove('dicht'); $('pOpen').classList.remove('toon'); };
   ['pointerdown', 'wheel'].forEach(t => paneel.addEventListener(t, e => e.stopPropagation()));
-  // config: tussenafstand
-  document.querySelectorAll('#cfgBC button').forEach(b => { b.classList.toggle('aan', +b.dataset.bc === P.gBC);
-    b.onclick = () => { const u = new URL(location.href); if(b.dataset.bc === '2.5') u.searchParams.set('bc', '2.5'); else u.searchParams.delete('bc'); if(+b.dataset.bc !== P.gBC) location.href = u.toString(); }; });
   // MS-station
   $('tMs').onchange = e => { zetMsStation(e.target.checked); if(!e.target.checked) $('tMsDak').checked = false; };
   $('tMsDak').onchange = e => { if(e.target.checked && !msStation.visible){ zetMsStation(true); $('tMs').checked = true; }
@@ -2194,7 +2188,7 @@ function stapFP(){
   // aanzichten
   document.querySelectorAll('#paneel [data-v]').forEach(b => b.onclick = () => { actie(b.dataset.v); if(b.dataset.v === 'n') $('tMs').checked = true; });
   // weergave: schakelaar volgt de werkelijke toestand
-  const koppel = (id, staat, zet) => { const c = $(id); c.checked = staat(); c.onchange = () => { if(c.checked !== staat()) zet(c.checked); }; };
+  const koppel = (id, staat, zet) => { const c = $(id); if(!c) return; c.checked = staat(); c.onchange = () => { if(c.checked !== staat()) zet(c.checked); }; };
   koppel('tKaart', () => lfGroup.visible, () => toggleLucht());
   koppel('tBag', () => bagGroup.visible, v => { bagGroup.visible = v; bagMaat.visible = v; bagInfo.style.display = v ? '' : 'none'; });
   koppel('tHek', () => hekGroup.visible, () => toggleHek());
@@ -2207,8 +2201,7 @@ function stapFP(){
   koppel('tMeet', () => meetAan, () => toggleMeten());
   koppel('tFP', () => FP.aan, v => zetFP(v));
   $('tUitl').onchange = e => { window.KAART_UITLIJNEN = e.target.checked; $('kaartStand').style.display = e.target.checked ? 'block' : 'none'; if(e.target.checked){ kaartBewaren(); if(!lfGroup.visible){ toggleLucht(); $('tKaart').checked = true; } } };
-  $('pMeetWis').onclick = () => meetWissen();
-  setInterval(() => { $('tFP').checked = FP.aan; $('tMeet').checked = meetAan; }, 400);
+  setInterval(() => { $('tFP').checked = FP.aan; }, 400);
 })();
 // vrij schuiven buiten de loopmodus: WASD of pijltjes (shift = sneller); bij 'kaart uitlijnen' schuiven de pijltjes de luchtfoto
 const KO = {};
