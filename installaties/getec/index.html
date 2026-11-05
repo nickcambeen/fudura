@@ -2326,7 +2326,7 @@ document.getElementById('tNaam').onchange = e => zetNamen(e.target.checked);
   const R2 = (x1, x2, z1, z2, h) => ({x1: Math.min(x1, x2), x2: Math.max(x1, x2), z1: Math.min(z1, z2), z2: Math.max(z1, z2), h: h || 30});
 
   // ---- zelf ingetekende objecten voor M50 (gebouw / brandbaar object dat de BAG niet kent) ----
-  let objs = []; try { objs = JSON.parse(localStorage.getItem('getecM50obj') || '[]'); } catch(e) {}
+  let objs = []; try { localStorage.removeItem('getecM50obj'); } catch(e) {}        // intekenen is vervallen (afstand ingemeten)
   const bewaar = () => { try { localStorage.setItem('getecM50obj', JSON.stringify(objs)); } catch(e) {} };
   const objGroup = new THREE.Group(); scene.add(objGroup);
   const matObj = new THREE.MeshBasicMaterial({color: 0x8a5a2b, transparent: true, opacity: 0.45, depthWrite: false});
@@ -2376,8 +2376,8 @@ document.getElementById('tNaam').onchange = e => zetNamen(e.target.checked);
     const bagTxt = br && br.d < 1e8 ? 'BAG-pand ' + f2(br.d/10) + ' m' : 'BAG niet geladen';
     const objTxt = objs.length ? objs.length + ' ingetekend object' + (objs.length > 1 ? 'en' : '') : 'geen ingetekende objecten';
     if(best){ const e = best.d;
-      T.push({c: 'M50 · afstand tot gebouwen / brandbare objecten', s: e >= 10 ? 'ok' : e >= 5 ? 'let' : 'nok', r: 'Maatgevend: ' + best.wat + ' op ' + f2(e) + ' m van de containers (' + bagTxt + ', ' + objTxt + '). ≥ 10 m: geen eis · 5–10 m: 30 min brandwerend · < 5 m: niet zonder maatregelen.', w: e < 10 ? 'Met een geaccepteerde brandpropagatietest (M9) vervalt de brandwerendheidseis.' : '', knop: true, b: R2(best.p[0], best.q[0], best.p[1], best.q[1], 30), m: [best.q[0], best.q[1], best.p[0], best.p[1], f2(e) + ' m']});
-    } else T.push({c: 'M50 · afstand tot gebouwen / brandbare objecten', s: 'let', r: 'BAG nog niet geladen en geen objecten ingetekend.', knop: true, b: R2(ex1, ex2, ez1, ez2, 30)});
+      T.push({c: 'M50 · afstand tot gebouwen', s: e >= 10 ? 'ok' : e >= 5 ? 'let' : 'nok', r: 'Dichtstbijzijnd pand (BAG) op ' + f2(e) + ' m van de containers; controleer met de eigen inmeting. ≥ 10 m: geen eis · 5–10 m: 30 min brandwerend · < 5 m: niet zonder maatregelen.', w: e < 10 ? 'Met een geaccepteerde brandpropagatietest (M9) vervalt de brandwerendheidseis.' : '', b: R2(best.p[0], best.q[0], best.p[1], best.q[1], 30), m: [best.q[0], best.q[1], best.p[0], best.p[1], f2(e) + ' m']});
+    } else T.push({c: 'M50 · afstand tot gebouwen', s: 'let', r: 'BAG nog niet geladen: zet "Gebouwen BAG" aan en open de analyse opnieuw, of gebruik de eigen inmeting.', b: R2(ex1, ex2, ez1, ez2, 30)});
     const bMS = msStation.visible ? bx(msStation.children[0]) : null;
     if(bMS){ let dm = 1e9, bb = null; bBC.forEach(b => { const d = dXZ(b, bMS); if(d < dm){ dm = d; bb = b; } }); dm /= 10;
       const cl = (v, a, b) => Math.max(a, Math.min(b, v)), cB = bMS.getCenter(new THREE.Vector3());
@@ -2457,20 +2457,15 @@ document.getElementById('tNaam').onchange = e => zetNamen(e.target.checked);
   #werkbalk .wtip{font-size:12px;color:#5a3a1b;padding:0 4px;max-width:260px}`;
   document.head.appendChild(st2); document.body.appendChild(wb);
   wb.innerHTML = '<button class="meet" title="Klik twee punten op het maaiveld (Q)">📏 Meten</button><button class="meetWis" title="Esc">Wis metingen</button><span class="sep"></span>' +
-    '<button class="obj" title="Gebouw of brandbaar object intekenen voor PGS M50: klik twee tegenoverliggende hoeken">⬛ Object intekenen</button><button class="objWisB">Wis objecten</button><span class="sep"></span>' +
+    
     '<button class="pgs">PGS 37-1 analyse</button><span class="wtip"></span>';
   function balk(tip){
     wb.querySelector('.meet').classList.toggle('aan', meetAan);
-    wb.querySelector('.obj').classList.toggle('aan', tekenModus);
-    wb.querySelector('.objWisB').textContent = 'Wis objecten' + (objs.length ? ' (' + objs.length + ')' : '');
-    wb.querySelector('.objWisB').disabled = !objs.length; wb.querySelector('.objWisB').style.opacity = objs.length ? 1 : 0.45;
     wb.querySelector('.wtip').textContent = tip || (meetAan ? 'Klik twee punten om te meten.' : tekenModus ? 'Klik de eerste hoek van het object.' : '');
     const tm = document.getElementById('tMeet'); if(tm) tm.checked = meetAan;
   }
   wb.querySelector('.meet').onclick = () => { if(tekenModus){ tekenModus = false; tekenP = []; } toggleMeten(); balk(); };
   wb.querySelector('.meetWis').onclick = () => { meetWissen(); balk(); };
-  wb.querySelector('.obj').onclick = () => { if(meetAan) toggleMeten(); tekenModus = !tekenModus; tekenP = []; wrap.style.cursor = tekenModus ? 'crosshair' : 'grab'; auto = false; balk(); };
-  wb.querySelector('.objWisB').onclick = () => { objs = []; bewaar(); tekenObjs(); balk(); if(box.style.display === 'block'){ teken(); kies(5); } };
   wb.querySelector('.pgs').onclick = () => toon(box.style.display !== 'block');
   balk();
   const _tm = document.getElementById('tMeet'); if(_tm) _tm.addEventListener('change', () => setTimeout(balk, 0));
