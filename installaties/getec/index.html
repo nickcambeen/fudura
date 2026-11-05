@@ -1281,11 +1281,27 @@ const hexK = k => '#' + k.toString(16).padStart(6, '0');
 const _mV = {}, _mL = {};
 const matVrijK = k => _mV[k] || (_mV[k] = new THREE.MeshBasicMaterial({color: k, transparent: true, opacity: 0.36, depthWrite: false}));
 const matVrijLK = k => _mL[k] || (_mL[k] = new THREE.LineBasicMaterial({color: k, depthTest: false}));
-function vrij(xa, xb, ya, yb, kleur = 0x2f9e44, laag = 0){   // 2D: x langs de rijen, y dwars
+function vrij(xa, xb, ya, yb, kleur = 0x2f9e44, laag = 0, lf = 0.5, naam = ''){   // 2D: x langs de rijen, y dwars
   const m = new THREE.Mesh(new THREE.PlaneGeometry(X(yb) - X(ya), Z(xb) - Z(xa)), matVrijK(kleur));
   m.rotation.x = -Math.PI/2; m.position.set((X(ya) + X(yb))/2, 0.5 + laag*0.04, (Z(xa) + Z(xb))/2); m.renderOrder = 990 + laag; annos.add(m);
   const pts = [[ya, xa], [yb, xa], [yb, xb], [ya, xb], [ya, xa]].map(([y, x]) => new THREE.Vector3(X(y), 0.62 + laag*0.04, Z(x)));
   const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), matVrijLK(kleur)); l.renderOrder = 997; annos.add(l);
+  // maatlijnen binnen de zone (lengte en breedte) + label 'lengte × breedte'
+  const dl = Math.abs(xb - xa), db = Math.abs(yb - ya), o = 1.2, kd = donker(kleur);
+  const ym = lf > 0.5 ? X(yb) - o : X(ya) + o;
+  maatK(ym, Z(xa), ym, Z(xb), null, kd);                                        // langs de rij (x)
+  maatK(X(ya), Z(xa) + o, X(yb), Z(xa) + o, null, kd);                          // dwars (y)
+  tagSprite(naam + f2(Math.max(dl, db)) + ' × ' + f2(Math.min(dl, db)) + ' m', X(ya + lf*(yb - ya)), 4.5, (Z(xa) + Z(xb))/2, 15, hexK(kd), true);
+}
+const donker = k => { const c = new THREE.Color(k).multiplyScalar(0.62); return c.getHex(); };
+const _mM = {};
+function maatK(x1, z1, x2, z2, label, kleur){   // maatlijn met eindstreepjes in een eigen kleur
+  const mat = _mM[kleur] || (_mM[kleur] = new THREE.LineBasicMaterial({color: kleur, depthTest: false}));
+  const a = new THREE.Vector3(x1, 0.85, z1), b = new THREE.Vector3(x2, 0.85, z2);
+  const ln = new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), mat); ln.renderOrder = 998; annos.add(ln);
+  const d = new THREE.Vector3().subVectors(b, a).normalize(), n = new THREE.Vector3(-d.z, 0, d.x).multiplyScalar(1.2);
+  for(const p of [a, b]){ const t = new THREE.Line(new THREE.BufferGeometry().setFromPoints([p.clone().add(n), p.clone().sub(n)]), mat); t.renderOrder = 998; annos.add(t); }
+  if(label){ const m = a.clone().add(b).multiplyScalar(0.5); tagSprite(label, m.x, 4, m.z, 18, hexK(kleur), true); }
 }
 // compactstation: één rechthoek volgens de Alfen-footprint D40H (MS4408A889): 1110 + 2336 + 1100 = 4546 × 1850 + 2870 + 1850 = 6570 mm
 const matVrijKader = new THREE.LineDashedMaterial({color: KL_CS, dashSize: 2.5, gapSize: 1.5, depthTest: false});
@@ -1311,7 +1327,8 @@ for(const r of rows) inRij(r, [annos], () => {
   vrijCS(r.cs, 'CS EOS ' + (r.i + 1));
   const kc = KL_CLUS[Math.floor(r.i/2) % 4];                                                                 // kleur van het cluster
   vrij(r.pcs.x1, r.pcs.x2, r.pcs.y1 - 2.0, r.pcs.y1, KL_PCS, 2); vrij(r.pcs.x1, r.pcs.x2, r.pcs.y2, r.pcs.y2 + 2.0, KL_PCS, 2);
-  vrij(r.bcA.x1 - 3.05, r.bcA.x1, r.bcA.y1, r.bcA.y2, kc, 0); vrij(r.bcB.x2, r.bcB.x2 + 3.05, r.bcB.y1, r.bcB.y2, kc, 0);   // deurzijden (buitenkant paar)
+  vrij(r.pcs.x1 - 2.0, r.pcs.x1, r.pcs.y1, r.pcs.y2, KL_PCS, 3);                                       // smalle zijde met datadeur (tegenover AC)
+  vrij(r.bcA.x1 - 3.05, r.bcA.x1, r.bcA.y1, r.bcA.y2, kc, 0, 0.3); vrij(r.bcB.x2, r.bcB.x2 + 3.05, r.bcB.y1, r.bcB.y2, kc, 1, 0.7);   // deurzijden (buitenkant paar)
   vrij(r.bcA.x1, r.bcB.x2, yBC2, yBC2 + 2.0, kc, 0);                                                                        // voorkant (aansluitingen)
 });
 vrijCS(aux, 'CS AUX');
@@ -1729,6 +1746,15 @@ const msPos = {x: X(yPiv/2), z: Z((aux.x1 + aux.x2)/2)};          // op één li
   msStation.userData.veldX = MSV.map((n, f) => msPos.x + (-(nV - 1)*msVB/2 + f*msVB + 3));
 })();
 scene.add(msStation);
+// vrije ruimte voor de deur van het betreedbare MS-station: deur 1,15 m + 0,5 m aan weerszijden, 2,0 m diep (deurzwaai 1,15 m + vluchtweg)
+(function(){
+  const dzL = -msB/2 + 14, dx = msPos.x + dzL, zF = msPos.z + msD/2 + 1.6;   // deurmidden (wereld) en buitenkant gevelbekleding aan de deurzijde
+  const n0 = annos.children.length;
+  vrij(zF/10, zF/10 + 2.0, (dx - 10.75)/10, (dx + 10.75)/10, 0xc2571a, 3, 0.5, 'MS-deur ');
+  const msVrij = annos.children.slice(n0);
+  const chk = document.getElementById('msChk');
+  if(chk) chk.addEventListener('change', () => msVrij.forEach(c => c.visible = chk.checked));   // aan/uit met het MS-station
+})();
 
 // ---- MS-kabels 3×1×240 Al (V) en 3×1×630 Al (K) in trefoil, ondergronds via een sleuf langs de CS-zijde ----
 (function msKabels(){
