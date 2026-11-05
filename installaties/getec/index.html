@@ -140,7 +140,7 @@
       <label>Gebouwen BAG <input type="checkbox" id="tBag" checked></label>
       <label>Hekwerk <input type="checkbox" id="tHek" checked></label>
       <label>Kabels <input type="checkbox" id="tKabel" checked></label>
-      <label title="Maatvoering en vrije ruimte (groen)">Maten + vrij <input type="checkbox" id="tMaat" checked></label>
+      <label title="Maatvoering en vrije ruimte (per cluster, PCS en compactstation een eigen kleur)">Maten + vrij <input type="checkbox" id="tMaat" checked></label>
       <label>Contouren <input type="checkbox" id="tEdge" checked></label>
       <label title="Naam boven op elk component, leesbaar in het bovenaanzicht (2D)">Namen op dak <input type="checkbox" id="tNaam"></label>
       <label>Deuren open <input type="checkbox" id="tDeur"></label>
@@ -1275,23 +1275,27 @@ const f2 = m => (Math.round(m*100)/100).toFixed(2).replace('.', ',');
 // ============ VRIJE RUIMTE / VLUCHTRUIMTE (groen, met 'Maten') ============
 // CS EOS / CS AUX Alfen Diabolo 40H (MS4408A889): 1,85 m voor LS- en MS-deuren, 1,10 m zijkant, 1,11 m roosterzijde
 // PCS WSTECH APS: 2,0 m aan de deurzijden (lange zijden) · container REPT/iwell: 3,05 m aan de deurzijde, 2,0 m aan de voorkant (aansluitingen)
-const matVrij = new THREE.MeshBasicMaterial({color: 0x2f9e44, transparent: true, opacity: 0.30, depthWrite: false});
-const matVrijL = new THREE.LineBasicMaterial({color: 0x2f9e44});
-function vrij(xa, xb, ya, yb){   // 2D: x langs de rijen, y dwars
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(X(yb) - X(ya), Z(xb) - Z(xa)), matVrij);
-  m.rotation.x = -Math.PI/2; m.position.set((X(ya) + X(yb))/2, 0.5, (Z(xa) + Z(xb))/2); m.renderOrder = 994; annos.add(m);
-  const pts = [[ya, xa], [yb, xa], [yb, xb], [ya, xb], [ya, xa]].map(([y, x]) => new THREE.Vector3(X(y), 0.55, Z(x)));
-  annos.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), matVrijL));
+// kleuren: elk cluster zijn eigen kleur (gelijk aan 'PGS-clusters'), PCS en compactstations elk een eigen vaste kleur
+const KL_CLUS = [0xe8901a, 0x2f9e44, 0x1b4f8a, 0xb23b8a], KL_PCS = 0x0aa5b8, KL_CS = 0xd4a200;
+const hexK = k => '#' + k.toString(16).padStart(6, '0');
+const _mV = {}, _mL = {};
+const matVrijK = k => _mV[k] || (_mV[k] = new THREE.MeshBasicMaterial({color: k, transparent: true, opacity: 0.36, depthWrite: false}));
+const matVrijLK = k => _mL[k] || (_mL[k] = new THREE.LineBasicMaterial({color: k, depthTest: false}));
+function vrij(xa, xb, ya, yb, kleur = 0x2f9e44, laag = 0){   // 2D: x langs de rijen, y dwars
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(X(yb) - X(ya), Z(xb) - Z(xa)), matVrijK(kleur));
+  m.rotation.x = -Math.PI/2; m.position.set((X(ya) + X(yb))/2, 0.5 + laag*0.04, (Z(xa) + Z(xb))/2); m.renderOrder = 990 + laag; annos.add(m);
+  const pts = [[ya, xa], [yb, xa], [yb, xb], [ya, xb], [ya, xa]].map(([y, x]) => new THREE.Vector3(X(y), 0.62 + laag*0.04, Z(x)));
+  const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), matVrijLK(kleur)); l.renderOrder = 997; annos.add(l);
 }
 // compactstation: één rechthoek volgens de Alfen-footprint D40H (MS4408A889): 1110 + 2336 + 1100 = 4546 × 1850 + 2870 + 1850 = 6570 mm
-const matVrijKader = new THREE.LineDashedMaterial({color: 0x1e7a34, dashSize: 2.5, gapSize: 1.5});
+const matVrijKader = new THREE.LineDashedMaterial({color: KL_CS, dashSize: 2.5, gapSize: 1.5, depthTest: false});
 function vrijCS(o, label){
   const xa = o.x1 - 1.85, xb = o.x2 + 1.85, ya = o.y1 - 1.10, yb = o.y2 + 1.11;
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(X(yb) - X(ya), Z(xb) - Z(xa)), matVrij);
-  m.rotation.x = -Math.PI/2; m.position.set((X(ya) + X(yb))/2, 0.5, (Z(xa) + Z(xb))/2); m.renderOrder = 994; annos.add(m);
-  const pts = [[ya, xa], [yb, xa], [yb, xb], [ya, xb], [ya, xa]].map(([y, x]) => new THREE.Vector3(X(y), 0.6, Z(x)));
-  const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), matVrijKader); l.computeLineDistances(); annos.add(l);
-  tagSprite((label || 'CS') + ' · vrije ruimte Alfen ' + f2(yb - ya) + ' × ' + f2(xb - xa) + ' m', X((ya + yb)/2), 3, Z(xb) - 4, 16, '#0b6b2c', true);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(X(yb) - X(ya), Z(xb) - Z(xa)), matVrijK(KL_CS));
+  m.rotation.x = -Math.PI/2; m.position.set((X(ya) + X(yb))/2, 0.6, (Z(xa) + Z(xb))/2); m.renderOrder = 993; annos.add(m);
+  const pts = [[ya, xa], [yb, xa], [yb, xb], [ya, xb], [ya, xa]].map(([y, x]) => new THREE.Vector3(X(y), 0.7, Z(x)));
+  const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), matVrijKader); l.computeLineDistances(); l.renderOrder = 997; annos.add(l);
+  tagSprite((label || 'CS') + ' · vrije ruimte Alfen ' + f2(yb - ya) + ' × ' + f2(xb - xa) + ' m', X((ya + yb)/2), 3, Z(xb) - 4, 16, '#8a6a00', true);
   maatV(X(yb) + 3, Z(xa), X(yb) + 3, Z(xb), f2(xb - xa) + ' m');            // lengte (langs de rij)
   maatV(X(ya), Z(xa) - 3, X(yb), Z(xa) - 3, f2(yb - ya) + ' m');            // breedte
 }
@@ -1305,12 +1309,16 @@ function maatV(x1, z1, x2, z2, label){
 }
 for(const r of rows) inRij(r, [annos], () => {
   vrijCS(r.cs, 'CS EOS ' + (r.i + 1));
-  vrij(r.pcs.x1, r.pcs.x2, r.pcs.y1 - 2.0, r.pcs.y1); vrij(r.pcs.x1, r.pcs.x2, r.pcs.y2, r.pcs.y2 + 2.0);
-  vrij(r.bcA.x1 - 3.05, r.bcA.x1, r.bcA.y1, r.bcA.y2); vrij(r.bcB.x2, r.bcB.x2 + 3.05, r.bcB.y1, r.bcB.y2);   // deurzijden (buitenkant paar)
-  vrij(r.bcA.x1, r.bcB.x2, yBC2, yBC2 + 2.0);                                                                // voorkant (aansluitingen)
+  const kc = KL_CLUS[Math.floor(r.i/2) % 4];                                                                 // kleur van het cluster
+  vrij(r.pcs.x1, r.pcs.x2, r.pcs.y1 - 2.0, r.pcs.y1, KL_PCS, 2); vrij(r.pcs.x1, r.pcs.x2, r.pcs.y2, r.pcs.y2 + 2.0, KL_PCS, 2);
+  vrij(r.bcA.x1 - 3.05, r.bcA.x1, r.bcA.y1, r.bcA.y2, kc, 0); vrij(r.bcB.x2, r.bcB.x2 + 3.05, r.bcB.y1, r.bcB.y2, kc, 0);   // deurzijden (buitenkant paar)
+  vrij(r.bcA.x1, r.bcB.x2, yBC2, yBC2 + 2.0, kc, 0);                                                                        // voorkant (aansluitingen)
 });
 vrijCS(aux, 'CS AUX');
-tagSprite('groen = vrije ruimte / vluchtruimte (Alfen 1,85 m · APS 2,0 m · iwell 3,05 m)', X(HT/2), 4, Z(W) + 40, 12, '#2f9e44');
+tagSprite('vrije ruimte / vluchtruimte: containers in de kleur van hun cluster (3,05 m deurzijde · 2,0 m voorkant)', X(HT/2), 4, Z(W) + 40, 12, '#243038');
+tagSprite('PCS 2,0 m (APS)', X(HT/2) - 90, 4, Z(W) + 58, 13, hexK(KL_PCS), true);
+tagSprite('compactstation 1,85 m (Alfen)', X(HT/2) + 60, 4, Z(W) + 58, 13, '#8a6a00', true);
+for(let d = 0; d < 4; d++) tagSprite('cluster ' + (d + 1), X(HT/2) - 120 + d*80, 4, Z(W) + 76, 13, hexK(KL_CLUS[d]), true);
 const naamTags = [];   // zwevende naamlabels: verborgen zodra de namen op het dak aan staan
 for(const r of rows) inRij(r, [annos], () => {
   const n = r.i + 1;
@@ -1805,7 +1813,7 @@ const pgsGroup = new THREE.Group(); pgsGroup.visible = false; scene.add(pgsGroup
 // clusters uitlichten (PGS 37-1 M52, afb. 15): per cluster een doorzichtig volume + maat tussen de clusters met toets
 const clusterGroup = new THREE.Group(); clusterGroup.visible = false; scene.add(clusterGroup);
 (function(){
-  const kl = [0xe8901a, 0x2f9e44, 0x1b4f8a, 0xb23b8a];
+  const kl = KL_CLUS;
   const x1 = X(2*yPiv - yBC2), x2 = X(yBC2), hC = (2.896 + 0.30)*10, nodig = Math.max(1.5, 2.896 + 0.30);
   const n0 = annos.children.length;
   for(let d = 0; d < ND; d++){
