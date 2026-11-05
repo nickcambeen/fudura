@@ -244,7 +244,7 @@ const SECTIES = [
     V('isc', 'Isc/In en Isc', '≈ 1,0 · ≈ 1,1 kA (op 10,5 kV)', 'aanname', 'WSTECH: I”k = 2 × 1060 A per APS2500 op 690 V, In = 2 092 A → ≈ 1,01. Acht omvormers, teruggerekend naar 10,5 kV: ≈ 1,1 kA. Op 110 kV ≈ 0,1 kA. (Vision gaf ≈ 1,5 kA met een conservatiever omvormermodel.)'),
     V('uon', 'Onderspanning U< (instelling · tijd)', '', 'open', 'Tip (DNV-cursus): vertraging minimaal 2 s, anders afkeur. Waarde uit de beveiligingsinstellingen halen.'),
     V('uov', 'Overspanning U> (instelling · tijd)', '', 'open', 'Tip (DNV-cursus): vertraging minimaal 2 s, anders afkeur. Waarde uit de beveiligingsinstellingen halen.'),
-    V('i1', 'Overstroom I> (kA · s)', '2,125 · 24 s (tr)', 'aanname', 'LS-automaat CS EOS, In 2500 A, LSI: Ir 0,85 × In. Instelling zoals Bol.com, nog toetsen voor Getec. Tip (DNV-cursus): groter dan de omvormerstroom.'),
+    V('i1', 'Overstroom I> (kA · s)', '2,125 · 24 s (tr)', 'ok', 'LS-automaat CS EOS, In 2500 A, LSI: Ir 0,85 × In; de kabels zijn op deze Ir berekend. Tip (DNV-cursus): groter dan de omvormerstroom.'),
     V('i2', 'Overstroom I>> (kA · s)', '2,5 · 0,1 s (Isd) · 3,75 momentaan (Ii)', 'aanname', 'LS-automaat CS EOS: Isd 1 × In, tsd 0,1 s; Ii 1,5 × In. Instelling zoals Bol.com, nog toetsen voor Getec.'),
     V('fon', 'Onderfrequentie f< (Hz · s)', '', 'open', 'Tip (DNV-cursus): waarde komt uit de omvormerinstellingen (WSTECH).'),
     V('fov', 'Overfrequentie f> (Hz · s)', '', 'open', 'Tip (DNV-cursus): waarde komt uit de omvormerinstellingen (WSTECH).'),
