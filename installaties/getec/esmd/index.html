@@ -97,6 +97,7 @@
         <li><b>Bijlage 1 (typetesten) vervalt</b> als het exacte omvormertype op de NBNL-lijst staat. Te bevestigen: typecode en firmware bij WSTECH.</li>
         <li><b>Bijlage 2 is wel nodig:</b> simulatie van het blindvermogen en testen op locatie, omdat Pmax ≥ 5 MW.</li>
         <li><b>De BLOS-tool past niet.</b> Het park is geen basispark: het BESS zit achter het eigen 10 kV-net van Getec, met smoorspoelen, WKC-generatoren en belastingen. De simulatie gaat daarom in Vision, met de berekening Productie-eenheid op ons bestaande Getec-model. De rapportage kan in de BLOR-rapporttool.</li>
+        <li><b>Type D valt niet onder het ESMD.</b> Het formulier is alleen voor Type B en C. Een opslageenheid van 60 MW of meer is Type D en volgt het EON/ION/FON-proces. Getec (20 MW) is Type B.</li>
         <li><b>Wie dient in:</b> de eigenaar (Getec) dient in bij de relevante netbeheerder. Fudura kan het formulier en de bijlagen voorbereiden.</li>
       </ul>
     </div>
@@ -237,7 +238,7 @@ const SECTIES = [
     V('popn', 'Maximale opnamecapaciteit', '≈ 19–20', 'aanname', 'Continue opname plus eigen verbruik. Hulpvermogen per container nog op te vragen bij iwell.', 'MW'),
     V('rampup', 'Max. opregelsnelheid P', '100', 'aanname', 'Waarde uit het Bol.com-ESMD (zelfde PCS-familie). Bevestigen bij WSTECH, en of het EMS een helling begrenst.', '%/s'),
     V('rampdn', 'Max. afregelsnelheid P', '100', 'aanname', 'Idem.', '%/s'),
-    V('energie', 'Maximale energie-inhoud', '80,26', 'ok', '16 × 5 015,96 kWh (REPT datasheet). Let op: in het Bol.com-formulier staat 8.146,94 MWh; dat is vermoedelijk een komma-fout.', 'MWh'),
+    V('energie', 'Maximale energie-inhoud', '80,26', 'ok', '16 × 5 015,96 kWh (REPT datasheet). In het Bol.com-formulier staat 8.146,94 MWh: dat is de waarde in kWh (≈ 8,15 MWh, Bol-containers van ca. 4 MWh). Voor Getec dus niet overnemen.', 'MWh'),
     V('uc', 'Contractspanning Uc', '', 'open', 'Uit de ATO. Hangt af van waar het overdrachtspunt ligt (10 kV of 110 kV).', 'kV'),
     V('isc', 'Isc/In en Isc', '≈ 1,0 · ≈ 1,1 kA (op 10,5 kV)', 'aanname', 'WSTECH: I”k = 2 × 1060 A per APS2500 op 690 V, In = 2 092 A → ≈ 1,01. Acht omvormers, teruggerekend naar 10,5 kV: ≈ 1,1 kA. Op 110 kV ≈ 0,1 kA. (Vision gaf ≈ 1,5 kA met een conservatiever omvormermodel.)'),
     V('uon', 'Onderspanning U< (instelling · tijd)', '', 'open', 'Resulterend gedrag van de MS-beveiliging op het overdrachtspunt. Ter vergelijking, Bol.com: 80 % · 3 s. Mag niet botsen met FRT.'),
@@ -260,7 +261,7 @@ const SECTIES = [
     V('t1uk', 'TR MS/LS: kortsluitspanning', '6', 'aanname', 'Waarde uit het Bol.com-formulier; bevestigen met de datasheet.', '%'),
     V('t1pk', 'TR MS/LS: koperverliezen', '18,5', 'aanname', 'Bol.com-formulier (Ecodesign Tier 2). Bevestigen.', 'kW'),
     V('t1p0', 'TR MS/LS: nullastverliezen', '1,575', 'aanname', 'Idem.', 'kW'),
-    V('t1sg', 'TR MS/LS: schakelgroep', 'Dyn5', 'aanname', 'RFI-plan: Dyn5. In het Bol.com-formulier staat Dd; controleren. Een sterpunt aan de primaire zijde mag niet geaard zijn; bij D primair is dat in orde.'),
+    V('t1sg', 'TR MS/LS: schakelgroep', 'Dd0', 'aanname', 'Secundair in driehoek (Dd), net als bij Bol.com: de PCS-zijde is een IT-stelsel zonder nul. Klokgetal bevestigen op de naamplaat. Het RFI-plan noemde Dyn5; dat is niet meer actueel. Een geaard sterpunt aan de primaire zijde is niet toegestaan; met D primair is dat in orde.'),
     V('t1tap', 'TR MS/LS: regelschakelaar', 'Offline, ±2 × 2,5 %, stand …', 'open', 'Stand bepalen met de Vision-simulatie (verschuift het Q-U-venster).'),
     V('ths', 'TR HS/MS (indien van toepassing)', '', 'open', 'Alleen als het overdrachtspunt op 110 kV ligt: EGD1/2 van Getec (vermogen, uk, verliezen, aftakken).'),
   ]),
