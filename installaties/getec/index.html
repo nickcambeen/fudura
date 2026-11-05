@@ -86,6 +86,7 @@
   <a href="docs/REPT_TUV_IEC62933-5-2.pdf" target="_blank" rel="noopener">TÜV-certificaat IEC 62933-5-2 (Powtrix2.2)<span>PDF · 3 p</span></a>
   <a href="docs/REPT_5MWh_installatiehandleiding.pdf" target="_blank" rel="noopener">Installatie-, opslag- en transporthandleiding<span>PDF · 29 p</span></a>
   <a href="docs/REPT_UL9540_certificaat.pdf" target="_blank" rel="noopener">UL 9540:2023-certificaat (TÜV, CU 72405957)<span>PDF · 2 p</span></a>
+  <a href="docs/REPT_TUV_NFPA68_explosieontlasting.pdf" target="_blank" rel="noopener">NFPA 68 explosieontlasting (TÜV, CN267M2L 001)<span>PDF · 29 p</span></a>
   <a href="docs/REPT_geluidstest_ISO3744.pdf" target="_blank" rel="noopener">Geluidstest ISO 3744 (0,25P)<span>PDF · 11 p</span></a>
   <a href="docs/iwell_specsheet_5MWh.pdf" target="_blank" rel="noopener">iwell specsheet 5 MWh liquid cooled<span>PDF · 4 p</span></a>
   <a href="docs/iwell_layout_10MW_40MWh_v1.pdf" target="_blank" rel="noopener">iwell layout 10 MW / 40 MWh v1<span>PDF · 1 p</span></a>
@@ -100,7 +101,7 @@
   <h4>Fudura</h4>
   <a href="docs/Fudura_eenlijnschema_BESS-station_concept_revA.pdf" target="_blank" rel="noopener">Eénlijnschema 10 kV BESS-station (concept rev. A)<span>PDF · 1 p</span></a>
   <a href="docs/FUD-GET-BESS-E-001_revA.pdf" target="_blank" rel="noopener">Projecttekening FUD-GET-BESS-E-001 rev. A: situatie en kabeltracé HSS C12/C13 → BESS-station<span>PDF · A3</span></a>
-  <p>Brandpropagatie: volgens iwell is het UL 9540-certificaat het bewijs (UL 9540:2023 omvat de UL 9540A-test). Nog op te vragen: het onderliggende UL 9540A-rapport (als de brandweer erom vraagt), de onderbouwing van de explosieluiken (NFPA 68) en het opgenomen hulpvermogen per container (continu/piek).</p>
+  <p>Brandpropagatie: volgens iwell is het UL 9540-certificaat het bewijs (UL 9540:2023 omvat de UL 9540A-test). Explosieluiken: TÜV Rheinland CN267M2L 001 (NFPA 68:2023) ✓, 4 dakpanelen 750 × 840 mm, Pstat 0,1 bar, Pred max. 0,269 bar-g ≤ 0,333 bar-g (2/3 van de omhullingssterkte 0,50 bar-g). Nog op te vragen: het UL 9540A-rapport op unit level (CN240QMQ 002) als de brandweer erom vraagt, en het opgenomen hulpvermogen per container (continu/piek).</p>
 </div>
 <button class="knop" id="luchtBtn">kaart: aan</button>
 <div id="kaartStand"></div>
@@ -173,7 +174,7 @@
         <li><b>M52 tussen clusters</b>: ≥ hoogte boven maaiveld × 1, min. 1,5 m → ≈ 3,20 m (2,90 m container + 0,30 m fundering); aanwezig 3,77 m ✓.</li>
         <li><b>M52 zonder bewijs (typical 2)</b>: ≥ 2,5 m tussen alle EOS'en en aan één zijde ≥ 4,5 m — schakelaar "2,50 m".</li>
         <li><b>M52 rondom de clusters</b>: ≥ 4,5 m tot hek/kavelgrens: kopse kant 4,50 m (verwerkt), PCS/CS-zijden 6,00 m (PGS-zones, rood). Opstelplaats brandweer buiten het hek afstemmen.</li>
-        <li><b>Bewijs</b>: IEC 62933-5-2 (TÜV) ✓ · IEC 62619 (iwell-specsheet) ✓ · UL 9540:2023 (TÜV CU 72405957, volgens iwell de brandpropagatietest; UL 9540 vereist de UL 9540A-test) ✓ · NFPA 68 explosieluiken ⚠ onderbouwing nog op te vragen. Brandweer kan het onderliggende UL 9540A-rapport (unit level) willen zien.</li>
+        <li><b>Bewijs</b>: IEC 62933-5-2 (TÜV) ✓ · IEC 62619 (iwell-specsheet) ✓ · UL 9540:2023 (TÜV CU 72405957; UL 9540A cel/module/unit: CN234568 001 / CN241BQ6 002 / CN240QMQ 002) ✓ · NFPA 68 explosieluiken (TÜV CN267M2L 001: 4 panelen, Pred 0,269 ≤ 0,333 bar-g) ✓. Brandweer kan het UL 9540A-rapport op unit level willen zien.</li>
         <li><b>M50</b>: EOS tot kavelgrens / ander bouwwerk / brandbaar object (bomen) ≥ 10 m geen eis, 5–10 m → 30 min brandwerend (PGS-zones, oranje en rood; BAG-maat tot het gebouw).</li>
         <li><b>M9</b>: brandwerendheid vervalt bij geslaagde brandpropagatietest (typical 1–3).</li>
         <li><b>M28 / M29 / M63</b>: hekwerk ≥ 1,8 m, onbrandbaar, min. twee tegenover elkaar gelegen toegangen (vluchtdeuren in beide korte en lange zijden).</li>
@@ -719,12 +720,12 @@ function batContainer(cx, cz, label, mir){
   }
   // ---- details volgens REPT-handleiding / iwell TD01 ----
   meshTarget = cGroup;
-  // explosieluiken (explosion vent plates) op het dak: 3 luiken met kader en waarschuwingsstrook
-  for(const vx of [-19, -1, 17]){
-    mesh(new THREE.BoxGeometry(10.5, 0.35, 8.6), matGrey, cx + vx, 29.42, cz);
-    mesh(new THREE.BoxGeometry(9.6, 0.4, 7.7), matPlate, cx + vx, 29.5, cz);
-    for(const sz of [-3.0, 3.0]) mesh(new THREE.BoxGeometry(8.6, 0.45, 0.25), matDark, cx + vx, 29.55, cz + sz);
-    mesh(new THREE.BoxGeometry(2.2, 0.46, 0.9), matYellow, cx + vx - 3.4, 29.56, cz - 2.2);
+  // explosieluiken op het dak: 4 panelen 750 × 840 mm, Pstat 0,1 bar (TÜV CN267M2L 001, NFPA 68), met kader en waarschuwingsstrook
+  for(const vx of [-21.5, -7.2, 7.2, 21.5]){
+    mesh(new THREE.BoxGeometry(9.2, 0.35, 8.3), matGrey, cx + vx, 29.42, cz);
+    mesh(new THREE.BoxGeometry(8.4, 0.4, 7.5), matPlate, cx + vx, 29.5, cz);
+    for(const sz of [-2.9, 2.9]) mesh(new THREE.BoxGeometry(7.6, 0.45, 0.25), matDark, cx + vx, 29.55, cz + sz);
+    mesh(new THREE.BoxGeometry(2.0, 0.46, 0.9), matYellow, cx + vx - 2.9, 29.56, cz - 2.0);
   }
   // aansluitveld onderin de elektrische ruimte: DATA, AC AUX, DC+, DC− (iwell 'Front view – connections location')
   const aansl = (t, bg, y, z) => { const pl = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 1.4), makeLabel(t, bg)); pl.position.set(cx + 26.62, y, cz + z); pl.rotation.y = Math.PI/2; if(mir) pl.scale.x = -1; cGroup.add(pl); };
@@ -1041,7 +1042,7 @@ const P = {
   b.onclick = () => { const u = new URL(location.href); if(kort) u.searchParams.set('bc', '2.5'); else u.searchParams.delete('bc'); location.href = u.toString(); };
   document.getElementById('bcTxt').style.color = kort ? '#b3261e' : '';
   document.getElementById('bcTxt').textContent = kort
-    ? 'PGS 37-1 M52 typical 3 (afb. 15): in een cluster mogen containers tegen elkaar (hier 0,50 m tussen de dichte zijden én tussen de achterkanten); tussen clusters ≥ hoogte × 1 (≈ 3,2 m) · bewijs: IEC 62933-5-2 ✓ · IEC 62619 ✓ · UL 9540:2023 ✓ (certificaat, incl. UL 9540A-brandtest) · ⚠ NOG OPEN: onderbouwing explosieluiken (NFPA 68) en akkoord brandweer'
+    ? 'PGS 37-1 M52 typical 3 (afb. 15): in een cluster mogen containers tegen elkaar (hier 0,50 m tussen de dichte zijden én tussen de achterkanten); tussen clusters ≥ hoogte × 1 (≈ 3,2 m) · bewijs: IEC 62933-5-2 ✓ · IEC 62619 ✓ · UL 9540:2023 ✓ (certificaat, incl. UL 9540A-brandtest) · NFPA 68 ✓ (TÜV CN267M2L 001) · ⚠ NOG OPEN: akkoord brandweer'
     : 'PGS 37-1 M52 typical 2 (zonder bewijs): ≥ 2,5 m tussen alle EOS\'en (ook tussen de achterkanten), aan één zijde ≥ 4,5 m voor de brandweer';
 })();
 const blok = 2*P.bcB + P.gBC;                    // containerblok per rij
@@ -2369,7 +2370,7 @@ document.getElementById('tNaam').onchange = e => zetNamen(e.target.checked);
     T.push({c: 'M52 · clustergrootte', s: (cl <= 35 ? 'ok' : 'nok'), r: ND + ' clusters. Per cluster 2 rijen (rij A en rij B, achterkanten tegen elkaar op ' + f2(P.gKoelKop) + ' m), elke rij 2 containers naast elkaar: rijlengte ' + f2(blok) + ' m, cluster ' + f2(cl) + ' × ' + f2(blok) + ' m. Eis: max. 2 rijen per cluster, rij max. 35 m lang.', b: R2(ex1, ex2, Z(rows[0].x0), Z(rows[0].x0 + blok), 40)});
     const g = P.gRij, zA = Z(rows[0].x0 + blok), zB = Z(rows[2].x0);
     T.push({c: 'M52 · afstand tussen clusters', s: g >= nodig - 1e-6 ? 'ok' : 'nok', r: 'Aanwezig ' + f2(g) + ' m. Eis: ≥ hoogte EOS × 1 (min. 1,5 m) = ' + f2(nodig) + ' m (hoogte uit het model, incl. fundering en explosieluiken).', b: R2(ex1, ex2, zA, zB, 36), m: [X(yBC2) - 15, zA, X(yBC2) - 15, zB, f2(g) + ' m ≥ ' + f2(nodig) + ' m'], hm: [X(yBC2) - 50, zA - 2, hBC*10, 'hoogte ' + f2(hBC) + ' m']});
-    T.push({c: 'M52 / afb. 15 · binnen een cluster', s: metBewijs ? 'let' : 'ok', r: metBewijs ? f2(P.gBC) + ' m tussen de containers mag alleen mét bewijs: IEC 62933-5-2 ✓, IEC 62619 ✓, UL 9540 (incl. 9540A) ✓.' : '2,50 m tussen alle EOS\'en (zonder bewijs).', w: metBewijs ? 'Nog open: onderbouwing explosieluiken (NFPA 68) en akkoord brandweer.' : '', b: R2(ex1, ex2, Z(rows[0].x0 + P.bcB), Z(rows[0].x0 + P.bcB + P.gBC), 36)});
+    T.push({c: 'M52 / afb. 15 · binnen een cluster', s: metBewijs ? 'let' : 'ok', r: metBewijs ? f2(P.gBC) + ' m tussen de containers mag alleen mét bewijs: IEC 62933-5-2 ✓, IEC 62619 ✓, UL 9540 + UL 9540A (cel/module/unit) ✓, NFPA 68 explosieontlasting ✓ (TÜV CN267M2L 001).' : '2,50 m tussen alle EOS\'en (zonder bewijs).', w: metBewijs ? 'Bewijs compleet; alleen nog akkoord van de brandweer.' : '', b: R2(ex1, ex2, Z(rows[0].x0 + P.bcB), Z(rows[0].x0 + P.bcB + P.gBC), 36)});
     const dLang = Math.min(HT - yBC2, 2*yPiv - yBC2), dKop1 = P.gHekEind, dKop2 = W - (rows[P.N - 1].x0 + blok), dKop = Math.min(dKop1, dKop2), okB = Math.min(dLang, dKop) >= 4.5 - 1e-6;
     T.push({c: 'M52 · ruimte rondom de clusters (4,5 m)', s: okB ? 'ok' : 'nok', r: 'Containers → hek: ' + f2(dLang) + ' m aan de PCS/CS-zijden, ' + f2(dKop1) + ' m aan de kopse kant bij cluster 1 en ' + f2(dKop2) + ' m aan de kant van de CS AUX. Eis: ≥ 4,5 m rondom de clusters.', w: 'Het hek is geen kavelgrens: opstelplaats van de brandweer buiten het hek afstemmen met Veiligheidsregio Drenthe.', b: R2(0, XH, 0, Z(P.gHekEind), 30), m: [X(yBC2) - 15, 0, X(yBC2) - 15, Z(P.gHekEind), f2(dKop1) + ' m ' + (dKop1 >= 4.5 - 1e-6 ? '≥' : '<') + ' 4,50 m']});
     const br = window.pgsBagRes && window.pgsBagRes.eos;
@@ -2402,7 +2403,7 @@ document.getElementById('tNaam').onchange = e => zetNamen(e.target.checked);
     T.push({c: 'Vluchtruimte · CS EOS 8 ↔ CS AUX', s: P.gCsAux >= 3.70 - 1e-6 ? 'ok' : 'nok', r: 'Aanwezig ' + f2(P.gCsAux) + ' m. Eis: 2 × 1,85 m (MS-deuren CS 8 en LS-deuren CS AUX).', b: R2(X(yCS1), X(yCS2), Z(rows[P.N - 1].cs.x2), Z(aux.x1), 30), m: [X((yCS1 + yCS2)/2), Z(rows[P.N - 1].cs.x2), X((yCS1 + yCS2)/2), Z(aux.x1), f2(P.gCsAux) + ' m']});
     if(bMS){ const dh = (ZW - bMS.max.z)/10;
       T.push({c: 'Vluchtruimte · deur MS-station → hek', s: dh >= 2.0 - 1e-6 ? 'ok' : 'nok', r: 'Aanwezig ' + f2(dh) + ' m voor de deur. Aanname: ≥ 2,0 m (deurzwaai 1,15 m + vluchtweg).', b: R2(bMS.min.x, bMS.max.x, bMS.max.z, ZW, 26), m: [(bMS.min.x + bMS.max.x)/2, bMS.max.z, (bMS.min.x + bMS.max.x)/2, ZW, f2(dh) + ' m']}); }
-    T.push({c: 'Explosieontlasting (NFPA 68)', s: 'let', r: '3 explosieluiken per container (REPT). Onderbouwing volgens NFPA 68 opvragen bij iwell/REPT; nodig voor het bewijs bij M52 afb. 15.', b: bBC.length ? R2(bBC[0].min.x, bBC[0].max.x, bBC[0].min.z, bBC[0].max.z, 40) : null});
+    T.push({c: 'Explosieontlasting (NFPA 68)', s: 'ok', r: 'TÜV Rheinland CN267M2L 001 (NFPA 68:2023, CFD): 4 dakpanelen 750 × 840 mm, Pstat 0,1 bar. Max. druk in de container 0,269 bar-g ≤ 0,333 bar-g (2/3 van 0,50 bar-g omhullingssterkte). Drukontlasting naar boven; buiten de container < 0,05 bar-g boven het dak.', w: 'Omhullingssterkte (0,50 bar-g) komt uit de eigen berekening van REPT; locatiespecifieke situatie is niet beoordeeld.', b: bBC.length ? R2(bBC[0].min.x, bBC[0].max.x, bBC[0].min.z, bBC[0].max.z, 40) : null});
     return T;
   }
 
