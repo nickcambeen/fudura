@@ -210,7 +210,7 @@
       <a href="docs/NBNL_lijst_opwekeenheden_type_B_2026-09-02.pdf" target="_blank" rel="noopener">Lijst toegelaten opwekeenheden type B (2-9-2026)<span>PDF</span></a>
       <a href="docs/NBNL_Type_B_test_protocol.xlsx" target="_blank" rel="noopener">Type B test protocol (testen op locatie)<span>Excel</span></a>
       <a href="docs/PGMD-invulformulier_met_handleiding.pdf" target="_blank" rel="noopener">PGMD-invulformulier met handleiding<span>PDF · 15 p</span></a>
-      <a href="../docs/Fudura_eenlijnschema_BESS-station_concept_revA.pdf" target="_blank" rel="noopener">Eenlijnschema BESS-station (concept, Fudura)<span>PDF</span></a>
+      <a href="../docs/Fudura_eenlijnschema_BESS-station_concept_revB.pdf" target="_blank" rel="noopener">Eenlijnschema BESS-station (concept, Fudura)<span>PDF</span></a>
       <a href="../docs/WSTECH_APS-ES_130_datasheet.pdf" target="_blank" rel="noopener">WSTECH APS-ES datasheet<span>PDF</span></a>
       <a href="https://www.netbeheernederland.nl/requirements-generators" target="_blank" rel="noopener">Netbeheer Nederland: eisen opwek, opslag (BLOS/BLOR-tools)<span>website</span></a>
     </div>
@@ -233,7 +233,7 @@ const SECTIES = [
     V('datum', 'Datum inbedrijfname', '', 'open', 'Geplande datum volle capaciteit. Indienen richtlijn ≥ 3 maanden vooraf.'),
   ]),
   S('Gegevens opslageenheid (op het overdrachtspunt)', [
-    V('eld', 'Eenlijnschema (bijlage)', 'Fudura_eenlijnschema_BESS-station_concept_revA.pdf', 'aanname', 'Van overdrachtspunt tot omvormers, <b>met beveiligingen, kabels (type, lengte) en trafogegevens</b>. Het concept moet nog worden aangevuld met de instellingen en het deel overdrachtspunt → rail C.'),
+    V('eld', 'Eenlijnschema (bijlage)', 'Fudura_eenlijnschema_BESS-station_concept_revB.pdf', 'aanname', 'Van overdrachtspunt tot omvormers, <b>met beveiligingen, kabels (type, lengte) en trafogegevens</b>. Het concept moet nog worden aangevuld met de instellingen en het deel overdrachtspunt → rail C.'),
     V('tech', 'Gebruikte technologie', 'Elektrochemisch (batterijen, LFP)', 'ok', 'REPT Powtrix 5 MWh, LFP-cellen CB75 314 Ah.'),
     V('pprod', 'Maximum productiecapaciteit', '≈ 18,5–19', 'aanname', 'Continue P minus eigen verbruik, <b>niet</b> de aansluitcapaciteit. 8 × 2,5 MVA = 20 MVA, maar met de eis Q = 0,33 × P blijft ≈ 19,0 MW op de omvormers over, minus verliezen en hulpvoeding. Exact uit Vision.', 'MW'),
     V('popn', 'Maximale opnamecapaciteit', '≈ 19–20', 'aanname', 'Continue opname plus eigen verbruik. Hulpvermogen per container nog op te vragen bij iwell.', 'MW'),
