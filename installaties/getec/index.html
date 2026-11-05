@@ -1289,9 +1289,8 @@ function vrij(xa, xb, ya, yb, kleur = 0x2f9e44, laag = 0, lf = 0.5, naam = ''){ 
   // maatlijnen binnen de zone (lengte en breedte) + label 'lengte × breedte'
   const dl = Math.abs(xb - xa), db = Math.abs(yb - ya), o = 1.2, kd = donker(kleur);
   const ym = lf > 0.5 ? X(yb) - o : X(ya) + o;
-  maatK(ym, Z(xa), ym, Z(xb), null, kd);                                        // langs de rij (x)
-  maatK(X(ya), Z(xa) + o, X(yb), Z(xa) + o, null, kd);                          // dwars (y)
-  tagSprite(naam + f2(Math.max(dl, db)) + ' × ' + f2(Math.min(dl, db)) + ' m', X(ya + lf*(yb - ya)), 4.5, (Z(xa) + Z(xb))/2, 15, hexK(kd), true);
+  maatK(ym, Z(xa), ym, Z(xb), f2(dl) + ' m', kd, lf);                             // langs de rij (x), maat bij de pijlen
+  maatK(X(ya), Z(xa) + o, X(yb), Z(xa) + o, f2(db) + ' m', kd, lf);                // dwars (y)
 }
 // gevulde pijlpunt op p, wijzend in richting d (genormaliseerd), lengte s
 const _mP = {};
@@ -1306,12 +1305,12 @@ function pijl(p, d, kleur, s, grp){
 function pijlen(a, b, kleur, s, grp){ const d = new THREE.Vector3().subVectors(b, a).normalize(); pijl(b, d, kleur, s, grp); pijl(a, d.clone().negate(), kleur, s, grp); }
 const donker = k => { const c = new THREE.Color(k).multiplyScalar(0.62); return c.getHex(); };
 const _mM = {};
-function maatK(x1, z1, x2, z2, label, kleur){   // maatlijn met eindstreepjes in een eigen kleur
+function maatK(x1, z1, x2, z2, label, kleur, fr = 0.5){   // maatlijn met eindstreepjes in een eigen kleur
   const mat = _mM[kleur] || (_mM[kleur] = new THREE.LineBasicMaterial({color: kleur, depthTest: false}));
   const a = new THREE.Vector3(x1, 0.85, z1), b = new THREE.Vector3(x2, 0.85, z2);
   const ln = new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), mat); ln.renderOrder = 998; annos.add(ln);
   pijlen(a, b, kleur, Math.min(3.2, a.distanceTo(b)*0.3));
-  if(label){ const m = a.clone().add(b).multiplyScalar(0.5); tagSprite(label, m.x, 4, m.z, 18, hexK(kleur), true); }
+  if(label){ const m = a.clone().lerp(b, fr); tagSprite(label, m.x, 4, m.z, 15, hexK(kleur), true); }
 }
 // compactstation: één rechthoek volgens de Alfen-footprint D40H (MS4408A889): 1110 + 2336 + 1100 = 4546 × 1850 + 2870 + 1850 = 6570 mm
 const matVrijKader = new THREE.LineDashedMaterial({color: KL_CS, dashSize: 2.5, gapSize: 1.5, depthTest: false});
@@ -2263,14 +2262,19 @@ function hoogteMaten(){
   lijst.push({o: {g: msStation.children[0]}, t: 'MS-station'});
   for(const it of lijst){
     const b = new THREE.Box3().setFromObject(it.o.g); if(it.o.k) b.union(new THREE.Box3().setFromObject(it.o.k));
-    const h = b.max.y;                                                    // boven maaiveld (y = 0)
+    // onderkant van het ingegraven deel (kelder / betondeel); aardpennen en kabels die diep de grond in gaan tellen niet mee
+    let y0 = 0; const bb = new THREE.Box3();
+    [it.o.g, it.o.k].filter(Boolean).forEach(o => o.traverse(m => { if(!m.isMesh) return; bb.setFromObject(m); if(bb.min.y > -20) y0 = Math.min(y0, bb.min.y); }));
+    const h = b.max.y;                                                    // bovenkant t.o.v. maaiveld (y = 0)
     const px = b.min.x - 2.5, pz = b.min.z - 2.5;                         // naast de hoek van het object
-    const a = new THREE.Vector3(px, 0, pz), t = new THREE.Vector3(px, h, pz);
+    const a = new THREE.Vector3(px, y0, pz), t = new THREE.Vector3(px, h, pz);
     const ln = new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, t]), matHoogte); ln.renderOrder = 998; hoogteGroup.add(ln);
-    for(const y of [0, h]){ const hl = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(px - 1.5, y, pz), new THREE.Vector3(b.min.x, y, b.min.z)]), matHoogte); hl.renderOrder = 998; hoogteGroup.add(hl); }
+    for(const y of (y0 < -0.5 ? [y0, 0, h] : [0, h])){ const hl = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(px - 1.5, y, pz), new THREE.Vector3(b.min.x, y, b.min.z)]), matHoogte); hl.renderOrder = 998; hoogteGroup.add(hl); }
     pijlen(a, t, 0x7a2e8a, 3.0, hoogteGroup);
     const n0 = annos.children.length;
-    tagSprite('h ' + it.t + ' ' + f2(h/10) + ' m', px - 1, h/2, pz, 16, '#7a2e8a', true);
+    tagSprite('h ' + it.t + ' ' + f2((h - y0)/10) + ' m', px - 1, h*0.6, pz, 16, '#7a2e8a', true);
+    if(y0 < -0.5){ tagSprite(f2(h/10) + ' m boven mv', px - 1, h*0.3, pz, 14, '#7a2e8a', true);
+                   tagSprite(f2(-y0/10) + ' m onder mv', px - 1, y0/2 - 2, pz, 14, '#7a2e8a', true); }
     annos.children.slice(n0).forEach(c => hoogteGroup.add(c));
   }
 }
