@@ -116,6 +116,7 @@
   .info-knop { width:22px; height:22px; border-radius:50%; border:1px solid var(--blauw); background:var(--kaart); color:var(--blauw); font:700 13px/20px "Barlow Semi Condensed", Arial, sans-serif; cursor:pointer; padding:0; }
   .info-knop[aria-expanded="true"] { background:var(--blauw); color:#fff; }
   tr.ci td { background:var(--zacht); text-align:left !important; white-space:normal !important; font-size:13.5px; } .ciwrap p { margin:0 0 4px; } .ciwrap ol { margin:0; padding-left:20px; display:grid; gap:3px; }
+  table.bres th .klein-i { width:17px; height:17px; line-height:15px; font-size:11px; margin-left:2px; border-color:#fff; color:#fff; background:transparent; } table.bres th .klein-i[aria-expanded="true"] { background:#fff; color:var(--blauw); }
   table.lft td .info-knop { width:20px; height:20px; line-height:18px; font-size:12px; margin-right:4px; }
   .visioninfo { margin:0 0 12px; font-size:14px; } .visioninfo h4 { margin:0 0 6px; font:700 16px "Barlow Semi Condensed", Arial, sans-serif; } .visioninfo ol { margin:0 0 6px; padding-left:20px; display:grid; gap:6px; }
   .legenda { font-size:12.5px; color:var(--muted); margin-top:6px; display:flex; flex-wrap:wrap; gap:4px 12px; align-items:center; }
@@ -433,7 +434,7 @@ function renderLfRes() {
   const R = (lab, fn, cls) => `<tr><th>${lab}</th>${cols.map(c => { const [t, k] = fn(c); return `<td class="${k || cls || ''}">${t}</td>`; }).join('')}</tr>`;
   const okP = c => c.n === 'Pmax' ? 'g' : (c.ok ? 'g' : 'r');
   box.innerHTML = `<div class="tabelwrap"><table class="bres">
-    <tr class="titel"><th>Load flow case NBNL CVD</th>${cols.map(c => `<th>${c.n === 'Pmax' ? 'Pmax' : c.n === 14 ? '0,4Pm/+Qm' : c.n === 15 ? '0,4Pm/−Qm' : c.n}</th>`).join('')}</tr>
+    <tr class="titel"><th>Load flow case NBNL CVD</th>${cols.map(c => `<th>${c.n === 'Pmax' ? 'Pmax' : `${c.n === 14 ? '0,4Pm/+Qm' : c.n === 15 ? '0,4Pm/−Qm' : c.n} <button class="info-knop klein-i" data-cih="${c.n}" aria-expanded="false" title="Hoe zet je deze case in Vision?">i</button>`}</th>`).join('')}</tr>
     <tr class="sub"><th colspan="${cols.length + 1}">Evaluatie resultaten en criteria load flow cases</th></tr>
     ${R('Netspanning (p.u.)', c => [f3(c.u)])}
     ${R('Netspanning doelwaarde NBNL CVD (p.u.)', c => [c.n === 'Pmax' ? '' : f2(c.u), 'd'])}
@@ -456,6 +457,7 @@ function renderLfRes() {
     ${R('Belasting transformator (p.u.)', c => [f2(c.r.info.Btr), c.r.info.Btr > 1 ? 'o' : ''])}
     ${R('Belasting LS-kabel omvormer (p.u.)', c => [isFinite(c.r.info.Bls) ? f2(c.r.info.Bls) : '–', c.r.info.Bls > 1 ? 'o' : ''])}
   </table></div>
+  <div id="cihBox" class="kaart visioninfo" hidden></div>
   <div class="legenda"><span class="sw d"></span>Doelwaarde NBNL CVD <span class="sw g"></span>Voldoet, binnen grenzen omvormer <span class="sw r"></span>Voldoet niet / boven grenswaarde omvormer <span class="sw o"></span>Overschrijding kabel of trafo (info)</div>
   <div class="rij" style="margin-top:10px">
     <div class="kaart"><div class="klein">Pmax op het overdrachtspunt</div><div class="getal">${f2(b.Pmax)} MW</div><div class="klein">${b.Pmax < b.PmaxNat - 1e-6 ? 'Begrensd; omvormers vol: ' + f2(b.PmaxNat) + ' MW' : 'Omvormers vol bij U = 1, cos φ = 1'}</div></div>
@@ -647,6 +649,11 @@ document.addEventListener('click', e => {
   if (t.dataset.odel != null) { p.open.splice(+t.dataset.odel, 1); wijzig(); renderOpen(); return; }
   const a = t.dataset.act;
   if (a === 'lfPmax') { const b = LF.bereken(nrm(p.lf)); const d = afleiden(p).docs[0]?.doc || 'esmd'; const V = p.velden[d] ||= {}; V.pmax = { ...(V.pmax || {}), w:LF.f2(b.Pmax), s:'aanname', n:'Uit de blindvermogen-voorcheck (tab 4), ' + new Date().toLocaleDateString('nl-NL') }; wijzig(); renderInvul(); toast('Pmax overgenomen in ' + d.toUpperCase()); return; }
+  if (t.dataset.cih) { const box = $('#cihBox'); const open = t.getAttribute('aria-expanded') === 'true'; document.querySelectorAll('[data-cih]').forEach(x => x.setAttribute('aria-expanded', 'false'));
+    if (open) { box.hidden = true; return; }
+    const b = LF.bereken(nrm(p.lf)); const c = b.cases.find(x => String(x.n) === t.dataset.cih); const nm = c.n === 14 ? '0,4Pm/+Qm' : c.n === 15 ? '0,4Pm/−Qm' : c.n; const pmin = (c.red === 1 ? 0.93 : c.red === 3 ? 0.8 : c.red === 2 ? 0 : c.p) * b.Pmax;
+    box.innerHTML = `<h4>Case ${nm} in Vision <button class="knop" data-act="cihSluit" style="float:right;padding:2px 8px">×</button></h4>` + caseInfo(c, b, nm, pmin); box.hidden = false; t.setAttribute('aria-expanded', 'true'); box.scrollIntoView({ block:'nearest', behavior:'smooth' }); return; }
+  if (t.dataset.act === 'cihSluit') { $('#cihBox').hidden = true; document.querySelectorAll('[data-cih]').forEach(x => x.setAttribute('aria-expanded', 'false')); return; }
   if (t.dataset.ci) { const r = $('#ci' + t.dataset.ci); r.hidden = !r.hidden; t.setAttribute('aria-expanded', String(!r.hidden)); return; }
   if (a === 'visionInfo') { const box = $('#visionInfo'); box.hidden = !box.hidden; t.setAttribute('aria-expanded', String(!box.hidden)); return; }
   if (a === 'lfBlos') { const L = p.lf, g = x => String(x ?? '').replace('.', ','), km = x => fmtNl(parseFloat(String(x).replace(',', '.')) / 1000);
