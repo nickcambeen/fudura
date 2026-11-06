@@ -283,7 +283,20 @@
     const pLijst = u => u > 0.95 + 1e-9 ? [0.93] : u >= 0.9 - 1e-9 ? [0.93, 0.9, 0.85, 0.8, 0.75, 0.7, 0.6, 0.5] : [0.93, 0.9, 0.85, 0.8];
     const qBest = (u, sign) => { let best = NaN; for (const pp of pLijst(u)) { const q = qG(net, u, pp * Pm, sign, t1, t2, Pm); if (isFinite(q) && !(Math.abs(q) <= Math.abs(best))) best = q; } return best; };
     for (let i = 0; i <= 25; i++) { const u = Math.round((0.85 + i * 0.01) * 100) / 100; uq.push({ u, qp:qBest(u, 1) / Pm, qm:qBest(u, -1) / Pm, qp20:qG(net, u, 0.2 * Pm, 1, t1, t2, Pm) / Pm, qm20:qG(net, u, 0.2 * Pm, -1, t1, t2, Pm) / Pm }); }
-    return { b, pq, uq };
+    // oorzaak per punt: welke grens knelt als je precies de eis vraagt
+    const eisQ = p => p <= 0.2 ? 0.33 * p / 0.2 : p <= 0.93 ? 0.33 : 0.33 * (1 - p) / 0.07;
+    const eisUp = u => u < 0.9 ? 0 : u < 0.95 ? 0.2 + 0.13 * (u - 0.9) / 0.05 : u <= 1.05 ? 0.33 : Math.max(0, 0.33 * (1.1 - u) / 0.05);
+    const eisUm = u => u < 0.9 ? 0 : u >= 0.95 ? 0.33 : 0.33 * (u - 0.9) / 0.05;
+    const flags = (u, P, Q) => { const taps = b.auto ? Array.from({ length:19 }, (_, i) => i - 9) : [t1]; let best = null;
+      for (const a of taps) { const f = grens(vooruit(net, u, P, Q, a, t2), net.inv); if (!best || f.length < best.length) best = f; if (!f.length) break; } return best; };
+    const why = { pq:{ lev:new Set(), opn:new Set() }, uq:{ lev:new Set(), opn:new Set() } };
+    pq.forEach(x => { if (x.p <= 0) return; const e = eisQ(x.p);
+      if (!(x.qp >= e - 1e-3)) flags(1, x.p * Pm, e * Pm).forEach(f => why.pq.lev.add(f));
+      if (!(-x.qm >= e - 1e-3)) flags(1, x.p * Pm, -e * Pm).forEach(f => why.pq.opn.add(f)); });
+    uq.forEach(x => { if (x.u < 0.9 - 1e-9 || x.u > 1.1 + 1e-9) return; const pp = x.u > 0.95 + 1e-9 ? 0.93 : 0.8;
+      if (!(x.qp >= eisUp(x.u) - 1e-3)) flags(x.u, pp * Pm, eisUp(x.u) * Pm).forEach(f => why.uq.lev.add(f));
+      if (!(-x.qm >= eisUm(x.u) - 1e-3)) flags(x.u, pp * Pm, -eisUm(x.u) * Pm).forEach(f => why.uq.opn.add(f)); });
+    return { b, pq, uq, why };
   }
   G.LF = { KABELS, CASES, bereken, suggesties, vensters, f1, f2 };
 })(typeof window !== 'undefined' ? window : globalThis);

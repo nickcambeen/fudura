@@ -119,6 +119,7 @@
   table.lft td .info-knop { width:20px; height:20px; line-height:18px; font-size:12px; margin-right:4px; }
   .visioninfo { margin:0 0 12px; font-size:14px; } .visioninfo h4 { margin:0 0 6px; font:700 16px "Barlow Semi Condensed", Arial, sans-serif; } .visioninfo ol { margin:0 0 6px; padding-left:20px; display:grid; gap:6px; }
   .vgrid { display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:12px; }
+  .why { margin-top:8px; font-size:13.5px; line-height:1.45; background:var(--zacht); border-left:3px solid var(--rood); border-radius:6px; padding:8px 10px; } .why ul { margin:4px 0 6px; padding-left:18px; }
   .vgrid h4 { margin:0 0 4px; font:700 15px "Barlow Semi Condensed", Arial, sans-serif; } .vgrid .vo { margin:4px 0 0; font-weight:600; font-size:14px; }
   svg.venster { width:100%; height:auto; display:block; } svg.venster text { font:11px Barlow, system-ui, sans-serif; fill:var(--muted); } svg.venster .asl { fill:var(--fg); font-size:12px; }
   svg.venster .rast { stroke:var(--lijn); stroke-width:1; } svg.venster .as { stroke:var(--muted); stroke-width:1; } svg.venster .eis { fill:color-mix(in srgb, var(--blauw) 22%, transparent); stroke:var(--blauw); stroke-width:1.5; }
@@ -460,6 +461,22 @@ function svgVenster(o) {
     <text x="12" y="${(T + H - B) / 2}" text-anchor="middle" class="asl" transform="rotate(-90 12 ${(T + H - B) / 2})">${o.yl}</text>
   </svg>`;
 }
+function uitlegWhy(w) {
+  const z = [], kva = f => f.has('S') || f.has('I') || f.has('P') || f.has('Q');
+  const tekst = (f, kant) => { const d = [];
+    if (kva(f)) d.push(kant === 'lev' ? '<b>te weinig kVA</b>: bij veel werkzaam vermogen zit de omvormer aan zijn maximale schijnbaar vermogen of stroom en is er geen ruimte meer om blindvermogen te leveren' : '<b>te weinig kVA</b>: de omvormer zit aan zijn maximale schijnbaar vermogen of stroom en kan niet meer blindvermogen opnemen');
+    if (f.has('U hoog')) d.push('<b>spanning te hoog</b> op de omvormer: ' + (kant === 'lev' ? 'blindvermogen leveren duwt de spanning omhoog, en bij hoge netspanning komt hij boven Umax' : 'bij hoge netspanning komt hij boven Umax'));
+    if (f.has('U laag')) d.push('<b>spanning te laag</b> op de omvormer: ' + (kant === 'opn' ? 'blindvermogen opnemen trekt de spanning omlaag, en bij lage netspanning komt hij onder Umin' : 'bij lage netspanning komt hij onder Umin'));
+    return d; };
+  const lev = tekst(w.lev, 'lev'), opn = tekst(w.opn, 'opn');
+  if (lev.length) z.push('<li><b>Leveren</b> (rechts): ' + lev.join('; ') + '.</li>');
+  if (opn.length) z.push('<li><b>Opnemen</b> (links): ' + opn.join('; ') + '.</li>');
+  if (!z.length) return '';
+  const opl = []; const alle = new Set([...w.lev, ...w.opn]);
+  if (kva(alle)) opl.push('meer kVA (omvormer met ruimte boven het MW-vermogen, extra rij of compensatie)');
+  if (alle.has('U hoog') || alle.has('U laag')) opl.push('de spanning op de omvormer terugbrengen (andere aftakstand, regelschakelaar) of een breder spanningsvenster');
+  return `<div class="why"><b>Wat is het probleem?</b><ul>${z.join('')}</ul>${opl.length ? '<div><b>Richting oplossing:</b> ' + opl.join('; ') + '. Zie de genummerde oplossingen hieronder.</div>' : ''}</div>`;
+}
 function renderVensters(I) {
   const box = $('#lfVensters'); if (!box) return;
   let V; try { V = LF.vensters(I); } catch (e) { box.innerHTML = ''; return; }
@@ -476,12 +493,12 @@ function renderVensters(I) {
   const tekUQ = V.uq.filter(x => x.u >= 0.9 - 1e-9 && x.u <= 1.1 + 1e-9 && !(x.qp >= eisUp(x.u) - 1e-3 && -x.qm >= eisUm(x.u) - 1e-3)).map(x => x.u);
   const rng = a => a.length ? LF.f2(Math.min(...a)) + (a.length > 1 ? '–' + LF.f2(Math.max(...a)) : '') : '';
   box.innerHTML = `<h3>Q-P en Q-U venster op het overdrachtspunt</h3>
-  <p class="klein">Blauw = <b>wat moet</b> (Netcode/Systeemcode art. 3.19: ±0,33 × Pmax, met de toegestane afbouw; bij 0,90–0,95 pu leveren ≥ 0,20–0,33 conform lid 3 en case 11). Lijnen = <b>wat het park kan</b> volgens deze voorcheck: het maximaal haalbare blindvermogen binnen de grenzen van de omvormer (S, I, P, Umin–Umax). Het park voldoet als de lijnen het blauwe vlak helemaal omsluiten. Ter indicatie, zoals in BLOS; maatgevend zijn de cases. Het Q-U venster rekent met 0,93 × Pmax; onder 0,95 pu mag P verder zakken (tot de stroomgrens, onder 0,9 pu tot 0,8 × Pmax), net als in de cases.</p>
+  <p class="klein">Blauw = <b>wat moet</b> (Netcode/Systeemcode art. 3.19: ±0,33 × Pmax, met de toegestane afbouw; bij 0,90–0,95 pu leveren ≥ 0,20–0,33 conform lid 3 en case 11). Lijnen = <b>wat het park kan</b> volgens deze voorcheck: het maximaal haalbare blindvermogen binnen de grenzen van de omvormer (S, I, P, Umin–Umax). Het park voldoet als de lijnen het blauwe vlak helemaal omsluiten. Ter indicatie, zoals in BLOS; maatgevend zijn de cases. Het Q-U venster rekent met 0,93 × Pmax; onder 0,95 pu mag P verder zakken (tot de stroomgrens, onder 0,9 pu tot 0,8 × Pmax), net als in de cases. Daardoor maakt de rode lijn bij 0,95 pu een sprong naar buiten: met minder P is er meer ruimte voor blindvermogen.</p>
   <div class="vgrid">
     <div class="kaart"><h4>Q-P venster bij U = 1,0 pu</h4>${svgVenster({ titel:'Q-P venster', x:[-0.6, 0.6], y:[0, 1.05], xl:'Q / Pmax (+ = leveren)', yl:'P / Pmax', xt:[-0.6, -0.33, 0, 0.33, 0.6], yt:[0, 0.2, 0.4, 0.6, 0.8, 0.93, 1], eis:eisPQ, lijnen:[{ pts:pqP, kleur:rood }, { pts:pqM, kleur:rood }] })}
-      <p class="vo" style="color:var(--${tekPQ.length ? 'rood' : 'groen'})">${tekPQ.length ? 'Voldoet niet bij P/Pmax ' + rng(tekPQ) : 'Voldoet: lijnen omsluiten de eis'}</p></div>
+      <p class="vo" style="color:var(--${tekPQ.length ? 'rood' : 'groen'})">${tekPQ.length ? 'Voldoet niet bij P/Pmax ' + rng(tekPQ) : 'Voldoet: lijnen omsluiten de eis'}</p>${tekPQ.length ? uitlegWhy(V.why.pq) : ''}</div>
     <div class="kaart"><h4>Q-U venster bij 0,93 (toegestane afbouw) en 0,2 × Pmax</h4>${svgVenster({ titel:'Q-U venster', x:[-0.6, 0.6], y:[0.85, 1.12], xl:'Q / Pmax (+ = leveren)', yl:'U op OP (pu)', xt:[-0.6, -0.33, 0, 0.33, 0.6], yt:[0.85, 0.9, 0.95, 1, 1.05, 1.1], eis:eisUQ, lijnen:[{ pts:uqP, kleur:rood }, { pts:uqM, kleur:rood }, { pts:uq2P, kleur:bruin, dash:1 }, { pts:uq2M, kleur:bruin, dash:1 }] })}
-      <p class="vo" style="color:var(--${tekUQ.length ? 'rood' : 'groen'})">${tekUQ.length ? 'Voldoet niet bij U ' + rng(tekUQ) + ' pu (0,93 × Pmax)' : 'Voldoet: lijnen omsluiten de eis'}</p></div>
+      <p class="vo" style="color:var(--${tekUQ.length ? 'rood' : 'groen'})">${tekUQ.length ? 'Voldoet niet bij U ' + rng(tekUQ) + ' pu (0,93 × Pmax)' : 'Voldoet: lijnen omsluiten de eis'}</p>${tekUQ.length ? uitlegWhy(V.why.uq) : ''}</div>
   </div>
   <div class="legenda"><span class="sw d"></span>Eis (wat moet) <span class="sw r"></span>Haalbaar bij 1,0 / 0,93 × Pmax <span class="sw o"></span>Haalbaar bij 0,2 × Pmax (stippel). Waar een lijn ontbreekt, kan het park daar zelfs zonder blindvermogen niet binnen de spanningsgrenzen van de omvormer blijven.</div>`;
 }
