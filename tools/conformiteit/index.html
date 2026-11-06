@@ -508,9 +508,9 @@ function renderLfRes() {
     <div class="kaart"><div class="klein">Pmax op het overdrachtspunt</div><div class="getal">${f2(b.Pmax)} MW</div><div class="klein">${b.Pmax < b.PmaxNat - 1e-6 ? 'Begrensd; omvormers vol: ' + f2(b.PmaxNat) + ' MW' : 'Omvormers vol bij U = 1, cos φ = 1'}</div></div>
     <div class="kaart"><div class="klein">Oordeel</div><div class="oordeel" style="color:var(--${b.ok ? 'groen' : 'rood'})">${b.ok ? 'Alle ' + b.cases.length + ' cases voldoen' : (b.cases.length - b.nOk) + ' van ' + b.cases.length + ' cases voldoen niet'}</div><div class="klein">Aftakstand ${b.tapTR > 0 ? '+' : ''}${b.tapTR}${b.net.hs ? ' · HS/MS ' + b.tapHS : ''}</div></div>
   </div>
-  ${b.ok ? `<div class="balk"><button class="knop vol" data-act="lfPmax">Neem Pmax ${f2(b.Pmax)} MW over in de invulhulp</button></div>` : ''}`;
+  ${b.ok ? `<div class="balk"><button class="knop vol" data-act="lfPmax">Neem Pmax ${f2(b.Pmax)} MW over in de invulhulp</button></div>` : ''}
+  <div id="lfVensters"></div>`;
   onder.innerHTML = `${S.lijst.length ? `<h3>Zo krijg je het groen</h3><ul class="sugg">${S.lijst.map((x, i) => `<li><div><b>${x.titel}</b><span>${x.uitleg}</span></div>${x.set ? `<button class="knop" data-sug="${i}">Toepassen</button>` : ''}</li>`).join('')}</ul>` : ''}
-  <div id="lfVensters"></div>
   <h3 id="lfVision" style="display:flex;align-items:center;gap:8px">Scenario’s voor Vision <button class="info-knop" data-act="visionInfo" aria-expanded="false" title="Hoe zet je dit in Vision?">i</button></h3>
   <div id="visionInfo" class="kaart visioninfo" hidden>
     <h4>Zo reken je de cases door in Vision</h4>
