@@ -82,6 +82,23 @@
   .leeg { text-align:center; padding:40px 16px; }
   .toast { position:fixed; left:50%; bottom:22px; transform:translateX(-50%); background:var(--fg); color:var(--bg); padding:9px 16px; border-radius:8px; font-weight:600; opacity:0; transition:opacity .2s; pointer-events:none; z-index:20; }
   .toast.aan { opacity:1; }
+  .lfgrid { display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:12px; }
+  .lfgrid .kaart h3 { margin:0 0 8px; font-size:17px; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .kv { display:grid; grid-template-columns:minmax(0,1fr) 130px; gap:6px 10px; align-items:center; font-size:14px; }
+  .kv > span { line-height:1.25; }
+  .kv > span small { font-size:12px; margin-left:4px; }
+  .kv > span { min-height:32px; display:flex; align-items:center; flex-wrap:wrap; column-gap:4px; }
+  .kv > span.breed { min-height:0; }
+  .kv select.breed { grid-column:1 / -1; }
+  .kv span small { color:var(--muted); }
+  .kv input, .kv select { height:32px; padding:4px 7px; font-size:14px; }
+  .kv .breed { grid-column:1 / -1; }
+  td.g { background:color-mix(in srgb, var(--groen) 16%, var(--kaart)); } td.o { background:color-mix(in srgb, var(--oranje) 18%, var(--kaart)); } td.r { background:color-mix(in srgb, var(--rood) 20%, var(--kaart)); font-weight:600; }
+  table.lft { font-size:14px; } table.lft td, table.lft th { padding:6px 8px; text-align:right; white-space:nowrap; } table.lft td:first-child, table.lft th:first-child, table.lft td:nth-child(2) { text-align:left; }
+  .oordeel { font:700 22px "Barlow Semi Condensed", Arial, sans-serif; }
+  .sugg { display:grid; gap:8px; margin:0; padding:0; list-style:none; }
+  .sugg li { background:var(--kaart); border:1px solid var(--lijn); border-left:4px solid var(--blauw); border-radius:8px; padding:10px 12px; display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap; }
+  .sugg li div { flex:1; min-width:220px; } .sugg li b { display:block; } .sugg li span { color:var(--muted); font-size:14px; }
   footer { margin-top:34px; color:var(--muted); font-size:13px; }
   @media (max-width:820px) { .veld { grid-template-columns:1fr; } }
   @media print { .tabs, .balk, .projbalk, .terug, .knop { display:none !important; } .paneel { display:block !important; } body { background:#fff; } }
@@ -107,13 +124,15 @@
     <button data-t="project" class="aan">1 · Project &amp; type</button>
     <button data-t="todo">2 · Wat moet je doen</button>
     <button data-t="invul">3 · Invulhulp</button>
-    <button data-t="open">4 · Open punten</button>
+    <button data-t="lf">4 · Blindvermogen</button>
+    <button data-t="open">5 · Open punten</button>
     <button data-t="naslag">Naslag</button>
   </div>
 
   <section class="paneel aan" id="p-project"></section>
   <section class="paneel" id="p-todo"></section>
   <section class="paneel" id="p-invul"></section>
+  <section class="paneel" id="p-lf"></section>
   <section class="paneel" id="p-open"></section>
   <section class="paneel" id="p-naslag">
     <h2>Regels die de tool gebruikt</h2>
@@ -143,6 +162,7 @@
 </div>
 <div class="toast" id="toast"></div>
 
+<script src="loadflow.js"></script>
 <script>
 /* ======================= opslag ======================= */
 const SLEUTEL = 'fudura-conformiteit-v1';
@@ -310,6 +330,74 @@ function todoLijst(p) {
   return L;
 }
 
+/* ======================= loadflow ======================= */
+function lfStandaard() {
+  return { Uc:'10', Plim:'', ntr:'1', ninv:'10', hs_aan:false, hs:{ S:'', U1:'', U2:'', uk:'', Pk:'', P0:'', step:'1,25', tap:'0' }, Xext:'',
+    opms:{ type:'MS 3×1×240 Al XLPE', L:'0', n:'1', eigen:{ R:'', X:'', C:'' } }, mstr:{ type:'MS 3×1×150 Al XLPE', L:'200', n:'1', eigen:{ R:'', X:'', C:'' } },
+    tr:{ S:'2,5', U1:'10,5', U2:'0,8', uk:'6', Pk:'20', P0:'2', step:'2,5', tap:'0' }, ls:{ type:'LS 4×240 Al', L:'50', n:'2', eigen:{ R:'', X:'', C:'' } },
+    inv:{ S:'250', P:'250', Un:'800', Imax:'', Q:'', umin:'0,85', umax:'1,10' } };
+}
+const LFGETEC = { Uc:'110', Plim:'', ntr:'8', ninv:'8', hs_aan:true, hs:{ S:'30', U1:'110', U2:'10,5', uk:'12', Pk:'120', P0:'0', step:'1,25', tap:'0' }, Xext:'0,6',
+  opms:{ type:'MS 3×1×630 Al XLPE', L:'470', n:'4', eigen:{ R:'', X:'', C:'' } }, mstr:{ type:'MS 3×1×240 Al XLPE', L:'40', n:'1', eigen:{ R:'', X:'', C:'' } },
+  tr:{ S:'2,5', U1:'10,75', U2:'0,69', uk:'6', Pk:'18,5', P0:'1,575', step:'2,33', tap:'-1' }, ls:{ type:'LS 1×630 Cu (per fase)', L:'5', n:'4', eigen:{ R:'', X:'', C:'' } },
+  inv:{ S:'2500', P:'2500', Un:'690', Imax:'2092', Q:'', umin:'0,85', umax:'1,15' } };
+const getPad = (o, pad) => pad.split('.').reduce((a, k) => a?.[k], o);
+function setPad(o, pad, v) { const ks = pad.split('.'); let a = o; ks.slice(0, -1).forEach(k => a = a[k] ||= {}); a[ks[ks.length - 1]] = v; }
+const nrm = o => JSON.parse(JSON.stringify(o, (k, v) => typeof v === 'string' && /^-?[\d.,]+$/.test(v) ? v.replace(',', '.') : v));
+function lfVeld(pad, lab, eenh, extra = '') { const p = P(); return `<span>${lab}${eenh ? ` <small>${eenh}</small>` : ''}</span><input data-lf="${pad}" value="${esc(getPad(p.lf, pad) ?? '')}" inputmode="decimal"${extra}>`; }
+function lfKabel(pre, titel, uitleg) {
+  const p = P(), k = p.lf[pre]; const opts = Object.keys(LF.KABELS).concat('eigen');
+  return `<div class="kaart"><h3>${titel}</h3><div class="kv">
+    <span class="breed klein">${uitleg}</span>
+    <select class="breed" data-lf="${pre}.type" aria-label="Kabeltype">${opts.map(o => `<option${o === k.type ? ' selected' : ''}>${o}</option>`).join('')}</select>
+    ${lfVeld(pre + '.L', 'Lengte', 'm')}${lfVeld(pre + '.n', 'Aantal parallel')}
+    ${k.type === 'eigen' ? lfVeld(pre + '.eigen.R', 'R', 'Ω/km') + lfVeld(pre + '.eigen.X', 'X', 'Ω/km') + lfVeld(pre + '.eigen.C', 'C', 'µF/km') : ''}
+  </div></div>`;
+}
+function renderLf() {
+  const p = P(), el = $('#p-lf'); if (!p) { el.innerHTML = ''; return; }
+  p.lf ||= lfStandaard();
+  const L = p.lf;
+  el.innerHTML = `<div class="info">Eigen loadflow-voorcheck van het blindvermogen volgens de 13 hoekpunten van het NBNL-verificatiedocument (PPM Type B/C, art. 3.19 Netcode/Systeemcode). Opbouw als basispark: overdrachtspunt → (HS/MS-trafo) → OP–MS-kabel → MS-TR-kabels → MS/LS-trafo’s → LS-kabels → omvormers. <b>Dit is niet de officiële BLOS-tool</b>: voor het formulier reken je met BLOS (basispark) of een netberekeningsprogramma.</div>
+  <div class="lfgrid">
+    <div class="kaart"><h3>Overdrachtspunt</h3><div class="kv">${lfVeld('Uc', 'Contractspanning Uc', 'kV')}${lfVeld('Plim', 'Pmax begrensd op', 'MW, leeg = vol')}${lfVeld('Xext', 'Extra serie-X (smoorspoel)', 'Ω op MS')}
+      <span>Eigen HS/MS-trafo</span><select data-lf="hs_aan"><option value="0"${L.hs_aan ? '' : ' selected'}>Nee</option><option value="1"${L.hs_aan ? ' selected' : ''}>Ja</option></select></div></div>
+    ${L.hs_aan ? `<div class="kaart"><h3>HS/MS-trafo</h3><div class="kv">${lfVeld('hs.S', 'Vermogen', 'MVA')}${lfVeld('hs.U1', 'U primair', 'kV')}${lfVeld('hs.U2', 'U secundair', 'kV')}${lfVeld('hs.uk', 'uk', '%')}${lfVeld('hs.Pk', 'Pk', 'kW')}${lfVeld('hs.P0', 'P0', 'kW')}${lfVeld('hs.step', 'Trapgrootte', '% per stap')}<span>Stand <small>0 = midden</small></span><select data-lf="hs.tap">${Array.from({ length:19 }, (_, i) => i - 9).map(t => `<option value="${t}"${String(t) === String(L.hs.tap) ? ' selected' : ''}>${t > 0 ? '+' : ''}${t}</option>`).join('')}</select></div></div>` : ''}
+    ${lfKabel('opms', 'Kabel OP → MS-installatie', 'Lengte 0 als het overdrachtspunt in de MS-installatie zit.')}
+    ${lfKabel('mstr', 'Kabel MS-installatie → trafo', 'Gemiddelde lengte per trafo.')}
+    <div class="kaart"><h3>MS/LS-trafo’s</h3><div class="kv">${lfVeld('ntr', 'Aantal trafo’s')}${lfVeld('tr.S', 'Vermogen', 'MVA')}${lfVeld('tr.U1', 'U primair', 'kV')}${lfVeld('tr.U2', 'U secundair', 'kV')}${lfVeld('tr.uk', 'uk', '%')}${lfVeld('tr.Pk', 'Pk', 'kW')}${lfVeld('tr.P0', 'P0', 'kW')}${lfVeld('tr.step', 'Trapgrootte', '% per stap')}
+      <span>Stand aftakschakelaar <small>+ = hogere primaire spanning</small></span><select data-lf="tr.tap">${[-2, -1, 0, 1, 2].map(t => `<option value="${t}"${String(t) === String(L.tr.tap) ? ' selected' : ''}>${t > 0 ? '+' : ''}${t}</option>`).join('')}</select></div></div>
+    ${lfKabel('ls', 'LS-kabel trafo → omvormers', 'Per trafo, gemiddelde lengte.')}
+    <div class="kaart"><h3>Omvormers</h3><div class="kv">${lfVeld('ninv', 'Aantal (totaal park)')}${lfVeld('inv.S', 'Snom', 'kVA')}${lfVeld('inv.P', 'Pmax', 'kW')}${lfVeld('inv.Un', 'Unom', 'V')}${lfVeld('inv.Imax', 'Imax', 'A, leeg = Snom/√3U')}${lfVeld('inv.Q', 'Qmax', 'kvar, leeg = Snom')}${lfVeld('inv.umin', 'Umin', 'pu')}${lfVeld('inv.umax', 'Umax', 'pu')}
+      <span class="breed klein">Umin/Umax: het venster waarin de omvormer volle stroom levert, binnen de instellingen U&lt; / U&gt;.</span></div></div>
+  </div>
+  <div id="lfRes"></div>`;
+  renderLfRes();
+}
+function renderLfRes() {
+  const p = P(), box = $('#lfRes'); if (!box || !p?.lf) return;
+  let S;
+  try { S = LF.suggesties(nrm(p.lf)); } catch (e) { box.innerHTML = '<div class="let">Kan niet rekenen: controleer de invoer.</div>'; return; }
+  const b = S.basis, f2 = LF.f2, iv = b.net.inv;
+  const cel = (v, lo, hi, grensKlas) => `<td class="${v > hi + 1e-4 || v < lo - 1e-4 ? 'r' : grensKlas || (v > hi - 0.005 ? 'o' : 'g')}">${f2(v)}</td>`;
+  box.innerHTML = `<h2>Resultaat</h2>
+  <div class="rij">
+    <div class="kaart"><div class="klein">Pmax op het overdrachtspunt</div><div class="getal">${f2(b.Pmax)} MW</div><div class="klein">Omvormers vol bij U = 1, cos φ = 1: ${f2(b.PmaxNat)} MW${b.Pmax < b.PmaxNat - 1e-6 ? ' (begrensd)' : ''}</div></div>
+    <div class="kaart"><div class="klein">Eis blindvermogen</div><div class="getal">± ${f2(0.33 * b.Pmax)} Mvar</div><div class="klein">0,33 × Pmax op het overdrachtspunt</div></div>
+    <div class="kaart"><div class="klein">Oordeel</div><div class="oordeel" style="color:var(--${b.ok ? 'groen' : 'rood'})">${b.ok ? 'Alle hoekpunten voldoen' : (13 - b.nOk) + ' van 13 hoekpunten voldoen niet'}</div><div class="klein">Stand MS/LS ${b.tapTR > 0 ? '+' : ''}${b.tapTR}${b.net.hs ? ' · HS/MS ' + b.tapHS : ''}</div></div>
+  </div>
+  ${b.ok ? `<div class="balk"><button class="knop vol" data-act="lfPmax">Neem Pmax ${f2(b.Pmax)} MW over in de invulhulp</button></div>` : ''}
+  ${S.lijst.length ? `<h3>Zo krijg je het groen</h3><ul class="sugg">${S.lijst.map((x, i) => `<li><div><b>${x.titel}</b><span>${x.uitleg}</span></div>${x.set ? `<button class="knop" data-sug="${i}">Toepassen</button>` : ''}</li>`).join('')}</ul>` : ''}
+  <h3>Hoekpunten</h3>
+  <div class="tabelwrap"><table class="lft"><tr><th>#</th><th>Eis op OP</th><th>U OP</th><th>P OP (MW)</th><th>Q OP (Mvar)</th><th>U omv</th><th>S omv</th><th>I omv</th><th>P omv</th><th>Q omv</th><th>Oordeel</th></tr>
+  ${S.basis.cases.map(c => `<tr><td>${c.n}</td><td>P ${Math.round(c.p * 100)} % · Q ${c.txt}</td><td>${f2(c.u)}</td><td class="${c.verlaagd ? 'o' : ''}">${f2(c.P)}</td><td>${f2(c.Q)}</td>
+    ${cel(c.r.u, iv.umin, iv.umax)}${cel(c.r.s, 0, 1)}${cel(c.r.i, 0, 1)}${cel(c.r.p, 0, 1)}${cel(c.r.q, 0, 1)}
+    <td class="${c.ok ? (c.verlaagd ? 'o' : 'g') : 'r'}">${c.ok ? (c.verlaagd ? 'ok, P verlaagd' : 'ok') : c.f.join(', ')}</td></tr>`).join('')}
+  </table></div>
+  <p class="klein">Omvormerwaarden in pu van de nominale waarde (U van Unom, S van Snom, I van Imax, P van Pmax, Q van Qmax). Oranje: op de grens of P verlaagd zoals toegestaan (hoekpunt 1, 2, 6, 8: tot 0,93 Pmax; 9–12: voor de stroomgrens; 13: tot 0,8 Pmax). Kabel- en trafogegevens uit de bibliotheek zijn indicatief.</p>`;
+  box._sug = S.lijst;
+}
+
 /* ======================= data ======================= */
 let DB = lees();
 if (!DB) {
@@ -326,6 +414,7 @@ if (!DB) {
     { wat:'Parkregelaar Getec: alleen setpoints of regeling op het overdrachtspunt?', wie:'Getec', klaar:false },
     { wat:'Vraagsturing: welke diensten', wie:'Eneco', klaar:false },
   ];
+  DB.projecten[id].lf = JSON.parse(JSON.stringify(LFGETEC));
   DB.actief = id; bewaar();
 }
 function nieuwProject(naam, meta) {
@@ -340,7 +429,7 @@ function renderKeuze() {
   const s = $('#projKeuze'); const ids = Object.keys(DB.projecten).sort((a, b) => DB.projecten[a].naam.localeCompare(DB.projecten[b].naam));
   s.innerHTML = ids.map(id => `<option value="${id}"${id === DB.actief ? ' selected' : ''}>${esc(DB.projecten[id].naam)}</option>`).join('') || '<option>Geen projecten</option>';
 }
-function renderAlles() { renderKeuze(); renderProject(); renderTodo(); renderInvul(); renderOpen(); }
+function renderAlles() { renderKeuze(); renderProject(); renderTodo(); renderInvul(); renderLf(); renderOpen(); }
 
 function sel(id, opties, w) { return `<select data-m="${id}">${opties.map(([v, t]) => `<option value="${v}"${v === w ? ' selected' : ''}>${t}</option>`).join('')}</select>`; }
 function renderProject() {
@@ -444,6 +533,7 @@ document.addEventListener('input', e => {
   if (t.matches('[data-m]') && t.type !== 'checkbox' && t.tagName !== 'SELECT') { p.meta[t.dataset.m] = t.value; wijzig(); clearTimeout(renderTodo.t); renderTodo.t = setTimeout(() => { renderTodo(); renderInvulZacht(); verversUitkomst(); }, 350); return; }
   if (t.matches('[data-v]')) { const V = p.velden[invulDoc]; (V[t.dataset.v] ||= { s:'open' }).w = t.value; wijzig(); return; }
   if (t.matches('[data-n]')) { const V = p.velden[invulDoc]; (V[t.dataset.n] ||= { s:'open' }).n = t.value; wijzig(); return; }
+  if (t.matches('[data-lf]') && t.tagName !== 'SELECT') { setPad(p.lf, t.dataset.lf, t.value); wijzig(); clearTimeout(renderLfRes.t); renderLfRes.t = setTimeout(renderLfRes, 300); return; }
   if (t.matches('[data-ow]')) { p.open[t.dataset.ow].wat = t.value; wijzig(); return; }
   if (t.matches('[data-oi]')) { p.open[t.dataset.oi].wie = t.value; wijzig(); return; }
 });
@@ -452,6 +542,7 @@ function renderInvulZacht() { if (!$('#p-invul').classList.contains('aan')) rend
 document.addEventListener('change', e => {
   const t = e.target, p = P(); if (!p) return;
   if (t.matches('[data-m]') && (t.type === 'checkbox' || t.tagName === 'SELECT' || t.type === 'date')) { p.meta[t.dataset.m] = t.type === 'checkbox' ? t.checked : t.value; wijzig(); renderProject(); renderTodo(); renderInvul(); return; }
+  if (t.matches('select[data-lf]')) { setPad(p.lf, t.dataset.lf, t.dataset.lf === 'hs_aan' ? t.value === '1' : t.value); wijzig(); renderLf(); return; }
   if (t.matches('[data-trafo]')) { p.meta.hsms = t.value.includes('h'); p.meta.trafo2 = t.value.includes('2'); wijzig(); renderProject(); renderTodo(); renderInvul(); return; }
   if (t.matches('[data-todo]')) { p.todo[t.dataset.todo] = t.checked; wijzig(); renderTodo(); return; }
   if (t.matches('[data-ok]')) { p.open[t.dataset.ok].klaar = t.checked; wijzig(); renderOpen(); return; }
@@ -460,8 +551,10 @@ document.addEventListener('click', e => {
   const t = e.target.closest('button'); if (!t) return; const p = P();
   if (t.dataset.st) { const V = p.velden[invulDoc]; const d = V[t.dataset.st] ||= { s:'open' }; d.s = { open:'aanname', aanname:'ok', ok:'open' }[d.s || 'open']; wijzig(); renderInvul(); return; }
   if (t.dataset.doc) { invulDoc = t.dataset.doc; renderInvul(); return; }
+  if (t.dataset.sug != null) { const x = $('#lfRes')._sug[+t.dataset.sug]; Object.entries(x.set).forEach(([k, v]) => setPad(p.lf, k, String(v).replace('.', ','))); wijzig(); renderLf(); toast('Toegepast'); return; }
   if (t.dataset.odel != null) { p.open.splice(+t.dataset.odel, 1); wijzig(); renderOpen(); return; }
   const a = t.dataset.act;
+  if (a === 'lfPmax') { const b = LF.bereken(nrm(p.lf)); const d = afleiden(p).docs[0]?.doc || 'esmd'; const V = p.velden[d] ||= {}; V.pmax = { ...(V.pmax || {}), w:LF.f2(b.Pmax), s:'aanname', n:'Uit de blindvermogen-voorcheck (tab 4), ' + new Date().toLocaleDateString('nl-NL') }; wijzig(); renderInvul(); toast('Pmax overgenomen in ' + d.toUpperCase()); return; }
   if (a === 'openplus') { p.open.push({ wat:'', wie:'', klaar:false }); wijzig(); renderOpen(); const ins = document.querySelectorAll('[data-ow]'); ins[ins.length - 1]?.focus(); }
   if (a === 'nieuw') { const naam = prompt('Naam van het project'); if (!naam) return; const id = uid(); DB.projecten[id] = nieuwProject(naam); DB.actief = id; bewaar(); renderAlles(); naarTab('project'); toast('Project aangemaakt'); }
   if (a === 'dupliceer' && p) { const id = uid(); DB.projecten[id] = JSON.parse(JSON.stringify(p)); DB.projecten[id].naam = p.naam + ' (kopie)'; DB.actief = id; bewaar(); renderAlles(); toast('Gedupliceerd'); }
