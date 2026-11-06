@@ -233,6 +233,24 @@
       const varianten = [[X, '']]; if (I.hs_aan && !alAuto) varianten.push([{ ...kloon(X), hs_auto:true }, ' + regelschakelaar HS/MS automatisch']);
       for (const [J, extra] of varianten) if (bereken(J).ok) { S.push({ soort:'combi', titel:'Extra rij: ' + (n + 1) + ' × omvormer/trafo' + extra, uitleg:'Zelfde totaal vermogen verdeeld over ' + (n + 1) + ' rijen (Pnom ' + J.inv.P + ' kW per omvormer); stroom per rij blijft gelijk. Kost een extra PCS, trafo en MS-veld.', set:{ ninv:J.ninv, ntr:J.ntr, 'inv.P':J.inv.P, ...(extra ? { hs_auto:'1' } : {}) } }); break; } }
     if (!S.length) S.push({ soort:'geen', titel:'Geen enkele aanpassing maakt alles groen', uitleg:'Combineer: begrens Pmax én kies een andere stand, of reken met een netberekeningsprogramma (Vision).' });
+    // rangschikken: eerst wat niets kost, als laatste wat vermogen kost
+    const rang = x => {
+      if (x.soort === 'regel') return 0;
+      if (x.soort === 'combi' && /^Regelschakelaar HS\/MS regelt/.test(x.titel)) return [10, 'Instelling bij de eigenaar, geen extra hardware'];
+      if (x.soort === 'tap' && /^(Zet|HS\/MS-trafo in stand)/.test(x.titel)) return [20, 'Instelling, geen extra hardware'];
+      if (x.soort === 'tap') return [90, 'Deeloplossing, combineren'];
+      if (x.soort === 'combi' && /regelschakelaar HS\/MS automatisch \+ omvormer/.test(x.titel)) return [30, 'Grotere omvormer; trafo, LS-kabels en LS-automaat per rij zwaarder'];
+      if (x.soort === 'venster') return [40, 'Leveroptie omvormer; controle LS-componenten'];
+      if (x.soort === 'combi' && /spanningsvenster/.test(x.titel)) return [45, 'Leveroptie + grotere omvormer'];
+      if (x.soort === 'omv') return [50, 'Grotere omvormer; rij zwaarder uitvoeren'];
+      if (x.soort === 'trafo') return [55, 'Andere trafo'];
+      if (x.soort === 'kabel') return [60, 'Extra kabels'];
+      if (x.soort === 'combi' && /^Extra rij/.test(x.titel)) return [70, 'Extra PCS, trafo en MS-veld'];
+      if (x.soort === 'pmax') return [95, 'Kost vermogen: alleen als begrenzen mag'];
+      return [99, ''];
+    };
+    S.forEach(x => { const r = rang(x); x.rang = Array.isArray(r) ? r[0] : r; x.kost = Array.isArray(r) ? r[1] : ''; });
+    S.sort((a, b) => a.rang - b.rang);
     return { basis, lijst:S };
   }
   function zoekFactor(test, lo, hi) { if (!test(hi)) return null; for (let k = 0; k < 25; k++) { const m = (lo + hi) / 2; if (test(m)) hi = m; else lo = m; } return hi; }
