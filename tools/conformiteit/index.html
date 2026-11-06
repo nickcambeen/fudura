@@ -523,7 +523,7 @@ function renderLfRes() {
   ${b.ok ? `<div class="balk"><button class="knop vol" data-act="lfPmax">Neem Pmax ${f2(b.Pmax)} MW over in de invulhulp</button></div>` : ''}
   <div id="lfVensters"></div>
   <div id="lfSugg"></div>`;
-  $('#lfSugg').innerHTML = `${S.lijst.length ? `<h3>Zo krijg je het groen</h3><ul class="sugg">${S.lijst.map((x, i) => `<li><div><b>${x.titel}</b><span>${x.uitleg}</span></div>${x.set ? `<button class="knop" data-sug="${i}">Toepassen</button>` : ''}</li>`).join('')}</ul>` : ''}
+  $('#lfSugg').innerHTML = `${p._lfUndo?.length ? '<div class="balk"><button class="knop" data-act="lfUndo">↶ Laatste “Toepassen” ongedaan maken</button></div>' : ''}${S.lijst.length ? `<h3>Zo krijg je het groen</h3><p class="klein">“Toepassen” verandert de invoer om het effect te zien; met de knop hierboven zet je het terug.</p><ul class="sugg">${S.lijst.map((x, i) => `<li><div><b>${x.titel}</b><span>${x.uitleg}</span></div>${x.set ? `<button class="knop" data-sug="${i}">Toepassen</button>` : ''}</li>`).join('')}</ul>` : ''}
 
   ${p.lf.hs_aan || p.meta.trafo2 ? '<div class="let"><b>Geen basispark:</b> met twee soorten transformatoren (HS/MS én MS/LS) mag de BLOS-tool niet gebruikt worden (DNV). Reken de cases door in Vision. In BLOS laat je HS/MS-trafo en smoorspoel weg.</div>' : ''}`;
   box._sug = S.lijst;
@@ -532,6 +532,7 @@ function renderLfRes() {
 
 /* ======================= data ======================= */
 let DB = lees();
+try { Object.values(DB?.projecten || {}).forEach(pr => { const iv = pr.lf?.inv; if (/getec/i.test(pr.naam) && iv && !pr.lf._undo1 && /^(80[0-9]|81[0-9])$/.test(String(iv.UmaxV)) && /^(5[89][0-9])$/.test(String(iv.UminV))) { iv.UmaxV = '759'; iv.UminV = '621'; pr.lf._undo1 = 1; } }); localStorage.setItem('fudura-conformiteit-v1', JSON.stringify(DB)); } catch (e) {}
 try { Object.values(DB?.projecten || {}).forEach(pr => { if (/getec/i.test(pr.naam) && pr.lf?.inv && !pr.lf._ws) { Object.assign(pr.lf.inv, { S:'2500', P:'2500', Un:'690', Imax:'2100', Q:'2500', Qopn:'-2500', UmaxV:'759', UminV:'621', Ik:'2120' }); pr.lf._ws = 1; } }); localStorage.setItem('fudura-conformiteit-v1', JSON.stringify(DB)); } catch (e) {}
 try { Object.values(DB?.projecten || {}).forEach(pr => { if (/getec/i.test(pr.naam) && pr.lf?.opms && !pr.lf._k12) { Object.assign(pr.lf.opms, { type:'MS 3×1×630 Al XLPE', L:'430', n:'4' }); pr.lf._k12 = 1; } }); localStorage.setItem('fudura-conformiteit-v1', JSON.stringify(DB)); } catch (e) {}
 try { Object.values(DB?.projecten || {}).forEach(pr => { if (/getec/i.test(pr.naam) && pr.lf?.ls?.type === 'LS 1×630 Cu (per fase)' && !pr.lf.ls._nick) { pr.lf.ls.type = 'LS 3×240 Cu (3-fase, IT)'; pr.lf.ls.n = '4'; pr.lf.ls._nick = 1; } }); } catch (e) {}
@@ -686,7 +687,7 @@ document.addEventListener('click', e => {
   const t = e.target.closest('button'); if (!t) return; const p = P();
   if (t.dataset.st) { const V = p.velden[invulDoc]; const d = V[t.dataset.st] ||= { s:'open' }; d.s = { open:'aanname', aanname:'ok', ok:'open' }[d.s || 'open']; wijzig(); renderInvul(); return; }
   if (t.dataset.doc) { invulDoc = t.dataset.doc; renderInvul(); return; }
-  if (t.dataset.sug != null) { const x = $('#lfRes')._sug[+t.dataset.sug]; Object.entries(x.set).forEach(([k, v]) => setPad(p.lf, k, String(v).replace('.', ','))); wijzig(); renderLf(); toast('Toegepast'); return; }
+  if (t.dataset.sug != null) { (p._lfUndo ||= []).push(JSON.stringify(p.lf)); const x = $('#lfRes')._sug[+t.dataset.sug]; Object.entries(x.set).forEach(([k, v]) => setPad(p.lf, k, String(v).replace('.', ','))); wijzig(); renderLf(); toast('Toegepast'); return; }
   if (t.dataset.odel != null) { p.open.splice(+t.dataset.odel, 1); wijzig(); renderOpen(); return; }
   const a = t.dataset.act;
   if (a === 'lfPmax') { const b = LF.bereken(nrm(p.lf)); const d = afleiden(p).docs[0]?.doc || 'esmd'; const V = p.velden[d] ||= {}; V.pmax = { ...(V.pmax || {}), w:LF.f2(b.Pmax), s:'aanname', n:'Uit de blindvermogen-voorcheck (tab 4), ' + new Date().toLocaleDateString('nl-NL') }; wijzig(); renderInvul(); toast('Pmax overgenomen in ' + d.toUpperCase()); return; }
@@ -696,6 +697,7 @@ document.addEventListener('click', e => {
     box.innerHTML = `<h4>Case ${nm} in Vision <button class="knop" data-act="cihSluit" style="float:right;padding:2px 8px">×</button></h4>` + caseInfo(c, b, nm, pmin); box.hidden = false; t.setAttribute('aria-expanded', 'true'); box.scrollIntoView({ block:'nearest', behavior:'smooth' }); return; }
   if (t.dataset.act === 'cihSluit') { $('#cihBox').hidden = true; document.querySelectorAll('[data-cih]').forEach(x => x.setAttribute('aria-expanded', 'false')); return; }
   if (t.dataset.ci) { const r = $('#ci' + t.dataset.ci); r.hidden = !r.hidden; t.setAttribute('aria-expanded', String(!r.hidden)); return; }
+  if (a === 'lfUndo') { const st = p._lfUndo; if (st?.length) { p.lf = JSON.parse(st.pop()); wijzig(); renderLf(); toast('Ongedaan gemaakt'); } return; }
   if (a === 'visionInfo') { const box = $('#visionInfo'); box.hidden = !box.hidden; t.setAttribute('aria-expanded', String(!box.hidden)); return; }
   if (a === 'lfBlos') { const L = p.lf, g = x => String(x ?? '').replace('.', ','), km = x => fmtNl(parseFloat(String(x).replace(',', '.')) / 1000);
     const r = ['BLOS invoer — ' + p.naam, '', 'OMVORMERS', 'Totaal aantal omvormers\t' + g(L.ninv), 'Snom (kVA)\t' + g(L.inv.S), 'Pnom (kW)\t' + g(L.inv.P), 'Max. blindvermogen levering (kvar)\t' + g(L.inv.Q || L.inv.S), 'Max. blindvermogen opname (kvar)\t-' + g(String(L.inv.Qopn || L.inv.Q || L.inv.S).replace('-', '')), 'Unom (V)\t' + g(L.inv.Un), 'Imax (A)\t' + g(L.inv.Imax), 'Umax (V)\t' + g(L.inv.UmaxV), 'Umin (V)\t' + g(L.inv.UminV), 'Max. kortsluitstroom (A)\t' + g(L.inv.Ik),
