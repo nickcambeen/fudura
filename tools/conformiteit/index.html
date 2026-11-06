@@ -105,7 +105,7 @@
   table.bin tr.titel th, table.bres tr.titel th { background:var(--blauw); color:#fff; font:700 14px "Barlow Semi Condensed", Arial, sans-serif; text-transform:none; letter-spacing:0; }
   table.bin tr.grp th { background:var(--zacht); color:var(--fg); font:700 13px "Barlow Semi Condensed", Arial, sans-serif; text-transform:none; letter-spacing:0; padding-top:6px; }
   table.bin tr.grp th small { font-weight:400; color:var(--muted); margin-left:6px; }
-  table.bin td:nth-child(2) { width:110px; } table.bin td.eh { width:40px; color:var(--muted); font-size:12px; }
+  table.bin td:nth-child(2) { width:110px; } table.bin td.eh { width:40px; color:var(--muted); font-size:12px; white-space:nowrap; } .pct { color:var(--fg); font-weight:600; }
   table.bin input, table.bin select { height:26px; padding:2px 6px; font-size:13px; border-radius:4px; }
   table.bin.nietblos { margin-top:10px; border-style:dashed; }
   table.bres { font-size:12.5px; } table.bres th, table.bres td { padding:3px 6px; white-space:nowrap; text-align:right; border-bottom:1px solid var(--lijn); }
@@ -413,7 +413,7 @@ function renderLf() {
     <div class="blos-in">
       <table class="bin">
         <tr class="titel"><th colspan="3">Invoergegevens</th></tr>
-        ${kop('Omvormers')}${rij('ninv', 'Totaal aantal omvormers', '')}${rij('inv.S', 'Schijnbaar vermogen omvormer Snom', 'kVA')}${rij('inv.P', 'Werkzaam vermogen omvormer Pnom', 'kW')}${rij('inv.Q', 'Max. blindvermogen levering omvormer', 'kvar')}${rij('inv.Qopn', 'Max. blindvermogen opname omvormer', 'kvar')}${rij('inv.Un', 'Nominale spanning Unom', 'V')}${rij('inv.Imax', 'Maximale stroom Imax', 'A')}${rij('inv.UmaxV', 'Maximale spanning Umax', 'V')}${rij('inv.UminV', 'Minimale spanning Umin', 'V')}${rij('inv.Ik', 'Maximale kortsluitstroom', 'A')}
+        ${kop('Omvormers')}${rij('ninv', 'Totaal aantal omvormers', '')}${rij('inv.S', 'Schijnbaar vermogen omvormer Snom', 'kVA')}${rij('inv.P', 'Werkzaam vermogen omvormer Pnom', 'kW')}${rij('inv.Q', 'Max. blindvermogen levering omvormer', 'kvar')}${rij('inv.Qopn', 'Max. blindvermogen opname omvormer', 'kvar')}${rij('inv.Un', 'Nominale spanning Unom', 'V')}${rij('inv.Imax', 'Maximale stroom Imax', 'A')}${rij('inv.UmaxV', 'Maximale spanning Umax', 'V <span class="pct" data-pct="UmaxV"></span>')}${rij('inv.UminV', 'Minimale spanning Umin', 'V <span class="pct" data-pct="UminV"></span>')}${rij('inv.Ik', 'Maximale kortsluitstroom', 'A')}
         ${kop('LS-kabels', 'omvormers naar transformatoren')}${rij('ls.n', 'Aantal (driefasen)kabels parallel per trafo', '')}${rij('ls.L', 'Lengte per kabel', 'km', 1000)}${rijKabel('ls')}
         ${kop('MS-trafo’s', 'transformatoren')}${rij('ntr', 'Aantal transformatoren', '')}${rij('tr.S', 'Schijnbaar vermogen S', 'kVA', 0.001)}${rij('tr.uk', 'Kortsluitspanning uk', '%')}${rij('tr.U1', 'Nominale spanning primair Ums', 'kV')}${rij('tr.U2', 'Nominale spanning secundair Uls', 'kV')}${rij('tr.P0', 'Nullastverlies Pfe', 'kW')}${rij('tr.Pk', 'Kortsluitverlies Pcu', 'kW')}${rijSel('tr.tap', 'Positie aftakschakelaar (0 = nom.)', standen(2), L.tr.tap)}${rij('tr.step', 'Trapgrootte (BLOS: 2,5)', '%')}
         ${kop('MS-TR-kabel', 'transformatoren naar MS-verzamelstation')}${rij('mstr.n', 'Aantal (driefasen)kabels parallel per trafo', '')}${rij('mstr.L', 'Lengte per kabel', 'km', 1000)}${rijKabel('mstr')}
@@ -429,6 +429,7 @@ function renderLf() {
     <div class="blos-uit" id="lfRes"></div>
   </div>
   <div id="lfOnder"></div>`;
+  updPct();
   renderLfRes();
 }
 function caseInfo(c, b, nm, pmin) {
@@ -481,6 +482,11 @@ function renderVensters(I) {
       <p class="vo" style="color:var(--${tekUQ.length ? 'rood' : 'groen'})">${tekUQ.length ? 'Voldoet niet bij U ' + rng(tekUQ) + ' pu (0,93 × Pmax)' : 'Voldoet: lijnen omsluiten de eis'}</p></div>
   </div>
   <div class="legenda"><span class="sw d"></span>Eis (wat moet) <span class="sw r"></span>Haalbaar bij 1,0 / 0,93 × Pmax <span class="sw o"></span>Haalbaar bij 0,2 × Pmax (stippel). Waar een lijn ontbreekt, kan het park daar zelfs zonder blindvermogen niet binnen de spanningsgrenzen van de omvormer blijven.</div>`;
+}
+function updPct() {
+  const L = P()?.lf; if (!L) return; const n = x => parseFloat(String(x ?? '').replace(',', '.'));
+  const un = n(L.inv.Un);
+  document.querySelectorAll('[data-pct]').forEach(el => { const v = n(L.inv[el.dataset.pct]); el.textContent = isFinite(v) && un > 0 ? '(' + String(Math.round(v / un * 1000) / 10).replace('.', ',') + ' %)' : ''; });
 }
 function renderLfRes() {
   const p = P(), box = $('#lfRes'), onder = $('#lfOnder'); if (!box || !p?.lf) return;
@@ -671,7 +677,7 @@ document.addEventListener('input', e => {
   if (t.matches('[data-m]') && t.type !== 'checkbox' && t.tagName !== 'SELECT') { p.meta[t.dataset.m] = t.value; wijzig(); clearTimeout(renderTodo.t); renderTodo.t = setTimeout(() => { renderTodo(); renderInvulZacht(); verversUitkomst(); }, 350); return; }
   if (t.matches('[data-v]')) { const V = p.velden[invulDoc]; (V[t.dataset.v] ||= { s:'open' }).w = t.value; wijzig(); return; }
   if (t.matches('[data-n]')) { const V = p.velden[invulDoc]; (V[t.dataset.n] ||= { s:'open' }).n = t.value; wijzig(); return; }
-  if (t.matches('[data-lf]') && t.tagName !== 'SELECT') { const f = +(t.dataset.f || 1); const x = parseFloat(t.value.replace(',', '.')); setPad(p.lf, t.dataset.lf, f !== 1 && isFinite(x) ? String(+(x * f).toPrecision(10)).replace('.', ',') : t.value); wijzig(); clearTimeout(renderLfRes.t); renderLfRes.t = setTimeout(renderLfRes, 300); return; }
+  if (t.matches('[data-lf]') && t.tagName !== 'SELECT') { const f = +(t.dataset.f || 1); const x = parseFloat(t.value.replace(',', '.')); setPad(p.lf, t.dataset.lf, f !== 1 && isFinite(x) ? String(+(x * f).toPrecision(10)).replace('.', ',') : t.value); updPct(); wijzig(); clearTimeout(renderLfRes.t); renderLfRes.t = setTimeout(renderLfRes, 300); return; }
   if (t.matches('[data-ow]')) { p.open[t.dataset.ow].wat = t.value; wijzig(); return; }
   if (t.matches('[data-oi]')) { p.open[t.dataset.oi].wie = t.value; wijzig(); return; }
 });
