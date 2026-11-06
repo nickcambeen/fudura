@@ -258,9 +258,9 @@
     for (let i = 0; i <= 20; i++) { const p = i / 20; pq.push({ p, qp:qG(net, 1, p * Pm, 1, t1, t2, Pm) / Pm, qm:qG(net, 1, p * Pm, -1, t1, t2, Pm) / Pm }); }
     const uq = [];
     // bij lage spanning mag P zakken: 0,90–0,95 pu voor de stroomgrens (art. 3.19 lid 3), 0,85–0,90 pu tot 0,8 (art. 3.15 lid 9a)
-    const pLijst = u => u >= 0.95 - 1e-9 ? [0.93] : u >= 0.9 - 1e-9 ? [0.93, 0.9, 0.85, 0.8, 0.75, 0.7, 0.6, 0.5] : [0.93, 0.9, 0.85, 0.8];
+    const pLijst = u => u > 0.95 + 1e-9 ? [0.93] : u >= 0.9 - 1e-9 ? [0.93, 0.9, 0.85, 0.8, 0.75, 0.7, 0.6, 0.5] : [0.93, 0.9, 0.85, 0.8];
     const qBest = (u, sign) => { let best = NaN; for (const pp of pLijst(u)) { const q = qG(net, u, pp * Pm, sign, t1, t2, Pm); if (isFinite(q) && !(Math.abs(q) <= Math.abs(best))) best = q; } return best; };
-    for (let i = 0; i <= 25; i++) { const u = 0.85 + i * 0.01; uq.push({ u, qp:qBest(u, 1) / Pm, qm:qBest(u, -1) / Pm, qp20:qG(net, u, 0.2 * Pm, 1, t1, t2, Pm) / Pm, qm20:qG(net, u, 0.2 * Pm, -1, t1, t2, Pm) / Pm }); }
+    for (let i = 0; i <= 25; i++) { const u = Math.round((0.85 + i * 0.01) * 100) / 100; uq.push({ u, qp:qBest(u, 1) / Pm, qm:qBest(u, -1) / Pm, qp20:qG(net, u, 0.2 * Pm, 1, t1, t2, Pm) / Pm, qm20:qG(net, u, 0.2 * Pm, -1, t1, t2, Pm) / Pm }); }
     return { b, pq, uq };
   }
   G.LF = { KABELS, CASES, bereken, suggesties, vensters, f1, f2 };
