@@ -155,9 +155,16 @@
     const pm = terug(net, 1, net.inv.P, 0, tapHS, tapTR);
     let Pmax = pm.P; const lim = opt.Plim ?? num(I.Plim, 0);
     if (lim > 0 && lim < Pmax) Pmax = lim;
-    const cases = CASES.map(c => hoekpunt(net, c, Pmax, tapHS, tapTR));
+    const auto = net.hs && (opt.hsAuto ?? (I.hs_auto === true || I.hs_auto === 'true' || I.hs_auto === '1'));
+    const kand = Array.from({ length:19 }, (_, i) => i - 9).sort((a, b) => Math.abs(a - tapHS) - Math.abs(b - tapHS));
+    const cases = CASES.map(c => {
+      if (!auto) return hoekpunt(net, c, Pmax, tapHS, tapTR);
+      let eerste = null;
+      for (const a of kand) { const h = hoekpunt(net, c, Pmax, a, tapTR); h.tapHS = a; if (!eerste) eerste = h; if (h.ok && !h.verlaagd) return h; if (h.ok && (!eerste.ok)) eerste = h; }
+      return eerste;
+    });
     const pmc = vooruit(net, pm.u, pm.P, pm.Q, tapHS, tapTR);
-    return { net, Pmax, PmaxNat:pm.P, Qpm:pm.Q, uPm:pm.u, cases, ok:cases.every(c => c.ok), nOk:cases.filter(c => c.ok).length, tapHS, tapTR, pmc };
+    return { net, Pmax, PmaxNat:pm.P, Qpm:pm.Q, uPm:pm.u, cases, ok:cases.every(c => c.ok), nOk:cases.filter(c => c.ok).length, tapHS, tapTR, pmc, auto };
   }
   // Suggesties: zoek wat het groen maakt
   function suggesties(I) {
@@ -202,6 +209,24 @@
     if (num(I.opms.L, 0) > 0) { const r = bereken({ ...I, opms:{ ...I.opms, n:num(I.opms.n, 1) * 2 } }); if (r.ok) S.push({ soort:'kabel', titel:'Verdubbel de OP–MS-kabels (' + num(I.opms.n, 1) * 2 + ' parallel)', uitleg:'Minder spanningsval en blindvermogenverlies.', set:{ 'opms.n':num(I.opms.n, 1) * 2 } }); }
     // 7. Lagere uk MS/LS
     const uk = num(I.tr.uk, 6); if (uk > 4.5) { const r = bereken({ ...I, tr:{ ...I.tr, uk:uk - 1 } }); if (r.ok) S.push({ soort:'trafo', titel:'MS/LS-trafo met uk ' + f1(uk - 1) + ' %', uitleg:'Minder blindvermogenverbruik in de trafo.', set:{ 'tr.uk':uk - 1 } }); }
+    // Combinaties (één maatregel is vaak niet genoeg: spanning én kVA)
+    const kloon = o => JSON.parse(JSON.stringify(o));
+    const Un = num(I.inv.Un, 400), S0 = num(I.inv.S), Im0 = num(I.inv.Imax, 0) || S0 / (R3 * Un) * 1000, Q0 = num(I.inv.Q, 0) || S0, Qo0 = Math.abs(num(I.inv.Qopn, 0)) || Q0;
+    const kva = (J, k) => { J.inv.S = String(Math.ceil(S0 * k / 10) * 10); J.inv.Imax = String(Math.ceil(Im0 * k)); J.inv.Q = String(Math.ceil(Q0 * k / 10) * 10); J.inv.Qopn = String(-Math.ceil(Qo0 * k / 10) * 10); return J; };
+    const setKva = J => ({ 'inv.S':J.inv.S, 'inv.Imax':J.inv.Imax, 'inv.Q':J.inv.Q, 'inv.Qopn':J.inv.Qopn });
+    const zoekKva = J0 => zoekFactor(k => bereken(kva(kloon(J0), k)).ok, 1, 1.6);
+    const alAuto = I.hs_auto === true || I.hs_auto === 'true' || I.hs_auto === '1';
+    if (I.hs_aan && !alAuto) {
+      const A = { ...kloon(I), hs_auto:true };
+      if (bereken(A).ok) S.push({ soort:'combi', titel:'Regelschakelaar HS/MS regelt automatisch', uitleg:'De HS/MS-trafo (EGD) houdt de MS-spanning vast; per case kiest hij de stand. Navragen of dat zo ingesteld is.', set:{ hs_auto:'1' } });
+      else { const k = zoekKva(A); if (k) { const J = kva(kloon(A), k); S.push({ soort:'combi', titel:'Combinatie: regelschakelaar HS/MS automatisch + omvormer ≥ ' + J.inv.S + ' kVA', uitleg:'De regelschakelaar lost de spanning op, de grotere omvormer het tekort aan kVA. Let op: de stroom per rij stijgt mee (trafo, LS-kabels, LS-automaat).', set:{ hs_auto:'1', ...setKva(J) } }); } }
+    }
+    if (v) { const W = kloon(I); W.inv.UminV = String(Math.floor(Math.min(b0.net.inv.umin, v.lo) * Un)); W.inv.UmaxV = String(Math.ceil(Math.max(b0.net.inv.umax, v.hi) * Un));
+      if (!bereken(W).ok) { const k = zoekKva(W); if (k) { const J = kva(kloon(W), k); S.push({ soort:'combi', titel:'Combinatie: spanningsvenster ' + W.inv.UminV + '–' + W.inv.UmaxV + ' V + omvormer ≥ ' + J.inv.S + ' kVA', uitleg:'Beide nodig; alleen als de leverancier dit kan leveren.', set:{ 'inv.UminV':W.inv.UminV, 'inv.UmaxV':W.inv.UmaxV, ...setKva(J) } }); } } }
+    const n = num(I.ninv, 1), nt = num(I.ntr, 1);
+    if (n === nt) { const X = kloon(I); X.ninv = String(n + 1); X.ntr = String(nt + 1); X.inv.P = String(Math.round(num(I.inv.P) * n / (n + 1)));
+      const varianten = [[X, '']]; if (I.hs_aan && !alAuto) varianten.push([{ ...kloon(X), hs_auto:true }, ' + regelschakelaar HS/MS automatisch']);
+      for (const [J, extra] of varianten) if (bereken(J).ok) { S.push({ soort:'combi', titel:'Extra rij: ' + (n + 1) + ' × omvormer/trafo' + extra, uitleg:'Zelfde totaal vermogen verdeeld over ' + (n + 1) + ' rijen (Pnom ' + J.inv.P + ' kW per omvormer); stroom per rij blijft gelijk. Kost een extra PCS, trafo en MS-veld.', set:{ ninv:J.ninv, ntr:J.ntr, 'inv.P':J.inv.P, ...(extra ? { hs_auto:'1' } : {}) } }); break; } }
     if (!S.length) S.push({ soort:'geen', titel:'Geen enkele aanpassing maakt alles groen', uitleg:'Combineer: begrens Pmax én kies een andere stand, of reken met een netberekeningsprogramma (Vision).' });
     return { basis, lijst:S };
   }
@@ -225,13 +250,15 @@
   }
   function vensters(I) {
     const b = bereken(I), net = b.net, Pm = b.Pmax, t1 = b.tapHS, t2 = b.tapTR;
+    const qGrens0 = qGrens;
+    const qG = (net_, u, P, sign, a1, a2, Pm_) => { if (!b.auto) return qGrens0(net_, u, P, sign, a1, a2, Pm_); let best = NaN; for (let a = -9; a <= 9; a++) { const q = qGrens0(net_, u, P, sign, a, a2, Pm_); if (isFinite(q) && !(Math.abs(q) <= Math.abs(best))) best = q; } return best; };
     const pq = [];
-    for (let i = 0; i <= 20; i++) { const p = i / 20; pq.push({ p, qp:qGrens(net, 1, p * Pm, 1, t1, t2, Pm) / Pm, qm:qGrens(net, 1, p * Pm, -1, t1, t2, Pm) / Pm }); }
+    for (let i = 0; i <= 20; i++) { const p = i / 20; pq.push({ p, qp:qG(net, 1, p * Pm, 1, t1, t2, Pm) / Pm, qm:qG(net, 1, p * Pm, -1, t1, t2, Pm) / Pm }); }
     const uq = [];
     // bij lage spanning mag P zakken: 0,90–0,95 pu voor de stroomgrens (art. 3.19 lid 3), 0,85–0,90 pu tot 0,8 (art. 3.15 lid 9a)
     const pLijst = u => u >= 0.95 - 1e-9 ? [0.93] : u >= 0.9 - 1e-9 ? [0.93, 0.9, 0.85, 0.8, 0.75, 0.7, 0.6, 0.5] : [0.93, 0.9, 0.85, 0.8];
-    const qBest = (u, sign) => { let best = NaN; for (const pp of pLijst(u)) { const q = qGrens(net, u, pp * Pm, sign, t1, t2, Pm); if (isFinite(q) && !(Math.abs(q) <= Math.abs(best))) best = q; } return best; };
-    for (let i = 0; i <= 25; i++) { const u = 0.85 + i * 0.01; uq.push({ u, qp:qBest(u, 1) / Pm, qm:qBest(u, -1) / Pm, qp20:qGrens(net, u, 0.2 * Pm, 1, t1, t2, Pm) / Pm, qm20:qGrens(net, u, 0.2 * Pm, -1, t1, t2, Pm) / Pm }); }
+    const qBest = (u, sign) => { let best = NaN; for (const pp of pLijst(u)) { const q = qG(net, u, pp * Pm, sign, t1, t2, Pm); if (isFinite(q) && !(Math.abs(q) <= Math.abs(best))) best = q; } return best; };
+    for (let i = 0; i <= 25; i++) { const u = 0.85 + i * 0.01; uq.push({ u, qp:qBest(u, 1) / Pm, qm:qBest(u, -1) / Pm, qp20:qG(net, u, 0.2 * Pm, 1, t1, t2, Pm) / Pm, qm20:qG(net, u, 0.2 * Pm, -1, t1, t2, Pm) / Pm }); }
     return { b, pq, uq };
   }
   G.LF = { KABELS, CASES, bereken, suggesties, vensters, f1, f2 };
