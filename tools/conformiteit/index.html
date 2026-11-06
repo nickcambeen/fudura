@@ -112,7 +112,6 @@
   table.bres tr > th:first-child { text-align:left; font:500 12.5px Barlow, system-ui, sans-serif; text-transform:none; letter-spacing:0; color:var(--fg); background:var(--kaart); position:sticky; left:0; }
   table.bres tr.titel th { text-align:center; } table.bres tr.titel th:first-child { background:var(--blauw); color:#fff; }
   table.bres tr.sub th { background:var(--zacht); font:700 12.5px "Barlow Semi Condensed", Arial, sans-serif; text-transform:none; letter-spacing:0; text-align:left; }
-  td.d { background:color-mix(in srgb, var(--blauw) 16%, var(--kaart)); }
   .info-knop { width:22px; height:22px; border-radius:50%; border:1px solid var(--blauw); background:var(--kaart); color:var(--blauw); font:700 13px/20px "Barlow Semi Condensed", Arial, sans-serif; cursor:pointer; padding:0; }
   .info-knop[aria-expanded="true"] { background:var(--blauw); color:#fff; }
   tr.ci td { background:var(--zacht); text-align:left !important; white-space:normal !important; font-size:13.5px; } .ciwrap p { margin:0 0 4px; } .ciwrap ol { margin:0; padding-left:20px; display:grid; gap:3px; }
@@ -123,10 +122,13 @@
   .vgrid h4 { margin:0 0 4px; font:700 15px "Barlow Semi Condensed", Arial, sans-serif; } .vgrid .vo { margin:4px 0 0; font-weight:600; font-size:14px; }
   svg.venster { width:100%; height:auto; display:block; } svg.venster text { font:11px Barlow, system-ui, sans-serif; fill:var(--muted); } svg.venster .asl { fill:var(--fg); font-size:12px; }
   svg.venster .rast { stroke:var(--lijn); stroke-width:1; } svg.venster .as { stroke:var(--muted); stroke-width:1; } svg.venster .eis { fill:color-mix(in srgb, var(--blauw) 22%, transparent); stroke:var(--blauw); stroke-width:1.5; }
+  :root { --c-g:#d3eedb; --c-g-t:#11502a; --c-r:#f9cfcb; --c-r-t:#7a1712; --c-o:#fbdcbc; --c-o-t:#6e2c06; --c-d:#d7e4f4; --c-d-t:#173a63; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --c-g:#1d4a30; --c-g-t:#d2f7de; --c-r:#7a221d; --c-r-t:#ffe1dd; --c-o:#6e3a10; --c-o-t:#ffe6cc; --c-d:#1d3756; --c-d-t:#d6e6ff; } }
+  :root[data-theme="dark"] { --c-g:#1d4a30; --c-g-t:#d2f7de; --c-r:#7a221d; --c-r-t:#ffe1dd; --c-o:#6e3a10; --c-o-t:#ffe6cc; --c-d:#1d3756; --c-d-t:#d6e6ff; }
+  td.g { background:var(--c-g); color:var(--c-g-t); } td.r { background:var(--c-r); color:var(--c-r-t); font-weight:700; } td.o { background:var(--c-o); color:var(--c-o-t); } td.d { background:var(--c-d); color:var(--c-d-t); }
+  .sw.d { background:var(--c-d); border:1px solid var(--c-d-t); } .sw.g { background:var(--c-g); border:1px solid var(--c-g-t); } .sw.r { background:var(--c-r); border:1px solid var(--c-r-t); } .sw.o { background:var(--c-o); border:1px solid var(--c-o-t); }
   .legenda { font-size:12.5px; color:var(--muted); margin-top:6px; display:flex; flex-wrap:wrap; gap:4px 12px; align-items:center; }
   .legenda .sw { display:inline-block; width:12px; height:12px; border-radius:2px; margin-right:-6px; vertical-align:middle; }
-  .sw.d { background:color-mix(in srgb, var(--blauw) 40%, var(--kaart)); } .sw.g { background:color-mix(in srgb, var(--groen) 45%, var(--kaart)); } .sw.r { background:color-mix(in srgb, var(--rood) 45%, var(--kaart)); } .sw.o { background:color-mix(in srgb, var(--oranje) 45%, var(--kaart)); }
-  td.g { background:color-mix(in srgb, var(--groen) 16%, var(--kaart)); } td.o { background:color-mix(in srgb, var(--oranje) 18%, var(--kaart)); } td.r { background:color-mix(in srgb, var(--rood) 20%, var(--kaart)); font-weight:600; }
   table.lft { font-size:14px; } table.lft td, table.lft th { padding:6px 8px; text-align:right; white-space:nowrap; } table.lft td:first-child, table.lft th:first-child, table.lft td:nth-child(2) { text-align:left; }
   .oordeel { font:700 22px "Barlow Semi Condensed", Arial, sans-serif; }
   .sugg { display:grid; gap:8px; margin:0; padding:0; list-style:none; }
