@@ -342,7 +342,7 @@ function lfStandaard() {
     inv:{ S:'250', P:'250', Un:'800', Imax:'', Q:'', umin:'0,85', umax:'1,10' } };
 }
 const LFGETEC = { Uc:'110', Plim:'', ntr:'8', ninv:'8', hs_aan:true, hs:{ S:'30', U1:'110', U2:'10,5', uk:'12', Pk:'120', P0:'0', step:'1,25', tap:'0' }, Xext:'0,6',
-  opms:{ type:'MS 3×1×630 Al XLPE', L:'470', n:'4', eigen:{ R:'', X:'', C:'' } }, mstr:{ type:'MS 3×1×240 Al XLPE', L:'40', n:'1', eigen:{ R:'', X:'', C:'' } },
+  opms:{ type:'MS 3×1×630 Al XLPE', L:'430', n:'4', eigen:{ R:'', X:'', C:'' } }, mstr:{ type:'MS 3×1×240 Al XLPE', L:'40', n:'1', eigen:{ R:'', X:'', C:'' } },
   tr:{ S:'2,5', U1:'10,75', U2:'0,69', uk:'6', Pk:'18,5', P0:'1,575', step:'2,33', tap:'-1' }, ls:{ type:'LS 3×240 Cu (3-fase, IT)', L:'5', n:'4', eigen:{ R:'', X:'', C:'' } },
   inv:{ S:'2500', P:'2500', Un:'690', Imax:'2092', Q:'', umin:'0,85', umax:'1,15' } };
 const getPad = (o, pad) => pad.split('.').reduce((a, k) => a?.[k], o);
@@ -409,6 +409,7 @@ function renderLfRes() {
 
 /* ======================= data ======================= */
 let DB = lees();
+try { Object.values(DB?.projecten || {}).forEach(pr => { if (/getec/i.test(pr.naam) && pr.lf?.opms && !pr.lf._k12) { Object.assign(pr.lf.opms, { type:'MS 3×1×630 Al XLPE', L:'430', n:'4' }); pr.lf._k12 = 1; } }); localStorage.setItem('fudura-conformiteit-v1', JSON.stringify(DB)); } catch (e) {}
 try { Object.values(DB?.projecten || {}).forEach(pr => { if (/getec/i.test(pr.naam) && pr.lf?.ls?.type === 'LS 1×630 Cu (per fase)' && !pr.lf.ls._nick) { pr.lf.ls.type = 'LS 3×240 Cu (3-fase, IT)'; pr.lf.ls.n = '4'; pr.lf.ls._nick = 1; } }); } catch (e) {}
 if (!DB) {
   DB = { actief:null, projecten:{} };
