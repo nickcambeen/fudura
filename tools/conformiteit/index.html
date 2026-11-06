@@ -456,7 +456,7 @@ function svgVenster(o) {
     ${o.yt.map(v => `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" class="rast"/><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end">${nl(v)}</text>`).join('')}
     <line x1="${X(0)}" x2="${X(0)}" y1="${T}" y2="${H - B}" class="as"/>
     <path d="${pad(o.eis)}Z" class="eis"/>
-    ${o.lijnen.map(l => `<path clip-path="url(#${cid})" d="${pad(l.pts)}" fill="none" stroke="${l.kleur}" stroke-width="2.2"${l.dash ? ' stroke-dasharray="5 4"' : ''}/>`).join('')}
+    ${o.lijnen.map(l => `<path clip-path="url(#${cid})" d="${pad(l.pts)}" fill="none" stroke="${l.kleur}" stroke-width="2.2"${l.dash ? ' stroke-dasharray="5 4"' : l.dot ? ' stroke-dasharray="1.5 3" stroke-linecap="round"' : ''}/>`).join('')}
     <text x="${(L + W - R) / 2}" y="${H - 6}" text-anchor="middle" class="asl">${o.xl}</text>
     <text x="12" y="${(T + H - B) / 2}" text-anchor="middle" class="asl" transform="rotate(-90 12 ${(T + H - B) / 2})">${o.yl}</text>
   </svg>`;
@@ -485,22 +485,23 @@ function renderVensters(I) {
   const eisPQ = [[0, 0], [0.33, 0.2], [0.33, 0.93], [0, 1], [-0.33, 0.93], [-0.33, 0.2]];
   const eisUQ = [[0, 0.9], [0.2, 0.9], [0.33, 0.95], [0.33, 1.05], [0, 1.1], [-0.33, 1.1], [-0.33, 0.95]];
   const pqP = V.pq.map(x => [x.qp, x.p]), pqM = V.pq.map(x => [x.qm, x.p]);
+  const uqRP = V.uq.map(x => [x.qpR, x.u]), uqRM = V.uq.map(x => [x.qmR, x.u]);
   const uqP = V.uq.map(x => [x.qp, x.u]), uqM = V.uq.map(x => [x.qm, x.u]), uq2P = V.uq.map(x => [x.qp20, x.u]), uq2M = V.uq.map(x => [x.qm20, x.u]);
   // oordeel: haalt de berekende grens de eis?
   const eisQ = p => p <= 0.2 ? 0.33 * p / 0.2 : p <= 0.93 ? 0.33 : 0.33 * (1 - p) / 0.07;
   const tekPQ = V.pq.filter(x => x.p > 0 && !(x.qp >= eisQ(x.p) - 1e-3 && -x.qm >= eisQ(x.p) - 1e-3)).map(x => x.p);
   const eisUp = u => u < 0.9 ? 0 : u < 0.95 ? 0.2 + 0.13 * (u - 0.9) / 0.05 : u <= 1.05 ? 0.33 : Math.max(0, 0.33 * (1.1 - u) / 0.05), eisUm = u => u < 0.9 ? 0 : u >= 0.95 ? 0.33 : 0.33 * (u - 0.9) / 0.05;
-  const tekUQ = V.uq.filter(x => x.u >= 0.9 - 1e-9 && x.u <= 1.1 + 1e-9 && !(x.qp >= eisUp(x.u) - 1e-3 && -x.qm >= eisUm(x.u) - 1e-3)).map(x => x.u);
+  const tekUQ = V.uq.filter(x => x.u >= 0.9 - 1e-9 && x.u <= 1.1 + 1e-9 && !(Math.max(x.qp || -9, x.qpR || -9) >= eisUp(x.u) - 1e-3 && -Math.min(x.qm || 9, x.qmR || 9) >= eisUm(x.u) - 1e-3)).map(x => x.u);
   const rng = a => a.length ? LF.f2(Math.min(...a)) + (a.length > 1 ? '–' + LF.f2(Math.max(...a)) : '') : '';
   box.innerHTML = `<h3>Q-P en Q-U venster op het overdrachtspunt</h3>
-  <p class="klein">Blauw = <b>wat moet</b> (Netcode/Systeemcode art. 3.19: ±0,33 × Pmax, met de toegestane afbouw; bij 0,90–0,95 pu leveren ≥ 0,20–0,33 conform lid 3 en case 11). Lijnen = <b>wat het park kan</b> volgens deze voorcheck: het maximaal haalbare blindvermogen binnen de grenzen van de omvormer (S, I, P, Umin–Umax). Het park voldoet als de lijnen het blauwe vlak helemaal omsluiten. Ter indicatie, zoals in BLOS; maatgevend zijn de cases. Het Q-U venster rekent met 0,93 × Pmax; onder 0,95 pu mag P verder zakken (tot de stroomgrens, onder 0,9 pu tot 0,8 × Pmax), net als in de cases. Daardoor maakt de rode lijn bij 0,95 pu een sprong naar buiten: met minder P is er meer ruimte voor blindvermogen.</p>
+  <p class="klein">Blauw = <b>wat moet</b> (Netcode/Systeemcode art. 3.19: ±0,33 × Pmax, met de toegestane afbouw; bij 0,90–0,95 pu leveren ≥ 0,20–0,33 conform lid 3 en case 11). Lijnen = <b>wat het park kan</b> volgens deze voorcheck: het maximaal haalbare blindvermogen binnen de grenzen van de omvormer (S, I, P, Umin–Umax). Het park voldoet als de lijnen het blauwe vlak helemaal omsluiten. Ter indicatie, zoals in BLOS; maatgevend zijn de cases. Het Q-U venster rekent met 0,93 × Pmax; onder 0,95 pu mag P verder zakken (tot de stroomgrens, onder 0,9 pu tot 0,8 × Pmax), net als in de cases. De doorgetrokken rode lijn is steeds bij 0,93 × Pmax; de rode stippellijn onder 0,95 pu laat zien wat er kan mét die toegestane P-verlaging. Een knik in een lijn is normaal: daar wisselt de grens die knelt (bijv. van spanning naar kVA).</p>
   <div class="vgrid">
     <div class="kaart"><h4>Q-P venster bij U = 1,0 pu</h4>${svgVenster({ titel:'Q-P venster', x:[-0.6, 0.6], y:[0, 1.05], xl:'Q / Pmax (+ = leveren)', yl:'P / Pmax', xt:[-0.6, -0.33, 0, 0.33, 0.6], yt:[0, 0.2, 0.4, 0.6, 0.8, 0.93, 1], eis:eisPQ, lijnen:[{ pts:pqP, kleur:rood }, { pts:pqM, kleur:rood }] })}
       <p class="vo" style="color:var(--${tekPQ.length ? 'rood' : 'groen'})">${tekPQ.length ? 'Voldoet niet bij P/Pmax ' + rng(tekPQ) : 'Voldoet: lijnen omsluiten de eis'}</p>${tekPQ.length ? uitlegWhy(V.why.pq) : ''}</div>
-    <div class="kaart"><h4>Q-U venster bij 0,93 (toegestane afbouw) en 0,2 × Pmax</h4>${svgVenster({ titel:'Q-U venster', x:[-0.6, 0.6], y:[0.85, 1.12], xl:'Q / Pmax (+ = leveren)', yl:'U op OP (pu)', xt:[-0.6, -0.33, 0, 0.33, 0.6], yt:[0.85, 0.9, 0.95, 1, 1.05, 1.1], eis:eisUQ, lijnen:[{ pts:uqP, kleur:rood }, { pts:uqM, kleur:rood }, { pts:uq2P, kleur:bruin, dash:1 }, { pts:uq2M, kleur:bruin, dash:1 }] })}
+    <div class="kaart"><h4>Q-U venster bij 0,93 (toegestane afbouw) en 0,2 × Pmax</h4>${svgVenster({ titel:'Q-U venster', x:[-0.6, 0.6], y:[0.85, 1.12], xl:'Q / Pmax (+ = leveren)', yl:'U op OP (pu)', xt:[-0.6, -0.33, 0, 0.33, 0.6], yt:[0.85, 0.9, 0.95, 1, 1.05, 1.1], eis:eisUQ, lijnen:[{ pts:uqP, kleur:rood }, { pts:uqM, kleur:rood }, { pts:uqRP, kleur:rood, dot:1 }, { pts:uqRM, kleur:rood, dot:1 }, { pts:uq2P, kleur:bruin, dash:1 }, { pts:uq2M, kleur:bruin, dash:1 }] })}
       <p class="vo" style="color:var(--${tekUQ.length ? 'rood' : 'groen'})">${tekUQ.length ? 'Voldoet niet bij U ' + rng(tekUQ) + ' pu (0,93 × Pmax)' : 'Voldoet: lijnen omsluiten de eis'}</p>${tekUQ.length ? uitlegWhy(V.why.uq) : ''}</div>
   </div>
-  <div class="legenda"><span class="sw d"></span>Eis (wat moet) <span class="sw r"></span>Haalbaar bij 1,0 / 0,93 × Pmax <span class="sw o"></span>Haalbaar bij 0,2 × Pmax (stippel). Waar een lijn ontbreekt, kan het park daar zelfs zonder blindvermogen niet binnen de spanningsgrenzen van de omvormer blijven.</div>`;
+  <div class="legenda"><span class="sw d"></span>Eis (wat moet) <span class="sw r"></span>Haalbaar bij 1,0 / 0,93 × Pmax (rood stippel: met toegestane P-verlaging onder 0,95 pu) <span class="sw o"></span>Haalbaar bij 0,2 × Pmax (oranje streep). Waar een lijn ontbreekt, kan het park daar zelfs zonder blindvermogen niet binnen de spanningsgrenzen van de omvormer blijven.</div>`;
 }
 function updPct() {
   const L = P()?.lf; if (!L) return; const n = x => parseFloat(String(x ?? '').replace(',', '.'));
