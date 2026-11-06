@@ -117,6 +117,7 @@
   tr.ci td { background:var(--zacht); text-align:left !important; white-space:normal !important; font-size:13.5px; } .ciwrap p { margin:0 0 4px; } .ciwrap ol { margin:0; padding-left:20px; display:grid; gap:3px; }
   table.bres th .klein-i { width:17px; height:17px; line-height:15px; font-size:11px; margin-left:2px; border-color:#fff; color:#fff; background:transparent; } table.bres th .klein-i[aria-expanded="true"] { background:#fff; color:var(--blauw); }
   table.lft td .info-knop { width:20px; height:20px; line-height:18px; font-size:12px; margin-right:4px; }
+  .vision-auto { border-left:4px solid var(--oranje); margin-top:12px; }
   .visioninfo { margin:0 0 12px; font-size:14px; } .visioninfo h4 { margin:0 0 6px; font:700 16px "Barlow Semi Condensed", Arial, sans-serif; } .visioninfo ol { margin:0 0 6px; padding-left:20px; display:grid; gap:6px; }
   .vgrid { display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:12px; }
   .why { margin-top:8px; font-size:13.5px; line-height:1.45; background:var(--zacht); border-left:3px solid var(--rood); border-radius:6px; padding:8px 10px; } .why ul { margin:4px 0 6px; padding-left:18px; }
@@ -508,6 +509,28 @@ function updPct() {
   const un = n(L.inv.Un);
   document.querySelectorAll('[data-pct]').forEach(el => { const v = n(L.inv[el.dataset.pct]); el.textContent = isFinite(v) && un > 0 ? '(' + String(Math.round(v / un * 1000) / 10).replace('.', ',') + ' %)' : ''; });
 }
+function visionStappen(p, b) {
+  const L = p.lf, f2 = LF.f2, g = x => String(x ?? '').replace('.', ','), km = x => fmtNl(parseFloat(String(x).replace(',', '.')) / 1000);
+  const waarom = L.hs_aan ? 'er zitten twee soorten transformatoren in het net (HS/MS én MS/LS)' : p.meta.trafo2 ? 'er zijn twee typen MS/LS-trafo’s' : 'het net voldoet niet aan de uitgangspunten van een basispark';
+  const auto = String(L.hs_auto) === '1' || L.hs_auto === true;
+  return `<div class="kaart visioninfo vision-auto">
+    <h4>Geen basispark → reken het blindvermogen in Vision</h4>
+    <p>BLOS mag hier niet gebruikt worden: ${waarom} (DNV / BLOS-toelichting § 3.1). Zo zet je dit project in Vision:</p>
+    <ol>
+      <li><b>Overdrachtspunt:</b> een <i>netvoeding</i> op ${g(L.Uc)} kV met de Sk″ en R/X van de netbeheerder${L.hs_aan ? ' (bij 110 kV meestal TenneT/Enexis opvragen)' : ''}. Uref stel je per case in.</li>
+      ${L.hs_aan ? `<li><b>HS/MS-trafo:</b> ${g(L.hs.S)} MVA, ${g(L.hs.U1)}/${g(L.hs.U2)} kV, uk ${g(L.hs.uk)} %, Pk ${g(L.hs.Pk)} kW; regelschakelaar ${g(L.hs.step)} % per stap, ${auto ? '<b>automatische spanningsregeling</b> aan (gewenste MS-spanning instellen)' : 'vaste stand ' + g(L.hs.tap)}. Naamplaatgegevens vragen bij de eigenaar.</li>` : ''}
+      ${(num(L.Xext) || 0) > 0 ? `<li><b>Smoorspoel(en):</b> X totaal ${g(L.Xext)} Ω in serie tussen HS/MS-trafo en de MS-rail (per spoel invoeren als die apart bestaan).</li>` : ''}
+      <li><b>Kabel OP → MS-installatie:</b> ${g(L.opms.n)} × ${L.opms.type.replace(/^MS /, '')}, ${km(L.opms.L)} km.</li>
+      <li><b>Per rij</b> (${g(L.ntr)}×): kabel ${g(L.mstr.n)} × ${L.mstr.type.replace(/^MS /, '')}, ${km(L.mstr.L)} km → trafo ${fmtNl(parseFloat(String(L.tr.S).replace(',', '.')) * 1000)} kVA ${g(L.tr.U1)}/${g(L.tr.U2)} kV, uk ${g(L.tr.uk)} %, aftakstand ${g(L.tr.tap)} → LS ${g(L.ls.n)} × ${L.ls.type.replace(/^LS /, '')}, ${km(L.ls.L)} km → omvormer.</li>
+      <li><b>Omvormers</b> (${g(L.ninv)}×): als accu/omvormer met Snom ${g(L.inv.S)} kVA, Pnom ${g(L.inv.P)} kW, Unom ${g(L.inv.Un)} V, Imax ${g(L.inv.Imax)} A. Spanningsgrenzen ${g(L.inv.UminV)}–${g(L.inv.UmaxV)} V controleer je zelf in de uitkomst.</li>
+      <li><b>Overige belastingen en opwek</b> op hetzelfde net (park, WKK’s) uitschakelen: de eis geldt voor de opslag- of productie-eenheid zelf. Dit is een uitgangspunt van deze voorcheck; stem met de netbeheerder af hoe hij het wil zien.</li>
+      <li><b>Rekenen:</b> eerst <i>Berekenen | Speciaal | Productie-eenheid</i> (Vision draait zelf de reeks loadflows en geeft tabel en grafiek). Voor de exacte CVD 2.0-cases${auto ? ' en met de automatische regelschakelaar' : ''}: per case handmatig — Uref op “Netspanning doelwaarde”, omvormers op P en Q, loadflow, Q bijstellen tot P en Q op het overdrachtspunt de doelwaarde halen. Klik in de tabel hierboven op de <b>i</b> bij een case voor de getallen.</li>
+      <li><b>Controleren per case:</b> klemspanning omvormer binnen Umin–Umax, stroom ≤ Imax, S ≤ Snom; belasting trafo’s en kabels. Vergelijk met de voorcheck in deze tab.</li>
+      <li><b>Rapport:</b> uitkomsten in de <b>BLOR</b> Excel-rapportagetool (Netbeheer Nederland) zetten, en samen met het Vision-bestand en de uitgangspunten bij het ${p.meta.soort === 'opwek' ? 'PGMD' : 'ESMD'} voegen.</li>
+    </ol>
+    <div class="balk"><button class="knop" data-act="lfKopieer">Kopieer cases voor Vision (Excel)</button></div>
+  </div>`;
+}
 function renderLfRes() {
   const p = P(), box = $('#lfRes'), onder = $('#lfOnder'); if (!box || !p?.lf) return;
   let S;
@@ -553,7 +576,7 @@ function renderLfRes() {
   <div id="lfSugg"></div>`;
   $('#lfSugg').innerHTML = `${p._lfUndo?.length ? '<div class="balk"><button class="knop" data-act="lfUndo">↶ Laatste “Toepassen” ongedaan maken</button></div>' : ''}${!S.lijst.length ? `<div class="info"><b>Alle ${b.cases.length} cases voldoen</b>, dus er zijn geen aanpassingen nodig.${b.Pmax < b.PmaxNat - 1e-6 ? ' Let op: dit is met <b>Pmax begrensd op ' + f2(b.Pmax) + ' MW</b> (veld “Pmax begrensd in besturing”). Maak dat leeg om de oplossingen voor vol vermogen te zien.' : ''}</div>` : ''}${S.lijst.length ? `<h3>Zo krijg je het groen</h3><p class="klein">“Toepassen” verandert de invoer om het effect te zien; met de knop hierboven zet je het terug.</p>${S.lijst.filter(x => x.soort === 'regel').map(x => `<div class="let"><b>${x.titel}.</b> ${x.uitleg}</div>`).join('')}<ol class="sugg">${S.lijst.map((x, i) => x.soort === 'regel' ? '' : `<li><span class="nr">${S.lijst.slice(0, i + 1).filter(y => y.soort !== 'regel').length}</span><div><b>${x.titel}</b><span>${x.uitleg}</span>${x.kost ? `<em class="kost">${x.kost}</em>` : ''}</div>${x.set ? `<button class="knop" data-sug="${i}">Toepassen</button>` : ''}</li>`).join('')}</ol><p class="klein">Volgorde: eerst wat niets kost (instellingen), daarna leveropties en extra hardware, als laatste wat vermogen kost. Realistisch spanningsvenster omvormer: 85 % (20 min, Netcode) tot 112 %.</p>` : ''}
 
-  ${p.lf.hs_aan || p.meta.trafo2 ? '<div class="let"><b>Geen basispark:</b> met twee soorten transformatoren (HS/MS én MS/LS) mag de BLOS-tool niet gebruikt worden (DNV). Reken de cases door in Vision. In BLOS laat je HS/MS-trafo en smoorspoel weg.</div>' : ''}`;
+  ${p.lf.hs_aan || p.meta.trafo2 || p.meta.basis === 'nee' ? visionStappen(p, b) : ''}`;
   box._sug = S.lijst;
   renderVensters(nrm(p.lf));
 }
