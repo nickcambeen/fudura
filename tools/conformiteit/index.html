@@ -82,17 +82,18 @@
   .leeg { text-align:center; padding:40px 16px; }
   .toast { position:fixed; left:50%; bottom:22px; transform:translateX(-50%); background:var(--fg); color:var(--bg); padding:9px 16px; border-radius:8px; font-weight:600; opacity:0; transition:opacity .2s; pointer-events:none; z-index:20; }
   .toast.aan { opacity:1; }
-  .lfgrid { display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:12px; }
-  .lfgrid .kaart h3 { margin:0 0 8px; font-size:17px; display:flex; justify-content:space-between; align-items:center; gap:8px; }
-  .kv { display:grid; grid-template-columns:minmax(0,1fr) 130px; gap:6px 10px; align-items:center; font-size:14px; }
-  .kv > span { line-height:1.25; }
-  .kv > span small { font-size:12px; margin-left:4px; }
-  .kv > span { min-height:32px; display:flex; align-items:center; flex-wrap:wrap; column-gap:4px; }
-  .kv > span.breed { min-height:0; }
+  .lfgrid { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:10px; align-items:start; }
+  .lfgrid .kaart { padding:10px 12px; }
+  .lfgrid .kaart.breed2 { grid-column:span 2; }
+  .lfgrid .kaart h3 { margin:0 0 6px; font-size:16px; }
+  .kv { display:grid; grid-template-columns:minmax(0,1fr) 84px; gap:4px 8px; align-items:center; font-size:13.5px; }
+  .kaart.breed2 .kv { grid-template-columns:minmax(0,1fr) 84px minmax(0,1fr) 84px; column-gap:14px; }
+  .kv > span { line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .kv > span small { color:var(--muted); font-size:11.5px; margin-left:3px; }
+  .kv input, .kv select { height:28px; padding:2px 6px; font-size:13.5px; border-radius:5px; }
+  .kv .breed { grid-column:1 / -1; white-space:normal; }
   .kv select.breed { grid-column:1 / -1; }
-  .kv span small { color:var(--muted); }
-  .kv input, .kv select { height:32px; padding:4px 7px; font-size:14px; }
-  .kv .breed { grid-column:1 / -1; }
+  @media (max-width:560px) { .lfgrid .kaart.breed2 { grid-column:auto; } .kaart.breed2 .kv { grid-template-columns:minmax(0,1fr) 84px; } }
   td.g { background:color-mix(in srgb, var(--groen) 16%, var(--kaart)); } td.o { background:color-mix(in srgb, var(--oranje) 18%, var(--kaart)); } td.r { background:color-mix(in srgb, var(--rood) 20%, var(--kaart)); font-weight:600; }
   table.lft { font-size:14px; } table.lft td, table.lft th { padding:6px 8px; text-align:right; white-space:nowrap; } table.lft td:first-child, table.lft th:first-child, table.lft td:nth-child(2) { text-align:left; }
   .oordeel { font:700 22px "Barlow Semi Condensed", Arial, sans-serif; }
@@ -348,9 +349,9 @@ function lfVeld(pad, lab, eenh, extra = '') { const p = P(); return `<span>${lab
 function lfKabel(pre, titel, uitleg) {
   const p = P(), k = p.lf[pre]; const opts = Object.keys(LF.KABELS).concat('eigen');
   return `<div class="kaart"><h3>${titel}</h3><div class="kv">
-    <span class="breed klein">${uitleg}</span>
+    <span class="breed klein" style="margin-top:-4px">${uitleg}</span>
     <select class="breed" data-lf="${pre}.type" aria-label="Kabeltype">${opts.map(o => `<option${o === k.type ? ' selected' : ''}>${o}</option>`).join('')}</select>
-    ${lfVeld(pre + '.L', 'Lengte', 'm')}${lfVeld(pre + '.n', 'Aantal parallel')}
+    ${lfVeld(pre + '.L', 'Lengte', 'm')}${lfVeld(pre + '.n', 'Parallel', '×')}
     ${k.type === 'eigen' ? lfVeld(pre + '.eigen.R', 'R', 'Ω/km') + lfVeld(pre + '.eigen.X', 'X', 'Ω/km') + lfVeld(pre + '.eigen.C', 'C', 'µF/km') : ''}
   </div></div>`;
 }
@@ -360,16 +361,16 @@ function renderLf() {
   const L = p.lf;
   el.innerHTML = `<div class="info">Eigen loadflow-voorcheck van het blindvermogen volgens de 13 hoekpunten van het NBNL-verificatiedocument (PPM Type B/C, art. 3.19 Netcode/Systeemcode). Opbouw als basispark: overdrachtspunt → (HS/MS-trafo) → OP–MS-kabel → MS-TR-kabels → MS/LS-trafo’s → LS-kabels → omvormers. <b>Dit is niet de officiële BLOS-tool</b>: voor het formulier reken je met BLOS (basispark) of een netberekeningsprogramma.</div>
   <div class="lfgrid">
-    <div class="kaart"><h3>Overdrachtspunt</h3><div class="kv">${lfVeld('Uc', 'Contractspanning Uc', 'kV')}${lfVeld('Plim', 'Pmax begrensd op', 'MW, leeg = vol')}${lfVeld('Xext', 'Extra serie-X (smoorspoel)', 'Ω op MS')}
-      <span>Eigen HS/MS-trafo</span><select data-lf="hs_aan"><option value="0"${L.hs_aan ? '' : ' selected'}>Nee</option><option value="1"${L.hs_aan ? ' selected' : ''}>Ja</option></select></div></div>
-    ${L.hs_aan ? `<div class="kaart"><h3>HS/MS-trafo</h3><div class="kv">${lfVeld('hs.S', 'Vermogen', 'MVA')}${lfVeld('hs.U1', 'U primair', 'kV')}${lfVeld('hs.U2', 'U secundair', 'kV')}${lfVeld('hs.uk', 'uk', '%')}${lfVeld('hs.Pk', 'Pk', 'kW')}${lfVeld('hs.P0', 'P0', 'kW')}${lfVeld('hs.step', 'Trapgrootte', '% per stap')}<span>Stand <small>0 = midden</small></span><select data-lf="hs.tap">${Array.from({ length:19 }, (_, i) => i - 9).map(t => `<option value="${t}"${String(t) === String(L.hs.tap) ? ' selected' : ''}>${t > 0 ? '+' : ''}${t}</option>`).join('')}</select></div></div>` : ''}
+    <div class="kaart"><h3>Overdrachtspunt</h3><div class="kv">${lfVeld('Uc', 'Contractspanning Uc', 'kV')}${lfVeld('Plim', 'Pmax begrensd', 'MW')}${lfVeld('Xext', 'Serie-X smoorspoel', 'Ω')}
+      <span>HS/MS-trafo</span><select data-lf="hs_aan"><option value="0"${L.hs_aan ? '' : ' selected'}>Nee</option><option value="1"${L.hs_aan ? ' selected' : ''}>Ja</option></select></div></div>
+    ${L.hs_aan ? `<div class="kaart breed2"><h3>HS/MS-trafo</h3><div class="kv">${lfVeld('hs.S', 'Vermogen', 'MVA')}${lfVeld('hs.U1', 'U primair', 'kV')}${lfVeld('hs.U2', 'U secundair', 'kV')}${lfVeld('hs.uk', 'uk', '%')}${lfVeld('hs.Pk', 'Pk', 'kW')}${lfVeld('hs.P0', 'P0', 'kW')}${lfVeld('hs.step', 'Trap', '%')}<span>Stand</span><select data-lf="hs.tap">${Array.from({ length:19 }, (_, i) => i - 9).map(t => `<option value="${t}"${String(t) === String(L.hs.tap) ? ' selected' : ''}>${t > 0 ? '+' : ''}${t}</option>`).join('')}</select></div></div>` : ''}
     ${lfKabel('opms', 'Kabel OP → MS-installatie', 'Lengte 0 als het overdrachtspunt in de MS-installatie zit.')}
     ${lfKabel('mstr', 'Kabel MS-installatie → trafo', 'Gemiddelde lengte per trafo.')}
-    <div class="kaart"><h3>MS/LS-trafo’s</h3><div class="kv">${lfVeld('ntr', 'Aantal trafo’s')}${lfVeld('tr.S', 'Vermogen', 'MVA')}${lfVeld('tr.U1', 'U primair', 'kV')}${lfVeld('tr.U2', 'U secundair', 'kV')}${lfVeld('tr.uk', 'uk', '%')}${lfVeld('tr.Pk', 'Pk', 'kW')}${lfVeld('tr.P0', 'P0', 'kW')}${lfVeld('tr.step', 'Trapgrootte', '% per stap')}
-      <span>Stand aftakschakelaar <small>+ = hogere primaire spanning</small></span><select data-lf="tr.tap">${[-2, -1, 0, 1, 2].map(t => `<option value="${t}"${String(t) === String(L.tr.tap) ? ' selected' : ''}>${t > 0 ? '+' : ''}${t}</option>`).join('')}</select></div></div>
+    <div class="kaart breed2"><h3>MS/LS-trafo’s</h3><div class="kv">${lfVeld('ntr', 'Aantal')}${lfVeld('tr.S', 'Vermogen', 'MVA')}${lfVeld('tr.U1', 'U primair', 'kV')}${lfVeld('tr.U2', 'U secundair', 'kV')}${lfVeld('tr.uk', 'uk', '%')}${lfVeld('tr.Pk', 'Pk', 'kW')}${lfVeld('tr.P0', 'P0', 'kW')}${lfVeld('tr.step', 'Trap', '%')}
+      <span title="+ = hogere primaire spanning">Stand</span><select data-lf="tr.tap">${[-2, -1, 0, 1, 2].map(t => `<option value="${t}"${String(t) === String(L.tr.tap) ? ' selected' : ''}>${t > 0 ? '+' : ''}${t}</option>`).join('')}</select></div></div>
     ${lfKabel('ls', 'LS-kabel trafo → omvormers', 'Per trafo, gemiddelde lengte.')}
-    <div class="kaart"><h3>Omvormers</h3><div class="kv">${lfVeld('ninv', 'Aantal (totaal park)')}${lfVeld('inv.S', 'Snom', 'kVA')}${lfVeld('inv.P', 'Pmax', 'kW')}${lfVeld('inv.Un', 'Unom', 'V')}${lfVeld('inv.Imax', 'Imax', 'A, leeg = Snom/√3U')}${lfVeld('inv.Q', 'Qmax', 'kvar, leeg = Snom')}${lfVeld('inv.umin', 'Umin', 'pu')}${lfVeld('inv.umax', 'Umax', 'pu')}
-      <span class="breed klein">Umin/Umax: het venster waarin de omvormer volle stroom levert, binnen de instellingen U&lt; / U&gt;.</span></div></div>
+    <div class="kaart breed2"><h3>Omvormers</h3><div class="kv">${lfVeld('ninv', 'Aantal totaal')}${lfVeld('inv.S', 'Snom', 'kVA')}${lfVeld('inv.P', 'Pmax', 'kW')}${lfVeld('inv.Un', 'Unom', 'V')}${lfVeld('inv.Imax', 'Imax', 'A')}${lfVeld('inv.Q', 'Qmax', 'kvar')}${lfVeld('inv.umin', 'Umin', 'pu')}${lfVeld('inv.umax', 'Umax', 'pu')}
+      <span class="breed klein">Imax/Qmax leeg = uit Snom. Umin/Umax: venster met volle stroom, binnen U&lt; / U&gt;.</span></div></div>
   </div>
   ${L.hs_aan || P().meta.trafo2 ? '<div class="let"><b>Geen basispark:</b> met twee soorten transformatoren (HS/MS én MS/LS) mag de BLOS-tool niet gebruikt worden (DNV). Reken de 13 hoekpunten door in Vision; de scenario’s hieronder geven per hoekpunt de doelwaarden.</div>' : ''}
   <div id="lfRes"></div>`;
