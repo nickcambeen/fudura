@@ -82,18 +82,19 @@
   .leeg { text-align:center; padding:40px 16px; }
   .toast { position:fixed; left:50%; bottom:22px; transform:translateX(-50%); background:var(--fg); color:var(--bg); padding:9px 16px; border-radius:8px; font-weight:600; opacity:0; transition:opacity .2s; pointer-events:none; z-index:20; }
   .toast.aan { opacity:1; }
-  .lfgrid { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:10px; align-items:start; }
-  .lfgrid .kaart { padding:10px 12px; }
-  .lfgrid .kaart.breed2 { grid-column:span 2; }
+  .lfgrid { display:flex; flex-wrap:wrap; gap:10px; align-items:flex-start; }
+  .lfgrid .kaart { padding:10px 12px; flex:0 1 auto; max-width:100%; }
   .lfgrid .kaart h3 { margin:0 0 6px; font-size:16px; }
-  .kv { display:grid; grid-template-columns:minmax(0,1fr) 84px; gap:4px 8px; align-items:center; font-size:13.5px; }
-  .kaart.breed2 .kv { grid-template-columns:minmax(0,1fr) 84px minmax(0,1fr) 84px; column-gap:14px; }
-  .kv > span { line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .kv { display:grid; grid-template-columns:max-content 76px; justify-content:start; gap:4px 8px; align-items:center; font-size:13.5px; }
+  .kaart.breed2 .kv { grid-template-columns:max-content 76px max-content 76px; column-gap:8px; }
+  .kaart.breed2 .kv > span:nth-child(4n+3) { padding-left:10px; }
+  .kv > span { line-height:1.2; white-space:nowrap; }
+  .kab .kv > span:nth-child(3) { padding-left:0; } .kab .kv > span:nth-child(5) { padding-left:10px; }
   .kv > span small { color:var(--muted); font-size:11.5px; margin-left:3px; }
   .kv input, .kv select { height:28px; padding:2px 6px; font-size:13.5px; border-radius:5px; }
-  .kv .breed { grid-column:1 / -1; white-space:normal; }
-  .kv select.breed { grid-column:1 / -1; }
-  @media (max-width:560px) { .lfgrid .kaart.breed2 { grid-column:auto; } .kaart.breed2 .kv { grid-template-columns:minmax(0,1fr) 84px; } }
+  .kv .breed { grid-column:1 / -1; white-space:normal; max-width:240px; }
+  .kv select.breed { grid-column:1 / -1; max-width:none; width:100%; }
+  @media (max-width:560px) { .kaart.breed2 .kv { grid-template-columns:max-content 76px; } .kaart.breed2 .kv > span:nth-child(4n+3) { padding-left:0; } }
   td.g { background:color-mix(in srgb, var(--groen) 16%, var(--kaart)); } td.o { background:color-mix(in srgb, var(--oranje) 18%, var(--kaart)); } td.r { background:color-mix(in srgb, var(--rood) 20%, var(--kaart)); font-weight:600; }
   table.lft { font-size:14px; } table.lft td, table.lft th { padding:6px 8px; text-align:right; white-space:nowrap; } table.lft td:first-child, table.lft th:first-child, table.lft td:nth-child(2) { text-align:left; }
   .oordeel { font:700 22px "Barlow Semi Condensed", Arial, sans-serif; }
@@ -348,7 +349,7 @@ const nrm = o => JSON.parse(JSON.stringify(o, (k, v) => typeof v === 'string' &&
 function lfVeld(pad, lab, eenh, extra = '') { const p = P(); return `<span>${lab}${eenh ? ` <small>${eenh}</small>` : ''}</span><input data-lf="${pad}" value="${esc(getPad(p.lf, pad) ?? '')}" inputmode="decimal"${extra}>`; }
 function lfKabel(pre, titel, uitleg) {
   const p = P(), k = p.lf[pre]; const opts = Object.keys(LF.KABELS).concat('eigen');
-  return `<div class="kaart"><h3>${titel}</h3><div class="kv">
+  return `<div class="kaart breed2 kab"><h3>${titel}</h3><div class="kv">
     <span class="breed klein" style="margin-top:-4px">${uitleg}</span>
     <select class="breed" data-lf="${pre}.type" aria-label="Kabeltype">${opts.map(o => `<option${o === k.type ? ' selected' : ''}>${o}</option>`).join('')}</select>
     ${lfVeld(pre + '.L', 'Lengte', 'm')}${lfVeld(pre + '.n', 'Parallel', '×')}
