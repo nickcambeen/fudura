@@ -41,6 +41,8 @@
     { n:11, u:0.90, p:1.0, q:+0.20, red:2, txt:'≥ 20 % leveren' },
     { n:12, u:0.90, p:1.0, q:0,     red:2, txt:'0' },
     { n:13, u:0.85, p:1.0, q:0,     red:3, txt:'geen eis (P ≥ 80 %)' },
+    { n:14, u:1.00, p:0.4, q:+0.33, red:0, txt:'max. leveren (0,4 Pmax)' },
+    { n:15, u:1.00, p:0.4, q:-0.33, red:0, txt:'max. opnemen (0,4 Pmax)' },
   ];
 
   function num(v, d) { const x = parseFloat(String(v ?? '').replace(',', '.')); return isFinite(x) ? x : d; }
@@ -69,7 +71,8 @@
       tr: { Z:trafoZ(I.tr), U1:num(I.tr.U1, 10), U2:num(I.tr.U2, 0.4), P0:num(I.tr.P0, 0) / 1000, step:num(I.tr.step, 2.5) / 100, S:num(I.tr.S, 1) },
       inv: { S:num(I.inv.S, 1000) / 1000, P:num(I.inv.P, num(I.inv.S, 1000)) / 1000, Un:num(I.inv.Un, 400) / 1000,
              Imax:(num(I.inv.Imax, 0) / 1000) || num(I.inv.S, 1000) / (R3 * num(I.inv.Un, 400)), Q:num(I.inv.Q, 0) / 1000 || num(I.inv.S, 1000) / 1000,
-             umin:num(I.inv.umin, 0.85), umax:num(I.inv.umax, 1.1) },
+             Qo:Math.abs(num(I.inv.Qopn, 0)) / 1000 || num(I.inv.Q, 0) / 1000 || num(I.inv.S, 1000) / 1000,
+             umin:num(I.inv.UminV, 0) ? num(I.inv.UminV) / num(I.inv.Un, 400) : num(I.inv.umin, 0.85), umax:num(I.inv.UmaxV, 0) ? num(I.inv.UmaxV) / num(I.inv.Un, 400) : num(I.inv.umax, 1.1) },
     };
     return net;
   }
@@ -106,7 +109,7 @@
     r = serF(V, S, net.ls.Z, net.ls.B); V = r.V; S = r.S; info.Ils = r.I;
     const Si = sc(S, 1 / net.perTr), Vi = abs(V), iv = net.inv;
     const Ii = abs(Si) / (R3 * Vi);
-    return { u:Vi / iv.Un, s:abs(Si) / iv.S, i:Ii / iv.Imax, p:Si.re / iv.P, q:Math.abs(Si.im) / iv.Q, Pinv:Si.re, Qinv:Si.im, info };
+    return { u:Vi / iv.Un, s:abs(Si) / iv.S, i:Ii / iv.Imax, p:Si.re / iv.P, q:Si.im >= 0 ? Si.im / iv.Q : -Si.im / iv.Qo, Pinv:Si.re, Qinv:Si.im, info };
   }
   // Terug: van omvormerklemmen (u=1, P, Q=0) naar OP → Pmax-case
   function terug(net, uinv, Pinv, Qinv, tapHS, tapTR) {
@@ -179,9 +182,12 @@
     // 3. Pmax begrenzen (beste stand)
     let best = null;
     for (const t of taps) {
-      let lo = 0, hi = basis.PmaxNat;
-      if (!bereken(I, { tapTR:t, Plim:lo + 1e-3 }).ok) continue;
-      for (let k = 0; k < 30; k++) { const m = (lo + hi) / 2; if (bereken(I, { tapTR:t, Plim:m }).ok) lo = m; else hi = m; }
+      // van boven naar beneden zoeken (niet monotoon: bij heel laag P kan de spanning juist te hoog worden)
+      let ok = null, fout = basis.PmaxNat;
+      for (let k = 1; k <= 50; k++) { const P = basis.PmaxNat * (1 - 0.01 * k); if (bereken(I, { tapTR:t, Plim:P }).ok) { ok = P; break; } fout = P; }
+      if (ok == null) continue;
+      let lo = ok, hi = fout;
+      for (let k = 0; k < 20; k++) { const m = (lo + hi) / 2; if (bereken(I, { tapTR:t, Plim:m }).ok) lo = m; else hi = m; }
       if (!best || lo > best.P) best = { P:lo, t };
     }
     if (best && best.P >= 0.5 * basis.PmaxNat && best.P < basis.PmaxNat - 1e-3) S.push({ soort:'pmax', titel:'Begrens Pmax op ' + f2(best.P * 0.995) + ' MW' + (best.t !== basis.tapTR ? ' (stand ' + (best.t > 0 ? '+' : '') + best.t + ')' : ''), uitleg:'Het park levert dan ' + f1(100 * (1 - best.P / basis.PmaxNat)) + ' % minder dan de ' + f2(basis.PmaxNat) + ' MW die de omvormers kunnen. Dit is het vermogen dat je in het formulier als maximumcapaciteit opgeeft.', set:{ Plim:+(best.P * 0.995).toFixed(3), 'tr.tap':best.t } });
@@ -189,8 +195,8 @@
     const fac = zoekFactor(k => bereken(I, { mut:n => { n.inv.S *= k; n.inv.Imax *= k; n.inv.Q *= k; } }).ok, 1, 1.6);
     if (fac) S.push({ soort:'omv', titel:'Omvormer met ≥ ' + Math.ceil(num(I.inv.S) * fac / 10) * 10 + ' kVA (en evenredig meer stroom)', uitleg:'Zelfde werkzaam vermogen, meer ruimte voor blindvermogen. Vraag het PQ-diagram bij de leverancier.' });
     // 5. Spanningsvenster omvormer
-    const v = venster(basis);
-    if (v) S.push({ soort:'venster', titel:'Spanningsvenster omvormer ' + f2(v.lo) + '–' + f2(v.hi) + ' pu nodig', uitleg:'Nu ' + f2(num(I.inv.umin)) + '–' + f2(num(I.inv.umax)) + ' pu. Vraag de leverancier of de omvormer (en de beveiliging U&lt; / U&gt;) dit toestaat.', set:{ 'inv.umin':+Math.min(num(I.inv.umin), v.lo).toFixed(2), 'inv.umax':+Math.max(num(I.inv.umax), v.hi).toFixed(2) } });
+    const b0 = basis, v = venster(basis);
+    if (v) S.push({ soort:'venster', titel:'Spanningsvenster omvormer ' + f2(v.lo) + '–' + f2(v.hi) + ' pu nodig', uitleg:'Nu ' + f2(b0.net.inv.umin) + '–' + f2(b0.net.inv.umax) + ' pu (' + Math.round(b0.net.inv.umin * num(I.inv.Un, 400)) + '–' + Math.round(b0.net.inv.umax * num(I.inv.Un, 400)) + ' V); nodig ' + Math.floor(v.lo * num(I.inv.Un, 400)) + '–' + Math.ceil(v.hi * num(I.inv.Un, 400)) + ' V. Vraag de leverancier of de omvormer (en de beveiliging U&lt; / U&gt;) dit toestaat.', set:{ 'inv.UminV':Math.floor(Math.min(b0.net.inv.umin, v.lo) * num(I.inv.Un, 400)), 'inv.UmaxV':Math.ceil(Math.max(b0.net.inv.umax, v.hi) * num(I.inv.Un, 400)) } });
     // 6. Meer parallelle kabels OP–MS
     if (num(I.opms.L, 0) > 0) { const r = bereken({ ...I, opms:{ ...I.opms, n:num(I.opms.n, 1) * 2 } }); if (r.ok) S.push({ soort:'kabel', titel:'Verdubbel de OP–MS-kabels (' + num(I.opms.n, 1) * 2 + ' parallel)', uitleg:'Minder spanningsval en blindvermogenverlies.', set:{ 'opms.n':num(I.opms.n, 1) * 2 } }); }
     // 7. Lagere uk MS/LS
