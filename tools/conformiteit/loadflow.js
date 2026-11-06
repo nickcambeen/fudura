@@ -107,6 +107,7 @@
     r = serF(V, S, net.tr.Z, 0); S = r.S; info.Itr = r.I; info.Str = abs(S) / net.tr.S;
     V = sc(r.V, 1 / (net.tr.U1 * (1 + net.tr.step * tapTR) / net.tr.U2));
     r = serF(V, S, net.ls.Z, net.ls.B); V = r.V; S = r.S; info.Ils = r.I;
+    info.Bopms = info.Iopms * 1000 / net.opms.Iz; info.Bmstr = info.Imstr * 1000 / net.mstr.Iz; info.Btr = info.Str; info.Bls = info.Ils * 1000 / net.ls.Iz;
     const Si = sc(S, 1 / net.perTr), Vi = abs(V), iv = net.inv;
     const Ii = abs(Si) / (R3 * Vi);
     return { u:Vi / iv.Un, s:abs(Si) / iv.S, i:Ii / iv.Imax, p:Si.re / iv.P, q:Si.im >= 0 ? Si.im / iv.Q : -Si.im / iv.Qo, Pinv:Si.re, Qinv:Si.im, info };

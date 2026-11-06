@@ -13,7 +13,7 @@
   :root[data-theme="dark"] { --bg:#12181c; --kaart:#1b232a; --fg:#e6ebee; --muted:#93a1a9; --lijn:#2c363d; --blauw:#6fa4e0; --oranje:#f08a3c; --groen:#6cc489; --rood:#f2867f; --zacht:#161d22; }
   * { box-sizing:border-box; }
   html, body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.5 Barlow, system-ui, sans-serif; }
-  .wrap { max-width:1160px; margin:0 auto; padding:max(20px, env(safe-area-inset-top)) 16px 48px; }
+  .wrap { max-width:1440px; margin:0 auto; padding:max(20px, env(safe-area-inset-top)) 16px 48px; }
   a { color:var(--blauw); }
   .terug { font:600 14px "Barlow Semi Condensed", Arial, sans-serif; text-decoration:none; }
   h1 { font:700 clamp(28px, 5vw, 40px)/1.08 "Barlow Semi Condensed", Arial, sans-serif; margin:8px 0 4px; }
@@ -98,6 +98,24 @@
   .fld > span { font-size:12.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .fld > span small { font-weight:400; color:var(--muted); font-size:11.5px; }
   .fld input, .fld select { height:30px; padding:3px 7px; font-size:14px; border-radius:5px; }
+  .blos { display:grid; grid-template-columns:minmax(300px, 380px) minmax(0, 1fr); gap:12px; align-items:start; }
+  @media (max-width:900px) { .blos { grid-template-columns:minmax(0, 1fr); } }
+  .blos-uit, .blos-in { min-width:0; }
+  table.bin { font-size:13px; } table.bin td, table.bin th { padding:3px 6px; border-bottom:1px solid var(--lijn); }
+  table.bin tr.titel th, table.bres tr.titel th { background:var(--blauw); color:#fff; font:700 14px "Barlow Semi Condensed", Arial, sans-serif; text-transform:none; letter-spacing:0; }
+  table.bin tr.grp th { background:var(--zacht); color:var(--fg); font:700 13px "Barlow Semi Condensed", Arial, sans-serif; text-transform:none; letter-spacing:0; padding-top:6px; }
+  table.bin tr.grp th small { font-weight:400; color:var(--muted); margin-left:6px; }
+  table.bin td:nth-child(2) { width:110px; } table.bin td.eh { width:40px; color:var(--muted); font-size:12px; }
+  table.bin input, table.bin select { height:26px; padding:2px 6px; font-size:13px; border-radius:4px; }
+  table.bin.nietblos { margin-top:10px; border-style:dashed; }
+  table.bres { font-size:12.5px; } table.bres th, table.bres td { padding:3px 6px; white-space:nowrap; text-align:right; border-bottom:1px solid var(--lijn); }
+  table.bres tr > th:first-child { text-align:left; font:500 12.5px Barlow, system-ui, sans-serif; text-transform:none; letter-spacing:0; color:var(--fg); background:var(--kaart); position:sticky; left:0; }
+  table.bres tr.titel th { text-align:center; } table.bres tr.titel th:first-child { background:var(--blauw); color:#fff; }
+  table.bres tr.sub th { background:var(--zacht); font:700 12.5px "Barlow Semi Condensed", Arial, sans-serif; text-transform:none; letter-spacing:0; text-align:left; }
+  td.d { background:color-mix(in srgb, var(--blauw) 16%, var(--kaart)); }
+  .legenda { font-size:12.5px; color:var(--muted); margin-top:6px; display:flex; flex-wrap:wrap; gap:4px 12px; align-items:center; }
+  .legenda .sw { display:inline-block; width:12px; height:12px; border-radius:2px; margin-right:-6px; vertical-align:middle; }
+  .sw.d { background:color-mix(in srgb, var(--blauw) 40%, var(--kaart)); } .sw.g { background:color-mix(in srgb, var(--groen) 45%, var(--kaart)); } .sw.r { background:color-mix(in srgb, var(--rood) 45%, var(--kaart)); } .sw.o { background:color-mix(in srgb, var(--oranje) 45%, var(--kaart)); }
   td.g { background:color-mix(in srgb, var(--groen) 16%, var(--kaart)); } td.o { background:color-mix(in srgb, var(--oranje) 18%, var(--kaart)); } td.r { background:color-mix(in srgb, var(--rood) 20%, var(--kaart)); font-weight:600; }
   table.lft { font-size:14px; } table.lft td, table.lft th { padding:6px 8px; text-align:right; white-space:nowrap; } table.lft td:first-child, table.lft th:first-child, table.lft td:nth-child(2) { text-align:left; }
   .oordeel { font:700 22px "Barlow Semi Condensed", Arial, sans-serif; }
@@ -354,65 +372,89 @@ function fmtNl(v) { if (v === '' || v == null) return ''; const x = parseFloat(S
 function lfVeld(pad, lab, eenh, f = 1) { const p = P(); let w = getPad(p.lf, pad) ?? ''; if (f !== 1 && w !== '') w = fmtNl(parseFloat(String(w).replace(',', '.')) / f); return `<label class="fld"><span title="${esc(lab)}">${lab}${eenh ? ` <small>${eenh}</small>` : ''}</span><input data-lf="${pad}"${f !== 1 ? ` data-f="${f}"` : ''} value="${esc(w)}" inputmode="decimal"></label>`; }
 function lfSel(pad, lab, opties, w, tip = '') { return `<label class="fld"${tip ? ` title="${tip}"` : ''}><span>${lab}</span><select data-lf="${pad}">${opties.map(([v, t]) => `<option value="${v}"${String(v) === String(w) ? ' selected' : ''}>${t}</option>`).join('')}</select></label>`; }
 const standen = n => Array.from({ length:2 * n + 1 }, (_, i) => i - n).map(t => [t, (t > 0 ? '+' : '') + t]);
-function lfKabel(pre, titel, uitleg, parLab) {
-  const p = P(), k = p.lf[pre]; const opts = Object.keys(LF.KABELS).concat('eigen');
-  return `<div class="kaart"><h3>${titel}</h3><p class="hint">${uitleg}</p><div class="flds">
-    <label class="fld w3"><span>Doorsnede / type</span><select data-lf="${pre}.type">${opts.map(o => `<option${o === k.type ? ' selected' : ''}>${o}</option>`).join('')}</select></label>
-    ${lfVeld(pre + '.n', 'Parallel', '')}${lfVeld(pre + '.L', 'Lengte', 'km', 1000)}
-    ${k.type === 'eigen' ? lfVeld(pre + '.eigen.R', 'R', 'Ω/km') + lfVeld(pre + '.eigen.X', 'X', 'Ω/km') + lfVeld(pre + '.eigen.C', 'C', 'µF/km') + lfVeld(pre + '.eigen.Iz', 'Belastb.', 'A') : ''}
-  </div></div>`;
-}
+function rij(pad, lab, eenh, f = 1) { const p = P(); let w = getPad(p.lf, pad) ?? ''; if (f !== 1 && w !== '') w = fmtNl(parseFloat(String(w).replace(',', '.')) / f); return `<tr><td>${lab}</td><td><input data-lf="${pad}"${f !== 1 ? ` data-f="${f}"` : ''} value="${esc(w)}" inputmode="decimal"></td><td class="eh">${eenh}</td></tr>`; }
+function rijSel(pad, lab, opties, w, eenh = '') { return `<tr><td>${lab}</td><td><select data-lf="${pad}">${opties.map(([v, t]) => `<option value="${v}"${String(v) === String(w) ? ' selected' : ''}>${t}</option>`).join('')}</select></td><td class="eh">${eenh}</td></tr>`; }
+function rijKabel(pre) { const k = P().lf[pre]; return rijSel(pre + '.type', 'Doorsnede geleider kabel', Object.keys(LF.KABELS).concat('eigen').map(o => [o, o.replace(/^(MS|LS) /, '')]), k.type) + (k.type === 'eigen' ? rij(pre + '.eigen.R', 'Weerstand R', 'Ω/km') + rij(pre + '.eigen.X', 'Reactantie X', 'Ω/km') + rij(pre + '.eigen.C', 'Capaciteit C', 'µF/km') + rij(pre + '.eigen.Iz', 'Belastbaarheid', 'A') : ''); }
+const kop = (t, sub = '') => `<tr class="grp"><th colspan="3">${t}${sub ? `<small>${sub}</small>` : ''}</th></tr>`;
 function renderLf() {
   const p = P(), el = $('#p-lf'); if (!p) { el.innerHTML = ''; return; }
   p.lf ||= /getec/i.test(p.naam) ? JSON.parse(JSON.stringify(LFGETEC)) : lfStandaard();
   const L = p.lf;
-  // eenmalig: spanningsgrenzen in V
   const un = parseFloat(String(L.inv.Un).replace(',', '.')) || 400;
   if (L.inv.UmaxV == null) L.inv.UmaxV = fmtNl(Math.round(un * parseFloat(String(L.inv.umax || '1,1').replace(',', '.'))));
   if (L.inv.UminV == null) L.inv.UminV = fmtNl(Math.round(un * parseFloat(String(L.inv.umin || '0,85').replace(',', '.'))));
-  el.innerHTML = `<div class="info">Invoer in dezelfde volgorde en eenheden als de BLOS Excel-tool (blad “Invoer en resultaten”), zodat je de waarden één op één overneemt. De berekening hier is een eigen voorcheck van de hoekpunten uit het NBNL-verificatiedocument; <b>niet de officiële BLOS-tool</b>.</div>
-  <div class="balk"><button class="knop" data-act="lfBlos">Kopieer invoer voor BLOS</button><span class="klein">Lijst in BLOS-volgorde, om naast de Excel te leggen.</span></div>
-  <div class="lfgrid">
-    <div class="kaart s2"><h3>Omvormers</h3><p class="hint">Uit datasheet; Umax/Umin binnen U&gt; / U&lt;.</p><div class="flds f5">${lfVeld('ninv', 'Aantal', '')}${lfVeld('inv.S', 'Snom', 'kVA')}${lfVeld('inv.P', 'Pnom', 'kW')}${lfVeld('inv.Q', 'Q lev.', 'kvar')}${lfVeld('inv.Qopn', 'Q opn.', 'kvar')}${lfVeld('inv.Un', 'Unom', 'V')}${lfVeld('inv.Imax', 'Imax', 'A')}${lfVeld('inv.UmaxV', 'Umax', 'V')}${lfVeld('inv.UminV', 'Umin', 'V')}${lfVeld('inv.Ik', 'Ik max', 'A')}</div></div>
-    ${lfKabel('ls', 'LS-kabels', 'Omvormers → trafo; parallel per trafo', '')}
-    <div class="kaart s2"><h3>MS/LS-transformatoren</h3><p class="hint">BLOS rekent met 2,5 % per stand; + = hogere primaire spanning.</p><div class="flds f5">${lfVeld('ntr', 'Aantal', '')}${lfVeld('tr.S', 'S', 'kVA', 0.001)}${lfVeld('tr.uk', 'uk', '%')}${lfVeld('tr.U1', 'Ums', 'kV')}${lfVeld('tr.U2', 'Uls', 'kV')}${lfVeld('tr.P0', 'Pfe', 'kW')}${lfVeld('tr.Pk', 'Pcu', 'kW')}${lfSel('tr.tap', 'Aftakstand', standen(2), L.tr.tap)}${lfVeld('tr.step', 'Trap', '%')}</div></div>
-    ${lfKabel('mstr', 'MS-TR-kabels', 'Trafo → MS-station; parallel per trafo', '')}
-    ${lfKabel('opms', 'OP-MS-kabels', 'MS-station → OP; 0 km als OP in station', '')}
-    <div class="kaart"><h3>Net</h3><p class="hint">Netspanning op het OP.</p><div class="flds">${lfVeld('Uc', 'Uc', 'kV')}${lfVeld('Plim', 'Pgrens', 'MW')}</div></div>
-    <div class="kaart s2 nietblos"><h3>Niet in BLOS</h3><p class="hint">Alleen voorcheck/Vision: HS/MS-trafo en smoorspoelen.</p><div class="flds f5">${lfSel('hs_aan', 'HS/MS-trafo', [['0', 'Nee'], ['1', 'Ja']], L.hs_aan ? '1' : '0')}${lfVeld('Xext', 'X spoel', 'Ω')}${L.hs_aan ? lfVeld('hs.S', 'S', 'MVA') + lfVeld('hs.U1', 'U prim', 'kV') + lfVeld('hs.U2', 'U sec', 'kV') + lfVeld('hs.uk', 'uk', '%') + lfVeld('hs.Pk', 'Pk', 'kW') + lfVeld('hs.P0', 'P0', 'kW') + lfVeld('hs.step', 'Trap', '%') + lfSel('hs.tap', 'Stand', standen(9), L.hs.tap) : ''}</div></div>
+  el.innerHTML = `<div class="info">Opgezet zoals het blad <b>“Invoer en resultaten”</b> van de BLOS Excel-tool: links de invoergegevens, rechts de load flow cases (NBNL CVD) met Pmax. Groen = voldoet, rood = voldoet niet, blauw = doelwaarde. Eigen voorcheck, <b>niet de officiële BLOS-tool</b>.</div>
+  <div class="balk"><button class="knop" data-act="lfBlos">Kopieer invoer voor BLOS</button><a class="knop" href="#lfVision">↓ Scenario’s voor Vision</a></div>
+  <div class="blos">
+    <div class="blos-in">
+      <table class="bin">
+        <tr class="titel"><th colspan="3">Invoergegevens</th></tr>
+        ${kop('Omvormers')}${rij('ninv', 'Totaal aantal omvormers', '')}${rij('inv.S', 'Schijnbaar vermogen omvormer Snom', 'kVA')}${rij('inv.P', 'Werkzaam vermogen omvormer Pnom', 'kW')}${rij('inv.Q', 'Max. blindvermogen levering omvormer', 'kvar')}${rij('inv.Qopn', 'Max. blindvermogen opname omvormer', 'kvar')}${rij('inv.Un', 'Nominale spanning Unom', 'V')}${rij('inv.Imax', 'Maximale stroom Imax', 'A')}${rij('inv.UmaxV', 'Maximale spanning Umax', 'V')}${rij('inv.UminV', 'Minimale spanning Umin', 'V')}${rij('inv.Ik', 'Maximale kortsluitstroom', 'A')}
+        ${kop('LS-kabels', 'omvormers naar transformatoren')}${rij('ls.n', 'Aantal (driefasen)kabels parallel per trafo', '')}${rij('ls.L', 'Lengte per kabel', 'km', 1000)}${rijKabel('ls')}
+        ${kop('MS-trafo’s', 'transformatoren')}${rij('ntr', 'Aantal transformatoren', '')}${rij('tr.S', 'Schijnbaar vermogen S', 'kVA', 0.001)}${rij('tr.uk', 'Kortsluitspanning uk', '%')}${rij('tr.U1', 'Nominale spanning primair Ums', 'kV')}${rij('tr.U2', 'Nominale spanning secundair Uls', 'kV')}${rij('tr.P0', 'Nullastverlies Pfe', 'kW')}${rij('tr.Pk', 'Kortsluitverlies Pcu', 'kW')}${rijSel('tr.tap', 'Positie aftakschakelaar (0 = nom.)', standen(2), L.tr.tap)}${rij('tr.step', 'Trapgrootte (BLOS: 2,5)', '%')}
+        ${kop('MS-TR-kabel', 'transformatoren naar MS-verzamelstation')}${rij('mstr.n', 'Aantal (driefasen)kabels parallel per trafo', '')}${rij('mstr.L', 'Lengte per kabel', 'km', 1000)}${rijKabel('mstr')}
+        ${kop('OP-MS-kabels', 'MS-verzamelstation naar overdrachtspunt')}${rij('opms.n', 'Aantal (driefasen)kabels parallel naar OP', '')}${rij('opms.L', 'Lengte per kabel', 'km', 1000)}${rijKabel('opms')}
+        ${kop('Net')}${rij('Uc', 'Toegekende netspanning Uc', 'kV')}${rij('Plim', 'Pmax begrensd (leeg = vol)', 'MW')}
+      </table>
+      <table class="bin nietblos">
+        <tr class="titel"><th colspan="3">Niet in BLOS (voorcheck / Vision)</th></tr>
+        ${rijSel('hs_aan', 'Eigen HS/MS-trafo', [['0', 'Nee'], ['1', 'Ja']], L.hs_aan ? '1' : '0')}${rij('Xext', 'Smoorspoel(en) X totaal', 'Ω')}
+        ${L.hs_aan ? rij('hs.S', 'HS/MS: vermogen', 'MVA') + rij('hs.U1', 'HS/MS: spanning primair', 'kV') + rij('hs.U2', 'HS/MS: spanning secundair', 'kV') + rij('hs.uk', 'HS/MS: uk', '%') + rij('hs.Pk', 'HS/MS: Pk', 'kW') + rij('hs.P0', 'HS/MS: P0', 'kW') + rij('hs.step', 'HS/MS: trapgrootte', '%') + rijSel('hs.tap', 'HS/MS: stand', standen(9), L.hs.tap) : ''}
+      </table>
+    </div>
+    <div class="blos-uit" id="lfRes"></div>
   </div>
-  ${L.hs_aan || P().meta.trafo2 ? '<div class="let"><b>Geen basispark:</b> met twee soorten transformatoren (HS/MS én MS/LS) mag de BLOS-tool niet gebruikt worden (DNV). Reken de hoekpunten door in Vision; de scenario’s hieronder geven per hoekpunt de doelwaarden. In BLOS laat je HS/MS-trafo en smoorspoel weg.</div>' : ''}
-  <div id="lfRes"></div>`;
+  <div id="lfOnder"></div>`;
   renderLfRes();
 }
 function renderLfRes() {
-  const p = P(), box = $('#lfRes'); if (!box || !p?.lf) return;
+  const p = P(), box = $('#lfRes'), onder = $('#lfOnder'); if (!box || !p?.lf) return;
   let S;
   try { S = LF.suggesties(nrm(p.lf)); } catch (e) { box.innerHTML = '<div class="let"><b>Kan niet rekenen</b>: controleer de invoer (' + esc(e.message || e) + ').</div>'; console.error(e); return; }
-  const b = S.basis, f2 = LF.f2, iv = b.net.inv;
-  const cel = (v, lo, hi, grensKlas) => `<td class="${v > hi + 1e-4 || v < lo - 1e-4 ? 'r' : grensKlas || (v > hi - 0.005 ? 'o' : 'g')}">${f2(v)}</td>`;
-  box.innerHTML = `<h2>Resultaat</h2>
-  <div class="balk"><a class="knop" href="#lfCases">↓ Hoekpunten 1–15</a><a class="knop" href="#lfVision">↓ Scenario’s voor Vision</a></div>
-  <div class="rij">
-    <div class="kaart"><div class="klein">Pmax op het overdrachtspunt</div><div class="getal">${f2(b.Pmax)} MW</div><div class="klein">Omvormers vol bij U = 1, cos φ = 1: ${f2(b.PmaxNat)} MW${b.Pmax < b.PmaxNat - 1e-6 ? ' (begrensd)' : ''}</div></div>
-    <div class="kaart"><div class="klein">Eis blindvermogen</div><div class="getal">± ${f2(0.33 * b.Pmax)} Mvar</div><div class="klein">0,33 × Pmax op het overdrachtspunt</div></div>
-    <div class="kaart"><div class="klein">Oordeel</div><div class="oordeel" style="color:var(--${b.ok ? 'groen' : 'rood'})">${b.ok ? 'Alle ' + b.cases.length + ' cases voldoen' : (b.cases.length - b.nOk) + ' van ' + b.cases.length + ' cases voldoen niet'}</div><div class="klein">Stand MS/LS ${b.tapTR > 0 ? '+' : ''}${b.tapTR}${b.net.hs ? ' · HS/MS ' + b.tapHS : ''}</div></div>
+  const b = S.basis, f2 = LF.f2, iv = b.net.inv, f3 = x => (Math.round(x * 1000) / 1000).toFixed(3).replace('.', ',');
+  const pm = { n:'Pmax', u:b.uPm, p:1, q:b.Qpm / b.Pmax, P:b.PmaxNat, Q:b.Qpm, r:b.pmc, ok:true, doelP:'', doelQ:'', pmin:1 };
+  const cols = [pm].concat(b.cases.map(c => ({ ...c, doelP:c.red === 1 ? '≥ 0,93' : c.red === 2 ? (c.u <= 0.9 ? 'geen' : '≥ 0,93') : c.red === 3 ? '≥ 0,80' : f2(c.p), doelQ:c.n === 11 ? '≥ 0,20' : c.n === 13 ? 'geen' : f2(c.q) })));
+  const kl = (v, lo, hi) => v > hi + 1e-4 || v < lo - 1e-4 ? 'r' : 'g';
+  const R = (lab, fn, cls) => `<tr><th>${lab}</th>${cols.map(c => { const [t, k] = fn(c); return `<td class="${k || cls || ''}">${t}</td>`; }).join('')}</tr>`;
+  const okP = c => c.n === 'Pmax' ? 'g' : (c.ok ? 'g' : 'r');
+  box.innerHTML = `<div class="tabelwrap"><table class="bres">
+    <tr class="titel"><th>Load flow case NBNL CVD</th>${cols.map(c => `<th>${c.n === 'Pmax' ? 'Pmax' : c.n === 14 ? '0,4Pm/+Qm' : c.n === 15 ? '0,4Pm/−Qm' : c.n}</th>`).join('')}</tr>
+    <tr class="sub"><th colspan="${cols.length + 1}">Evaluatie resultaten en criteria load flow cases</th></tr>
+    ${R('Netspanning (p.u.)', c => [f3(c.u)])}
+    ${R('Netspanning doelwaarde NBNL CVD (p.u.)', c => [c.n === 'Pmax' ? '' : f2(c.u), 'd'])}
+    ${R('Werkzaam vermogen overdrachtspunt (P/Pmax)', c => [f3(c.P / b.Pmax), okP(c)])}
+    ${R('Werkzaam vermogen doelwaarde NBNL CVD (p.u.)', c => [c.doelP, 'd'])}
+    ${R('Blindvermogen overdrachtspunt (Q/Pmax)', c => [f3((c.Q ?? 0) / b.Pmax), okP(c)])}
+    ${R('Blindvermogen doelwaarde NBNL CVD (p.u.)', c => [c.doelQ, 'd'])}
+    ${R('Schijnbaar vermogen omvormer (p.u.)', c => [f3(c.r.s), kl(c.r.s, 0, 1)])}
+    ${R('Werkzaam vermogen omvormer (p.u.)', c => [f3(c.r.p), kl(c.r.p, 0, 1)])}
+    ${R('Blindvermogen omvormer (p.u.)', c => [f3(c.r.Qinv / (c.r.Qinv >= 0 ? iv.Q : iv.Qo)), kl(c.r.q, 0, 1)])}
+    ${R('Klemspanning omvormer (p.u.)', c => [f3(c.r.u), kl(c.r.u, iv.umin, iv.umax)])}
+    ${R('Stroom omvormer (p.u.)', c => [f3(c.r.i), kl(c.r.i, 0, 1)])}
+    <tr class="sub"><th colspan="${cols.length + 1}">Belangrijke parameters load flow cases</th></tr>
+    ${R('Werkzaam vermogen overdrachtspunt (MW)', c => [f2(c.P)])}
+    ${R('Blindvermogen overdrachtspunt (Mvar)', c => [f2(c.Q ?? 0)])}
+    ${R('Werkzaam vermogen omvormers totaal (MW)', c => [f2(c.r.Pinv * b.net.ninv)])}
+    ${R('Blindvermogen omvormers totaal (Mvar)', c => [f2(c.r.Qinv * b.net.ninv)])}
+    ${R('Belasting kabel naar overdrachtspunt (p.u.)', c => [isFinite(c.r.info.Bopms) ? f2(c.r.info.Bopms) : '–', c.r.info.Bopms > 1 ? 'o' : ''])}
+    ${R('Belasting MS-kabel transformator (p.u.)', c => [isFinite(c.r.info.Bmstr) ? f2(c.r.info.Bmstr) : '–', c.r.info.Bmstr > 1 ? 'o' : ''])}
+    ${R('Belasting transformator (p.u.)', c => [f2(c.r.info.Btr), c.r.info.Btr > 1 ? 'o' : ''])}
+    ${R('Belasting LS-kabel omvormer (p.u.)', c => [isFinite(c.r.info.Bls) ? f2(c.r.info.Bls) : '–', c.r.info.Bls > 1 ? 'o' : ''])}
+  </table></div>
+  <div class="legenda"><span class="sw d"></span>Doelwaarde NBNL CVD <span class="sw g"></span>Voldoet, binnen grenzen omvormer <span class="sw r"></span>Voldoet niet / boven grenswaarde omvormer <span class="sw o"></span>Overschrijding kabel of trafo (info)</div>
+  <div class="rij" style="margin-top:10px">
+    <div class="kaart"><div class="klein">Pmax op het overdrachtspunt</div><div class="getal">${f2(b.Pmax)} MW</div><div class="klein">${b.Pmax < b.PmaxNat - 1e-6 ? 'Begrensd; omvormers vol: ' + f2(b.PmaxNat) + ' MW' : 'Omvormers vol bij U = 1, cos φ = 1'}</div></div>
+    <div class="kaart"><div class="klein">Oordeel</div><div class="oordeel" style="color:var(--${b.ok ? 'groen' : 'rood'})">${b.ok ? 'Alle ' + b.cases.length + ' cases voldoen' : (b.cases.length - b.nOk) + ' van ' + b.cases.length + ' cases voldoen niet'}</div><div class="klein">Aftakstand ${b.tapTR > 0 ? '+' : ''}${b.tapTR}${b.net.hs ? ' · HS/MS ' + b.tapHS : ''}</div></div>
   </div>
-  ${b.ok ? `<div class="balk"><button class="knop vol" data-act="lfPmax">Neem Pmax ${f2(b.Pmax)} MW over in de invulhulp</button></div>` : ''}
-  ${S.lijst.length ? `<h3>Zo krijg je het groen</h3><ul class="sugg">${S.lijst.map((x, i) => `<li><div><b>${x.titel}</b><span>${x.uitleg}</span></div>${x.set ? `<button class="knop" data-sug="${i}">Toepassen</button>` : ''}</li>`).join('')}</ul>` : ''}
-  <h3 id="lfCases">Hoekpunten (cases 1–15)</h3>
-  <div class="tabelwrap"><table class="lft"><tr><th>#</th><th>Eis op OP</th><th>U OP</th><th>P OP (MW)</th><th>Q OP (Mvar)</th><th>U omv</th><th>S omv</th><th>I omv</th><th>P omv</th><th>Q omv</th><th>Oordeel</th></tr>
-  ${S.basis.cases.map(c => `<tr><td>${c.n}</td><td>P ${Math.round(c.p * 100)} % · Q ${c.txt}</td><td>${f2(c.u)}</td><td class="${c.verlaagd ? 'o' : ''}">${f2(c.P)}</td><td>${f2(c.Q)}</td>
-    ${cel(c.r.u, iv.umin, iv.umax)}${cel(c.r.s, 0, 1)}${cel(c.r.i, 0, 1)}${cel(c.r.p, 0, 1)}${cel(c.r.q, 0, 1)}
-    <td class="${c.ok ? (c.verlaagd ? 'o' : 'g') : 'r'}">${c.ok ? (c.verlaagd ? 'ok, P verlaagd' : 'ok') : c.f.join(', ')}</td></tr>`).join('')}
-  </table></div>
+  ${b.ok ? `<div class="balk"><button class="knop vol" data-act="lfPmax">Neem Pmax ${f2(b.Pmax)} MW over in de invulhulp</button></div>` : ''}`;
+  onder.innerHTML = `${S.lijst.length ? `<h3>Zo krijg je het groen</h3><ul class="sugg">${S.lijst.map((x, i) => `<li><div><b>${x.titel}</b><span>${x.uitleg}</span></div>${x.set ? `<button class="knop" data-sug="${i}">Toepassen</button>` : ''}</li>`).join('')}</ul>` : ''}
   <h3 id="lfVision">Scenario’s voor Vision</h3>
-  <p class="klein">Per hoekpunt: spanning op het overdrachtspunt en de doelwaarden P en Q op het overdrachtspunt (Pmax ${f2(b.Pmax)} MW). In Vision de spanning van het net (bron) instellen en de omvormers zo regelen dat P en Q op het overdrachtspunt gehaald worden; daarna U, S en I op de omvormerklemmen controleren. Q &gt; 0 = leveren (overbekrachtigd), Q &lt; 0 = opnemen.</p>
-  <div class="balk"><button class="knop" data-act="lfKopieer">Kopieer scenario’s (tab-gescheiden, voor Excel)</button></div>
-  <div class="tabelwrap"><table class="lft"><tr><th>#</th><th>Omschrijving</th><th>U OP (pu)</th><th>U OP (kV)</th><th>P doel (MW)</th><th>P minimaal (MW)</th><th>Q doel (Mvar)</th><th>Stand MS/LS</th>${b.net.hs ? '<th>Stand HS/MS</th>' : ''}</tr>
-  ${b.cases.map(c => `<tr><td>${c.n}</td><td>P ${Math.round(c.p * 100)} % · Q ${c.txt}</td><td>${f2(c.u)}</td><td>${f2(c.u * b.net.Uc)}</td><td>${f2(c.p * b.Pmax)}</td><td>${f2((c.red === 1 ? 0.93 : c.red === 3 ? 0.8 : c.red === 2 ? 0 : c.p) * b.Pmax)}${c.red === 2 ? ' (stroomgrens)' : ''}</td><td>${f2(c.q * b.Pmax)}</td><td>${b.tapTR > 0 ? '+' : ''}${b.tapTR}</td>${b.net.hs ? `<td>${b.tapHS}</td>` : ''}</tr>`).join('')}
+  <p class="klein">Per case: spanning op het overdrachtspunt en de doelwaarden P en Q op het overdrachtspunt (Pmax ${f2(b.Pmax)} MW). In Vision de netspanning (bron) instellen en de omvormers zo regelen dat P en Q op het overdrachtspunt gehaald worden; daarna U, S en I op de omvormerklemmen controleren. Q &gt; 0 = leveren, Q &lt; 0 = opnemen.</p>
+  <div class="balk"><button class="knop" data-act="lfKopieer">Kopieer scenario’s (voor Excel)</button></div>
+  <div class="tabelwrap"><table class="lft"><tr><th>Case</th><th>Omschrijving</th><th>U OP (pu)</th><th>U OP (kV)</th><th>P doel (MW)</th><th>P minimaal (MW)</th><th>Q doel (Mvar)</th><th>Aftakstand</th>${b.net.hs ? '<th>Stand HS/MS</th>' : ''}</tr>
+  ${b.cases.map(c => `<tr><td>${c.n === 14 ? '0,4Pm/+Qm' : c.n === 15 ? '0,4Pm/−Qm' : c.n}</td><td>P ${Math.round(c.p * 100)} % · Q ${c.txt}</td><td>${f2(c.u)}</td><td>${f2(c.u * b.net.Uc)}</td><td>${f2(c.p * b.Pmax)}</td><td>${f2((c.red === 1 ? 0.93 : c.red === 3 ? 0.8 : c.red === 2 ? 0 : c.p) * b.Pmax)}${c.red === 2 ? ' (stroomgrens)' : ''}</td><td>${f2(c.q * b.Pmax)}</td><td>${b.tapTR > 0 ? '+' : ''}${b.tapTR}</td>${b.net.hs ? `<td>${b.tapHS}</td>` : ''}</tr>`).join('')}
   </table></div>
-  <p class="klein">Omvormerwaarden in pu van de nominale waarde (U van Unom, S van Snom, I van Imax, P van Pmax, Q van Qmax). Oranje: op de grens of P verlaagd zoals toegestaan (hoekpunt 1, 2, 6, 8: tot 0,93 Pmax; 9–12: voor de stroomgrens; 13: tot 0,8 Pmax). Kabel- en trafogegevens uit de bibliotheek zijn indicatief.</p>`;
+  ${p.lf.hs_aan || p.meta.trafo2 ? '<div class="let"><b>Geen basispark:</b> met twee soorten transformatoren (HS/MS én MS/LS) mag de BLOS-tool niet gebruikt worden (DNV). Reken de cases door in Vision. In BLOS laat je HS/MS-trafo en smoorspoel weg.</div>' : ''}`;
   box._sug = S.lijst;
 }
 
