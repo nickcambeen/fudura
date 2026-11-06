@@ -144,7 +144,7 @@
       <tr><td>Bijlage 1 (typetesten)</td><td>Niet nodig als alle omvormers (en de parkregelaar) op de NBNL-lijst staan. Anders typetestrapporten en certificaten, bij voorkeur EN 50549-2.</td><td>PGMD/ESMD-formulier, bijlage 1</td></tr>
       <tr><td>Testen op locatie (Type B)</td><td>Pmax &lt; 5 MW: niet verplicht. Pmax ≥ 5 MW: LFSM-O (+ LFSM-U bij opslag), blindvermogen, wederinschakelen.</td><td>RfG/ESM CVD v2.0 § 4</td></tr>
       <tr><td>Vereenvoudiging zonder parkregelaar (Type B)</td><td>Regelt elke omvormer zelf (geen parkregelaar): blindvermogen mag met certificaten + loadflowberekening worden aangetoond, dan vervalt de test op locatie voor blindvermogen. LFSM-O-simulatie vervalt met certificaten.</td><td>RfG/ESM CVD v2.0 § 4</td></tr>
-      <tr><td>Simulatie blindvermogen</td><td>Basispark (eenvoudige netstructuur, 1 type eenheid, 1 type trafo): BLOS Excel-tool. Anders loadflowprogramma (bijv. Vision) en rapport via BLOR-tool. Eis 0,33 × Pmax op het overdrachtspunt, 14 hoekpunten.</td><td>PGMD-formulier p. 6; BLOS-toelichting</td></tr>
+      <tr><td>Simulatie blindvermogen</td><td>Basispark (radiaal, 1 type eenheid, 1 type trafo, max. 2 km MS-TR en 10 km OP-MS): BLOS Excel-tool. Twee soorten trafo’s in het net (bijv. HS/MS én MS/LS): <b>geen basispark</b>, BLOS mag niet (DNV-cursus) → Vision met de hoekpunten als scenario’s. Anders loadflowprogramma (bijv. Vision) en rapport via BLOR-tool. Eis 0,33 × Pmax op het overdrachtspunt, 13 hoekpunten plus de Pmax-case.</td><td>PGMD-formulier p. 6; BLOS-toelichting</td></tr>
       <tr><td>LFSM-U opslag</td><td>Onder 49,8 Hz laden afregelen met 1 % statiek en doorschakelen naar ontladen; anders afschakelen onder 49,7 Hz.</td><td>ESMD-formulier</td></tr>
       <tr><td>Termijnen</td><td>Voorlopig document ≥ 3 maanden (Pmax &lt; 5 MW) of ≥ 6 maanden (Pmax ≥ 5 MW) vóór de gewenste opleverdatum, binnen 2 maanden na onder spanning brengen. Definitief binnen 6 maanden daarna. Netbeheerder reageert binnen 2 maanden. Type D: netgegevens ≥ 16 maanden vóór EON aanvragen.</td><td>RfG/ESM CVD v2.0 § 3</td></tr>
       <tr><td>Beveiliging (tips)</td><td>U&lt; en U&gt;: vertraging minimaal 2 s, anders afkeur. I&gt; en I&gt;&gt;: groter dan de omvormerstroom. f&lt; en f&gt;: uit de omvormerinstelling. Mag niet conflicteren met FRT en frequentiebereik.</td><td>DNV-cursus PGMD/ESMD; formulier p. 3</td></tr>
@@ -299,8 +299,8 @@ function todoLijst(p) {
     else add(d.doc + '-b1', 'Leverancier', 'Bijlage 1: typetestrapporten en certificaten', (m.lijst === 'nee' ? 'Omvormer staat niet op de NBNL-lijst' : 'Controleer of de omvormer op de NBNL-lijst staat (' + lijstLinks(m.soort) + ')') + '. Anders: typetestrapport + conformiteitscertificaat (bij voorkeur EN 50549-2) voor LFSM-O, frequentie-/spanningsbereik, blindvermogen, FRT, wederinschakelen, power quality.');
     // simulaties
     const geenPR = m.park !== 'regelt';
-    const qsim = m.basis === 'ja' && d.doc === 'pgmd' ? 'met de BLOS Excel-tool (basispark)' : 'met een loadflowprogramma (bijv. Vision, Productie-eenheid) en rapport via de BLOR-tool';
-    add(d.doc + '-q', 'Fudura', 'Simulatie blindvermogen (0,33 × Pmax, 14 hoekpunten)', 'Rekenen ' + qsim + '. Hieruit volgen Pmax' + (d.doc === 'esmd' ? ', Pmax opname' : '') + ' en de aftakstand van de trafo’s.' + (geenPR && t === 'B' ? ' Zonder parkregelaar: certificaten + loadflow volstaan als bewijs.' : ''));
+    const qsim = m.basis === 'ja' && !m.hsms && !m.trafo2 ? 'met de BLOS Excel-tool (basispark)' : 'met een loadflowprogramma (bijv. Vision, Productie-eenheid) en rapport via de BLOR-tool';
+    add(d.doc + '-q', 'Fudura', 'Simulatie blindvermogen (0,33 × Pmax, 13 hoekpunten + Pmax-case)', 'Rekenen ' + qsim + '.' + (m.hsms ? ' Met een HS/MS- én een MS/LS-trafo is het géén basispark (DNV): BLOS mag niet, de 13 hoekpunten in Vision uitwerken (scenario’s staan in tab 4).' : '') + ' Hieruit volgen Pmax' + (d.doc === 'esmd' ? ', Pmax opname' : '') + ' en de aftakstand van de trafo’s.' + (geenPR && t === 'B' ? ' Zonder parkregelaar: certificaten + loadflow volstaan als bewijs.' : ''));
     if (t === 'B') {
       if (!geenPR || m.lijst !== 'ja') add(d.doc + '-lfsm', 'Fudura / leverancier', 'Simulatie LFSM-O' + (d.doc === 'esmd' ? ' en LFSM-U' : ''), 'Vervalt als alle omvormers' + (geenPR ? '' : ' én de parkregelaar') + ' gecertificeerd zijn.');
       add(d.doc + '-rec', 'Fudura', 'Wederinschakelen na netstoring aantonen', 'Instellingen en vertraging van het weer inschakelen (simulatie/omvormerinstelling).');
@@ -371,6 +371,7 @@ function renderLf() {
     <div class="kaart"><h3>Omvormers</h3><div class="kv">${lfVeld('ninv', 'Aantal (totaal park)')}${lfVeld('inv.S', 'Snom', 'kVA')}${lfVeld('inv.P', 'Pmax', 'kW')}${lfVeld('inv.Un', 'Unom', 'V')}${lfVeld('inv.Imax', 'Imax', 'A, leeg = Snom/√3U')}${lfVeld('inv.Q', 'Qmax', 'kvar, leeg = Snom')}${lfVeld('inv.umin', 'Umin', 'pu')}${lfVeld('inv.umax', 'Umax', 'pu')}
       <span class="breed klein">Umin/Umax: het venster waarin de omvormer volle stroom levert, binnen de instellingen U&lt; / U&gt;.</span></div></div>
   </div>
+  ${L.hs_aan || P().meta.trafo2 ? '<div class="let"><b>Geen basispark:</b> met twee soorten transformatoren (HS/MS én MS/LS) mag de BLOS-tool niet gebruikt worden (DNV). Reken de 13 hoekpunten door in Vision; de scenario’s hieronder geven per hoekpunt de doelwaarden.</div>' : ''}
   <div id="lfRes"></div>`;
   renderLfRes();
 }
@@ -393,6 +394,12 @@ function renderLfRes() {
   ${S.basis.cases.map(c => `<tr><td>${c.n}</td><td>P ${Math.round(c.p * 100)} % · Q ${c.txt}</td><td>${f2(c.u)}</td><td class="${c.verlaagd ? 'o' : ''}">${f2(c.P)}</td><td>${f2(c.Q)}</td>
     ${cel(c.r.u, iv.umin, iv.umax)}${cel(c.r.s, 0, 1)}${cel(c.r.i, 0, 1)}${cel(c.r.p, 0, 1)}${cel(c.r.q, 0, 1)}
     <td class="${c.ok ? (c.verlaagd ? 'o' : 'g') : 'r'}">${c.ok ? (c.verlaagd ? 'ok, P verlaagd' : 'ok') : c.f.join(', ')}</td></tr>`).join('')}
+  </table></div>
+  <h3>Scenario’s voor Vision</h3>
+  <p class="klein">Per hoekpunt: spanning op het overdrachtspunt en de doelwaarden P en Q op het overdrachtspunt (Pmax ${f2(b.Pmax)} MW). In Vision de spanning van het net (bron) instellen en de omvormers zo regelen dat P en Q op het overdrachtspunt gehaald worden; daarna U, S en I op de omvormerklemmen controleren. Q &gt; 0 = leveren (overbekrachtigd), Q &lt; 0 = opnemen.</p>
+  <div class="balk"><button class="knop" data-act="lfKopieer">Kopieer scenario’s (tab-gescheiden, voor Excel)</button></div>
+  <div class="tabelwrap"><table class="lft"><tr><th>#</th><th>Omschrijving</th><th>U OP (pu)</th><th>U OP (kV)</th><th>P doel (MW)</th><th>P minimaal (MW)</th><th>Q doel (Mvar)</th><th>Stand MS/LS</th>${b.net.hs ? '<th>Stand HS/MS</th>' : ''}</tr>
+  ${b.cases.map(c => `<tr><td>${c.n}</td><td>P ${Math.round(c.p * 100)} % · Q ${c.txt}</td><td>${f2(c.u)}</td><td>${f2(c.u * b.net.Uc)}</td><td>${f2(c.p * b.Pmax)}</td><td>${f2((c.red === 1 ? 0.93 : c.red === 3 ? 0.8 : c.red === 2 ? 0 : c.p) * b.Pmax)}${c.red === 2 ? ' (stroomgrens)' : ''}</td><td>${f2(c.q * b.Pmax)}</td><td>${b.tapTR > 0 ? '+' : ''}${b.tapTR}</td>${b.net.hs ? `<td>${b.tapHS}</td>` : ''}</tr>`).join('')}
   </table></div>
   <p class="klein">Omvormerwaarden in pu van de nominale waarde (U van Unom, S van Snom, I van Imax, P van Pmax, Q van Qmax). Oranje: op de grens of P verlaagd zoals toegestaan (hoekpunt 1, 2, 6, 8: tot 0,93 Pmax; 9–12: voor de stroomgrens; 13: tot 0,8 Pmax). Kabel- en trafogegevens uit de bibliotheek zijn indicatief.</p>`;
   box._sug = S.lijst;
@@ -450,7 +457,7 @@ function renderProject() {
       <label>Spanning overdrachtspunt Uc<small>kV, uit de ATO</small><input data-m="uc" value="${esc(m.uc)}" inputmode="decimal"></label>
       <label>Omvormer op NBNL-lijst?<small>Controleer de exacte typecode: ${lijstLinks(m.soort)}</small>${sel('lijst', [['onbekend', 'Nog niet gecontroleerd'], ['ja', 'Ja, exacte typecode staat erop'], ['nee', 'Nee']], m.lijst)}</label>
       <label>Parkregelaar?<small>Regelt iets P/Q op het overdrachtspunt?</small>${sel('park', [['geen', 'Geen'], ['setpoints', 'EMS geeft alleen setpoints (geen regeling op OP)'], ['regelt', 'Ja, regelt P/Q op het overdrachtspunt']], m.park)}</label>
-      ${A.opwek ? `<label>Basispark?<small>1 type eenheid, 1 type trafo, eenvoudige netstructuur</small>${sel('basis', [['nee', 'Nee'], ['ja', 'Ja (BLOS-tool mogelijk)']], m.basis)}</label>` : ''}
+      ${A.opwek || A.opslag ? `<label>Basispark?<small>1 type eenheid, 1 type trafo, radiaal, geen HS/MS-trafo</small>${sel('basis', [['nee', 'Nee'], ['ja', 'Ja (BLOS-tool mogelijk)']], m.basis)}</label>` : ''}
       <label>Gewenste opleverdatum<small>volle capaciteit</small><input type="date" data-m="datum" value="${esc(m.datum)}"></label>
       <label>Transformatoren<small>Welke trafo’s naast MS/LS type 1?</small><select data-trafo>${[['', 'Alleen MS/LS type 1'], ['h', '+ HS/MS (step-up)'], ['2', '+ 2e type MS/LS'], ['h2', '+ HS/MS en 2e type MS/LS']].map(([v, t]) => `<option value="${v}"${v === (m.hsms ? 'h' : '') + (m.trafo2 ? '2' : '') ? ' selected' : ''}>${t}</option>`).join('')}</select></label>
     </div>
@@ -555,6 +562,7 @@ document.addEventListener('click', e => {
   if (t.dataset.odel != null) { p.open.splice(+t.dataset.odel, 1); wijzig(); renderOpen(); return; }
   const a = t.dataset.act;
   if (a === 'lfPmax') { const b = LF.bereken(nrm(p.lf)); const d = afleiden(p).docs[0]?.doc || 'esmd'; const V = p.velden[d] ||= {}; V.pmax = { ...(V.pmax || {}), w:LF.f2(b.Pmax), s:'aanname', n:'Uit de blindvermogen-voorcheck (tab 4), ' + new Date().toLocaleDateString('nl-NL') }; wijzig(); renderInvul(); toast('Pmax overgenomen in ' + d.toUpperCase()); return; }
+  if (a === 'lfKopieer') { const b = LF.bereken(nrm(p.lf)); const r = [['#', 'Omschrijving', 'U OP pu', 'U OP kV', 'P doel MW', 'P min MW', 'Q doel Mvar', 'Stand MS/LS', 'Stand HS/MS'].join('\t')]; b.cases.forEach(c => r.push([c.n, 'P ' + Math.round(c.p * 100) + ' % Q ' + c.txt, c.u, (c.u * b.net.Uc).toFixed(2), (c.p * b.Pmax).toFixed(3), ((c.red === 1 ? 0.93 : c.red === 3 ? 0.8 : c.red === 2 ? 0 : c.p) * b.Pmax).toFixed(3), (c.q * b.Pmax).toFixed(3), b.tapTR, b.net.hs ? b.tapHS : ''].join('\t').replace(/\./g, ','))); navigator.clipboard.writeText(r.join('\n')).then(() => toast('Gekopieerd'), () => toast('Kopiëren lukte niet')); return; }
   if (a === 'openplus') { p.open.push({ wat:'', wie:'', klaar:false }); wijzig(); renderOpen(); const ins = document.querySelectorAll('[data-ow]'); ins[ins.length - 1]?.focus(); }
   if (a === 'nieuw') { const naam = prompt('Naam van het project'); if (!naam) return; const id = uid(); DB.projecten[id] = nieuwProject(naam); DB.actief = id; bewaar(); renderAlles(); naarTab('project'); toast('Project aangemaakt'); }
   if (a === 'dupliceer' && p) { const id = uid(); DB.projecten[id] = JSON.parse(JSON.stringify(p)); DB.projecten[id].naam = p.naam + ' (kopie)'; DB.actief = id; bewaar(); renderAlles(); toast('Gedupliceerd'); }
