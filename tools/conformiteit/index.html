@@ -356,7 +356,7 @@ function lfKabel(pre, titel, uitleg) {
 }
 function renderLf() {
   const p = P(), el = $('#p-lf'); if (!p) { el.innerHTML = ''; return; }
-  p.lf ||= lfStandaard();
+  p.lf ||= /getec/i.test(p.naam) ? JSON.parse(JSON.stringify(LFGETEC)) : lfStandaard();
   const L = p.lf;
   el.innerHTML = `<div class="info">Eigen loadflow-voorcheck van het blindvermogen volgens de 13 hoekpunten van het NBNL-verificatiedocument (PPM Type B/C, art. 3.19 Netcode/Systeemcode). Opbouw als basispark: overdrachtspunt → (HS/MS-trafo) → OP–MS-kabel → MS-TR-kabels → MS/LS-trafo’s → LS-kabels → omvormers. <b>Dit is niet de officiële BLOS-tool</b>: voor het formulier reken je met BLOS (basispark) of een netberekeningsprogramma.</div>
   <div class="lfgrid">
