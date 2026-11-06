@@ -21,6 +21,8 @@
     'LS 4×240 Al':        { R:0.161, X:0.080, C:0, Iz:355 },
     'LS 1×630 Al (per fase)': { R:0.064, X:0.090, C:0, Iz:740 },
     'LS 1×630 Cu (per fase)': { R:0.039, X:0.090, C:0, Iz:960 },
+    'LS 3×240 Cu (3-fase, IT)': { R:0.098, X:0.080, C:0, Iz:430 },
+    'LS 3×150 Cu (3-fase, IT)': { R:0.159, X:0.080, C:0, Iz:330 },
   };
 
   // Hoekpunten PPM Type B/C/D<300 kV (CVD v2.0 p. 82). q > 0 = leveren (lagging), q < 0 = opnemen (leading).
