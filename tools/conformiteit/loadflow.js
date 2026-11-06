@@ -184,7 +184,7 @@
       for (let k = 0; k < 30; k++) { const m = (lo + hi) / 2; if (bereken(I, { tapTR:t, Plim:m }).ok) lo = m; else hi = m; }
       if (!best || lo > best.P) best = { P:lo, t };
     }
-    if (best && best.P < basis.PmaxNat - 1e-3) S.push({ soort:'pmax', titel:'Begrens Pmax op ' + f2(best.P * 0.995) + ' MW' + (best.t !== basis.tapTR ? ' (stand ' + (best.t > 0 ? '+' : '') + best.t + ')' : ''), uitleg:'Het park levert dan ' + f1(100 * (1 - best.P / basis.PmaxNat)) + ' % minder dan de ' + f2(basis.PmaxNat) + ' MW die de omvormers kunnen. Dit is het vermogen dat je in het formulier als maximumcapaciteit opgeeft.', set:{ Plim:+(best.P * 0.995).toFixed(3), 'tr.tap':best.t } });
+    if (best && best.P >= 0.5 * basis.PmaxNat && best.P < basis.PmaxNat - 1e-3) S.push({ soort:'pmax', titel:'Begrens Pmax op ' + f2(best.P * 0.995) + ' MW' + (best.t !== basis.tapTR ? ' (stand ' + (best.t > 0 ? '+' : '') + best.t + ')' : ''), uitleg:'Het park levert dan ' + f1(100 * (1 - best.P / basis.PmaxNat)) + ' % minder dan de ' + f2(basis.PmaxNat) + ' MW die de omvormers kunnen. Dit is het vermogen dat je in het formulier als maximumcapaciteit opgeeft.', set:{ Plim:+(best.P * 0.995).toFixed(3), 'tr.tap':best.t } });
     // 4. Grotere omvormer (S en I)
     const fac = zoekFactor(k => bereken(I, { mut:n => { n.inv.S *= k; n.inv.Imax *= k; n.inv.Q *= k; } }).ok, 1, 1.6);
     if (fac) S.push({ soort:'omv', titel:'Omvormer met ≥ ' + Math.ceil(num(I.inv.S) * fac / 10) * 10 + ' kVA (en evenredig meer stroom)', uitleg:'Zelfde werkzaam vermogen, meer ruimte voor blindvermogen. Vraag het PQ-diagram bij de leverancier.' });
