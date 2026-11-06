@@ -215,12 +215,13 @@
   const f1 = x => (Math.round(x * 10) / 10).toString().replace('.', ','), f2 = x => (Math.round(x * 100) / 100).toFixed(2).replace('.', ',');
   // Maximaal haalbaar blindvermogen op het OP (sign +1 leveren, -1 opnemen) bij spanning u en P op het OP
   function qGrens(net, u, P, sign, tapHS, tapTR, Pmax) {
+    // grootste |Q| in de gevraagde richting die binnen alle grenzen past; het haalbare gebied hoeft Q = 0 niet te bevatten
     const ok = Q => !grens(vooruit(net, u, P, sign * Q, tapHS, tapTR), net.inv).length;
-    if (!ok(0)) return NaN;
-    let lo = 0, hi = 0.8 * Pmax;
-    if (ok(hi)) return sign * hi;
-    for (let k = 0; k < 28; k++) { const m = (lo + hi) / 2; if (ok(m)) lo = m; else hi = m; }
-    return sign * lo;
+    const N = 48, top = 0.8 * Pmax; let best = -1, hiFail = null;
+    for (let k = N; k >= 0; k--) { const Q = top * k / N; if (ok(Q)) { best = Q; break; } hiFail = Q; }
+    if (best < 0) return NaN;
+    if (hiFail != null) { let lo = best, hi = hiFail; for (let k = 0; k < 20; k++) { const m = (lo + hi) / 2; if (ok(m)) lo = m; else hi = m; } best = lo; }
+    return sign * best;
   }
   function vensters(I) {
     const b = bereken(I), net = b.net, Pm = b.Pmax, t1 = b.tapHS, t2 = b.tapTR;

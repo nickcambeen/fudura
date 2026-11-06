@@ -449,17 +449,17 @@ function renderVensters(I) {
   const rood = 'var(--rood)', bruin = 'var(--oranje)';
   // eis P-Q (art. 3.19 lid 5-7) en U-Q (lid 1-3)
   const eisPQ = [[0, 0], [0.33, 0.2], [0.33, 0.93], [0, 1], [-0.33, 0.93], [-0.33, 0.2]];
-  const eisUQ = [[0, 0.9], [0.33, 0.9], [0.33, 1.05], [0, 1.1], [-0.33, 1.1], [-0.33, 0.95]];
+  const eisUQ = [[0, 0.9], [0.2, 0.9], [0.33, 0.95], [0.33, 1.05], [0, 1.1], [-0.33, 1.1], [-0.33, 0.95]];
   const pqP = V.pq.map(x => [x.qp, x.p]), pqM = V.pq.map(x => [x.qm, x.p]);
   const uqP = V.uq.map(x => [x.qp, x.u]), uqM = V.uq.map(x => [x.qm, x.u]), uq2P = V.uq.map(x => [x.qp20, x.u]), uq2M = V.uq.map(x => [x.qm20, x.u]);
   // oordeel: haalt de berekende grens de eis?
   const eisQ = p => p <= 0.2 ? 0.33 * p / 0.2 : p <= 0.93 ? 0.33 : 0.33 * (1 - p) / 0.07;
   const tekPQ = V.pq.filter(x => x.p > 0 && !(x.qp >= eisQ(x.p) - 1e-3 && -x.qm >= eisQ(x.p) - 1e-3)).map(x => x.p);
-  const eisUp = u => u < 0.9 ? 0 : u <= 1.05 ? 0.33 : Math.max(0, 0.33 * (1.1 - u) / 0.05), eisUm = u => u < 0.9 ? 0 : u >= 0.95 ? 0.33 : 0.33 * (u - 0.9) / 0.05;
+  const eisUp = u => u < 0.9 ? 0 : u < 0.95 ? 0.2 + 0.13 * (u - 0.9) / 0.05 : u <= 1.05 ? 0.33 : Math.max(0, 0.33 * (1.1 - u) / 0.05), eisUm = u => u < 0.9 ? 0 : u >= 0.95 ? 0.33 : 0.33 * (u - 0.9) / 0.05;
   const tekUQ = V.uq.filter(x => x.u >= 0.9 - 1e-9 && x.u <= 1.1 + 1e-9 && !(x.qp >= eisUp(x.u) - 1e-3 && -x.qm >= eisUm(x.u) - 1e-3)).map(x => x.u);
   const rng = a => a.length ? LF.f2(Math.min(...a)) + (a.length > 1 ? '–' + LF.f2(Math.max(...a)) : '') : '';
   box.innerHTML = `<h3>Q-P en Q-U venster op het overdrachtspunt</h3>
-  <p class="klein">Blauw = <b>wat moet</b> (Netcode/Systeemcode art. 3.19: ±0,33 × Pmax, met de toegestane afbouw). Lijnen = <b>wat het park kan</b> volgens deze voorcheck: het maximaal haalbare blindvermogen binnen de grenzen van de omvormer (S, I, P, Umin–Umax). Het park voldoet als de lijnen het blauwe vlak helemaal omsluiten. Ter indicatie, zoals in BLOS; maatgevend zijn de cases.</p>
+  <p class="klein">Blauw = <b>wat moet</b> (Netcode/Systeemcode art. 3.19: ±0,33 × Pmax, met de toegestane afbouw; bij 0,90–0,95 pu leveren ≥ 0,20–0,33 conform lid 3 en case 11). Lijnen = <b>wat het park kan</b> volgens deze voorcheck: het maximaal haalbare blindvermogen binnen de grenzen van de omvormer (S, I, P, Umin–Umax). Het park voldoet als de lijnen het blauwe vlak helemaal omsluiten. Ter indicatie, zoals in BLOS; maatgevend zijn de cases. Let op: het Q-U venster rekent vast met 0,93 × Pmax; in de cases 9–13 mag P bij lage spanning verder zakken, daarom kan een case groen zijn waar het venster tekortschiet.</p>
   <div class="vgrid">
     <div class="kaart"><h4>Q-P venster bij U = 1,0 pu</h4>${svgVenster({ titel:'Q-P venster', x:[-0.6, 0.6], y:[0, 1.05], xl:'Q / Pmax (+ = leveren)', yl:'P / Pmax', xt:[-0.6, -0.33, 0, 0.33, 0.6], yt:[0, 0.2, 0.4, 0.6, 0.8, 0.93, 1], eis:eisPQ, lijnen:[{ pts:pqP, kleur:rood }, { pts:pqM, kleur:rood }] })}
       <p class="vo" style="color:var(--${tekPQ.length ? 'rood' : 'groen'})">${tekPQ.length ? 'Voldoet niet bij P/Pmax ' + rng(tekPQ) : 'Voldoet: lijnen omsluiten de eis'}</p></div>
