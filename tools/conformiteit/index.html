@@ -529,6 +529,13 @@ function visionStappen(p, b) {
       <li><b>Rapport:</b> uitkomsten in de <b>BLOR</b> Excel-rapportagetool (Netbeheer Nederland) zetten, en samen met het Vision-bestand en de uitgangspunten bij het ${p.meta.soort === 'opwek' ? 'PGMD' : 'ESMD'} voegen.</li>
     </ol>
     <div class="balk"><button class="knop" data-act="lfKopieer">Kopieer cases voor Vision (Excel)</button></div>
+    <h4 style="margin-top:12px">Indicatieve uitkomst per case (ter vergelijking met Vision)</h4>
+    <p class="klein">Uit deze voorcheck, met de huidige invoer. Vision moet ongeveer hetzelfde geven; grote verschillen wijzen op een verschil in model of invoer.</p>
+    <div class="tabelwrap"><table class="lft"><tr><th>Case</th><th>U OP (pu)</th><th>U OP (kV)</th><th>P OP (MW)</th><th>Q OP (Mvar)</th><th>P omv. (MW)</th><th>Q omv. (Mvar)</th><th>U omv. (V)</th><th>I omv. (A)</th><th>S omv. (pu)</th><th>Belasting trafo</th>${b.auto ? '<th>Stand HS/MS</th>' : ''}<th>Oordeel</th></tr>
+    ${b.cases.map(c => { const iv = b.net.inv, ku = c.r.u > iv.umax + 1e-4 || c.r.u < iv.umin - 1e-4 ? 'r' : '', ks = c.r.s > 1 + 1e-4 ? 'r' : '', ki = c.r.i > 1 + 1e-4 ? 'r' : '';
+      return `<tr><td>${c.n === 14 ? '0,4Pm/+Qm' : c.n === 15 ? '0,4Pm/−Qm' : c.n}</td><td>${f2(c.u)}</td><td>${f2(c.u * b.net.Uc)}</td><td class="${c.verlaagd ? 'o' : ''}">${f2(c.P)}</td><td>${f2(c.Q)}</td><td>${f2(c.r.Pinv)}</td><td>${f2(c.r.Qinv)}</td><td class="${ku}">${Math.round(c.r.u * iv.Un * 1000)}</td><td class="${ki}">${Math.round(c.r.i * iv.Imax * 1000)}</td><td class="${ks}">${f2(c.r.s)}</td><td class="${c.r.info.Btr > 1 ? 'o' : ''}">${Math.round(c.r.info.Btr * 100)} %</td>${b.auto ? `<td>${c.tapHS ?? ''}</td>` : ''}<td class="${c.ok ? (c.verlaagd ? 'o' : 'g') : 'r'}">${c.ok ? (c.verlaagd ? 'ok, P verlaagd' : 'ok') : c.f.join(', ')}</td></tr>`; }).join('')}
+    </table></div>
+    <p class="klein">P en Q omv. per omvormer; I in ampère per omvormer; belasting trafo = CS EOS-trafo.</p>
   </div>`;
 }
 function renderLfRes() {

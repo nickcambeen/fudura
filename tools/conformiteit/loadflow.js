@@ -144,7 +144,7 @@
         for (let k = 0; k < 40; k++) { const m = (lo + hi) / 2, rm = vooruit(net, c.u, m, Q, tapHS, tapTR); if (grens(rm, net.inv).length) hi = m; else { lo = m; rl = rm; } }
         return { ...c, P:lo, Q, r:rl, ok:true, verlaagd:true, f:[] };
       }
-      r = rl; f = grens(rl, net.inv);
+      // ook met de toegestane verlaging lukt het niet: toon de toestand bij volle P (met de grenzen die daar knellen)
     }
     return { ...c, P:P0, Q, r, ok:false, verlaagd:false, f };
   }
