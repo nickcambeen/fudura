@@ -388,10 +388,11 @@ function renderLf() {
 function renderLfRes() {
   const p = P(), box = $('#lfRes'); if (!box || !p?.lf) return;
   let S;
-  try { S = LF.suggesties(nrm(p.lf)); } catch (e) { box.innerHTML = '<div class="let">Kan niet rekenen: controleer de invoer.</div>'; return; }
+  try { S = LF.suggesties(nrm(p.lf)); } catch (e) { box.innerHTML = '<div class="let"><b>Kan niet rekenen</b>: controleer de invoer (' + esc(e.message || e) + ').</div>'; console.error(e); return; }
   const b = S.basis, f2 = LF.f2, iv = b.net.inv;
   const cel = (v, lo, hi, grensKlas) => `<td class="${v > hi + 1e-4 || v < lo - 1e-4 ? 'r' : grensKlas || (v > hi - 0.005 ? 'o' : 'g')}">${f2(v)}</td>`;
   box.innerHTML = `<h2>Resultaat</h2>
+  <div class="balk"><a class="knop" href="#lfCases">↓ Hoekpunten 1–15</a><a class="knop" href="#lfVision">↓ Scenario’s voor Vision</a></div>
   <div class="rij">
     <div class="kaart"><div class="klein">Pmax op het overdrachtspunt</div><div class="getal">${f2(b.Pmax)} MW</div><div class="klein">Omvormers vol bij U = 1, cos φ = 1: ${f2(b.PmaxNat)} MW${b.Pmax < b.PmaxNat - 1e-6 ? ' (begrensd)' : ''}</div></div>
     <div class="kaart"><div class="klein">Eis blindvermogen</div><div class="getal">± ${f2(0.33 * b.Pmax)} Mvar</div><div class="klein">0,33 × Pmax op het overdrachtspunt</div></div>
@@ -399,13 +400,13 @@ function renderLfRes() {
   </div>
   ${b.ok ? `<div class="balk"><button class="knop vol" data-act="lfPmax">Neem Pmax ${f2(b.Pmax)} MW over in de invulhulp</button></div>` : ''}
   ${S.lijst.length ? `<h3>Zo krijg je het groen</h3><ul class="sugg">${S.lijst.map((x, i) => `<li><div><b>${x.titel}</b><span>${x.uitleg}</span></div>${x.set ? `<button class="knop" data-sug="${i}">Toepassen</button>` : ''}</li>`).join('')}</ul>` : ''}
-  <h3>Hoekpunten</h3>
+  <h3 id="lfCases">Hoekpunten (cases 1–15)</h3>
   <div class="tabelwrap"><table class="lft"><tr><th>#</th><th>Eis op OP</th><th>U OP</th><th>P OP (MW)</th><th>Q OP (Mvar)</th><th>U omv</th><th>S omv</th><th>I omv</th><th>P omv</th><th>Q omv</th><th>Oordeel</th></tr>
   ${S.basis.cases.map(c => `<tr><td>${c.n}</td><td>P ${Math.round(c.p * 100)} % · Q ${c.txt}</td><td>${f2(c.u)}</td><td class="${c.verlaagd ? 'o' : ''}">${f2(c.P)}</td><td>${f2(c.Q)}</td>
     ${cel(c.r.u, iv.umin, iv.umax)}${cel(c.r.s, 0, 1)}${cel(c.r.i, 0, 1)}${cel(c.r.p, 0, 1)}${cel(c.r.q, 0, 1)}
     <td class="${c.ok ? (c.verlaagd ? 'o' : 'g') : 'r'}">${c.ok ? (c.verlaagd ? 'ok, P verlaagd' : 'ok') : c.f.join(', ')}</td></tr>`).join('')}
   </table></div>
-  <h3>Scenario’s voor Vision</h3>
+  <h3 id="lfVision">Scenario’s voor Vision</h3>
   <p class="klein">Per hoekpunt: spanning op het overdrachtspunt en de doelwaarden P en Q op het overdrachtspunt (Pmax ${f2(b.Pmax)} MW). In Vision de spanning van het net (bron) instellen en de omvormers zo regelen dat P en Q op het overdrachtspunt gehaald worden; daarna U, S en I op de omvormerklemmen controleren. Q &gt; 0 = leveren (overbekrachtigd), Q &lt; 0 = opnemen.</p>
   <div class="balk"><button class="knop" data-act="lfKopieer">Kopieer scenario’s (tab-gescheiden, voor Excel)</button></div>
   <div class="tabelwrap"><table class="lft"><tr><th>#</th><th>Omschrijving</th><th>U OP (pu)</th><th>U OP (kV)</th><th>P doel (MW)</th><th>P minimaal (MW)</th><th>Q doel (Mvar)</th><th>Stand MS/LS</th>${b.net.hs ? '<th>Stand HS/MS</th>' : ''}</tr>
