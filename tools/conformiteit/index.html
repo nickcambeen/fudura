@@ -113,6 +113,9 @@
   table.bres tr.titel th { text-align:center; } table.bres tr.titel th:first-child { background:var(--blauw); color:#fff; }
   table.bres tr.sub th { background:var(--zacht); font:700 12.5px "Barlow Semi Condensed", Arial, sans-serif; text-transform:none; letter-spacing:0; text-align:left; }
   td.d { background:color-mix(in srgb, var(--blauw) 16%, var(--kaart)); }
+  .info-knop { width:22px; height:22px; border-radius:50%; border:1px solid var(--blauw); background:var(--kaart); color:var(--blauw); font:700 13px/20px "Barlow Semi Condensed", Arial, sans-serif; cursor:pointer; padding:0; }
+  .info-knop[aria-expanded="true"] { background:var(--blauw); color:#fff; }
+  .visioninfo { margin:0 0 12px; font-size:14px; } .visioninfo h4 { margin:0 0 6px; font:700 16px "Barlow Semi Condensed", Arial, sans-serif; } .visioninfo ol { margin:0 0 6px; padding-left:20px; display:grid; gap:6px; }
   .legenda { font-size:12.5px; color:var(--muted); margin-top:6px; display:flex; flex-wrap:wrap; gap:4px 12px; align-items:center; }
   .legenda .sw { display:inline-block; width:12px; height:12px; border-radius:2px; margin-right:-6px; vertical-align:middle; }
   .sw.d { background:color-mix(in srgb, var(--blauw) 40%, var(--kaart)); } .sw.g { background:color-mix(in srgb, var(--groen) 45%, var(--kaart)); } .sw.r { background:color-mix(in srgb, var(--rood) 45%, var(--kaart)); } .sw.o { background:color-mix(in srgb, var(--oranje) 45%, var(--kaart)); }
@@ -448,7 +451,19 @@ function renderLfRes() {
   </div>
   ${b.ok ? `<div class="balk"><button class="knop vol" data-act="lfPmax">Neem Pmax ${f2(b.Pmax)} MW over in de invulhulp</button></div>` : ''}`;
   onder.innerHTML = `${S.lijst.length ? `<h3>Zo krijg je het groen</h3><ul class="sugg">${S.lijst.map((x, i) => `<li><div><b>${x.titel}</b><span>${x.uitleg}</span></div>${x.set ? `<button class="knop" data-sug="${i}">Toepassen</button>` : ''}</li>`).join('')}</ul>` : ''}
-  <h3 id="lfVision">Scenario’s voor Vision</h3>
+  <h3 id="lfVision" style="display:flex;align-items:center;gap:8px">Scenario’s voor Vision <button class="info-knop" data-act="visionInfo" aria-expanded="false" title="Hoe zet je dit in Vision?">i</button></h3>
+  <div id="visionInfo" class="kaart visioninfo" hidden>
+    <h4>Zo reken je de cases door in Vision</h4>
+    <ol>
+      <li><b>Model klaarzetten.</b> Overdrachtspunt als <i>netvoeding</i> (bij Getec op 110 kV, Sk″ van de netbeheerder). Daarachter het hele pad: EGD2 met regelschakelaar, smoorspoelen, kabels VA → rail C en K1/K2, NGX, de 8 CS EOS-trafo’s in de juiste aftakstand, en de omvormers als accu/omvormer met Snom en Pnom uit de datasheet. Geen andere belastingen of opwek die de spanning beïnvloeden, tenzij de netbeheerder dat vraagt.</li>
+      <li><b>Regelschakelaar EGD2</b> (oplossing A): zet hem op automatische spanningsregeling met de gewenste 10 kV-spanning. Zonder die regeling op een vaste stand.</li>
+      <li><b>Snelste route: de ingebouwde berekening.</b> <i>Berekenen | Speciaal | Productie-eenheid</i>. Vision draait dan zelf een reeks loadflows met verschillende netspanningen (Uref) en P/Q, en geeft een tabel en grafiek die je bij het ESMD voegt. Kies of de omvormers extra blindvermogen mogen leveren. Let op: Vision stelt P en Q <i>op de omvormers</i> in (p × Snom, q × Snom) en begrenst op de nominale stroom. Vergelijk de uitkomst op het overdrachtspunt met de doelwaarden in deze tabel.</li>
+      <li><b>Handmatig per case</b> (als de ingebouwde berekening niet past, bijv. met de regelschakelaar of de precieze CVD 2.0-cases): per case de <i>Uref van de netvoeding</i> op “U OP (pu)” zetten, de omvormers op P en Q instellen, loadflow draaien en Q aanpassen tot P en Q op het overdrachtspunt de doelwaarde halen (P mag zakken tot “P minimaal”). Leg elke case vast als variant of scenario, zodat je ze achter elkaar kunt draaien.</li>
+      <li><b>Controleren per case:</b> spanning op de omvormerklemmen binnen Umin–Umax (WSTECH/PE: ±10 %), stroom ≤ Imax, S ≤ Snom. Daarnaast belasting van CS EOS-trafo, LS-kabels en K1/K2.</li>
+      <li><b>Rapporteren:</b> zet de uitkomsten in de BLOR Excel-rapportagetool van Netbeheer Nederland (rapport voor een eigen loadflowprogramma) en voeg die bij het ESMD, samen met het Vision-bestand en de uitgangspunten.</li>
+    </ol>
+    <p class="klein">Menunamen kunnen per Vision-versie verschillen; de route <i>Berekenen | Speciaal | Productie-eenheid</i> komt uit de Vision-handleiding. De kolom “Kopieer scenario’s” hieronder geeft de doelwaarden om naast Vision te leggen.</p>
+  </div>
   <p class="klein">Per case: spanning op het overdrachtspunt en de doelwaarden P en Q op het overdrachtspunt (Pmax ${f2(b.Pmax)} MW). In Vision de netspanning (bron) instellen en de omvormers zo regelen dat P en Q op het overdrachtspunt gehaald worden; daarna U, S en I op de omvormerklemmen controleren. Q &gt; 0 = leveren, Q &lt; 0 = opnemen.</p>
   <div class="balk"><button class="knop" data-act="lfKopieer">Kopieer scenario’s (voor Excel)</button></div>
   <div class="tabelwrap"><table class="lft"><tr><th>Case</th><th>Omschrijving</th><th>U OP (pu)</th><th>U OP (kV)</th><th>P doel (MW)</th><th>P minimaal (MW)</th><th>Q doel (Mvar)</th><th>Aftakstand</th>${b.net.hs ? '<th>Stand HS/MS</th>' : ''}</tr>
@@ -618,6 +633,7 @@ document.addEventListener('click', e => {
   if (t.dataset.odel != null) { p.open.splice(+t.dataset.odel, 1); wijzig(); renderOpen(); return; }
   const a = t.dataset.act;
   if (a === 'lfPmax') { const b = LF.bereken(nrm(p.lf)); const d = afleiden(p).docs[0]?.doc || 'esmd'; const V = p.velden[d] ||= {}; V.pmax = { ...(V.pmax || {}), w:LF.f2(b.Pmax), s:'aanname', n:'Uit de blindvermogen-voorcheck (tab 4), ' + new Date().toLocaleDateString('nl-NL') }; wijzig(); renderInvul(); toast('Pmax overgenomen in ' + d.toUpperCase()); return; }
+  if (a === 'visionInfo') { const box = $('#visionInfo'); box.hidden = !box.hidden; t.setAttribute('aria-expanded', String(!box.hidden)); return; }
   if (a === 'lfBlos') { const L = p.lf, g = x => String(x ?? '').replace('.', ','), km = x => fmtNl(parseFloat(String(x).replace(',', '.')) / 1000);
     const r = ['BLOS invoer — ' + p.naam, '', 'OMVORMERS', 'Totaal aantal omvormers\t' + g(L.ninv), 'Snom (kVA)\t' + g(L.inv.S), 'Pnom (kW)\t' + g(L.inv.P), 'Max. blindvermogen levering (kvar)\t' + g(L.inv.Q || L.inv.S), 'Max. blindvermogen opname (kvar)\t-' + g(String(L.inv.Qopn || L.inv.Q || L.inv.S).replace('-', '')), 'Unom (V)\t' + g(L.inv.Un), 'Imax (A)\t' + g(L.inv.Imax), 'Umax (V)\t' + g(L.inv.UmaxV), 'Umin (V)\t' + g(L.inv.UminV), 'Max. kortsluitstroom (A)\t' + g(L.inv.Ik),
       '', 'LS-KABELS', 'Aantal parallel per transformator\t' + g(L.ls.n), 'Lengte per kabel (km)\t' + km(L.ls.L), 'Doorsnede\t' + L.ls.type,
