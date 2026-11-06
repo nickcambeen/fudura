@@ -90,7 +90,7 @@
   @media (max-width:620px) { .flds.f5 { grid-template-columns:repeat(2, minmax(0, 1fr)) !important; } .lfgrid { grid-template-columns:1fr; } .lfgrid .kaart.s2 { grid-column:auto; } .lfgrid .kaart.s2 .flds { grid-template-columns:repeat(2, minmax(0, 1fr)); } }
   .lfgrid .kaart { padding:10px 12px 12px; }
   .lfgrid .kaart h3 { margin:0; font-size:16px; }
-  .lfgrid .hint { margin:0 0 8px; color:var(--muted); font-size:12.5px; line-height:1.3; }
+  .lfgrid .hint { margin:0 0 8px; color:var(--muted); font-size:12.5px; line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .flds { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:6px 8px; }
   .fld { display:flex; flex-direction:column; gap:2px; min-width:0; }
   .fld.w3 { grid-column:span 2; }
@@ -365,9 +365,9 @@ function renderLf() {
   const L = p.lf;
   el.innerHTML = `<div class="info">Eigen loadflow-voorcheck van het blindvermogen volgens de 13 hoekpunten van het NBNL-verificatiedocument (PPM Type B/C, art. 3.19 Netcode/Systeemcode). Opbouw als basispark: overdrachtspunt → (HS/MS-trafo) → OP–MS-kabel → MS-TR-kabels → MS/LS-trafo’s → LS-kabels → omvormers. <b>Dit is niet de officiële BLOS-tool</b>: voor het formulier reken je met BLOS (basispark) of een netberekeningsprogramma.</div>
   <div class="lfgrid">
-    <div class="kaart"><h3>Overdrachtspunt</h3><p class="hint">Pgrens = Pmax begrensd (leeg = vol).</p><div class="flds">${lfVeld('Uc', 'Uc', 'kV')}${lfVeld('Plim', 'Pgrens', 'MW')}${lfVeld('Xext', 'X spoel', 'Ω')}${lfSel('hs_aan', 'HS/MS-trafo', [['0', 'Nee'], ['1', 'Ja']], L.hs_aan ? '1' : '0')}</div></div>
+    <div class="kaart"><h3>Overdrachtspunt</h3><p class="hint" title="Pgrens = Pmax begrensd; leeg = vol vermogen">Pgrens leeg = vol vermogen</p><div class="flds">${lfVeld('Uc', 'Uc', 'kV')}${lfVeld('Plim', 'Pgrens', 'MW')}${lfVeld('Xext', 'X spoel', 'Ω')}${lfSel('hs_aan', 'HS/MS-trafo', [['0', 'Nee'], ['1', 'Ja']], L.hs_aan ? '1' : '0')}</div></div>
     ${L.hs_aan ? `<div class="kaart s2"><h3>HS/MS-trafo</h3><p class="hint">Trap = % per stand van de regelschakelaar.</p><div class="flds">${lfVeld('hs.S', 'S', 'MVA')}${lfVeld('hs.U1', 'U prim', 'kV')}${lfVeld('hs.U2', 'U sec', 'kV')}${lfVeld('hs.uk', 'uk', '%')}${lfVeld('hs.Pk', 'Pk', 'kW')}${lfVeld('hs.P0', 'P0', 'kW')}${lfVeld('hs.step', 'Trap', '%')}${lfSel('hs.tap', 'Stand', standen(9), L.hs.tap)}</div></div>` : ''}
-    ${lfKabel('opms', 'Kabel OP → MS', 'Lengte 0 als OP in MS-installatie.')}
+    ${lfKabel('opms', 'Kabel OP → MS', '0 m als OP in MS-installatie')}
     ${lfKabel('mstr', 'Kabel MS → trafo', 'Gemiddelde lengte per trafo.')}
     <div class="kaart s2"><h3>MS/LS-trafo’s</h3><p class="hint">Stand + = hogere primaire spanning.</p><div class="flds f5">${lfVeld('ntr', 'Aantal')}${lfVeld('tr.S', 'S', 'MVA')}${lfVeld('tr.U1', 'U prim', 'kV')}${lfVeld('tr.U2', 'U sec', 'kV')}${lfVeld('tr.uk', 'uk', '%')}${lfVeld('tr.Pk', 'Pk', 'kW')}${lfVeld('tr.P0', 'P0', 'kW')}${lfVeld('tr.step', 'Trap', '%')}${lfSel('tr.tap', 'Stand', standen(2), L.tr.tap)}</div></div>
     ${lfKabel('ls', 'LS-kabel trafo → omv.', 'Per trafo, gemiddelde lengte.')}
