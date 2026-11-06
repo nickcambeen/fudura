@@ -204,7 +204,10 @@
     if (fac) S.push({ soort:'omv', titel:'Omvormer met ≥ ' + Math.ceil(num(I.inv.S) * fac / 10) * 10 + ' kVA (en evenredig meer stroom)', uitleg:'Zelfde werkzaam vermogen, meer ruimte voor blindvermogen. Vraag het PQ-diagram bij de leverancier.' });
     // 5. Spanningsvenster omvormer
     const b0 = basis, v = venster(basis);
-    if (v) { const Un = num(I.inv.Un, 400), iv0 = b0.net.inv, lo = v.lo < iv0.umin - EPS, hi = v.hi > iv0.umax + EPS, pc = x => Math.round(x * 100) + ' %';
+    const REAL = 0.12; // realistische grens voor het spanningsvenster van een centrale omvormer (±12 %)
+    const vReal = v && v.lo >= 1 - REAL - 1e-9 && v.hi <= 1 + REAL + 1e-9;
+    if (v && !vReal) S.push({ soort:'regel', titel:'Spanning op de omvormer loopt te ver weg (' + Math.round(v.lo * 100) + '–' + Math.round(v.hi * 100) + ' % van Unom nodig)', uitleg:'Dat is meer dan een omvormer realistisch kan (± ' + Math.round(REAL * 100) + ' %). Oplossing: een regelschakelaar die de spanning vasthoudt' + (I.hs_aan ? ' — zet bij “Niet in BLOS” de regelschakelaar HS/MS op automatisch (zie de combinaties hieronder) en vraag de netbeheerder/eigenaar of de HS/MS-trafo dat kan.' : ' — bijvoorbeeld MS/LS-trafo’s met regelschakelaar onder belasting, of een eigen HS/MS-trafo met regeling. Reken dat door in Vision.') });
+    if (v && vReal) { const Un = num(I.inv.Un, 400), iv0 = b0.net.inv, lo = v.lo < iv0.umin - EPS, hi = v.hi > iv0.umax + EPS, pc = x => Math.round(x * 100) + ' %';
       const delen = [lo ? 'Umin omlaag naar ' + Math.floor(v.lo * Un) + ' V (' + pc(v.lo) + ', nu ' + Math.round(iv0.umin * Un) + ' V)' : '', hi ? 'Umax omhoog naar ' + Math.ceil(v.hi * Un) + ' V (' + pc(v.hi) + ', nu ' + Math.round(iv0.umax * Un) + ' V)' : ''].filter(Boolean);
       S.push({ soort:'venster', titel:'Spanningsvenster omvormer: ' + delen.join(' en '), uitleg:(lo && !hi ? 'Umax is voldoende; het knelt aan de onderkant (lage netspanning). ' : hi && !lo ? 'Umin is voldoende; het knelt aan de bovenkant (hoge netspanning). ' : '') + 'Vraag de leverancier of de omvormer (en de beveiliging U&lt; / U&gt;) dit toestaat.', set:{ ...(lo ? { 'inv.UminV':Math.floor(v.lo * Un) } : {}), ...(hi ? { 'inv.UmaxV':Math.ceil(v.hi * Un) } : {}) } }); }
     // 6. Meer parallelle kabels OP–MS
@@ -223,7 +226,7 @@
       if (bereken(A).ok) S.push({ soort:'combi', titel:'Regelschakelaar HS/MS regelt automatisch', uitleg:'De HS/MS-trafo (EGD) houdt de MS-spanning vast; per case kiest hij de stand. Navragen of dat zo ingesteld is.', set:{ hs_auto:'1' } });
       else { const k = zoekKva(A); if (k) { const J = kva(kloon(A), k); S.push({ soort:'combi', titel:'Combinatie: regelschakelaar HS/MS automatisch + omvormer ≥ ' + J.inv.S + ' kVA', uitleg:'De regelschakelaar lost de spanning op, de grotere omvormer het tekort aan kVA. Let op: de stroom per rij stijgt mee (trafo, LS-kabels, LS-automaat).', set:{ hs_auto:'1', ...setKva(J) } }); } }
     }
-    if (v) { const W = kloon(I); W.inv.UminV = String(Math.floor(Math.min(b0.net.inv.umin, v.lo) * Un)); W.inv.UmaxV = String(Math.ceil(Math.max(b0.net.inv.umax, v.hi) * Un));
+    if (v && vReal) { const W = kloon(I); W.inv.UminV = String(Math.floor(Math.min(b0.net.inv.umin, v.lo) * Un)); W.inv.UmaxV = String(Math.ceil(Math.max(b0.net.inv.umax, v.hi) * Un));
       if (!bereken(W).ok) { const k = zoekKva(W); if (k) { const J = kva(kloon(W), k); S.push({ soort:'combi', titel:'Combinatie: spanningsvenster ' + W.inv.UminV + '–' + W.inv.UmaxV + ' V + omvormer ≥ ' + J.inv.S + ' kVA', uitleg:'Beide nodig; alleen als de leverancier dit kan leveren.', set:{ 'inv.UminV':W.inv.UminV, 'inv.UmaxV':W.inv.UmaxV, ...setKva(J) } }); } } }
     const n = num(I.ninv, 1), nt = num(I.ntr, 1);
     if (n === nt) { const X = kloon(I); X.ninv = String(n + 1); X.ntr = String(nt + 1); X.inv.P = String(Math.round(num(I.inv.P) * n / (n + 1)));
