@@ -115,6 +115,8 @@
   td.d { background:color-mix(in srgb, var(--blauw) 16%, var(--kaart)); }
   .info-knop { width:22px; height:22px; border-radius:50%; border:1px solid var(--blauw); background:var(--kaart); color:var(--blauw); font:700 13px/20px "Barlow Semi Condensed", Arial, sans-serif; cursor:pointer; padding:0; }
   .info-knop[aria-expanded="true"] { background:var(--blauw); color:#fff; }
+  tr.ci td { background:var(--zacht); text-align:left !important; white-space:normal !important; font-size:13.5px; } .ciwrap p { margin:0 0 4px; } .ciwrap ol { margin:0; padding-left:20px; display:grid; gap:3px; }
+  table.lft td .info-knop { width:20px; height:20px; line-height:18px; font-size:12px; margin-right:4px; }
   .visioninfo { margin:0 0 12px; font-size:14px; } .visioninfo h4 { margin:0 0 6px; font:700 16px "Barlow Semi Condensed", Arial, sans-serif; } .visioninfo ol { margin:0 0 6px; padding-left:20px; display:grid; gap:6px; }
   .legenda { font-size:12.5px; color:var(--muted); margin-top:6px; display:flex; flex-wrap:wrap; gap:4px 12px; align-items:center; }
   .legenda .sw { display:inline-block; width:12px; height:12px; border-radius:2px; margin-right:-6px; vertical-align:middle; }
@@ -410,6 +412,16 @@ function renderLf() {
   <div id="lfOnder"></div>`;
   renderLfRes();
 }
+function caseInfo(c, b, nm, pmin) {
+  const f2 = LF.f2, n = b.net.ninv, iv = b.net.inv, Pd = c.p * b.Pmax, Qd = c.q * b.Pmax;
+  const wat = { 1:'Vol vermogen bij nominale netspanning, maximaal blindvermogen <b>opnemen</b> (onderbekrachtigd).', 2:'Vol vermogen bij nominale netspanning, maximaal blindvermogen <b>leveren</b> (overbekrachtigd). Meestal de zwaarste case voor de kVA.', 3:'Laag vermogen (20 %), maximaal opnemen.', 4:'Laag vermogen (20 %), maximaal leveren.', 5:'Geen vermogen (omvormers in bedrijf, P = 0); blindvermogen tussen −10 en +10 % mag.', 6:'Hoge netspanning (1,1 pu), vol vermogen, maximaal opnemen. Spanning op de omvormer daalt door het opnemen.', 7:'Hoge netspanning (1,1 pu), vol vermogen, Q = 0. Toetst de hoogste spanning op de omvormer.', 8:'Verhoogde netspanning (1,05 pu), vol vermogen, maximaal leveren: hoge spanning én veel kVA.', 9:'Lage netspanning (0,95 pu), maximaal leveren: hoge stroom.', 10:'Lage netspanning (0,95 pu), maximaal opnemen: laagste spanning op de omvormer.', 11:'Lage netspanning (0,9 pu), minstens 20 % blindvermogen leveren; P mag zakken voor de stroomgrens.', 12:'Lage netspanning (0,9 pu), Q = 0; P mag zakken voor de stroomgrens.', 13:'Zeer lage netspanning (0,85 pu), geen Q-eis; P mag tot 80 % zakken (max. 20 minuten).', 14:'40 % vermogen, maximaal leveren (extra BLOS-case, punt 3 van de PPM-simulaties).', 15:'40 % vermogen, maximaal opnemen (extra BLOS-case).' }[c.n] || '';
+  return `<div class="ciwrap"><p>${wat}</p><ol>
+    <li><b>Netvoeding:</b> Uref = <b>${f2(c.u)} pu</b> (${f2(c.u * b.net.Uc)} kV).${b.net.hs ? ' Regelschakelaar EGD2: automatisch (oplossing A) of vaste stand ' + b.tapHS + '.' : ''} Aftakstand CS EOS: ${b.tapTR > 0 ? '+' : ''}${b.tapTR}.</li>
+    <li><b>Omvormers</b> (alle ${n}): P = ${f2(c.r.Pinv)} MW per stuk (${f2(c.r.Pinv * n)} MW totaal), Q ≈ ${f2(c.r.Qinv)} Mvar per stuk (${f2(c.r.Qinv * n)} Mvar totaal) als startwaarde uit de voorcheck.</li>
+    <li><b>Loadflow draaien</b> en Q van de omvormers bijstellen tot op het overdrachtspunt <b>Q = ${f2(Qd)} Mvar</b>${c.n === 11 ? ' (of meer)' : c.n === 13 ? ' (geen eis, 0 is prima)' : c.n === 5 ? ' (tussen ' + f2(-0.1 * b.Pmax) + ' en ' + f2(0.1 * b.Pmax) + ')' : ''} en <b>P = ${f2(Pd)} MW</b>${pmin < Pd - 1e-6 ? ', of minimaal ' + f2(pmin) + ' MW als de stroom of S begrenst' : ''}.</li>
+    <li><b>Controleren op de omvormerklemmen:</b> U tussen ${Math.round(iv.umin * iv.Un * 1000)} en ${Math.round(iv.umax * iv.Un * 1000)} V, I ≤ ${Math.round(iv.Imax * 1000)} A, S ≤ ${Math.round(iv.S * 1000)} kVA. Voorcheck: U ${f2(c.r.u)} pu, I ${f2(c.r.i)} pu, S ${f2(c.r.s)} pu → <b style="color:var(--${c.ok ? 'groen' : 'rood'})">${c.ok ? (c.verlaagd ? 'voldoet, P verlaagd' : 'voldoet') : 'voldoet niet (' + c.f.join(', ') + ')'}</b>.</li>
+    <li><b>Vastleggen</b> als variant/scenario “Case ${nm}” en de waarden op het overdrachtspunt en de omvormer noteren voor het rapport.</li></ol></div>`;
+}
 function renderLfRes() {
   const p = P(), box = $('#lfRes'), onder = $('#lfOnder'); if (!box || !p?.lf) return;
   let S;
@@ -467,7 +479,9 @@ function renderLfRes() {
   <p class="klein">Per case: spanning op het overdrachtspunt en de doelwaarden P en Q op het overdrachtspunt (Pmax ${f2(b.Pmax)} MW). In Vision de netspanning (bron) instellen en de omvormers zo regelen dat P en Q op het overdrachtspunt gehaald worden; daarna U, S en I op de omvormerklemmen controleren. Q &gt; 0 = leveren, Q &lt; 0 = opnemen.</p>
   <div class="balk"><button class="knop" data-act="lfKopieer">Kopieer scenario’s (voor Excel)</button></div>
   <div class="tabelwrap"><table class="lft"><tr><th>Case</th><th>Omschrijving</th><th>U OP (pu)</th><th>U OP (kV)</th><th>P doel (MW)</th><th>P minimaal (MW)</th><th>Q doel (Mvar)</th><th>Aftakstand</th>${b.net.hs ? '<th>Stand HS/MS</th>' : ''}</tr>
-  ${b.cases.map(c => `<tr><td>${c.n === 14 ? '0,4Pm/+Qm' : c.n === 15 ? '0,4Pm/−Qm' : c.n}</td><td>P ${Math.round(c.p * 100)} % · Q ${c.txt}</td><td>${f2(c.u)}</td><td>${f2(c.u * b.net.Uc)}</td><td>${f2(c.p * b.Pmax)}</td><td>${f2((c.red === 1 ? 0.93 : c.red === 3 ? 0.8 : c.red === 2 ? 0 : c.p) * b.Pmax)}${c.red === 2 ? ' (stroomgrens)' : ''}</td><td>${f2(c.q * b.Pmax)}</td><td>${b.tapTR > 0 ? '+' : ''}${b.tapTR}</td>${b.net.hs ? `<td>${b.tapHS}</td>` : ''}</tr>`).join('')}
+  ${b.cases.map(c => { const nm = c.n === 14 ? '0,4Pm/+Qm' : c.n === 15 ? '0,4Pm/−Qm' : c.n; const kol = b.net.hs ? 10 : 9; const pmin = (c.red === 1 ? 0.93 : c.red === 3 ? 0.8 : c.red === 2 ? 0 : c.p) * b.Pmax;
+    return `<tr><td><button class="info-knop" data-ci="${c.n}" aria-expanded="false" title="Hoe zet je case ${nm} in Vision?">i</button> ${nm}</td><td>P ${Math.round(c.p * 100)} % · Q ${c.txt}</td><td>${f2(c.u)}</td><td>${f2(c.u * b.net.Uc)}</td><td>${f2(c.p * b.Pmax)}</td><td>${f2(pmin)}${c.red === 2 ? ' (stroomgrens)' : ''}</td><td>${f2(c.q * b.Pmax)}</td><td>${b.tapTR > 0 ? '+' : ''}${b.tapTR}</td>${b.net.hs ? `<td>${b.tapHS}</td>` : ''}</tr>
+    <tr class="ci" id="ci${c.n}" hidden><td colspan="${kol}">${caseInfo(c, b, nm, pmin)}</td></tr>`; }).join('')}
   </table></div>
   ${p.lf.hs_aan || p.meta.trafo2 ? '<div class="let"><b>Geen basispark:</b> met twee soorten transformatoren (HS/MS én MS/LS) mag de BLOS-tool niet gebruikt worden (DNV). Reken de cases door in Vision. In BLOS laat je HS/MS-trafo en smoorspoel weg.</div>' : ''}`;
   box._sug = S.lijst;
@@ -633,6 +647,7 @@ document.addEventListener('click', e => {
   if (t.dataset.odel != null) { p.open.splice(+t.dataset.odel, 1); wijzig(); renderOpen(); return; }
   const a = t.dataset.act;
   if (a === 'lfPmax') { const b = LF.bereken(nrm(p.lf)); const d = afleiden(p).docs[0]?.doc || 'esmd'; const V = p.velden[d] ||= {}; V.pmax = { ...(V.pmax || {}), w:LF.f2(b.Pmax), s:'aanname', n:'Uit de blindvermogen-voorcheck (tab 4), ' + new Date().toLocaleDateString('nl-NL') }; wijzig(); renderInvul(); toast('Pmax overgenomen in ' + d.toUpperCase()); return; }
+  if (t.dataset.ci) { const r = $('#ci' + t.dataset.ci); r.hidden = !r.hidden; t.setAttribute('aria-expanded', String(!r.hidden)); return; }
   if (a === 'visionInfo') { const box = $('#visionInfo'); box.hidden = !box.hidden; t.setAttribute('aria-expanded', String(!box.hidden)); return; }
   if (a === 'lfBlos') { const L = p.lf, g = x => String(x ?? '').replace('.', ','), km = x => fmtNl(parseFloat(String(x).replace(',', '.')) / 1000);
     const r = ['BLOS invoer — ' + p.naam, '', 'OMVORMERS', 'Totaal aantal omvormers\t' + g(L.ninv), 'Snom (kVA)\t' + g(L.inv.S), 'Pnom (kW)\t' + g(L.inv.P), 'Max. blindvermogen levering (kvar)\t' + g(L.inv.Q || L.inv.S), 'Max. blindvermogen opname (kvar)\t-' + g(String(L.inv.Qopn || L.inv.Q || L.inv.S).replace('-', '')), 'Unom (V)\t' + g(L.inv.Un), 'Imax (A)\t' + g(L.inv.Imax), 'Umax (V)\t' + g(L.inv.UmaxV), 'Umin (V)\t' + g(L.inv.UminV), 'Max. kortsluitstroom (A)\t' + g(L.inv.Ik),
