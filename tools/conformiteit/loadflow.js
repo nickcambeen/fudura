@@ -213,5 +213,22 @@
     return { lo:Math.floor(lo * 100) / 100, hi:Math.ceil(hi * 100) / 100 };
   }
   const f1 = x => (Math.round(x * 10) / 10).toString().replace('.', ','), f2 = x => (Math.round(x * 100) / 100).toFixed(2).replace('.', ',');
-  G.LF = { KABELS, CASES, bereken, suggesties, f1, f2 };
+  // Maximaal haalbaar blindvermogen op het OP (sign +1 leveren, -1 opnemen) bij spanning u en P op het OP
+  function qGrens(net, u, P, sign, tapHS, tapTR, Pmax) {
+    const ok = Q => !grens(vooruit(net, u, P, sign * Q, tapHS, tapTR), net.inv).length;
+    if (!ok(0)) return NaN;
+    let lo = 0, hi = 0.8 * Pmax;
+    if (ok(hi)) return sign * hi;
+    for (let k = 0; k < 28; k++) { const m = (lo + hi) / 2; if (ok(m)) lo = m; else hi = m; }
+    return sign * lo;
+  }
+  function vensters(I) {
+    const b = bereken(I), net = b.net, Pm = b.Pmax, t1 = b.tapHS, t2 = b.tapTR;
+    const pq = [];
+    for (let i = 0; i <= 20; i++) { const p = i / 20; pq.push({ p, qp:qGrens(net, 1, p * Pm, 1, t1, t2, Pm) / Pm, qm:qGrens(net, 1, p * Pm, -1, t1, t2, Pm) / Pm }); }
+    const uq = [];
+    for (let i = 0; i <= 25; i++) { const u = 0.85 + i * 0.01; uq.push({ u, qp:qGrens(net, u, 0.93 * Pm, 1, t1, t2, Pm) / Pm, qm:qGrens(net, u, 0.93 * Pm, -1, t1, t2, Pm) / Pm, qp20:qGrens(net, u, 0.2 * Pm, 1, t1, t2, Pm) / Pm, qm20:qGrens(net, u, 0.2 * Pm, -1, t1, t2, Pm) / Pm }); }
+    return { b, pq, uq };
+  }
+  G.LF = { KABELS, CASES, bereken, suggesties, vensters, f1, f2 };
 })(typeof window !== 'undefined' ? window : globalThis);

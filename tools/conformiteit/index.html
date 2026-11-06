@@ -119,6 +119,10 @@
   table.bres th .klein-i { width:17px; height:17px; line-height:15px; font-size:11px; margin-left:2px; border-color:#fff; color:#fff; background:transparent; } table.bres th .klein-i[aria-expanded="true"] { background:#fff; color:var(--blauw); }
   table.lft td .info-knop { width:20px; height:20px; line-height:18px; font-size:12px; margin-right:4px; }
   .visioninfo { margin:0 0 12px; font-size:14px; } .visioninfo h4 { margin:0 0 6px; font:700 16px "Barlow Semi Condensed", Arial, sans-serif; } .visioninfo ol { margin:0 0 6px; padding-left:20px; display:grid; gap:6px; }
+  .vgrid { display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:12px; }
+  .vgrid h4 { margin:0 0 4px; font:700 15px "Barlow Semi Condensed", Arial, sans-serif; } .vgrid .vo { margin:4px 0 0; font-weight:600; font-size:14px; }
+  svg.venster { width:100%; height:auto; display:block; } svg.venster text { font:11px Barlow, system-ui, sans-serif; fill:var(--muted); } svg.venster .asl { fill:var(--fg); font-size:12px; }
+  svg.venster .rast { stroke:var(--lijn); stroke-width:1; } svg.venster .as { stroke:var(--muted); stroke-width:1; } svg.venster .eis { fill:color-mix(in srgb, var(--blauw) 22%, transparent); stroke:var(--blauw); stroke-width:1.5; }
   .legenda { font-size:12.5px; color:var(--muted); margin-top:6px; display:flex; flex-wrap:wrap; gap:4px 12px; align-items:center; }
   .legenda .sw { display:inline-block; width:12px; height:12px; border-radius:2px; margin-right:-6px; vertical-align:middle; }
   .sw.d { background:color-mix(in srgb, var(--blauw) 40%, var(--kaart)); } .sw.g { background:color-mix(in srgb, var(--groen) 45%, var(--kaart)); } .sw.r { background:color-mix(in srgb, var(--rood) 45%, var(--kaart)); } .sw.o { background:color-mix(in srgb, var(--oranje) 45%, var(--kaart)); }
@@ -423,6 +427,47 @@ function caseInfo(c, b, nm, pmin) {
     <li><b>Controleren op de omvormerklemmen:</b> U tussen ${Math.round(iv.umin * iv.Un * 1000)} en ${Math.round(iv.umax * iv.Un * 1000)} V, I ≤ ${Math.round(iv.Imax * 1000)} A, S ≤ ${Math.round(iv.S * 1000)} kVA. Voorcheck: U ${f2(c.r.u)} pu, I ${f2(c.r.i)} pu, S ${f2(c.r.s)} pu → <b style="color:var(--${c.ok ? 'groen' : 'rood'})">${c.ok ? (c.verlaagd ? 'voldoet, P verlaagd' : 'voldoet') : 'voldoet niet (' + c.f.join(', ') + ')'}</b>.</li>
     <li><b>Vastleggen</b> als variant/scenario “Case ${nm}” en de waarden op het overdrachtspunt en de omvormer noteren voor het rapport.</li></ol></div>`;
 }
+function svgVenster(o) {
+  // o: { x:[min,max], y:[min,max], xl, yl, eis:[[x,y]...], lijnen:[{pts:[[x,y]], kleur, dash, naam}], xt:[...], yt:[...] }
+  const W = 420, H = 300, L = 46, R = 12, T = 12, B = 38, X = v => L + (v - o.x[0]) / (o.x[1] - o.x[0]) * (W - L - R), Y = v => H - B - (v - o.y[0]) / (o.y[1] - o.y[0]) * (H - T - B);
+  const pad = pts => { let d = '', pen = false; pts.forEach(([x, y]) => { if (!isFinite(x) || !isFinite(y)) { pen = false; return; } d += (pen ? 'L' : 'M') + X(x).toFixed(1) + ' ' + Y(y).toFixed(1) + ' '; pen = true; }); return d; };
+  const nl = v => String(+v.toFixed(2)).replace('.', ',');
+  const cid = 'c' + Math.random().toString(36).slice(2, 8);
+  return `<svg viewBox="0 0 ${W} ${H}" class="venster" role="img" aria-label="${esc(o.titel)}"><defs><clipPath id="${cid}"><rect x="${L}" y="${T}" width="${W - L - R}" height="${H - T - B}"/></clipPath></defs>
+    ${o.xt.map(v => `<line x1="${X(v)}" x2="${X(v)}" y1="${T}" y2="${H - B}" class="rast"/><text x="${X(v)}" y="${H - B + 14}" text-anchor="middle">${nl(v)}</text>`).join('')}
+    ${o.yt.map(v => `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" class="rast"/><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end">${nl(v)}</text>`).join('')}
+    <line x1="${X(0)}" x2="${X(0)}" y1="${T}" y2="${H - B}" class="as"/>
+    <path d="${pad(o.eis)}Z" class="eis"/>
+    ${o.lijnen.map(l => `<path clip-path="url(#${cid})" d="${pad(l.pts)}" fill="none" stroke="${l.kleur}" stroke-width="2.2"${l.dash ? ' stroke-dasharray="5 4"' : ''}/>`).join('')}
+    <text x="${(L + W - R) / 2}" y="${H - 6}" text-anchor="middle" class="asl">${o.xl}</text>
+    <text x="12" y="${(T + H - B) / 2}" text-anchor="middle" class="asl" transform="rotate(-90 12 ${(T + H - B) / 2})">${o.yl}</text>
+  </svg>`;
+}
+function renderVensters(I) {
+  const box = $('#lfVensters'); if (!box) return;
+  let V; try { V = LF.vensters(I); } catch (e) { box.innerHTML = ''; return; }
+  const rood = 'var(--rood)', bruin = 'var(--oranje)';
+  // eis P-Q (art. 3.19 lid 5-7) en U-Q (lid 1-3)
+  const eisPQ = [[0, 0], [0.33, 0.2], [0.33, 0.93], [0, 1], [-0.33, 0.93], [-0.33, 0.2]];
+  const eisUQ = [[0, 0.9], [0.33, 0.9], [0.33, 1.05], [0, 1.1], [-0.33, 1.1], [-0.33, 0.95]];
+  const pqP = V.pq.map(x => [x.qp, x.p]), pqM = V.pq.map(x => [x.qm, x.p]);
+  const uqP = V.uq.map(x => [x.qp, x.u]), uqM = V.uq.map(x => [x.qm, x.u]), uq2P = V.uq.map(x => [x.qp20, x.u]), uq2M = V.uq.map(x => [x.qm20, x.u]);
+  // oordeel: haalt de berekende grens de eis?
+  const eisQ = p => p <= 0.2 ? 0.33 * p / 0.2 : p <= 0.93 ? 0.33 : 0.33 * (1 - p) / 0.07;
+  const tekPQ = V.pq.filter(x => x.p > 0 && !(x.qp >= eisQ(x.p) - 1e-3 && -x.qm >= eisQ(x.p) - 1e-3)).map(x => x.p);
+  const eisUp = u => u < 0.9 ? 0 : u <= 1.05 ? 0.33 : Math.max(0, 0.33 * (1.1 - u) / 0.05), eisUm = u => u < 0.9 ? 0 : u >= 0.95 ? 0.33 : 0.33 * (u - 0.9) / 0.05;
+  const tekUQ = V.uq.filter(x => x.u >= 0.9 - 1e-9 && x.u <= 1.1 + 1e-9 && !(x.qp >= eisUp(x.u) - 1e-3 && -x.qm >= eisUm(x.u) - 1e-3)).map(x => x.u);
+  const rng = a => a.length ? LF.f2(Math.min(...a)) + (a.length > 1 ? '–' + LF.f2(Math.max(...a)) : '') : '';
+  box.innerHTML = `<h3>Q-P en Q-U venster op het overdrachtspunt</h3>
+  <p class="klein">Blauw = <b>wat moet</b> (Netcode/Systeemcode art. 3.19: ±0,33 × Pmax, met de toegestane afbouw). Lijnen = <b>wat het park kan</b> volgens deze voorcheck: het maximaal haalbare blindvermogen binnen de grenzen van de omvormer (S, I, P, Umin–Umax). Het park voldoet als de lijnen het blauwe vlak helemaal omsluiten. Ter indicatie, zoals in BLOS; maatgevend zijn de cases.</p>
+  <div class="vgrid">
+    <div class="kaart"><h4>Q-P venster bij U = 1,0 pu</h4>${svgVenster({ titel:'Q-P venster', x:[-0.6, 0.6], y:[0, 1.05], xl:'Q / Pmax (+ = leveren)', yl:'P / Pmax', xt:[-0.6, -0.33, 0, 0.33, 0.6], yt:[0, 0.2, 0.4, 0.6, 0.8, 0.93, 1], eis:eisPQ, lijnen:[{ pts:pqP, kleur:rood }, { pts:pqM, kleur:rood }] })}
+      <p class="vo" style="color:var(--${tekPQ.length ? 'rood' : 'groen'})">${tekPQ.length ? 'Voldoet niet bij P/Pmax ' + rng(tekPQ) : 'Voldoet: lijnen omsluiten de eis'}</p></div>
+    <div class="kaart"><h4>Q-U venster bij 0,93 en 0,2 × Pmax</h4>${svgVenster({ titel:'Q-U venster', x:[-0.6, 0.6], y:[0.85, 1.12], xl:'Q / Pmax (+ = leveren)', yl:'U op OP (pu)', xt:[-0.6, -0.33, 0, 0.33, 0.6], yt:[0.85, 0.9, 0.95, 1, 1.05, 1.1], eis:eisUQ, lijnen:[{ pts:uqP, kleur:rood }, { pts:uqM, kleur:rood }, { pts:uq2P, kleur:bruin, dash:1 }, { pts:uq2M, kleur:bruin, dash:1 }] })}
+      <p class="vo" style="color:var(--${tekUQ.length ? 'rood' : 'groen'})">${tekUQ.length ? 'Voldoet niet bij U ' + rng(tekUQ) + ' pu (0,93 × Pmax)' : 'Voldoet: lijnen omsluiten de eis'}</p></div>
+  </div>
+  <div class="legenda"><span class="sw d"></span>Eis (wat moet) <span class="sw r"></span>Haalbaar bij 1,0 / 0,93 × Pmax <span class="sw o"></span>Haalbaar bij 0,2 × Pmax (stippel). Waar een lijn ontbreekt, kan het park daar zelfs zonder blindvermogen niet binnen de spanningsgrenzen van de omvormer blijven.</div>`;
+}
 function renderLfRes() {
   const p = P(), box = $('#lfRes'), onder = $('#lfOnder'); if (!box || !p?.lf) return;
   let S;
@@ -465,6 +510,7 @@ function renderLfRes() {
   </div>
   ${b.ok ? `<div class="balk"><button class="knop vol" data-act="lfPmax">Neem Pmax ${f2(b.Pmax)} MW over in de invulhulp</button></div>` : ''}`;
   onder.innerHTML = `${S.lijst.length ? `<h3>Zo krijg je het groen</h3><ul class="sugg">${S.lijst.map((x, i) => `<li><div><b>${x.titel}</b><span>${x.uitleg}</span></div>${x.set ? `<button class="knop" data-sug="${i}">Toepassen</button>` : ''}</li>`).join('')}</ul>` : ''}
+  <div id="lfVensters"></div>
   <h3 id="lfVision" style="display:flex;align-items:center;gap:8px">Scenario’s voor Vision <button class="info-knop" data-act="visionInfo" aria-expanded="false" title="Hoe zet je dit in Vision?">i</button></h3>
   <div id="visionInfo" class="kaart visioninfo" hidden>
     <h4>Zo reken je de cases door in Vision</h4>
@@ -487,6 +533,7 @@ function renderLfRes() {
   </table></div>
   ${p.lf.hs_aan || p.meta.trafo2 ? '<div class="let"><b>Geen basispark:</b> met twee soorten transformatoren (HS/MS én MS/LS) mag de BLOS-tool niet gebruikt worden (DNV). Reken de cases door in Vision. In BLOS laat je HS/MS-trafo en smoorspoel weg.</div>' : ''}`;
   box._sug = S.lijst;
+  renderVensters(nrm(p.lf));
 }
 
 /* ======================= data ======================= */
