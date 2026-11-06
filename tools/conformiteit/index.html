@@ -119,6 +119,12 @@
       <tr><td>Termijnen</td><td>Voorlopig document ≥ 3 maanden (Pmax &lt; 5 MW) of ≥ 6 maanden (Pmax ≥ 5 MW) vóór de gewenste opleverdatum, binnen 2 maanden na onder spanning brengen. Definitief binnen 6 maanden daarna. Netbeheerder reageert binnen 2 maanden. Type D: netgegevens ≥ 16 maanden vóór EON aanvragen.</td><td>RfG/ESM CVD v2.0 § 3</td></tr>
       <tr><td>Beveiliging (tips)</td><td>U&lt; en U&gt;: vertraging minimaal 2 s, anders afkeur. I&gt; en I&gt;&gt;: groter dan de omvormerstroom. f&lt; en f&gt;: uit de omvormerinstelling. Mag niet conflicteren met FRT en frequentiebereik.</td><td>DNV-cursus PGMD/ESMD; formulier p. 3</td></tr>
     </table></div>
+    <h2>Links</h2>
+    <div class="kaart"><ul style="margin:0;padding-left:20px;display:grid;gap:6px">
+      <li><a href="https://www.netbeheernederland.nl/publicatie/goedgekeurde-omvormers-opslag-type-B" target="_blank" rel="noopener">Lijst omvormers RfG type B voor opslageenheden</a> <span class="klein">(Netbeheer Nederland, wordt periodiek bijgewerkt)</span></li>
+      <li><a href="https://www.netbeheernederland.nl/publicatie/goedgekeurde-omvormers-opwek-type-B" target="_blank" rel="noopener">Lijst omvormers RfG type B voor opwekeenheden</a></li>
+      <li><a href="https://www.netbeheernederland.nl/requirements-generators" target="_blank" rel="noopener">Eisen voor opwekeenheden, opslag en vraagsturing</a> <span class="klein">(formulieren PGMD/ESMD, verificatiedocumenten, BLOS/BLOR-tools, testprotocol)</span></li>
+    </ul></div>
     <p class="klein">Controleer altijd de actuele versie van de documenten en de NBNL-lijsten bij Netbeheer Nederland en de eigen netbeheerder. De tool is een hulpmiddel, geen vervanging van het formulier.</p>
   </section>
 
@@ -129,6 +135,12 @@
 <script>
 /* ======================= opslag ======================= */
 const SLEUTEL = 'fudura-conformiteit-v1';
+const LINK = {
+  opslag: 'https://www.netbeheernederland.nl/publicatie/goedgekeurde-omvormers-opslag-type-B',
+  opwek: 'https://www.netbeheernederland.nl/publicatie/goedgekeurde-omvormers-opwek-type-B',
+  rfg: 'https://www.netbeheernederland.nl/requirements-generators',
+};
+const lijstLinks = soort => [soort !== 'opslag' ? `<a href="${LINK.opwek}" target="_blank" rel="noopener">lijst opwek type B</a>` : '', soort !== 'opwek' ? `<a href="${LINK.opslag}" target="_blank" rel="noopener">lijst opslag type B</a>` : ''].filter(Boolean).join(' · ');
 const $ = s => document.querySelector(s);
 function lees() { try { return JSON.parse(localStorage.getItem(SLEUTEL)) || null; } catch (e) { return null; } }
 function bewaar() { try { localStorage.setItem(SLEUTEL, JSON.stringify(DB)); } catch (e) {} }
@@ -171,7 +183,7 @@ const EENH = [
   ['nomv', 'Aantal omvormers / eenheden', ''],
   ['somv', 'Nominaal vermogen per eenheid', 'In MVA (schijnbaar vermogen).', 'MVA'],
   ['merk', 'Merk / fabrikant', ''],
-  ['type', 'Type-aanduiding', 'Exact zoals op de NBNL-lijst. Staat hij erop, dan vervalt bijlage 1.'],
+  ['type', 'Type-aanduiding', 'Exact zoals op de NBNL-lijst. Staat hij erop, dan vervalt bijlage 1. Controleer: <a href="https://www.netbeheernederland.nl/publicatie/goedgekeurde-omvormers-opwek-type-B" target="_blank" rel="noopener">lijst opwek</a> · <a href="https://www.netbeheernederland.nl/publicatie/goedgekeurde-omvormers-opslag-type-B" target="_blank" rel="noopener">lijst opslag</a>.'],
   ['sync', 'Synchrone generator: cos φ en x″d', 'Alleen bij synchrone opwek (WKK): nominale arbeidsfactor en subtransiënte reactantie (verzadigd, p.u.).', '', 'pgmd'],
   ['park', 'Parkregelaar (merk/type)', 'Alleen invullen als er een parkregelaar is die P/Q op het overdrachtspunt regelt. Geeft het EMS alleen setpoints door: n.v.t.'],
 ];
@@ -251,9 +263,9 @@ function todoLijst(p) {
     // Type B / C
     add(d.doc + '-form', 'Fudura', D + ' Type ' + t + ' invullen', 'Formulier van Netbeheer Nederland; één formulier per ' + (d.doc === 'pgmd' ? 'productie-eenheid (park = één eenheid)' : 'opslageenheid achter het overdrachtspunt') + '. Gebruik tab 3.');
     add(d.doc + '-eld', 'Fudura', 'Eenlijnschema met beveiligingen, kabels en trafo’s', 'Bijlage bij het ' + D + ': overdrachtspunt tot omvormers, instellingen, kabeltype/lengte, trafogegevens en aftakstand.');
-    if (m.lijst === 'ja' && m.park !== 'regelt') add(d.doc + '-b1', '', 'Bijlage 1 vervalt', 'Alle omvormers staan op de NBNL-lijst. Controleer de exacte typecode en firmware.');
+    if (m.lijst === 'ja' && m.park !== 'regelt') add(d.doc + '-b1', '', 'Bijlage 1 vervalt', 'Alle omvormers staan op de NBNL-lijst. Controleer de exacte typecode en firmware: ' + lijstLinks(d.doc === 'pgmd' ? 'opwek' : 'opslag') + '.');
     else if (m.lijst === 'ja' && m.park === 'regelt') add(d.doc + '-b1', 'Leverancier', 'Bijlage 1: alleen voor de parkregelaar', 'Omvormers staan op de lijst; de parkregelaar meestal niet → typetestrapport en certificaat parkregelaar (LFSM-O' + (t === 'C' || d.doc === 'esmd' ? ', LFSM-U' : '') + ', regelbaarheid P/Q).');
-    else add(d.doc + '-b1', 'Leverancier', 'Bijlage 1: typetestrapporten en certificaten', (m.lijst === 'nee' ? 'Omvormer staat niet op de NBNL-lijst' : 'Controleer of de omvormer op de NBNL-lijst staat') + '. Anders: typetestrapport + conformiteitscertificaat (bij voorkeur EN 50549-2) voor LFSM-O, frequentie-/spanningsbereik, blindvermogen, FRT, wederinschakelen, power quality.');
+    else add(d.doc + '-b1', 'Leverancier', 'Bijlage 1: typetestrapporten en certificaten', (m.lijst === 'nee' ? 'Omvormer staat niet op de NBNL-lijst' : 'Controleer of de omvormer op de NBNL-lijst staat (' + lijstLinks(m.soort) + ')') + '. Anders: typetestrapport + conformiteitscertificaat (bij voorkeur EN 50549-2) voor LFSM-O, frequentie-/spanningsbereik, blindvermogen, FRT, wederinschakelen, power quality.');
     // simulaties
     const geenPR = m.park !== 'regelt';
     const qsim = m.basis === 'ja' && d.doc === 'pgmd' ? 'met de BLOS Excel-tool (basispark)' : 'met een loadflowprogramma (bijv. Vision, Productie-eenheid) en rapport via de BLOR-tool';
@@ -336,7 +348,7 @@ function renderProject() {
       ${A.opslag ? `<label>Pmax opslag<small>MW op het overdrachtspunt</small><input data-m="pesm" value="${esc(m.pesm)}" inputmode="decimal"></label>
       <label>Energie-inhoud<small>MWh</small><input data-m="energie" value="${esc(m.energie)}" inputmode="decimal"></label>` : ''}
       <label>Spanning overdrachtspunt Uc<small>kV, uit de ATO</small><input data-m="uc" value="${esc(m.uc)}" inputmode="decimal"></label>
-      <label>Omvormer op NBNL-lijst?${sel('lijst', [['onbekend', 'Nog niet gecontroleerd'], ['ja', 'Ja, exacte typecode staat erop'], ['nee', 'Nee']], m.lijst)}</label>
+      <label>Omvormer op NBNL-lijst?<small>Controleer de exacte typecode: ${lijstLinks(m.soort)}</small>${sel('lijst', [['onbekend', 'Nog niet gecontroleerd'], ['ja', 'Ja, exacte typecode staat erop'], ['nee', 'Nee']], m.lijst)}</label>
       <label>Parkregelaar?<small>Regelt iets P/Q op het overdrachtspunt?</small>${sel('park', [['geen', 'Geen'], ['setpoints', 'EMS geeft alleen setpoints (geen regeling op OP)'], ['regelt', 'Ja, regelt P/Q op het overdrachtspunt']], m.park)}</label>
       ${A.opwek ? `<label>Basispark?<small>1 type eenheid, 1 type trafo, eenvoudige netstructuur</small>${sel('basis', [['nee', 'Nee'], ['ja', 'Ja (BLOS-tool mogelijk)']], m.basis)}</label>` : ''}
       <label>Gewenste opleverdatum<small>volle capaciteit</small><input type="date" data-m="datum" value="${esc(m.datum)}"></label>
