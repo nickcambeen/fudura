@@ -521,8 +521,9 @@ function renderLfRes() {
     <div class="kaart"><div class="klein">Oordeel</div><div class="oordeel" style="color:var(--${b.ok ? 'groen' : 'rood'})">${b.ok ? 'Alle ' + b.cases.length + ' cases voldoen' : (b.cases.length - b.nOk) + ' van ' + b.cases.length + ' cases voldoen niet'}</div><div class="klein">Aftakstand ${b.tapTR > 0 ? '+' : ''}${b.tapTR}${b.net.hs ? ' · HS/MS ' + b.tapHS : ''}</div></div>
   </div>
   ${b.ok ? `<div class="balk"><button class="knop vol" data-act="lfPmax">Neem Pmax ${f2(b.Pmax)} MW over in de invulhulp</button></div>` : ''}
-  <div id="lfVensters"></div>`;
-  onder.innerHTML = `${S.lijst.length ? `<h3>Zo krijg je het groen</h3><ul class="sugg">${S.lijst.map((x, i) => `<li><div><b>${x.titel}</b><span>${x.uitleg}</span></div>${x.set ? `<button class="knop" data-sug="${i}">Toepassen</button>` : ''}</li>`).join('')}</ul>` : ''}
+  <div id="lfVensters"></div>
+  <div id="lfSugg"></div>`;
+  $('#lfSugg').innerHTML = `${S.lijst.length ? `<h3>Zo krijg je het groen</h3><ul class="sugg">${S.lijst.map((x, i) => `<li><div><b>${x.titel}</b><span>${x.uitleg}</span></div>${x.set ? `<button class="knop" data-sug="${i}">Toepassen</button>` : ''}</li>`).join('')}</ul>` : ''}
 
   ${p.lf.hs_aan || p.meta.trafo2 ? '<div class="let"><b>Geen basispark:</b> met twee soorten transformatoren (HS/MS én MS/LS) mag de BLOS-tool niet gebruikt worden (DNV). Reken de cases door in Vision. In BLOS laat je HS/MS-trafo en smoorspoel weg.</div>' : ''}`;
   box._sug = S.lijst;
