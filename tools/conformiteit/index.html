@@ -394,11 +394,11 @@ function renderLf() {
         ${kop('MS-trafo’s', 'transformatoren')}${rij('ntr', 'Aantal transformatoren', '')}${rij('tr.S', 'Schijnbaar vermogen S', 'kVA', 0.001)}${rij('tr.uk', 'Kortsluitspanning uk', '%')}${rij('tr.U1', 'Nominale spanning primair Ums', 'kV')}${rij('tr.U2', 'Nominale spanning secundair Uls', 'kV')}${rij('tr.P0', 'Nullastverlies Pfe', 'kW')}${rij('tr.Pk', 'Kortsluitverlies Pcu', 'kW')}${rijSel('tr.tap', 'Positie aftakschakelaar (0 = nom.)', standen(2), L.tr.tap)}${rij('tr.step', 'Trapgrootte (BLOS: 2,5)', '%')}
         ${kop('MS-TR-kabel', 'transformatoren naar MS-verzamelstation')}${rij('mstr.n', 'Aantal (driefasen)kabels parallel per trafo', '')}${rij('mstr.L', 'Lengte per kabel', 'km', 1000)}${rijKabel('mstr')}
         ${kop('OP-MS-kabels', 'MS-verzamelstation naar overdrachtspunt')}${rij('opms.n', 'Aantal (driefasen)kabels parallel naar OP', '')}${rij('opms.L', 'Lengte per kabel', 'km', 1000)}${rijKabel('opms')}
-        ${kop('Net')}${rij('Uc', 'Toegekende netspanning Uc', 'kV')}${rij('Plim', 'Pmax begrensd (leeg = vol)', 'MW')}
+        ${kop('Net')}${rij('Uc', 'Toegekende netspanning Uc', 'kV')}
       </table>
       <table class="bin nietblos">
         <tr class="titel"><th colspan="3">Niet in BLOS (voorcheck / Vision)</th></tr>
-        ${rijSel('hs_aan', 'Eigen HS/MS-trafo', [['0', 'Nee'], ['1', 'Ja']], L.hs_aan ? '1' : '0')}${rij('Xext', 'Smoorspoel(en) X totaal', 'Ω')}
+        ${rij('Plim', 'Pmax begrensd in besturing (leeg = niet)', 'MW')}${rijSel('hs_aan', 'Eigen HS/MS-trafo', [['0', 'Nee'], ['1', 'Ja']], L.hs_aan ? '1' : '0')}${rij('Xext', 'Smoorspoel(en) X totaal', 'Ω')}
         ${L.hs_aan ? rij('hs.S', 'HS/MS: vermogen', 'MVA') + rij('hs.U1', 'HS/MS: spanning primair', 'kV') + rij('hs.U2', 'HS/MS: spanning secundair', 'kV') + rij('hs.uk', 'HS/MS: uk', '%') + rij('hs.Pk', 'HS/MS: Pk', 'kW') + rij('hs.P0', 'HS/MS: P0', 'kW') + rij('hs.step', 'HS/MS: trapgrootte', '%') + rijSel('hs.tap', 'HS/MS: stand', standen(9), L.hs.tap) : ''}
       </table>
     </div>
