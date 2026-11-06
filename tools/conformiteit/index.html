@@ -37,7 +37,13 @@
   .let { border-left:4px solid var(--oranje); background:color-mix(in srgb, var(--oranje) 9%, var(--kaart)); padding:10px 14px; border-radius:6px; margin:10px 0; }
   .info { border-left:4px solid var(--blauw); background:color-mix(in srgb, var(--blauw) 8%, var(--kaart)); padding:10px 14px; border-radius:6px; margin:10px 0; }
   .form { display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:12px 16px; }
-  .form label { display:flex; flex-direction:column; gap:4px; font-weight:600; font-size:15px; }
+  .form { align-items:start; }
+  .form label, .form .groep { display:grid; grid-template-rows:auto 2.7em 38px; gap:2px; font-weight:600; font-size:15px; }
+  .form label small, .form .groep small { font-weight:400; color:var(--muted); font-size:13px; line-height:1.3; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+  .form label > input, .form label > select { height:38px; }
+  .form .vinken { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+  .form .vink { display:flex !important; grid-template-rows:none !important; align-items:center; gap:6px; font-weight:500 !important; font-size:14px !important; height:38px; background:var(--zacht); border:1px solid var(--lijn); border-radius:6px; padding:0 8px; white-space:nowrap; cursor:pointer; }
+  .form .vink input { width:16px; height:16px; margin:0; flex:none; }
   .form label small { font-weight:400; color:var(--muted); font-size:13px; }
   input, select, textarea { font:15px Barlow, system-ui, sans-serif; color:var(--fg); background:var(--zacht); border:1px solid var(--lijn); border-radius:6px; padding:7px 9px; width:100%; }
   textarea { min-height:38px; resize:vertical; }
@@ -49,7 +55,12 @@
   .veld .lab { font-weight:600; }
   .veld .lab small { display:block; font-weight:400; color:var(--muted); font-size:13px; }
   .veld .toel { font-size:14px; color:var(--muted); }
-  .veld .toel textarea { margin-top:6px; font-size:14px; }
+  .veld .inv { display:grid; gap:6px; }
+  .veld .inv textarea { font-size:14px; min-height:32px; height:32px; padding:5px 8px; }
+  .veld > div:nth-child(3) { height:38px; display:flex; align-items:center; }
+  .veld input { height:38px; }
+  .veld .lab, .veld .toel { padding-top:8px; }
+  .veld .toel { padding-top:9px; line-height:1.4; }
   .sectie { margin:14px 0; }
   .sectie h3 { margin:0 0 6px; display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; }
   .balk { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:8px 0; }
@@ -339,11 +350,11 @@ function renderProject() {
   el.innerHTML = `
   <div class="kaart">
     <div class="form">
-      <label>Projectnaam<input data-pn value="${esc(p.naam)}"></label>
-      <label>Klant / eigenaar<input data-m="klant" value="${esc(m.klant)}"></label>
-      <label>Netbeheerder<input data-m="netb" value="${esc(m.netb)}" placeholder="Enexis, Liander, Stedin, TenneT …"></label>
-      <label>Fase<input data-m="fase" value="${esc(m.fase)}" placeholder="Bijv. pre-RFQ, engineering, realisatie"></label>
-      <label>Wat komt erbij?${sel('soort', [['opwek', 'Opwek (PGM)'], ['opslag', 'Opslag / batterij (ESM)'], ['beide', 'Opwek + opslag']], m.soort)}</label>
+      <label>Projectnaam<small>Zoals in het projectbord</small><input data-pn value="${esc(p.naam)}"></label>
+      <label>Klant / eigenaar<small>Aangeslotene die het formulier tekent</small><input data-m="klant" value="${esc(m.klant)}"></label>
+      <label>Netbeheerder<small>Bij wie je indient</small><input data-m="netb" value="${esc(m.netb)}" placeholder="Enexis, Liander, Stedin, TenneT …"></label>
+      <label>Fase<small>Waar het project nu staat</small><input data-m="fase" value="${esc(m.fase)}" placeholder="Bijv. pre-RFQ, engineering, realisatie"></label>
+      <label>Wat komt erbij?<small>Bepaalt PGMD en/of ESMD</small>${sel('soort', [['opwek', 'Opwek (PGM)'], ['opslag', 'Opslag / batterij (ESM)'], ['beide', 'Opwek + opslag']], m.soort)}</label>
       ${A.opwek ? `<label>Pmax opwek<small>MW op het overdrachtspunt</small><input data-m="pgen" value="${esc(m.pgen)}" inputmode="decimal"></label>` : ''}
       ${A.opslag ? `<label>Pmax opslag<small>MW op het overdrachtspunt</small><input data-m="pesm" value="${esc(m.pesm)}" inputmode="decimal"></label>
       <label>Energie-inhoud<small>MWh</small><input data-m="energie" value="${esc(m.energie)}" inputmode="decimal"></label>` : ''}
@@ -352,8 +363,7 @@ function renderProject() {
       <label>Parkregelaar?<small>Regelt iets P/Q op het overdrachtspunt?</small>${sel('park', [['geen', 'Geen'], ['setpoints', 'EMS geeft alleen setpoints (geen regeling op OP)'], ['regelt', 'Ja, regelt P/Q op het overdrachtspunt']], m.park)}</label>
       ${A.opwek ? `<label>Basispark?<small>1 type eenheid, 1 type trafo, eenvoudige netstructuur</small>${sel('basis', [['nee', 'Nee'], ['ja', 'Ja (BLOS-tool mogelijk)']], m.basis)}</label>` : ''}
       <label>Gewenste opleverdatum<small>volle capaciteit</small><input type="date" data-m="datum" value="${esc(m.datum)}"></label>
-      <label style="flex-direction:row;align-items:center;gap:8px;font-weight:500"><input type="checkbox" data-m="hsms" style="width:auto"${m.hsms ? ' checked' : ''}> Eigen HS/MS-trafo (step-up)</label>
-      <label style="flex-direction:row;align-items:center;gap:8px;font-weight:500"><input type="checkbox" data-m="trafo2" style="width:auto"${m.trafo2 ? ' checked' : ''}> Tweede type MS/LS-trafo</label>
+      <label>Transformatoren<small>Welke trafo’s naast MS/LS type 1?</small><select data-trafo>${[['', 'Alleen MS/LS type 1'], ['h', '+ HS/MS (step-up)'], ['2', '+ 2e type MS/LS'], ['h2', '+ HS/MS en 2e type MS/LS']].map(([v, t]) => `<option value="${v}"${v === (m.hsms ? 'h' : '') + (m.trafo2 ? '2' : '') ? ' selected' : ''}>${t}</option>`).join('')}</select></label>
     </div>
   </div>
   <h2>Uitkomst</h2>
@@ -405,9 +415,9 @@ function renderInvul() {
     ${S.map(([t, velden]) => `<div class="sectie kaart"><h3>${t}</h3>${velden.map(v => {
       const d = V[v[0]] || {}; const s = d.s || 'open';
       return `<div class="veld"><div class="lab">${esc(v[1])}${v[3] ? `<small>${esc(v[3])}</small>` : ''}</div>
-      <div><input data-v="${v[0]}" value="${esc(d.w)}"></div>
+      <div class="inv"><input data-v="${v[0]}" value="${esc(d.w)}"><textarea data-n="${v[0]}" rows="1" placeholder="Notitie / bron">${esc(d.n)}</textarea></div>
       <div><button class="st ${s}" data-st="${v[0]}">${s}</button></div>
-      <div class="toel">${v[2] || ''}<textarea data-n="${v[0]}" rows="1" placeholder="Notitie / bron">${esc(d.n)}</textarea></div></div>`; }).join('')}</div>`).join('')}`;
+      <div class="toel">${v[2] || ''}</div></div>`; }).join('')}</div>`).join('')}`;
 }
 
 function renderOpen() {
@@ -442,6 +452,7 @@ function renderInvulZacht() { if (!$('#p-invul').classList.contains('aan')) rend
 document.addEventListener('change', e => {
   const t = e.target, p = P(); if (!p) return;
   if (t.matches('[data-m]') && (t.type === 'checkbox' || t.tagName === 'SELECT' || t.type === 'date')) { p.meta[t.dataset.m] = t.type === 'checkbox' ? t.checked : t.value; wijzig(); renderProject(); renderTodo(); renderInvul(); return; }
+  if (t.matches('[data-trafo]')) { p.meta.hsms = t.value.includes('h'); p.meta.trafo2 = t.value.includes('2'); wijzig(); renderProject(); renderTodo(); renderInvul(); return; }
   if (t.matches('[data-todo]')) { p.todo[t.dataset.todo] = t.checked; wijzig(); renderTodo(); return; }
   if (t.matches('[data-ok]')) { p.open[t.dataset.ok].klaar = t.checked; wijzig(); renderOpen(); return; }
 });
