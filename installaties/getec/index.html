@@ -2675,7 +2675,9 @@ hud.innerHTML = `
     <div class="kop">Terugverdienen (indicatief)</div>
     <div class="tvIn">
       <label>investering <span><input type="number" id="tvInv" min="0" step="0.5" placeholder="?"> M&euro;</span></label>
-      <label title="Tarief voor het maandmaximum (kW-max) van de netbeheerder">kW-max-tarief <span><input type="number" id="tvKw" min="0" step="0.1" placeholder="?"> &euro;/kW/mnd</span></label>
+      <label title="TenneT HS 110-150 kV, kW maxgewogen per maand (tariefvoorstel 2026)">kW-max-tarief <span><input type="number" id="tvKw" min="0" step="0.01" value="7.77"> &euro;/kW/mnd</span></label>
+      <label title="Huidig gecontracteerd transportvermogen afname (staat op de TenneT-factuur); nieuw contract = de schuif hierboven">huidig contract <span><input type="number" id="tvHuidig" min="0" step="0.5" placeholder="?"> MW</span></label>
+      <label title="TenneT HS 110-150 kV, kW gecontracteerd per jaar (tariefvoorstel 2026)">kW-contract-tarief <span><input type="number" id="tvKc" min="0" step="0.01" value="65.62"> &euro;/kW/jaar</span></label>
       <label><input type="checkbox" id="tvHandel" checked style="margin:0 4px 0 0">handel meetellen</label>
     </div>
     <table id="tvTabel"></table>
@@ -2807,25 +2809,30 @@ function handelMaand(m){
 function tekenTerugverdien(){
   if(!SIM.jaar || !SIM.jaar.mnd) return;
   const inv = parseFloat(($s('tvInv').value || '').replace(',', '.'))*1e6, kw = parseFloat(($s('tvKw').value || '').replace(',', '.')), handel = $s('tvHandel').checked;
+  const huidig = parseFloat(($s('tvHuidig').value || '').replace(',', '.')), kc = parseFloat(($s('tvKc').value || '').replace(',', '.'));
+  const contractOk = isFinite(huidig) && isFinite(kc);
+  const contractMnd = contractOk ? Math.max(0, huidig - SIM.grens)*1000*kc/12 : 0;     // besparing door een lager contract
   const piekMnd = m => isFinite(kw) ? (SIM.jaar.mnd[m].piek0 - SIM.jaar.mnd[m].piek1)*1000*kw : 0;
   const per = [['1 maand', 1], ['6 maanden', 6], ['1 jaar', 12], ['2 jaar', 24], ['5 jaar', 60]];
   const eur = v => nlS(v/1000);                                    // k€
-  let jaarTot = 0; for(let m = 0; m < 12; m++) jaarTot += (handel ? handelMaand(m) : 0) + piekMnd(m);
-  let html = '<tr><th>k&euro;</th>' + (handel ? '<th>handel</th>' : '') + '<th>piek</th><th>totaal</th>' + (isFinite(inv) ? '<th>netto</th>' : '') + '</tr>';
+  let jaarTot = 0; for(let m = 0; m < 12; m++) jaarTot += (handel ? handelMaand(m) : 0) + piekMnd(m) + contractMnd;
+  let html = '<tr><th>k&euro;</th>' + (handel ? '<th>handel</th>' : '') + '<th>kW-max</th><th>contract</th><th>totaal</th>' + (isFinite(inv) ? '<th>netto</th>' : '') + '</tr>';
   for(const [naam, n] of per){
-    let h = 0, pk = 0;
-    for(let k = 0; k < n; k++){ const m = k % 12; h += handel ? handelMaand(m) : 0; pk += piekMnd(m); }
-    const tot = h + pk;
-    html += `<tr><td>${naam}</td>` + (handel ? `<td>${eur(h)}</td>` : '') + `<td>${isFinite(kw) ? eur(pk) : '?'}</td><td>${eur(tot)}</td>` +
+    let h = 0, pk = 0, ct = 0;
+    for(let k = 0; k < n; k++){ const m = k % 12; h += handel ? handelMaand(m) : 0; pk += piekMnd(m); ct += contractMnd; }
+    const tot = h + pk + ct;
+    html += `<tr><td>${naam}</td>` + (handel ? `<td>${eur(h)}</td>` : '') + `<td>${isFinite(kw) ? eur(pk) : '?'}</td><td>${contractOk ? eur(ct) : '?'}</td><td>${eur(tot)}</td>` +
       (isFinite(inv) ? `<td class="${tot - inv < 0 ? 'neg' : ''}">${eur(tot - inv)}</td>` : '') + '</tr>';
   }
   $s('tvTabel').innerHTML = html;
   let noot = isFinite(inv) && jaarTot > 0 ? `Terugverdientijd ca. <b>${nlS(inv/jaarTot, 1)} jaar</b>. ` : (isFinite(inv) ? '' : 'Vul de investering in voor netto en terugverdientijd. ');
   if(!isFinite(kw)) noot += 'Vul het kW-max-tarief in om de piekbesparing mee te tellen. ';
-  noot += `Piekbesparing bij contract ${mwS(SIM.grens)}. Handel met indicatieve prijzen (geen marktdata), elk jaar gelijk aan 2025, zonder slijtage, degradatie, netkosten, onderhoud en fee.`;
+  if(!isFinite(huidig)) noot += 'Vul het huidige contract in (TenneT-factuur) voor de besparing op het gecontracteerd vermogen. ';
+  else if(huidig <= SIM.grens) noot += 'Nieuw contract (schuif) is niet lager dan het huidige: geen contractbesparing. ';
+  noot += `Nieuw contract ${mwS(SIM.grens)}. Tarieven: TenneT HS 110-150 kV, tariefvoorstel 2026 (kW-max gewogen; hier benaderd met de kale maandpiek). Handel met indicatieve prijzen (geen marktdata), elk jaar gelijk aan 2025, zonder slijtage, degradatie, netkosten, onderhoud en fee.`;
   $s('tvNoot').innerHTML = noot;
 }
-['tvInv', 'tvKw', 'tvHandel'].forEach(id => $s(id).addEventListener('input', tekenTerugverdien));
+['tvInv', 'tvKw', 'tvHuidig', 'tvKc', 'tvHandel'].forEach(id => $s(id).addEventListener('input', tekenTerugverdien));
 cvS.addEventListener('click', e => { const r = cvS.getBoundingClientRect(); SIM.t = Math.max(0, Math.min(23.99, (e.clientX - r.left)/r.width*24)); });
 
 const basisS = document.createElement('canvas'); basisS.width = cvS.width; basisS.height = cvS.height;
