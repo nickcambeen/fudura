@@ -25,7 +25,7 @@
   #kaartStand{position:absolute;top:auto;bottom:130px;right:300px;z-index:20;display:none;padding:8px 12px;font:500 12px/1.6 ui-monospace,Menlo,monospace;color:#243038;background:rgba(255,255,255,.94);border:1px solid #8fa0ab;border-radius:6px}
   #kaartStand span{font:400 10px system-ui,sans-serif;color:#78838a}
   #docBtn{top:14px;right:118px;color:#1b4f8a;border-color:#1b4f8a}
-  #docPaneel{position:fixed;top:14px;right:304px;z-index:30;width:min(400px,calc(100vw - 32px));max-height:calc(100vh - 140px);overflow:auto;
+  #docPaneel{position:fixed;top:14px;right:304px;z-index:30;width:min(400px,calc(100vw - 32px));max-height:calc(100vh - 230px);overflow:auto;
     background:#fff;border:1px solid #8fa0ab;border-radius:8px;box-shadow:0 8px 24px rgba(20,33,61,.18);padding:10px 12px;display:none;font:13px/1.4 system-ui,sans-serif}
   #docPaneel.open{display:block}
   #docPaneel h4{margin:10px 0 4px;font:600 11px/1.2 system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#78838a}
@@ -125,6 +125,7 @@
   <div class="pSub">20 MW / 80 MWh · 16 × REPT 5 MWh · 8 × CS EOS + PCS · NGX MS-station</div>
   <details open><summary>Bekijken</summary>
     <div class="rijK"><span>Park</span><div class="knoprij"><button data-v="0">overzicht</button><button data-v="b">boven</button><button data-v="n">MS-station</button><button data-v="a">CS AUX</button></div></div>
+    <label title="Indicatieve dag: laden bij lage en ontladen bij hoge day-aheadprijs">Simulatie handel (indicatief) <input type="checkbox" id="tSim"></label>
     <div class="rijK"><span>Rij 1</span><div class="knoprij"><button data-v="c">containers</button><button data-v="1">CS EOS</button><button data-v="j">ladderbaan</button><button data-v="v">DC-kabels</button></div></div>
   </details>
   <details open><summary>Weergave</summary>
@@ -1473,6 +1474,7 @@ const barX = 1.6;
 const phases = [{yU:11.0, p:0, S:1}, {yU:9.0, p:1, S:1}, {yU:7.0, p:2, S:-1}];
 const kabelGroup = new THREE.Group();
 scene.add(kabelGroup);
+const FLOWG = [];                                 // kabelcurves voor de stroompunten in de simulatie
 
 function buildAC(r){
   const Xc = X((yPC1+yPC2)/2), Zp = Z((r.pcs.x1+r.pcs.x2)/2);
@@ -1528,7 +1530,8 @@ function buildAC(r){
       V(lx, ys + Rb, lz), V(lx, py - 0.55, lz)
     ];
     const curve = new THREE.CatmullRomCurve3(pts, false, 'centripetal');
-    kabelGroup.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 160, rC, 12, false), matSheath));
+    const tubeAC = new THREE.Mesh(new THREE.TubeGeometry(curve, 160, rC, 12, false), matSheath);
+    kabelGroup.add(tubeAC); FLOWG.push({tube: tubeAC, curve, type: 'ac', rij: r.i});
     const e = V(lx, py, lz);
     mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.62, 14), matTinned, e.x, py - 0.33, e.z);
     mesh(new THREE.BoxGeometry(0.5, 0.7, 0.26), matTinned, Xc + barX + S*0.64, py - 0.05, e.z);
@@ -1606,7 +1609,8 @@ function buildDC(r){
           v(back ? cx + 27.2 : cx + 28.0, 7.4 + BCH, cz + m*bz)
         ];
         const curve = new THREE.CatmullRomCurve3(filletPath(Wp, Rb, 10), false, 'centripetal');
-        kabelGroup.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 120, 0.19, 10, false), mat));
+        const tubeDC = new THREE.Mesh(new THREE.TubeGeometry(curve, 120, 0.19, 10, false), mat);
+        kabelGroup.add(tubeDC); FLOWG.push({tube: tubeDC, curve, type: 'dc', rij: r.i, plus});
         mesh(new THREE.CylinderGeometry(0.3, 0.34, 0.9, 12), matDark, xUp, 0.45 + BCH, gz);
         mesh(palmGeo, matTinned, back ? cx + 27.2 : cx + 28.0, 7.4 + BCH, cz + m*bz);
       }
@@ -2482,10 +2486,288 @@ document.getElementById('tNaam').onchange = e => zetNamen(e.target.checked);
   document.getElementById('pgsAnBtn').onclick = () => toon(box.style.display !== 'block');
   window.pgsAnalyse = toon;
 })();
+// ============ SIMULATIE HANDEL GETEC (indicatief, zoals de peak-shaving-simulatie bij Bol) ============
+// Nog geen kwartierdata van Getec: de batterij handelt op een indicatieve day-aheadprijs per uur.
+// Laden in de goedkoopste uren, ontladen in de duurste, binnen 20 MW en de bruikbare energie (SoC 5 - 95 %).
+// Prijzen zijn typische dagvormen, geen werkelijke marktdata; met kwartierdata van Getec of het model van Eneco wordt dit vervangen.
+const SIM = {
+  pMax: 20, nomMWh: 16*5.0159, socMin: 0.05, socMax: 0.95, etaL: 0.95, etaO: 0.95, slijt: 8,
+  t: 0, speed: 1, playing: true, aan: false, fase: 0, profiel: 'winter', mode: 'stand-by', dag: null
+};
+SIM.bruik = SIM.nomMWh*(SIM.socMax - SIM.socMin);
+const PRIJS = {
+  winter: {naam: 'werkdag winter', eur: [78,74,71,70,72,80,105,138,142,125,112,105,100,98,104,118,145,172,168,150,128,110,96,86]},
+  zomer:  {naam: 'zonnige zomerdag', eur: [82,76,72,70,72,78,95,98,70,35,8,-5,-12,-15,-6,12,48,95,135,162,150,118,98,88]},
+  wind:   {naam: 'winderige dag', eur: [42,38,32,28,26,30,45,62,58,48,40,34,30,28,32,40,55,72,70,60,52,46,44,40]}
+};
+// planning per uur: optimaal via dynamisch programmeren over de laadtoestand (stappen van 1 MWh opgeslagen),
+// leeg aan het begin en eind van de dag; per uur max. 20 MW aan netzijde
+function plan(prof){
+  const pr = PRIJS[prof].eur, N = 24, K = Math.floor(SIM.bruik);
+  const dMax = Math.floor(SIM.pMax*SIM.etaL), dMin = -Math.floor(SIM.pMax/SIM.etaO);
+  let V = Array(K + 1).fill(-1e12); V[0] = 0;                 // V[k] = beste resultaat tot nu bij laadtoestand k
+  const keuze = [];
+  for(let h = 0; h < N; h++){
+    const W = Array(K + 1).fill(-1e12), C = Array(K + 1).fill(0);
+    for(let k = 0; k <= K; k++){ if(V[k] < -1e11) continue;
+      for(let d = dMin; d <= dMax; d++){ const k2 = k + d; if(k2 < 0 || k2 > K) continue;
+        const net = d > 0 ? d/SIM.etaL : d*SIM.etaO;            // MWh aan netzijde, + = afname
+        const w = V[k] - net*pr[h] - SIM.slijt*Math.abs(net)/2;
+        if(w > W[k2] + 1e-9){ W[k2] = w; C[k2] = k; } } }
+    keuze.push(C); V = W;
+  }
+  const laad = Array(N).fill(0), ontl = Array(N).fill(0);
+  let k = 0;
+  for(let h = N - 1; h >= 0; h--){ const k0 = keuze[h][k], d = k - k0;
+    if(d > 0) laad[h] = d/SIM.etaL; else if(d < 0) ontl[h] = -d*SIM.etaO; k = k0; }
+  return {laad, ontl};
+}
+function rekenDag(prof){
+  const pr = PRIJS[prof].eur, P = plan(prof), N = 1440, dt = 1/60;
+  const uit = {p: [], E: [], eur: [], prijs: [], winst: 0, inMWh: 0, uitMWh: 0, inEur: 0, uitEur: 0, cum: []};
+  let E = 0, p = 0, cum = 0;
+  for(let i = 0; i < N; i++){
+    const h = Math.floor(i/60), doel = P.laad[h] > 0 ? P.laad[h] : (P.ontl[h] > 0 ? -P.ontl[h] : 0);   // MW, + = laden
+    p += (doel - p)*0.35; if(Math.abs(p - doel) < 0.05) p = doel;
+    E = Math.max(0, Math.min(SIM.bruik, E + (p > 0 ? p*SIM.etaL : p/SIM.etaO)*dt));
+    const eur = -p*pr[h]*dt;
+    cum += eur;
+    if(p > 0){ uit.inMWh += p*dt; uit.inEur += p*pr[h]*dt; } else { uit.uitMWh += -p*dt; uit.uitEur += -p*pr[h]*dt; }
+    uit.p.push(p); uit.E.push(E); uit.prijs.push(pr[h]); uit.cum.push(cum);
+  }
+  uit.winst = cum;
+  uit.cycli = uit.uitMWh/SIM.etaO/SIM.bruik;
+  return uit;
+}
+const KLEUR = {laden: 0x2fbf5a, ontladen: 0xff8a1f, 'stand-by': 0x9aa4aa};
+
+// ---- stroompunten langs de AC- en DC-kabels (alle 8 rijen), als InstancedMesh in de kabelgroep ----
+const matFlow = new THREE.MeshBasicMaterial({color: KLEUR.laden});
+const FLOWDOTS = {dc: [], ac: []};
+let instDC = null, instAC = null;
+const _m4 = new THREE.Matrix4(), _inv = new THREE.Matrix4();
+function bouwFlow(){
+  scene.updateMatrixWorld(true);
+  _inv.copy(kabelGroup.matrixWorld).invert();
+  for(const f of FLOWG){
+    const M = new THREE.Matrix4().multiplyMatrices(_inv, f.tube.matrixWorld);
+    const len = f.curve.getLength(), n = Math.max(3, Math.round(len/(f.type === 'dc' ? 12 : 7)));
+    const S = 120, pts = [];
+    for(let k = 0; k <= S; k++) pts.push(f.curve.getPointAt(k/S).applyMatrix4(M));
+    for(let k = 0; k < n; k++) FLOWDOTS[f.type].push({pts, len, u: k/n, u0: k/n, rij: f.rij});
+  }
+  instDC = new THREE.InstancedMesh(new THREE.SphereGeometry(0.34, 8, 6), matFlow, FLOWDOTS.dc.length);
+  instAC = new THREE.InstancedMesh(new THREE.SphereGeometry(0.33, 8, 6), matFlow, FLOWDOTS.ac.length);
+  for(const im of [instDC, instAC]){ im.frustumCulled = false; im.renderOrder = 5; im.visible = false; kabelGroup.add(im); }
+}
+const _pv = new THREE.Vector3();
+function punt(d){ const x = d.u*120, k = Math.min(119, Math.floor(x)), f = x - k; _pv.copy(d.pts[k]).lerp(d.pts[k + 1], f); return _m4.makeTranslation(_pv.x, _pv.y, _pv.z); }
+
+// ---- laadtoestand op het dak van elke container + label per rij ----
+const matBarBg = new THREE.MeshBasicMaterial({color: 0x2b3238});
+const matBar = new THREE.MeshBasicMaterial({color: KLEUR.laden});
+const socBars = [], rijLabels = [];
+function bouwSoc(){
+  const per = {};
+  for(const c of (window.DETBC || [])){
+    const bb = new THREE.Box3().setFromObject(c.g), cx = (bb.min.x + bb.max.x)/2, cz = (bb.min.z + bb.max.z)/2, y = bb.max.y + 0.3;
+    const bg = mesh(new THREE.BoxGeometry(50, 0.3, 3.2), matBarBg, cx, y, cz);
+    const bar = mesh(new THREE.BoxGeometry(1, 0.4, 2.6), matBar, cx, y + 0.08, cz);
+    socBars.push({bar, bg, cx});
+    const rij = c.naam.split('.')[0];
+    (per[rij] = per[rij] || []).push({cx, cz, y});
+  }
+  for(const rij in per){
+    const a = per[rij], cx = a.reduce((s, v) => s + v.cx, 0)/a.length, cz = a.reduce((s, v) => s + v.cz, 0)/a.length;
+    const c = document.createElement('canvas'); c.width = 512; c.height = 140;
+    const tex = new THREE.CanvasTexture(c);
+    const spr = new THREE.Sprite(new THREE.SpriteMaterial({map: tex, transparent: true, depthTest: false}));
+    spr.position.set(cx, a[0].y + 11, cz); spr.scale.set(22, 6, 1); spr.renderOrder = 999;
+    scene.add(spr);
+    rijLabels.push({spr, c, tex, naam: 'Rij ' + rij.replace('BC', ''), laatst: ''});
+  }
+}
+function tekenLabel(b, soc){
+  const k = Math.round(soc*100) + SIM.mode;
+  if(k === b.laatst) return; b.laatst = k;
+  const g = b.c.getContext('2d');
+  g.clearRect(0, 0, 512, 140);
+  g.fillStyle = 'rgba(255,255,255,0.95)'; g.strokeStyle = '#' + new THREE.Color(KLEUR[SIM.mode]).getHexString();
+  g.lineWidth = 7;
+  g.beginPath(); if(g.roundRect) g.roundRect(8, 10, 496, 118, 18); else g.rect(8, 10, 496, 118); g.fill(); g.stroke();
+  g.fillStyle = '#243038'; g.font = 'bold 60px Helvetica, Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText(b.naam + '  ' + Math.round(soc*100) + ' %', 256, 70);
+  b.tex.needsUpdate = true;
+}
+
+// ---- paneel ----
+const hud = document.createElement('div');
+hud.id = 'simHud'; hud.className = 'uit';
+hud.innerHTML = `
+  <div class="rij"><div class="kop">Getec BESS &middot; simulatie handel</div><button id="simAan">sluit</button></div>
+  <div id="simBody">
+  <div class="tabs"><button data-p="winter" class="aan">winter</button><button data-p="zomer">zonnige zomer</button><button data-p="wind">winderig</button></div>
+  <div class="rij"><span id="simKlok">00:00</span><span id="simModus">STAND-BY</span></div>
+  <div class="rij klein"><span id="simReden">&nbsp;</span></div>
+  <table>
+    <tr><td>day-aheadprijs</td><td id="vPrijs">-</td></tr>
+    <tr><td>batterij (8 rijen)</td><td id="vBat">-</td></tr>
+    <tr><td>per rij</td><td id="vRij">-</td></tr>
+    <tr><td>laadtoestand</td><td id="vSoc">-</td></tr>
+    <tr><td>resultaat tot nu</td><td id="vEur">-</td></tr>
+  </table>
+  <canvas id="simGrafiek" width="560" height="240"></canvas>
+  <div class="legenda"><i style="background:#1b4f8a"></i>prijs <i style="background:#2fbf5a;height:8px"></i>laden <i style="background:#ff8a1f;height:8px"></i>ontladen <i style="background:#2fbf5a"></i>laadtoestand (stippel)</div>
+  <div class="klein" id="simDag" style="margin-top:4px"></div>
+  <div class="knoppen">
+    <button id="simPlay">pauze</button>
+    <button data-v="0.5">0,5&times;</button><button data-v="1" class="aan">1&times;</button><button data-v="3">3&times;</button><button data-v="8">8&times;</button>
+  </div>
+  <div class="noot"><b>Indicatief.</b> Nog geen kwartierdata van Getec: de batterij handelt op een typische day-aheadprijs per uur (geen marktdata). 20 MW / 80 MWh (16 &times; REPT 5 MWh), bruikbaar 5&ndash;95 % = ${(SIM.bruik).toFixed(0)} MWh, rendement 95 % per richting, slijtage &euro; ${SIM.slijt}/MWh doorzet. Optimale planning met volledige kennis van de dagprijzen. Werkelijke inzet (onbalans, FCR/aFRR, Getec-net, ESMD-grenzen) volgt uit het model van Eneco. DC: stroom in &eacute;&eacute;n richting &middot; AC: heen en weer &middot; klik in de grafiek om te springen</div>
+  </div>`;
+document.body.appendChild(hud);
+const stSim = document.createElement('style');
+stSim.textContent = `
+#simHud{position:fixed;left:14px;top:100px;z-index:30;width:318px;padding:10px 12px;background:rgba(255,255,255,.95);max-height:calc(100vh - 230px);overflow-y:auto;box-sizing:border-box;
+  border:1px solid #9aa6ad;border-radius:8px;font:13px/1.4 system-ui,sans-serif;color:#243038;box-shadow:0 4px 18px rgba(0,0,0,.12)}
+#simHud.uit{display:none}
+#simHud .kop{font-weight:700;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:#5d6b73}
+#simHud .rij{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+#simHud .klein{font-size:12px;color:#5d6b73;min-height:17px}
+#simHud .tabs{display:flex;gap:4px;margin:8px 0 6px}
+#simKlok{font:700 26px/1.1 ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+#simModus{font-weight:800;font-size:14px;letter-spacing:.06em;padding:2px 8px;border-radius:4px;color:#fff;background:#9aa4aa}
+#simHud table{width:100%;border-collapse:collapse;margin-top:4px;font-size:12.5px}
+#simHud td{padding:2px 0;border-bottom:1px solid #e3e7ea}
+#simHud td:last-child{text-align:right;font:600 12.5px ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+#simHud td.neg{color:#c0281f}
+#simGrafiek{width:100%;height:auto;margin:8px 0 2px;cursor:pointer;border-radius:4px}
+#simHud .legenda{font-size:10.5px;color:#5d6b73;display:flex;flex-wrap:wrap;gap:2px 8px;align-items:center}
+#simHud .legenda i{display:inline-block;width:10px;height:3px;margin-right:3px;vertical-align:middle}
+#simHud .knoppen{display:flex;gap:4px;margin-top:6px}
+#simHud button{font:600 11px system-ui,sans-serif;padding:4px 8px;border:1px solid #9aa6ad;border-radius:4px;background:#fff;color:#3f4b52;cursor:pointer}
+#simHud button.aan{background:#243038;color:#fff;border-color:#243038}
+#simHud .noot{margin-top:6px;font-size:10.5px;color:#78838a;line-height:1.35}`;
+document.head.appendChild(stSim);
+const $s = id => document.getElementById(id);
+const cvS = $s('simGrafiek'), elPlay = $s('simPlay');
+const nlS = (v, d = 0) => v.toLocaleString('nl-NL', {minimumFractionDigits: d, maximumFractionDigits: d});
+function simPlay(aan){ SIM.playing = aan; elPlay.textContent = aan ? 'pauze' : 'start'; }
+elPlay.addEventListener('click', () => simPlay(!SIM.playing));
+function simAan(aan){
+  if(aan && !instDC){ bouwFlow(); bouwSoc(); }
+  SIM.aan = aan;
+  hud.classList.toggle('uit', !aan);
+  const cb = $s('tSim'); if(cb) cb.checked = aan;
+  for(const b of socBars){ b.bar.visible = aan; b.bg.visible = aan; }
+  for(const l of rijLabels) l.spr.visible = aan;
+  if(!aan){
+    if(instDC){ instDC.visible = false; instAC.visible = false; }
+    for(const m of [matDCp, matDCn, matSheath]) if(m.emissive) m.emissiveIntensity = 0;
+  }
+}
+$s('simAan').addEventListener('click', () => simAan(false));
+if($s('tSim')) $s('tSim').addEventListener('change', e => simAan(e.target.checked));
+hud.querySelectorAll('button[data-v]').forEach(b => b.addEventListener('click', () => {
+  SIM.speed = parseFloat(b.dataset.v);
+  hud.querySelectorAll('button[data-v]').forEach(x => x.classList.toggle('aan', x === b));
+}));
+function kiesProfiel(p){
+  SIM.profiel = p; SIM.dag = rekenDag(p);
+  hud.querySelectorAll('button[data-p]').forEach(x => x.classList.toggle('aan', x.dataset.p === p));
+  const D = SIM.dag, gemIn = D.inMWh ? D.inEur/D.inMWh : 0, gemUit = D.uitMWh ? D.uitEur/D.uitMWh : 0;
+  $s('simDag').innerHTML = `${PRIJS[p].naam}: ingekocht ${nlS(D.inMWh)} MWh &agrave; &euro; ${nlS(gemIn)} &middot; verkocht ${nlS(D.uitMWh)} MWh &agrave; &euro; ${nlS(gemUit)}` +
+    `<br>${nlS(D.cycli, 2)} cyclus &middot; <b>resultaat &euro; ${nlS(D.winst)}</b> per dag (v&oacute;&oacute;r slijtage, netkosten en fee)`;
+  tekenBasis();
+}
+hud.querySelectorAll('button[data-p]').forEach(b => b.addEventListener('click', () => kiesProfiel(b.dataset.p)));
+cvS.addEventListener('click', e => { const r = cvS.getBoundingClientRect(); SIM.t = Math.max(0, Math.min(23.99, (e.clientX - r.left)/r.width*24)); });
+
+const basisS = document.createElement('canvas'); basisS.width = cvS.width; basisS.height = cvS.height;
+function tekenBasis(){
+  const g = basisS.getContext('2d'), Wc = cvS.width, Hc = cvS.height, top = 8, gh = Hc - 34, D = SIM.dag;
+  const pr = PRIJS[SIM.profiel].eur, lo = Math.min(0, Math.floor(Math.min(...pr)/50)*50), hi = Math.max(200, Math.ceil(Math.max(...pr)/50)*50);
+  const yp = v => top + gh*(1 - (v - lo)/(hi - lo));
+  const y0 = top + gh/2, yP = mw => y0 - mw/SIM.pMax*gh*0.45;      // vermogen: ontladen omhoog, laden omlaag
+  g.clearRect(0, 0, Wc, Hc);
+  g.fillStyle = '#fafbfb'; g.fillRect(0, top, Wc, gh);
+  g.strokeStyle = '#e1e5e8'; g.lineWidth = 1; g.fillStyle = '#9aa4aa'; g.font = '15px system-ui'; g.textAlign = 'left';
+  for(let v = lo; v <= hi; v += 50){ const y = yp(v); g.beginPath(); g.moveTo(0, y); g.lineTo(Wc, y); g.stroke(); g.fillText('€ ' + v, 3, y - 3); }
+  // vermogen als staven
+  D.p.forEach((p, i) => { if(Math.abs(p) < 0.05) return; const x = i/1440*Wc;
+    g.fillStyle = p > 0 ? 'rgba(47,191,90,.55)' : 'rgba(255,138,31,.6)'; g.fillRect(x, y0, Wc/1440 + 0.6, yP(-p) - y0); });
+  g.strokeStyle = '#b8c0c5'; g.lineWidth = 1; g.setLineDash([3, 3]); g.beginPath(); g.moveTo(0, y0); g.lineTo(Wc, y0); g.stroke(); g.setLineDash([]);
+  g.fillStyle = '#5d6b73'; g.textAlign = 'right'; g.font = '14px system-ui';
+  g.fillText('ontladen 20 MW', Wc - 4, yP(20) + 14); g.fillText('laden 20 MW', Wc - 4, yP(-20) - 4);
+  // prijs (trap per uur)
+  g.strokeStyle = '#1b4f8a'; g.lineWidth = 3; g.beginPath();
+  pr.forEach((v, h) => { const x0 = h/24*Wc, x1 = (h + 1)/24*Wc; h ? g.lineTo(x0, yp(v)) : g.moveTo(x0, yp(v)); g.lineTo(x1, yp(v)); }); g.stroke();
+  // laadtoestand
+  g.strokeStyle = '#2fbf5a'; g.lineWidth = 2.5; g.setLineDash([7, 5]); g.beginPath();
+  D.E.forEach((e, i) => { const x = i/1440*Wc, y = top + gh*(1 - e/SIM.bruik); i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.stroke(); g.setLineDash([]);
+  g.fillStyle = '#78838a'; g.font = '16px system-ui'; g.textAlign = 'center';
+  for(let h = 0; h <= 24; h += 6) g.fillText(String(h).padStart(2, '0') + ':00', Math.min(Wc - 26, Math.max(26, h/24*Wc)), Hc - 6);
+}
+function tekenGrafiekS(){
+  const g = cvS.getContext('2d');
+  g.clearRect(0, 0, cvS.width, cvS.height); g.drawImage(basisS, 0, 0);
+  const x = SIM.t/24*cvS.width;
+  g.strokeStyle = '#243038'; g.lineWidth = 2; g.beginPath(); g.moveTo(x, 4); g.lineTo(x, cvS.height - 26); g.stroke();
+}
+
+let simVorige = performance.now();
+function simStap(){
+  const nu = performance.now(), dtReal = Math.min(0.1, (nu - simVorige)/1000); simVorige = nu;
+  if(!SIM.aan) return;
+  if(SIM.playing){ SIM.t += dtReal*SIM.speed/3.0; if(SIM.t >= 24) SIM.t -= 24; }   // 1x = 1 uur per 3 s
+  const D = SIM.dag, i = Math.min(1439, Math.floor(SIM.t*60));
+  const p = D.p[i], soc = D.E[i]/SIM.bruik, prijs = D.prijs[i];
+  SIM.mode = p > 0.1 ? 'laden' : p < -0.1 ? 'ontladen' : 'stand-by';
+  const hh = Math.floor(SIM.t), mm = Math.floor((SIM.t - hh)*60);
+  $s('simKlok').textContent = String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+  const elM = $s('simModus'); elM.textContent = SIM.mode.toUpperCase();
+  elM.style.background = '#' + new THREE.Color(KLEUR[SIM.mode]).getHexString();
+  const pr = PRIJS[SIM.profiel].eur, gem = pr.reduce((s, v) => s + v, 0)/24;
+  let reden = '';
+  if(SIM.mode === 'laden') reden = prijs < 0 ? 'negatieve prijs: betaald krijgen om te laden' : 'goedkoop uur: inkopen';
+  else if(SIM.mode === 'ontladen') reden = 'duur uur: verkopen';
+  else if(soc > 0.99) reden = 'vol: wacht op een duur uur';
+  else if(soc < 0.01) reden = 'leeg: wacht op een goedkoop uur';
+  else reden = prijs > gem ? 'wacht: later duurder' : 'wacht: verschil te klein';
+  $s('simReden').textContent = reden;
+  $s('vPrijs').textContent = '€ ' + nlS(prijs) + '/MWh';
+  $s('vBat').textContent = SIM.mode === 'stand-by' ? '0 MW' : (p > 0 ? 'laadt ' : 'levert ') + nlS(Math.abs(p), 1) + ' MW';
+  $s('vRij').textContent = nlS(Math.abs(p)/8*1000) + ' kW';
+  $s('vSoc').textContent = Math.round(soc*100) + ' % (' + nlS(D.E[i], 1) + ' MWh)';
+  const elE = $s('vEur'); elE.textContent = '€ ' + nlS(D.cum[i]); elE.classList.toggle('neg', D.cum[i] < 0);
+  tekenGrafiekS();
+  // 3D
+  const actief = SIM.mode !== 'stand-by';
+  matFlow.color.setHex(KLEUR[SIM.mode]);
+  instDC.visible = actief; instAC.visible = actief;
+  if(actief){
+    const richting = p >= 0 ? 1 : -1, v = Math.abs(p)/SIM.pMax*14;
+    if(SIM.playing) SIM.fase += dtReal*2*Math.PI*1.2;      // 1,2 Hz zichtbaar gemaakt (in werkelijkheid 50 Hz)
+    const amp = 0.8 + 2.2*Math.abs(p)/SIM.pMax;
+    FLOWDOTS.dc.forEach((d, k) => { if(SIM.playing) d.u = (d.u + richting*v*dtReal/d.len + 1) % 1; instDC.setMatrixAt(k, punt(d)); });
+    FLOWDOTS.ac.forEach((d, k) => { d.u = ((d.u0 + amp*Math.sin(SIM.fase)/d.len) % 1 + 1) % 1; instAC.setMatrixAt(k, punt(d)); });
+    instDC.instanceMatrix.needsUpdate = true; instAC.instanceMatrix.needsUpdate = true;
+  }
+  const gloei = actief ? 0.1 + Math.abs(p)/SIM.pMax*0.3 : 0;
+  for(const m of [matDCp, matDCn, matSheath]){ m.emissive = m.emissive || new THREE.Color(); m.emissive.setHex(KLEUR[SIM.mode]); m.emissiveIntensity = gloei; }
+  matBar.color.setHex(KLEUR[SIM.mode]);
+  const Lb = Math.max(0.01, soc)*50;
+  for(const b of socBars){ b.bar.scale.x = Lb; b.bar.position.x = b.cx - 25 + Lb/2; }
+  for(const l of rijLabels) tekenLabel(l, soc);
+}
+window.simStap = simStap;
+kiesProfiel('winter');
+SIM.t = 6.5;
+
 function animate(){
   requestAnimationFrame(animate);
   if(auto) theta += 0.0010;
-  stapFP(); schuif();
+  stapFP(); schuif(); if(window.simStap) simStap();
   if(!FP.aan) updateCam();
   renderer.render(scene, camera);
 }
