@@ -25,7 +25,7 @@
   #kaartStand{position:absolute;top:auto;bottom:130px;right:300px;z-index:20;display:none;padding:8px 12px;font:500 12px/1.6 ui-monospace,Menlo,monospace;color:#243038;background:rgba(255,255,255,.94);border:1px solid #8fa0ab;border-radius:6px}
   #kaartStand span{font:400 10px system-ui,sans-serif;color:#78838a}
   #docBtn{top:14px;right:118px;color:#1b4f8a;border-color:#1b4f8a}
-  #docPaneel{position:fixed;top:14px;right:304px;z-index:30;width:min(400px,calc(100vw - 32px));max-height:calc(100vh - 230px);overflow:auto;
+  #docPaneel{position:fixed;top:14px;right:304px;z-index:30;width:min(400px,calc(100vw - 32px));max-height:calc(100vh - 80px);overflow:auto;
     background:#fff;border:1px solid #8fa0ab;border-radius:8px;box-shadow:0 8px 24px rgba(20,33,61,.18);padding:10px 12px;display:none;font:13px/1.4 system-ui,sans-serif}
   #docPaneel.open{display:block}
   #docPaneel h4{margin:10px 0 4px;font:600 11px/1.2 system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#78838a}
@@ -75,11 +75,29 @@
   .knoprij button:hover{background:#eef2f4}
   .knoprij button.aan{background:#1b4f8a;border-color:#1b4f8a;color:#fff}
   .pInfo{font-size:11px;color:#5d6b73;line-height:1.35;padding:2px 0}
+
+  #titel { padding: 8px 14px; font-size: 16px; }
+  #caption, #werkbalk, #bagInfo, #mapNote { display: none !important; }
+  #paneel{width:284px;padding:10px 14px 12px;border-radius:12px;border-color:#d5dce1;box-shadow:0 6px 24px rgba(20,33,45,.14)}
+  #pKop{margin-bottom:2px}
+  #pKop h3{font-size:12px;letter-spacing:.04em}
+  #paneel .pSub{margin:0 0 8px;line-height:1.4}
+  #paneel details{border-top:1px solid #e6eaed;padding:8px 0 6px}
+  #paneel summary{padding:0 0 6px;color:#46545c}
+  #paneel details:not([open]) summary{padding-bottom:0}
+  #paneel label{padding:4px 0;font-size:12.5px}
+  .rij2{column-gap:18px}
+  .pLbl{font:600 10px system-ui,sans-serif;color:#8a979e;text-transform:uppercase;letter-spacing:.05em;margin:4px 0 4px}
+  .knopGrid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:4px}
+  .knopGrid button{font:600 12px system-ui,sans-serif;padding:6px 4px;border:1px solid #c3ccd2;border-radius:7px;background:#fff;color:#2f3b43;cursor:pointer;text-align:center}
+  .knopGrid button:hover{background:#eef3f7;border-color:#9fb0bc}
+  .knopGrid button.aan{background:#1b4f8a;border-color:#1b4f8a;color:#fff}
+  #paneel .pBreed{margin:6px 0 0;padding:6px;border-radius:7px;font-size:12px;background:#fff;border-color:#e3a39d}
 </style>
 </head>
 <body>
 <div id="wrap"></div>
-<div id="titel">Getec BESS-park Emmen &middot; 8 rijen<span>4 blokken van 2 rijen (rij B 180° gedraaid) &middot; per rij CS EOS + PCS + 2 &times; REPT 5 MWh type A + B &middot; CS AUX aan de korte kant<br><b id="bcTxt"></b></span></div>
+<div id="titel">Getec BESS-park Emmen<b id="bcTxt" hidden></b></div>
 <button class="knop" id="docBtn" aria-expanded="false" aria-controls="docPaneel">documenten</button>
 <div id="docPaneel" role="dialog" aria-label="Naslag documenten">
   <h4>Batterijcontainer REPT Powtrix 2.0, 5 MWh (iwell)</h4>
@@ -124,9 +142,13 @@
   <div id="pKop"><h3><a href="../../" style="color:#1b4f8a;text-decoration:none" title="Hoofdmenu">&lsaquo; menu</a> &nbsp;Getec BESS Emmen</h3><button class="pKnop" id="pDicht" title="Paneel sluiten">&times;</button></div>
   <div class="pSub">20 MW / 80 MWh · 16 × REPT 5 MWh · 8 × CS EOS + PCS · NGX MS-station</div>
   <details open><summary>Bekijken</summary>
-    <div class="rijK"><span>Park</span><div class="knoprij"><button data-v="0">overzicht</button><button data-v="b">boven</button><button data-v="n">MS-station</button><button data-v="a">CS AUX</button></div></div>
-    <label title="Indicatieve dag: laden bij lage en ontladen bij hoge day-aheadprijs">Simulatie handel (indicatief) <input type="checkbox" id="tSim"></label>
-    <div class="rijK"><span>Rij 1</span><div class="knoprij"><button data-v="c">containers</button><button data-v="1">CS EOS</button><button data-v="j">ladderbaan</button><button data-v="v">DC-kabels</button></div></div>
+    <div class="pLbl">Park</div>
+    <div class="knopGrid"><button data-v="0">overzicht</button><button data-v="b">bovenaanzicht</button><button data-v="n">MS-station</button><button data-v="a">CS AUX</button></div>
+    <div class="pLbl">Rij 1</div>
+    <div class="knopGrid"><button data-v="c">containers</button><button data-v="1">CS EOS</button><button data-v="j">ladderbaan</button><button data-v="v">DC-kabels</button></div>
+  </details>
+  <details open><summary>Simulatie</summary>
+    <label title="Indicatieve dag: laden bij lage en ontladen bij hoge day-aheadprijs">Handel (indicatief) <input type="checkbox" id="tSim"></label>
   </details>
   <details open><summary>Weergave</summary>
     <div class="rij2">
@@ -142,21 +164,22 @@
       <label>Dak MS eraf <input type="checkbox" id="tMsDak"></label>
     </div>
   </details>
-  <div class="knoprij" style="margin:2px 0 6px"><button onclick="location.href='esmd/'" style="width:100%">PGMD / ESMD (netcode-conformiteit)</button></div>
   <details open><summary>PGS 37-1</summary>
     <div class="rij2">
       <label title="PGS 37-1 M50/M52: afstandszones">Zones <input type="checkbox" class="oranje" id="tPgs"></label>
       <label title="Clusters uitlichten volgens PGS 37-1 M52 (afb. 15)">Clusters <input type="checkbox" class="oranje" id="tClus"></label>
     </div>
-    <button id="pgsAnBtn" class="pBreed">PGS 37-1 analyse</button>
+    <button id="pgsAnBtn" class="pBreed">PGS 37-1 analyse openen</button>
+  </details>
+  <details open><summary>Documenten</summary>
+    <div class="knopGrid"><button id="pDoc">documenten</button><button onclick="location.href='esmd/'" title="ESMD-invulhulp, proces en open punten">PGMD / ESMD</button></div>
   </details>
   <details><summary>Bewegen</summary>
     <div class="rij2"><label title="Als persoon rondlopen: WASD, muis = kijken, shift = rennen">Lopen <input type="checkbox" id="tFP"></label>
       <label title="Pijltjes = luchtfoto schuiven, , en . = draaien">Kaart uitlijnen <input type="checkbox" id="tUitl"></label></div>
-    <div class="pInfo">WASD / pijltjes = schuiven, shift = sneller · slepen = draaien · scroll = zoomen · meten en intekenen: werkbalk onderin</div>
+    <div class="pInfo">WASD / pijltjes = schuiven, shift = sneller · slepen = draaien · scroll = zoomen</div>
   </details>
   <details><summary>Informatie</summary>
-    <div class="knoprij" style="margin:4px 0 6px"><button id="pDoc">documenten</button><button onclick="location.href='esmd/'" title="ESMD-invulhulp, proces en open punten">PGMD / ESMD</button></div>
     <details class="sub" id="reptLijst"><summary>Installatie-eisen REPT 5 MWh-container</summary>
       <ul style="margin:4px 0 2px;padding-left:16px;font-size:11.5px;line-height:1.45;color:#3f4b52">
         <li><b>Fundering</b>: 300 mm boven maaiveld; iwell TD01: 2 betonbalken 6200 × 450 mm, buitenwerks 2750 mm (in het model). REPT §7.1.1: alternatief 6 korte poeren. Bovenvlakken gelijk, max. 3 mm hoogteverschil; definitief na grondonderzoek.</li>
@@ -1145,7 +1168,7 @@ const MAP = {
 const lfGroup = new THREE.Group();
 scene.add(lfGroup);
 const mapStatus = {ok: 0, fail: 0, total: 0};
-const mapNote = document.createElement('div');
+const mapNote = document.createElement('div'); mapNote.id = 'mapNote';
 mapNote.style.cssText = 'position:fixed;left:16px;top:70px;padding:6px 10px;font:12px system-ui,sans-serif;' +
   'background:rgba(255,255,255,0.92);border:1px solid #9aa0a3;border-radius:6px;color:#333;z-index:20;max-width:340px';
 document.body.appendChild(mapNote);
@@ -1871,7 +1894,7 @@ function wgsRd(lat, lon){ const p = 0.36*(lat - 52.15517440), l = 0.36*(lon - 5.
   const Yr = 463000 + 309056.544*p + 3638.893*l*l + 73.077*p*p - 157.984*p*l*l + 59.788*p*p*p + 0.433*l - 6.439*p*p*l*l - 0.032*p*l + 0.092*l*l*l*l - 0.054*p*l*l*l*l; return [Xr, Yr]; }
 const bagGroup = new THREE.Group(); scene.add(bagGroup);
 const bagMaat = new THREE.Group(); scene.add(bagMaat);
-const bagInfo = document.createElement('div');
+const bagInfo = document.createElement('div'); bagInfo.id = 'bagInfo';
 bagInfo.style.cssText = 'position:fixed;left:16px;bottom:112px;z-index:20;padding:5px 10px;font:12px system-ui,sans-serif;background:rgba(255,255,255,0.9);border:1px solid #9aa0a3;border-radius:6px;color:#333;max-width:520px';
 bagInfo.textContent = 'BAG-gebouwen laden…'; document.body.appendChild(bagInfo);
 const BAGR = [];                                   // ringen in kaartstelsel (lokaal x, z)
@@ -2628,7 +2651,7 @@ hud.innerHTML = `
 document.body.appendChild(hud);
 const stSim = document.createElement('style');
 stSim.textContent = `
-#simHud{position:fixed;left:14px;top:100px;z-index:30;width:318px;padding:10px 12px;background:rgba(255,255,255,.95);max-height:calc(100vh - 230px);overflow-y:auto;box-sizing:border-box;
+#simHud{position:fixed;left:14px;top:62px;z-index:30;width:318px;padding:10px 12px;background:rgba(255,255,255,.95);max-height:calc(100vh - 80px);overflow-y:auto;box-sizing:border-box;
   border:1px solid #9aa6ad;border-radius:8px;font:13px/1.4 system-ui,sans-serif;color:#243038;box-shadow:0 4px 18px rgba(0,0,0,.12)}
 #simHud.uit{display:none}
 #simHud .kop{font-weight:700;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:#5d6b73}
