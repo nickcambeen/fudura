@@ -37,7 +37,8 @@ export default async function middleware(request) {
   const pad = new URL(request.url).pathname;
   const getec = GETEC_PAD.test(pad);
   const hash = getec ? GETEC_HASH : CODE_HASH, naam = getec ? GETEC_COOKIE : COOKIE;
-  const sessie = await sha256((getec ? 'getec-sessie:' : 'fudura-sessie:') + hash);
+  // sessiewaarde met een geheim uit de Vercel-omgeving, zodat de cookie niet uit deze (openbare) code af te leiden is
+  const sessie = await sha256((getec ? 'getec-sessie:' : 'fudura-sessie:') + hash + ':' + (process.env.SESSIE_GEHEIM || ''));
   const cookies = request.headers.get('cookie') || '';
   if (cookies.split(/;\s*/).includes(`${naam}=${sessie}`)) return doorgaan();
 

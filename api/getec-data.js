@@ -8,7 +8,7 @@ const path = require('path');
 
 const GETEC_HASH = '1fbf39bd330ded2b51f890570f2d5d149b19b9e69e389be7e4958aef854b4e71';
 const sha = t => crypto.createHash('sha256').update(t).digest('hex');
-const SESSIE = sha('getec-sessie:' + GETEC_HASH);
+const SESSIE = sha('getec-sessie:' + GETEC_HASH + ':' + (process.env.SESSIE_GEHEIM || ''));
 
 let DATA = null;
 function laad(){
