@@ -2510,8 +2510,8 @@ document.getElementById('tNaam').onchange = e => zetNamen(e.target.checked);
   window.pgsAnalyse = toon;
 })();
 // ============ SIMULATIE GETEC MET KWARTIERDATA 2025 (zoals de peak-shaving-simulatie bij Bol) ============
-// Bron: kwartierdata Getec Park Emmen 2025 (hoofdmeter 110 kV, WKK 1/2/3/6, PV-daken), bestand data/kwartier2025.bin:
-// 3 x 35.040 Int16 in kW: [hoofdmeter afname - teruglevering, WKK-productie totaal, PV-productie totaal]; index 0 = kwartier 00:00-00:15 op 1 jan 2025.
+// Bron: kwartierdata Getec Park Emmen 2025 (hoofdmeter 110 kV, WKK 1/2/3/6, PV-daken). De data staat versleuteld op de server
+// (api/getec-data.js) en is alleen per dag op te vragen via data/dag/ (achter de Getec-toegangscode); er is geen downloadbaar bestand.
 // Parkverbruik = hoofdmeter + WKK + PV. De batterij staat achter de hoofdmeter.
 // Piek afvlakken: boven de grens ontlaadt de batterij het verschil, eronder laadt hij met de ruimte die er is (jaar doorlopend gerekend).
 // Handel: indicatieve day-aheadprijs per uur (typische dagvorm, geen marktdata), optimale planning per dag.
@@ -2534,32 +2534,15 @@ const DAGEN = [
 ];
 const datumVan = nr => new Date(Date.UTC(2025, 0, 1 + nr));
 const datumTxt = nr => datumVan(nr).toLocaleDateString('nl-NL', {weekday: 'short', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC'});
-async function laadData(){
-  if(SIM.data) return true;
-  try{
-    const r = await fetch('data/kwartier2025.bin'); if(!r.ok) throw new Error(r.status);
-    const a = new Int16Array(await r.arrayBuffer()), n = a.length/3;
-    SIM.data = {net: a.subarray(0, n), wkk: a.subarray(n, 2*n), pv: a.subarray(2*n), n};
-    return true;
-  }catch(e){ $s('simDag').innerHTML = '<b style="color:#c0281f">Kwartierdata niet geladen</b> (' + e.message + ').'; return false; }
-}
-// heel jaar doorrekenen met piek afvlakken (laadtoestand loopt door van dag tot dag)
-function rekenJaar(){
-  const d = SIM.data, n = d.n, B = SIM.bruik*1000, P = SIM.pMax*1000, L = SIM.grens*1000, m = 200, dt = 0.25;
-  const p = new Float32Array(n), E = new Float32Array(n);
-  let e = B, piek0 = 0, piek1 = 0, over = 0, ontl = 0; const dagenOver = new Set();
-  for(let i = 0; i < n; i++){
-    const g = d.net[i]; let q = 0;
-    if(g > L) q = -Math.min(P, g - L, e*SIM.etaO/dt);
-    else if(g < L - m && e < B) q = Math.min(P, L - m - g, (B - e)/SIM.etaL/dt);
-    e = Math.max(0, Math.min(B, e + (q > 0 ? q*SIM.etaL : q/SIM.etaO)*dt));
-    p[i] = q/1000; E[i] = e/1000;
-    const met = g + q;
-    piek0 = Math.max(piek0, g); piek1 = Math.max(piek1, met);
-    if(met > L + 1){ over += (met - L)*dt; dagenOver.add(Math.floor(i/96)); }
-    if(q < 0) ontl += -q*dt;
+const DAGCACHE = new Map();
+async function haalDag(){
+  const k = SIM.dagNr + '|' + SIM.grens;
+  if(!DAGCACHE.has(k)){
+    const r = await fetch('data/dag/?d=' + SIM.dagNr + '&g=' + SIM.grens, {credentials: 'same-origin', cache: 'no-store'});
+    if(!r.ok) throw new Error(r.status === 401 ? 'geen toegang' : 'HTTP ' + r.status);
+    DAGCACHE.set(k, await r.json());
   }
-  SIM.jaar = {p, E, piek0: piek0/1000, piek1: piek1/1000, over: over/1000, dagen: dagenOver.size, ontl: ontl/1000};
+  SIM.raw = DAGCACHE.get(k); SIM.jaar = SIM.raw.jaar;
 }
 // handel: optimale planning per uur via dynamisch programmeren over de laadtoestand (stappen van 1 MWh), leeg begin en eind
 function plan(prof){
@@ -2581,15 +2564,15 @@ function plan(prof){
   return mw;                                             // MW per uur, + = laden
 }
 function rekenDag(){
-  const d = SIM.data, i0 = SIM.dagNr*96, dt = 0.25;
+  const d = SIM.raw, dt = 0.25;
   const uit = {net: [], wkk: [], pv: [], load: [], p: [], E: [], met: [], prijs: [], cum: [], piek0: 0, piek1: 0, min1: 0, ontl: 0, laad: 0, over: 0, eur: 0};
   const mw = SIM.strategie === 'handel' ? plan(SIM.profiel) : null;
   let E = 0, cum = 0;
   for(let j = 0; j < 96; j++){
-    const i = i0 + j, net = d.net[i]/1000, wkk = d.wkk[i]/1000, pv = d.pv[i]/1000, h = Math.floor(j/4);
+    const net = d.net[j], wkk = d.wkk[j], pv = d.pv[j], h = Math.floor(j/4);
     let p;
     if(mw){ p = mw[h]; E = Math.max(0, Math.min(SIM.bruik, E + (p > 0 ? p*SIM.etaL : p/SIM.etaO)*dt)); }
-    else { p = SIM.jaar.p[i]; E = SIM.jaar.E[i]; }
+    else { p = d.p[j]; E = d.E[j]; }
     const met = net + p, prijs = PRIJS[SIM.profiel].eur[h];
     if(mw){ cum += -p*prijs*dt; }
     uit.net.push(net); uit.wkk.push(wkk); uit.pv.push(pv); uit.load.push(net + wkk + pv);
@@ -2669,7 +2652,7 @@ hud.innerHTML = `
   <div class="rij"><div class="kop">Getec BESS &middot; simulatie 2025</div><button id="simAan">sluit</button></div>
   <div id="simBody">
   <div class="tabs"><button data-s="piek" class="aan">piek afvlakken</button><button data-s="handel">handel (indicatief)</button></div>
-  <div class="rij klein" id="grensRij" style="align-items:center"><span style="white-space:nowrap">grens afname</span><input type="range" id="simGrens" min="5" max="15" step="0.5" value="11" style="flex:1;min-width:0"><b id="simGrensTxt" style="white-space:nowrap">11,0 MW</b></div>
+  <div class="rij klein" id="grensRij" style="align-items:center"><span style="white-space:nowrap" title="Gecontracteerd transportvermogen van Getec is nog niet bekend; stel hier de aanname in">contract (aanname)</span><input type="range" id="simGrens" min="5" max="15" step="0.5" value="11" style="flex:1;min-width:0"><b id="simGrensTxt" style="white-space:nowrap">11,0 MW</b></div>
   <div class="tabs" id="prijsTabs" style="display:none"><button data-p="winter" class="aan">winter</button><button data-p="zomer">zonnige zomer</button><button data-p="wind">winderig</button></div>
   <div class="rij klein" style="align-items:center;gap:4px"><button id="dagMin" title="vorige dag">&lsaquo;</button><input type="date" id="simDatum" min="2025-01-01" max="2025-12-31" style="flex:1;font:12px system-ui;padding:2px 4px;border:1px solid #9aa6ad;border-radius:4px"><button id="dagPlus" title="volgende dag">&rsaquo;</button></div>
   <div class="tabs" id="dagTabs" style="flex-wrap:wrap"></div>
@@ -2681,17 +2664,28 @@ hud.innerHTML = `
     <tr><td>hoofdmeter zonder batterij</td><td id="vNet">-</td></tr>
     <tr><td>batterij (8 rijen)</td><td id="vBat">-</td></tr>
     <tr><td>hoofdmeter met batterij</td><td id="vMet">-</td></tr>
+    <tr id="rijContract"><td>gecontracteerd (aanname)</td><td id="vContract">-</td></tr>
     <tr><td>laadtoestand</td><td id="vSoc">-</td></tr>
     <tr id="rijEur" style="display:none"><td>resultaat tot nu</td><td id="vEur">-</td></tr>
   </table>
   <canvas id="simGrafiek" width="560" height="250"></canvas>
-  <div class="legenda"><i style="background:#c9cfd3;height:8px"></i>hoofdmeter zonder <i style="background:#1b4f8a"></i>met batterij <i class="lgP" style="background:#d8322a"></i><span class="lgP">grens</span> <i class="lgH" style="background:#8a4fb0;display:none"></i><span class="lgH" style="display:none">prijs</span> <i style="background:#2fbf5a"></i>laadtoestand</div>
+  <div class="legenda"><i style="background:#c9cfd3;height:8px"></i>hoofdmeter zonder <i style="background:#1b4f8a"></i>met batterij <i class="lgP" style="background:#d8322a"></i><span class="lgP">contract (aanname)</span> <i class="lgH" style="background:#8a4fb0;display:none"></i><span class="lgH" style="display:none">prijs</span> <i style="background:#2fbf5a"></i>laadtoestand</div>
   <div class="klein" id="simDag" style="margin-top:4px"></div>
+  <div class="tvBlok">
+    <div class="kop">Terugverdienen (indicatief)</div>
+    <div class="tvIn">
+      <label>investering <span><input type="number" id="tvInv" min="0" step="0.5" placeholder="?"> M&euro;</span></label>
+      <label title="Tarief voor het maandmaximum (kW-max) van de netbeheerder">kW-max-tarief <span><input type="number" id="tvKw" min="0" step="0.1" placeholder="?"> &euro;/kW/mnd</span></label>
+      <label><input type="checkbox" id="tvHandel" checked style="margin:0 4px 0 0">handel meetellen</label>
+    </div>
+    <table id="tvTabel"></table>
+    <div class="klein" id="tvNoot"></div>
+  </div>
   <div class="knoppen">
     <button id="simPlay">pauze</button>
     <button data-v="0.5">0,5&times;</button><button data-v="1" class="aan">1&times;</button><button data-v="3">3&times;</button><button data-v="8">8&times;</button>
   </div>
-  <div class="noot">Kwartierdata Getec 2025: hoofdmeter 110 kV (afname &minus; teruglevering), WKK 1/2/3/6 en PV-daken; parkverbruik = hoofdmeter + WKK + PV. Batterij achter de hoofdmeter: 20 MW / 80 MWh, bruikbaar 5&ndash;95 % (${SIM.bruik.toFixed(0)} MWh), rendement 95 % per richting. Piek afvlakken: het hele jaar doorgerekend, laadtoestand loopt door. Handel: indicatieve prijs per uur (geen marktdata), planning met volledige kennis van de dag. Geen rekening gehouden met gecontracteerd vermogen, ESMD-grenzen of netbeperkingen.</div>
+  <div class="noot">Kwartierdata Getec 2025: hoofdmeter 110 kV (afname &minus; teruglevering), WKK 1/2/3/6 en PV-daken; parkverbruik = hoofdmeter + WKK + PV. Batterij achter de hoofdmeter: 20 MW / 80 MWh, bruikbaar 5&ndash;95 % (${SIM.bruik.toFixed(0)} MWh), rendement 95 % per richting. Piek afvlakken: het hele jaar doorgerekend, laadtoestand loopt door. Handel: indicatieve prijs per uur (geen marktdata), planning met volledige kennis van de dag. Het gecontracteerd vermogen van Getec is nog niet bekend: de rode lijn is een instelbare aanname (afname 2025 max. 14,8 MW). Geen rekening gehouden met ESMD-grenzen of netbeperkingen.</div>
   </div>`;
 document.body.appendChild(hud);
 const stSim = document.createElement('style');
@@ -2716,6 +2710,14 @@ stSim.textContent = `
 #simHud .knoppen{display:flex;gap:4px;margin-top:6px}
 #simHud button{font:600 11px system-ui,sans-serif;padding:4px 8px;border:1px solid #9aa6ad;border-radius:4px;background:#fff;color:#3f4b52;cursor:pointer}
 #simHud button.aan{background:#243038;color:#fff;border-color:#243038}
+#simHud .tvBlok{margin-top:8px;padding-top:6px;border-top:1px solid #d6dde1}
+#simHud .tvIn{display:grid;gap:3px;margin:4px 0;font-size:12px;color:#3f4b52}
+#simHud .tvIn label{display:flex;justify-content:space-between;align-items:center;gap:6px}
+#simHud .tvIn input[type=number]{width:62px;font:12px ui-monospace,Menlo,monospace;padding:2px 4px;border:1px solid #9aa6ad;border-radius:4px;text-align:right}
+#simHud #tvTabel th{font:600 10.5px system-ui;color:#78838a;text-align:right;padding:2px 0}
+#simHud #tvTabel th:first-child{text-align:left}
+#simHud #tvTabel td{text-align:right;font:600 12px ui-monospace,Menlo,monospace;white-space:nowrap;padding-left:6px}
+#simHud #tvTabel td:first-child{text-align:left;font:12.5px system-ui}
 #simHud .noot{margin-top:6px;font-size:10.5px;color:#78838a;line-height:1.35}`;
 document.head.appendChild(stSim);
 const $s = id => document.getElementById(id);
@@ -2730,10 +2732,7 @@ async function simAan(aan){
   hud.classList.toggle('uit', !aan);
   if(aan){
     if(!instDC){ bouwFlow(); bouwSoc(); }
-    $s('simDag').textContent = 'kwartierdata laden...';
-    if(!(await laadData())){ SIM.aan = false; return; }
-    if(!SIM.jaar) rekenJaar();
-    toonDag();
+    await toonDag();
   }
   SIM.aan = aan;
   for(const b of socBars){ b.bar.visible = aan; b.bg.visible = aan; }
@@ -2758,9 +2757,13 @@ $s('simDatum').addEventListener('change', e => { const v = e.target.value; if(!v
   SIM.dagNr = Math.max(0, Math.min(364, Math.round((Date.parse(v + 'T00:00:00Z') - Date.UTC(2025, 0, 1))/864e5))); toonDag(); });
 const grensIn = $s('simGrens');
 grensIn.addEventListener('input', () => { $s('simGrensTxt').textContent = mwS(+grensIn.value); });
-grensIn.addEventListener('change', () => { SIM.grens = +grensIn.value; rekenJaar(); toonDag(); });
-function toonDag(){
-  if(!SIM.data) return;
+grensIn.addEventListener('change', () => { SIM.grens = +grensIn.value; toonDag(); });
+let toonNr = 0;
+async function toonDag(){
+  const nr = ++toonNr;
+  $s('simDatum').value = datumVan(SIM.dagNr).toISOString().slice(0, 10);
+  try { await haalDag(); } catch(e){ if(nr === toonNr){ SIM.dag = null; $s('simDag').innerHTML = '<b style="color:#c0281f">Kwartierdata niet beschikbaar</b> (' + e.message + ').'; } return; }
+  if(nr !== toonNr) return;
   const piek = SIM.strategie === 'piek';
   hud.querySelectorAll('button[data-s]').forEach(x => x.classList.toggle('aan', x.dataset.s === SIM.strategie));
   hud.querySelectorAll('button[data-p]').forEach(x => x.classList.toggle('aan', x.dataset.p === SIM.profiel));
@@ -2768,6 +2771,7 @@ function toonDag(){
   $s('grensRij').style.display = piek ? '' : 'none';
   $s('prijsTabs').style.display = piek ? 'none' : '';
   $s('rijEur').style.display = piek ? 'none' : '';
+  $s('rijContract').style.display = piek ? '' : 'none'; $s('vContract').textContent = mwS(SIM.grens);
   hud.querySelectorAll('.lgP').forEach(x => x.style.display = piek ? '' : 'none');
   hud.querySelectorAll('.lgH').forEach(x => x.style.display = piek ? 'none' : '');
   $s('simDatum').value = datumVan(SIM.dagNr).toISOString().slice(0, 10);
@@ -2776,15 +2780,52 @@ function toonDag(){
   let txt = `<b>${datumTxt(SIM.dagNr)}</b>: park gem. ${mwS(D.load.reduce((s, v) => s + v, 0)/96)}, WKK gem. ${mwS(D.wkk.reduce((s, v) => s + v, 0)/96)}` +
     ` &middot; hoofdmeter piek ${mwS(D.piek0)} &rarr; <b>${mwS(D.piek1)}</b>`;
   if(piek){
-    txt += D.over > 0.01 ? ` &middot; <b style="color:#c0281f">${nlS(D.over, 1)} MWh boven de grens</b>` : ' &middot; binnen de grens';
-    txt += `<br>Jaar 2025 bij ${mwS(SIM.grens)}: piek ${mwS(J.piek0)} &rarr; <b>${mwS(J.piek1)}</b> &middot; ${J.dagen} ${J.dagen === 1 ? 'dag' : 'dagen'} boven de grens &middot; ontladen ${nlS(J.ontl)} MWh (${nlS(J.ontl/SIM.bruik, 1)} volle cycli per jaar)`;
+    txt += D.over > 0.01 ? ` &middot; <b style="color:#c0281f">${nlS(D.over, 1)} MWh boven het contract</b>` : ' &middot; binnen het contract';
+    txt += `<br>Jaar 2025 bij contract ${mwS(SIM.grens)}: piek ${mwS(J.piek0)} &rarr; <b>${mwS(J.piek1)}</b> &middot; ${J.dagen} ${J.dagen === 1 ? 'dag' : 'dagen'} boven het contract &middot; ontladen ${nlS(J.ontl)} MWh (${nlS(J.ontl/SIM.bruik, 1)} volle cycli per jaar)`;
   } else {
     txt += `<br>${PRIJS[SIM.profiel].naam}: ${nlS(D.ontl/SIM.bruik, 2)} cyclus &middot; <b>resultaat &euro; ${nlS(D.eur)}</b> (indicatief, v&oacute;&oacute;r slijtage en netkosten)` +
       (D.min1 < -0.05 ? ` &middot; teruglevering tot ${mwS(-D.min1)}` : '');
   }
   $s('simDag').innerHTML = txt;
   tekenBasis();
+  tekenTerugverdien();
 }
+// ---- terugverdienen: opbrengst over 1 / 6 / 12 / 24 / 60 maanden vanaf 1 januari, 2025 herhaald ----
+// handel: indicatieve prijsprofielen per seizoen (nov-feb winter, mrt/apr/sep/okt half winter half winderig, mei-aug half zonnig half winderig)
+// piek afvlakken: verlaging van het maandmaximum op de hoofdmeter x kW-max-tarief
+const DAGENMND = [31,28,31,30,31,30,31,31,30,31,30,31];
+const handelCache = {};
+function handelDag(prof){
+  if(handelCache[prof] === undefined){ const mw = plan(prof), pr = PRIJS[prof].eur; handelCache[prof] = mw.reduce((s, v, h) => s - v*pr[h], 0); }
+  return handelCache[prof];
+}
+function handelMaand(m){
+  const w = handelDag('winter'), z = handelDag('zomer'), wi = handelDag('wind');
+  const dag = (m <= 1 || m >= 10) ? w : (m >= 4 && m <= 7) ? (z + wi)/2 : (w + wi)/2;
+  return dag*DAGENMND[m];
+}
+function tekenTerugverdien(){
+  if(!SIM.jaar || !SIM.jaar.mnd) return;
+  const inv = parseFloat(($s('tvInv').value || '').replace(',', '.'))*1e6, kw = parseFloat(($s('tvKw').value || '').replace(',', '.')), handel = $s('tvHandel').checked;
+  const piekMnd = m => isFinite(kw) ? (SIM.jaar.mnd[m].piek0 - SIM.jaar.mnd[m].piek1)*1000*kw : 0;
+  const per = [['1 maand', 1], ['6 maanden', 6], ['1 jaar', 12], ['2 jaar', 24], ['5 jaar', 60]];
+  const eur = v => nlS(v/1000);                                    // k€
+  let jaarTot = 0; for(let m = 0; m < 12; m++) jaarTot += (handel ? handelMaand(m) : 0) + piekMnd(m);
+  let html = '<tr><th>k&euro;</th>' + (handel ? '<th>handel</th>' : '') + '<th>piek</th><th>totaal</th>' + (isFinite(inv) ? '<th>netto</th>' : '') + '</tr>';
+  for(const [naam, n] of per){
+    let h = 0, pk = 0;
+    for(let k = 0; k < n; k++){ const m = k % 12; h += handel ? handelMaand(m) : 0; pk += piekMnd(m); }
+    const tot = h + pk;
+    html += `<tr><td>${naam}</td>` + (handel ? `<td>${eur(h)}</td>` : '') + `<td>${isFinite(kw) ? eur(pk) : '?'}</td><td>${eur(tot)}</td>` +
+      (isFinite(inv) ? `<td class="${tot - inv < 0 ? 'neg' : ''}">${eur(tot - inv)}</td>` : '') + '</tr>';
+  }
+  $s('tvTabel').innerHTML = html;
+  let noot = isFinite(inv) && jaarTot > 0 ? `Terugverdientijd ca. <b>${nlS(inv/jaarTot, 1)} jaar</b>. ` : (isFinite(inv) ? '' : 'Vul de investering in voor netto en terugverdientijd. ');
+  if(!isFinite(kw)) noot += 'Vul het kW-max-tarief in om de piekbesparing mee te tellen. ';
+  noot += `Piekbesparing bij contract ${mwS(SIM.grens)}. Handel met indicatieve prijzen (geen marktdata), elk jaar gelijk aan 2025, zonder slijtage, degradatie, netkosten, onderhoud en fee.`;
+  $s('tvNoot').innerHTML = noot;
+}
+['tvInv', 'tvKw', 'tvHandel'].forEach(id => $s(id).addEventListener('input', tekenTerugverdien));
 cvS.addEventListener('click', e => { const r = cvS.getBoundingClientRect(); SIM.t = Math.max(0, Math.min(23.99, (e.clientX - r.left)/r.width*24)); });
 
 const basisS = document.createElement('canvas'); basisS.width = cvS.width; basisS.height = cvS.height;
@@ -2844,7 +2885,7 @@ function simStap(){
     if(SIM.mode === 'ontladen') reden = 'piek afvlakken: afname boven ' + mwS(SIM.grens);
     else if(SIM.mode === 'laden') reden = D.net[j] < 0 ? 'laden met teruglevering' : 'laden met de ruimte onder de grens';
     else if(soc > 0.995) reden = 'batterij vol: wacht op een piek';
-    if(over) reden = 'batterij leeg: grens overschreden';
+    if(over) reden = 'batterij leeg: contract overschreden';
   } else {
     const prijs = D.prijs[j];
     reden = SIM.mode === 'laden' ? (prijs < 0 ? 'negatieve prijs: betaald krijgen om te laden' : 'goedkoop uur: inkopen (€ ' + prijs + ')')

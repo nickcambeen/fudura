@@ -1,4 +1,11 @@
 {
   "cleanUrls": true,
-  "trailingSlash": true
+  "trailingSlash": true,
+  "functions": {
+    "api/getec-data.js": { "includeFiles": "private/getec2025.enc" }
+  },
+  "rewrites": [
+    { "source": "/installaties/getec/data/dag/", "destination": "/api/getec-data/" },
+    { "source": "/installaties/getec/data/dag", "destination": "/api/getec-data/" }
+  ]
 }
