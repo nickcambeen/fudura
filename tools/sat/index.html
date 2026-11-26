@@ -90,6 +90,7 @@ button.k.oranje{background:var(--oranje);border-color:var(--oranje);color:#fff}
     <h2>1 · Gegevens</h2>
     <h3>Project</h3>
     <div class="velden" id="vProject"></div>
+    <div id="docs" class="fotohint" style="margin-top:8px"></div>
     <h3>Locatie</h3>
     <div class="velden" id="vLocatie"></div>
   </section>
@@ -100,6 +101,7 @@ button.k.oranje{background:var(--oranje);border-color:var(--oranje);color:#fff}
     <table class="rol" id="tFudura"></table>
     <h3>Opdrachtgever / eindgebruiker</h3>
     <table class="rol" id="tKlant"></table>
+    <label style="display:flex;gap:8px;align-items:center;margin-top:8px;font-size:14.5px"><input type="checkbox" id="cZelfde" style="width:auto"> Eindgebruiker is dezelfde als de opdrachtgever</label>
     <div class="knoppen"></div>
   </section>
 
@@ -108,6 +110,7 @@ button.k.oranje{background:var(--oranje);border-color:var(--oranje);color:#fff}
     <p class="uitleg">Is het document aanwezig? Bij NOK vul je ernst en omschrijving in; die komen automatisch in hoofdstuk 4.</p>
     <div class="knoppen"><button class="k" data-alles="31">Alles open → OK</button></div>
     <div class="items" id="i31"></div>
+    <datalist id="dlPartij"></datalist>
   </section>
 
   <section class="blok">
@@ -193,11 +196,16 @@ const FOTOS = [
   ['LS-verdeler',12,[['ls0','Overzichtsfoto'],['ls1','Instelling vermogensschakelaar'],['ls2','Schakelbare strook'],['ls3','Smeltpatronen strook t.b.v. EOS'],['ls4','PEN/aardrail'],['ls5','Gedraaide en gemarkeerde boutverbindingen']]],
   ['EMS',13,[['ems0','Overzichtsfoto'],['ems1','Overzichtsfoto']]],
   ['Metingen',14,[['met0','Screenshot(s) EMS functioneren'],['met1','Screenshot(s) EMS functioneren']]]];
+const PARTIJEN = ['Projectleider Fudura','Engineering Fudura','Leverancier EOS','Installateur','Aannemer civiel','Fudura datamanagement','Opdrachtgever','Leverancier EOS + Fudura datamanagement'];
+const AAN = {1:'Projectleider Fudura',3:'Leverancier EOS',4:'Leverancier EOS',5:'Engineering Fudura',6:'Aannemer civiel',7:'Installateur',8:'Engineering Fudura',9:'Installateur',10:'Engineering Fudura',11:'Engineering Fudura',12:'Engineering Fudura',13:'Engineering Fudura',14:'Leverancier EOS',15:'Fudura datamanagement',16:'Leverancier EOS',18:'Projectleider Fudura',19:'Installateur',20:'Installateur',21:'Installateur',22:'Installateur',23:'Installateur',24:'Leverancier EOS',25:'Leverancier EOS + Fudura datamanagement'};
+const aan = rij => (S.aan && S.aan[rij] != null) ? S.aan[rij] : (AAN[rij] || '');
+const DOCS = [{wanneer: v => /delta|delterra/i.test((v.fabrikant || '') + ' ' + (v.type || '')), naam:'Installatiehandleiding DELTerra C (NL)', url:'docs/DELTerra_C_Installatiehandleiding_NL.pdf'}];
+const docsVoor = () => DOCS.filter(d => d.wanneer(S.v));
 const SIG = [['pl','Projectleider','Fudura'],['uitv','Uitvoerder SAT','Fudura'],['alm','ALM / Installatie-verantwoordelijke','Fudura'],['og','Opdrachtgever',''],['ivk','Installatie-verantwoordelijke',''],['eg','Eindgebruiker','']];
 
 // ---------- toestand ----------
 let S = leeg();
-function leeg(){ return {v:{datum:new Date().toISOString().slice(0,10)}, r:{}, c31:{}, c32:{}, eigen:{}, foto:{}, sig:{}}; }
+function leeg(){ return {v:{datum:new Date().toISOString().slice(0,10)}, r:{}, zelfde:true, aan:{}, c31:{}, c32:{}, eigen:{}, foto:{}, sig:{}}; }
 const $ = s => document.querySelector(s), el = (t, a = {}, ...k) => { const e = document.createElement(t); for (const [x, y] of Object.entries(a)) x === 'class' ? e.className = y : x.startsWith('on') ? e[x] = y : e.setAttribute(x, y); k.forEach(c => e.append(c)); return e; };
 let bewaarT; function bewaar(){ clearTimeout(bewaarT); bewaarT = setTimeout(() => { try { localStorage.setItem(SLEUTEL, JSON.stringify(S)); } catch(e) { try { const k = {...S, foto:{}}; localStorage.setItem(SLEUTEL, JSON.stringify(k)); } catch(_){} } }, 300); stat(); }
 function laad(){ try { const x = JSON.parse(localStorage.getItem(SLEUTEL) || 'null'); if (x) S = Object.assign(leeg(), x); } catch(e){}
@@ -207,7 +215,7 @@ function laad(){ try { const x = JSON.parse(localStorage.getItem(SLEUTEL) || 'nu
 function veld(def, bak){ const [k, lab, type = 'text', opt] = def; let inp;
   if (type === 'select'){ inp = el('select', {}, el('option', {value:''}, '— kies —')); opt.forEach(o => inp.append(el('option', {value:o}, o))); }
   else { inp = el('input', {type}); if (opt){ const id = 'dl_' + k; inp.setAttribute('list', id); const dl = el('datalist', {id}); opt.forEach(o => dl.append(el('option', {value:o}))); bak.append(dl); } }
-  inp.value = S.v[k] || ''; inp.oninput = () => { S.v[k] = inp.value; bewaar(); if (k === 'bedrijf') bouwSig(); };
+  inp.value = S.v[k] || ''; inp.oninput = () => { S.v[k] = inp.value; bewaar(); if (k === 'bedrijf') bouwSig(); if (k === 'fabrikant' || k === 'type'){ lijst('i31', I31, 'c31'); toonDocs(); } };
   bak.append(el('label', {class:'v'}, lab, inp)); }
 function rollen(tab, lijst){ tab.innerHTML = ''; lijst.forEach(([k, lab]) => { const n = el('input', {placeholder:'Naam', 'aria-label':lab + ' naam'}), t = el('input', {placeholder:'Telefoon', type:'tel', 'aria-label':lab + ' telefoon'});
   n.value = S.r[k+'n'] || ''; t.value = S.r[k+'t'] || ''; n.oninput = () => { S.r[k+'n'] = n.value; bewaar(); bouwSig(); }; t.oninput = () => { S.r[k+'t'] = t.value; bewaar(); };
@@ -222,6 +230,8 @@ function lijst(id, defs, sleutel){ const bak = $('#' + id); bak.innerHTML = '';
     const tk = el('div', {class:'tekst'});
     if (x === 'eigen'){ const i = el('input', {placeholder:'Extra controlepunt op verzoek van opdrachtgever (leeg = regel vervalt)'}); i.value = S.eigen[rij] || ''; i.oninput = () => { S.eigen[rij] = i.value; bewaar(); }; tk.append(i); }
     else tk.append(tekst);
+    if (sleutel === 'c31'){ const a = el('input', {list:'dlPartij', placeholder:'Aanleveren door…', 'aria-label':'Aanleveren door', style:'margin-top:4px;padding:4px 8px;font-size:13.5px;max-width:320px'}); a.value = aan(rij); a.oninput = () => { S.aan = S.aan || {}; S.aan[rij] = a.value; bewaar(); }; tk.append(el('div', {class:'fotohint', style:'display:flex;gap:6px;align-items:center;flex-wrap:wrap'}, 'Aanleveren door:', a)); }
+    if (sleutel === 'c31' && rij === 3){ const dd = docsVoor(); dd.forEach(d => tk.append(el('div', {class:'fotohint'}, el('a', {href:d.url, download:'', target:'_blank'}, '⤓ ' + d.naam)))); if (!dd.length) tk.append(el('div', {class:'fotohint'}, 'Vul fabrikant/type in voor een downloadlink van de handleiding.')); }
     if (Array.isArray(x)){ const n = x.filter(f => S.foto[f]).length; tk.append(el('div', {class:'fotohint'}, `${n}/${x.length} foto${x.length > 1 ? "'s" : ''} toegevoegd`)); }
     it.append(keus, tk);
     if (st.s === 'NOK'){ const e = el('select', {'aria-label':'Ernst'}, el('option', {value:''}, 'Ernst…')); ['Hoog','Midden','Laag'].forEach(o => e.append(el('option', {value:o}, o))); e.value = st.e || '';
@@ -243,7 +253,7 @@ function fotoKlaar(){ // foto-punten in 3.2 automatisch op OK zetten zodra alle 
   I32.forEach(([rij, , , x]) => { if (!Array.isArray(x)) return; const o = S.c32[rij] || {}; if (x.every(f => S.foto[f])){ if (!o.s) o.s = 'OK'; } else if (o.s === 'OK' && !x.some(f => S.foto[f])) o.s = ''; S.c32[rij] = o; });
   bewaar(); bouwFotos(); lijst('i32', I32, 'c32'); }
 function bouwSig(){ const bak = $('#sig'); bak.innerHTML = '';
-  SIG.forEach(([k, rol, bedrijf]) => { const c = el('canvas', {width:560, height:220}); const ctx = c.getContext('2d'); ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.strokeStyle = '#10233f';
+  SIG.forEach(([k, rol, bedrijf]) => { if (k === 'eg' && S.zelfde !== false) return; const c = el('canvas', {width:560, height:220}); const ctx = c.getContext('2d'); ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.strokeStyle = '#10233f';
     if (S.sig[k]){ const im = new Image(); im.onload = () => ctx.drawImage(im, 0, 0, c.width, c.height); im.src = S.sig[k]; }
     let teken = false, gezet = !!S.sig[k]; const pos = e => { const r = c.getBoundingClientRect(); return [(e.clientX - r.left) * c.width / r.width, (e.clientY - r.top) * c.height / r.height]; };
     c.onpointerdown = e => { teken = true; c.setPointerCapture(e.pointerId); ctx.beginPath(); ctx.moveTo(...pos(e)); };
@@ -255,9 +265,12 @@ function bouwSig(){ const bak = $('#sig'); bak.innerHTML = '';
 function stat(){ const tel = (defs, k) => { let open = 0, nok = 0, leegNC = 0; defs.forEach(([r, , o, x]) => { if (!o || (x === 'eigen' && !S.eigen[r])) return; const s = (S[k][r] || {}).s; if (!s) open++; if (s === 'NOK'){ nok++; if (!S[k][r].e || !S[k][r].t) leegNC++; } }); return [open, nok, leegNC]; };
   const a = tel(I31, 'c31'), b = tel(I32, 'c32'), f = Object.keys(S.foto).length;
   $('#stat').innerHTML = `Open: <b>${a[0] + b[0]}</b> · NOK: <b class="${a[1] + b[1] ? 'r' : ''}">${a[1] + b[1]}</b>${a[2] + b[2] ? ` (<b class="r">${a[2] + b[2]}</b> zonder ernst/omschrijving)` : ''} · Foto's: <b>${f}</b>/19`; }
+function vulPartijen(){ const d = $('#dlPartij'); if (d && !d.children.length) PARTIJEN.forEach(p => d.append(el('option', {value:p}))); }
+function toonDocs(){ const b = $('#docs'); if (!b) return; b.innerHTML = ''; docsVoor().forEach(d => b.append(el('a', {href:d.url, download:'', target:'_blank', style:'font-weight:600;font-size:14px'}, '⤓ ' + d.naam))); }
 function alles(){ PROJECT.forEach(d => veld(d, $('#vProject'))); LOCATIE.forEach(d => veld(d, $('#vLocatie'))); }
-function bouw(){ $('#vProject').innerHTML = ''; $('#vLocatie').innerHTML = ''; alles(); rollen($('#tFudura'), ROL_F); rollen($('#tKlant'), ROL_K); lijst('i31', I31, 'c31'); lijst('i32', I32, 'c32'); bouwFotos(); bouwSig(); stat(); }
+function bouw(){ $('#vProject').innerHTML = ''; $('#vLocatie').innerHTML = ''; alles(); toonDocs(); vulPartijen(); rollen($('#tFudura'), ROL_F); rollen($('#tKlant'), S.zelfde !== false ? ROL_K.filter(([k]) => k !== 'eg') : ROL_K); $('#cZelfde').checked = S.zelfde !== false; lijst('i31', I31, 'c31'); lijst('i32', I32, 'c32'); bouwFotos(); bouwSig(); stat(); }
 
+$('#cZelfde').onchange = e => { S.zelfde = e.target.checked; bewaar(); bouw(); };
 document.querySelectorAll('[data-alles]').forEach(b => b.onclick = () => { const [defs, k, id] = b.dataset.alles === '31' ? [I31, 'c31', 'i31'] : [I32, 'c32', 'i32'];
   defs.forEach(([r, , o, x]) => { if (!o || !o.includes('O') || (x === 'eigen' && !S.eigen[r])) return; const st = S[k][r] || {}; if (!st.s) st.s = 'OK'; S[k][r] = st; }); bewaar(); lijst(id, defs, k); });
 if(0)$('#bVast').onclick = () => { const f = {}; for (const k of ['pl','uitv','alm']) for (const z of ['n','t']) f[k+z] = S.r[k+z] || ''; try { localStorage.setItem(VAST, JSON.stringify(f)); $('#bVast').textContent = 'Onthouden ✓'; } catch(e){} };
@@ -271,8 +284,8 @@ function standaarden(){ return Object.assign({}, INGEBOUWD, lees(STD, {})); }
 function vulKeus(sel){ const k = $('#sKeus'), lst = standaarden(); k.innerHTML = ''; k.append(el('option', {value:''}, '— geen standaard —')); Object.keys(lst).sort().forEach(n => k.append(el('option', {value:n}, n + (INGEBOUWD[n] && !lees(STD, {})[n] ? ' (ingebouwd)' : '')))); k.value = sel ?? (lees(STD_LAATST, '') || ''); }
 function maakStandaard(){ const v = {}; ['fabrikant','type','eigendom','iv'].forEach(k => { if (S.v[k]) v[k] = S.v[k]; }); const r = {}; ['pl','uitv','alm'].forEach(k => ['n','t'].forEach(z => { if (S.r[k+z]) r[k+z] = S.r[k+z]; }));
   const st = k => Object.fromEntries(Object.entries(S[k]).filter(([, o]) => o && o.s).map(([n, o]) => [n, {s:o.s === 'NOK' ? '' : o.s}]).filter(([, o]) => o.s));
-  return {v, r, c31:st('c31'), c32:st('c32'), eigen:{...S.eigen}}; }
-function pasToe(std){ Object.assign(S.v, std.v || {}); Object.assign(S.r, std.r || {}); ['c31','c32'].forEach(k => Object.entries(std[k] || {}).forEach(([n, o]) => { const cur = S[k][n] || {}; if (!cur.s) S[k][n] = {...o}; })); Object.entries(std.eigen || {}).forEach(([n, t]) => { if (!S.eigen[n]) S.eigen[n] = t; }); }
+  return {v, r, c31:st('c31'), c32:st('c32'), eigen:{...S.eigen}, aan:{...(S.aan || {})}}; }
+function pasToe(std){ Object.assign(S.v, std.v || {}); Object.assign(S.r, std.r || {}); ['c31','c32'].forEach(k => Object.entries(std[k] || {}).forEach(([n, o]) => { const cur = S[k][n] || {}; if (!cur.s) S[k][n] = {...o}; })); S.aan = Object.assign({}, std.aan || {}, S.aan || {}); Object.entries(std.eigen || {}).forEach(([n, t]) => { if (!S.eigen[n]) S.eigen[n] = t; }); }
 $('#bStdLaad').onclick = () => { const n = $('#sKeus').value; if (!n) return; pasToe(standaarden()[n]); try { localStorage.setItem(STD_LAATST, JSON.stringify(n)); } catch(e){} bewaar(); bouw(); };
 $('#bStdOpslaan').onclick = () => { const n = (prompt('Naam van de standaard (bijv. "Delta AIO + FUSE kast")', $('#sKeus').value || '') || '').trim(); if (!n) return; const lst = lees(STD, {}); lst[n] = maakStandaard(); try { localStorage.setItem(STD, JSON.stringify(lst)); localStorage.setItem(STD_LAATST, JSON.stringify(n)); } catch(e){ alert('Opslaan in de browser lukte niet.'); return; } vulKeus(n); };
 $('#bStdWeg').onclick = () => { const n = $('#sKeus').value, lst = lees(STD, {}); if (!lst[n]){ alert(INGEBOUWD[n] ? 'Een ingebouwde standaard kun je niet verwijderen; sla er een eigen versie onder dezelfde naam overheen.' : 'Kies eerst een eigen standaard.'); return; } delete lst[n]; try { localStorage.setItem(STD, JSON.stringify(lst)); } catch(e){} vulKeus(''); };
@@ -298,6 +311,9 @@ function zetTekst(tc, tekst){ if (tekst == null || tekst === '') return; const d
   const r = doc.createElementNS(W, 'w:r'); if (rPr) r.append(rPr);
   String(tekst).split('\n').forEach((regel, i) => { if (i){ r.append(doc.createElementNS(W, 'w:br')); } const t = doc.createElementNS(W, 'w:t'); t.setAttributeNS(XMLNS, 'xml:space', 'preserve'); t.textContent = regel; r.append(t); });
   p.append(r); }
+function achterTekst(tc, tekst){ const doc = tc.ownerDocument, ps = alle(tc, 'p'), p = ps[ps.length - 1];
+  const r = doc.createElementNS(W, 'w:r'), rPr = doc.createElementNS(W, 'w:rPr'), i = doc.createElementNS(W, 'w:i'), col = doc.createElementNS(W, 'w:color'); col.setAttributeNS(W, 'w:val', '5D6B73'); rPr.append(i, col); r.append(rPr);
+  const t = doc.createElementNS(W, 'w:t'); t.setAttributeNS(XMLNS, 'xml:space', 'preserve'); t.textContent = tekst; r.append(t); p.append(r); }
 function vink(tc){ const cb = alle(tc, 'checkbox', W14)[0]; if (!cb) return false; const ch = alle(cb, 'checked', W14)[0]; ch.setAttributeNS(W14, 'w14:val', '1');
   let s = cb; while (s && s.localName !== 'sdt') s = s.parentNode; const t = alle(kind(s, 'sdtContent')[0], 't')[0]; if (t) t.textContent = '☒'; return true; }
 const EMU = 360000; // per cm
@@ -319,19 +335,22 @@ async function maakWord(){
     const rels = new DOMParser().parseFromString(await zip.file('word/_rels/document.xml.rels').async('string'), 'application/xml');
     mediaNr = 0;
     const T = alle(doc, 'tbl');
+    const R = k => (k[0] === 'e' && k[1] === 'g' && S.zelfde !== false) ? S.r['og' + k.slice(2)] : S.r[k];
+    const SG = k => (k === 'eg' && S.zelfde !== false) ? S.sig.og : S.sig[k];
     const datum = S.v.datum ? S.v.datum.split('-').reverse().join('-') : '';
     // 1 Gegevens
     const g = [datum, S.v.projnr, S.v.fabrikant, S.v.type, S.v.serie, S.v.eigendom, S.v.iv];
     rijen(T[1]).forEach((tr, i) => zetTekst(cellen(tr)[1], g[i]));
     const l = [S.v.bedrijf, S.v.straat, S.v.toev, S.v.pcplaats]; rijen(T[2]).forEach((tr, i) => zetTekst(cellen(tr)[1], l[i]));
     // 2 Rollen
-    [[T[3], ROL_F], [T[4], ROL_K]].forEach(([t, lst]) => lst.forEach(([k], i) => { const c = cellen(rijen(t)[i + 1]); zetTekst(c[1], S.r[k+'n']); zetTekst(c[2], S.r[k+'t']); }));
+    [[T[3], ROL_F], [T[4], ROL_K]].forEach(([t, lst]) => lst.forEach(([k], i) => { const c = cellen(rijen(t)[i + 1]); zetTekst(c[1], R(k+'n')); zetTekst(c[2], R(k+'t')); }));
     // 3 Checklijsten + 4 NC
     const ncs = {c31:[], c32:[]};
     [[T[5], I31, 'c31'], [T[6], I32, 'c32']].forEach(([t, defs, k]) => { const rr = rijen(t);
       const weg = [];
       defs.forEach(([rij, tekst, opt, x]) => { if (!opt) return; const tr = rr[rij], c = cellen(tr);
         if (x === 'eigen'){ if (!S.eigen[rij]){ weg.push(tr); return; } zetTekst(c[3], S.eigen[rij]); tekst = S.eigen[rij]; }
+        if (k === 'c31' && aan(rij)) achterTekst(c[3], ' — aanleveren: ' + aan(rij));
         const st = S[k][rij] || {}; const idx = {OK:0, NOK:1, NVT:2}[st.s]; if (idx != null) vink(c[idx]);
         if (st.s === 'NOK') ncs[k].push({e:st.e || '', t:(tekst ? tekst.replace(/[;.]$/, '') + ': ' : '') + (st.t || '')}); });
       weg.forEach(tr => tr.remove()); });
@@ -339,8 +358,8 @@ async function maakWord(){
       while (rr.length - 1 < lst.length){ const n = rr[rr.length - 1].cloneNode(true); t.append(n); rr = rijen(t); const c = cellen(n); const p = alle(c[0], 'p')[0]; [...p.childNodes].forEach(x => { if (x.localName !== 'pPr') x.remove(); }); zetTekst(c[0], pre + '.' + (rr.length - 1)); }
       lst.forEach((nc, i) => { const c = cellen(rr[i + 1]); zetTekst(c[1], nc.e || 'Kies een item.'); zetTekst(c[2], nc.t); }); });
     // 5 Ondertekening
-    rijen(T[9]).slice(1).forEach((tr, i) => { const [k, , bedrijf] = SIG[i], c = cellen(tr); zetTekst(c[0], S.r[k+'n']); if (!bedrijf) zetTekst(c[2], S.v.bedrijf);
-      if (S.sig[k]) zetPlaatje(c[3], plaatje(doc, zip, rels, S.sig[k], 3.6, 1.42)); });
+    rijen(T[9]).slice(1).forEach((tr, i) => { const [k, , bedrijf] = SIG[i], c = cellen(tr); zetTekst(c[0], R(k+'n')); if (!bedrijf) zetTekst(c[2], S.v.bedrijf);
+      if (SG(k)) zetPlaatje(c[3], plaatje(doc, zip, rels, SG(k), 3.6, 1.42)); });
     // 6 Foto's
     FOTOS.forEach(([, ti, slots]) => { const rr = rijen(T[ti]); slots.forEach(([k], i) => { const f = S.foto[k]; if (!f) return; const b = 7.2, h = Math.min(b * f.h / f.w, 9.5), bb = h * f.w / f.h; zetPlaatje(cellen(rr[i + 1])[0], plaatje(doc, zip, rels, f.d, bb, h)); }); });
     zip.file('word/document.xml', new XMLSerializer().serializeToString(doc));
