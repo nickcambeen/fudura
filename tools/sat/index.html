@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>SAT-formulier EOS · Fudura</title>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root{--bg:#eef1f2;--kaart:#fff;--fg:#1b2a36;--muted:#5d6b73;--lijn:#d3d9dc;--blauw:#1b4f8a;--oranje:#e2701c;--ok:#2e8b57;--nok:#c0392b;--nvt:#7a8790;--veld:#f7f9fa}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12181c;--kaart:#1b232a;--fg:#e6ebee;--muted:#93a1a9;--lijn:#2c363d;--blauw:#6fa4e0;--oranje:#f08a3c;--ok:#4fbf7f;--nok:#e5675a;--nvt:#93a1a9;--veld:#151c21}}
+:root[data-theme="dark"]{--bg:#12181c;--kaart:#1b232a;--fg:#e6ebee;--muted:#93a1a9;--lijn:#2c363d;--blauw:#6fa4e0;--oranje:#f08a3c;--ok:#4fbf7f;--nok:#e5675a;--nvt:#93a1a9;--veld:#151c21}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 Barlow,system-ui,sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:max(20px,env(safe-area-inset-top)) 16px 120px}
+a{color:var(--blauw)}
+.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:4px}
+.top a.terug{text-decoration:none;font-weight:600}
+h1{font:700 clamp(28px,5vw,40px)/1.05 "Barlow Semi Condensed",Arial,sans-serif;margin:6px 0 4px}
+.sub{color:var(--muted);margin:0 0 18px}
+h2{font:700 22px "Barlow Semi Condensed",Arial,sans-serif;margin:0 0 4px}
+h3{font:600 13px "Barlow Semi Condensed",Arial,sans-serif;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:18px 0 8px}
+.blok{background:var(--kaart);border:1px solid var(--lijn);border-radius:10px;padding:18px;margin-bottom:14px}
+.blok>p.uitleg{color:var(--muted);margin:0 0 12px;font-size:14.5px}
+.velden{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px 14px}
+label.v{display:flex;flex-direction:column;gap:3px;font-size:13px;color:var(--muted);font-weight:500}
+input,select,textarea{font:inherit;color:var(--fg);background:var(--veld);border:1px solid var(--lijn);border-radius:6px;padding:8px 9px;width:100%}
+textarea{min-height:60px;resize:vertical}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--blauw);outline-offset:1px}
+table.rol{width:100%;border-collapse:collapse}
+table.rol td{padding:4px 6px 4px 0;vertical-align:middle}
+table.rol td:first-child{font-size:14px;width:34%}
+.items{display:flex;flex-direction:column;gap:6px}
+.kop{font-weight:600;font-size:14px;color:var(--muted);margin:10px 0 2px}
+.item{border:1px solid var(--lijn);border-radius:8px;padding:9px 10px;display:grid;grid-template-columns:auto 1fr;gap:6px 12px;align-items:start}
+.item.nok{border-color:var(--nok)}
+.keus{display:flex;gap:4px}
+.keus button{font:600 13px Barlow,sans-serif;border:1px solid var(--lijn);background:var(--veld);color:var(--muted);border-radius:6px;padding:6px 0;width:48px;cursor:pointer}
+.keus button[disabled]{visibility:hidden}
+.keus button.aan[data-s="OK"]{background:var(--ok);border-color:var(--ok);color:#fff}
+.keus button.aan[data-s="NOK"]{background:var(--nok);border-color:var(--nok);color:#fff}
+.keus button.aan[data-s="NVT"]{background:var(--nvt);border-color:var(--nvt);color:#fff}
+.item .tekst{font-size:15px;padding-top:4px}
+.item .tekst input{margin-top:2px}
+.item .nc{grid-column:1/-1;display:grid;grid-template-columns:130px 1fr;gap:8px}
+.item .fotohint{font-size:12.5px;color:var(--muted)}
+.knoppen{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 4px}
+button.k{font:600 14px Barlow,sans-serif;border:1px solid var(--blauw);background:transparent;color:var(--blauw);border-radius:7px;padding:7px 12px;cursor:pointer}
+button.k.vol{background:var(--blauw);color:#fff}
+button.k.oranje{background:var(--oranje);border-color:var(--oranje);color:#fff}
+.fotos{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.foto{border:1px dashed var(--lijn);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px;font-size:13.5px}
+.foto .ph{aspect-ratio:4/3;border-radius:6px;background:var(--veld);display:grid;place-items:center;color:var(--muted);overflow:hidden;cursor:pointer;position:relative}
+.foto .ph img{width:100%;height:100%;object-fit:cover}
+.foto .ph .x{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;border:0;border-radius:50%;width:26px;height:26px;cursor:pointer}
+.foto input[type=file]{display:none}
+.sig{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.sig .s{border:1px solid var(--lijn);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px}
+.sig canvas{width:100%;height:110px;background:#fff;border:1px solid var(--lijn);border-radius:6px;touch-action:none}
+.sig .rol{font-weight:600}
+.balk{position:fixed;left:0;right:0;bottom:0;background:var(--kaart);border-top:1px solid var(--lijn);padding:10px 16px max(10px,env(safe-area-inset-bottom));display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;z-index:5}
+.balk .stat{font-size:14px;color:var(--muted)}
+.balk .stat b.r{color:var(--nok)}
+.melding{font-size:14px;padding:8px 10px;border-radius:6px;background:#fdecea;color:#8a1f12;margin-top:8px;display:none}
+@media (max-width:560px){.item{grid-template-columns:1fr}.item .nc{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><a class="terug" href="../../">‹ menu</a></div>
+  <h1>SAT-formulier EOS</h1>
+  <p class="sub">Vul het formulier hier in. Je krijgt het Fudura-formulier v4.0 als Word-bestand terug, ingevuld: vinkjes, niet-conformiteiten, foto's en handtekeningen. Wat je invult blijft bewaard in deze browser.</p>
+
+  <section class="blok">
+    <h2>1 · Gegevens</h2>
+    <h3>Project</h3>
+    <div class="velden" id="vProject"></div>
+    <h3>Locatie</h3>
+    <div class="velden" id="vLocatie"></div>
+  </section>
+
+  <section class="blok">
+    <h2>2 · Rollen</h2>
+    <h3>Fudura</h3>
+    <table class="rol" id="tFudura"></table>
+    <h3>Opdrachtgever / eindgebruiker</h3>
+    <table class="rol" id="tKlant"></table>
+    <div class="knoppen"><button class="k" id="bVast" title="Onthoud de Fudura-rollen voor het volgende formulier">Fudura-rollen onthouden</button></div>
+  </section>
+
+  <section class="blok">
+    <h2>3.1 · Voorafgaand aan SAT</h2>
+    <p class="uitleg">Is het document aanwezig? Bij NOK vul je ernst en omschrijving in; die komen automatisch in hoofdstuk 4.</p>
+    <div class="knoppen"><button class="k" data-alles="31">Alles open → OK</button></div>
+    <div class="items" id="i31"></div>
+  </section>
+
+  <section class="blok">
+    <h2>3.2 · SAT op locatie</h2>
+    <p class="uitleg">De foto-punten worden vanzelf OK zodra de foto bij hoofdstuk 6 is toegevoegd.</p>
+    <div class="knoppen"><button class="k" data-alles="32">Alles open → OK</button></div>
+    <div class="items" id="i32"></div>
+  </section>
+
+  <section class="blok">
+    <h2>6 · Foto's</h2>
+    <p class="uitleg">Tik op een vak om een foto te maken of te kiezen. Foto's worden verkleind tot max. 1600 px.</p>
+    <div id="fotos"></div>
+  </section>
+
+  <section class="blok">
+    <h2>5 · Ondertekening</h2>
+    <p class="uitleg">Namen komen uit de rollen. Zet de handtekening met je vinger of muis; leeg laten mag ook.</p>
+    <div class="sig" id="sig"></div>
+  </section>
+
+  <section class="blok">
+    <h2>Opslaan en delen</h2>
+    <p class="uitleg">Exporteer het formulier als bestand om het op een andere computer verder in te vullen, of om een eerder project als basis te nemen.</p>
+    <div class="knoppen">
+      <button class="k" id="bExport">Exporteren (.json)</button>
+      <button class="k" id="bImport">Importeren</button><input type="file" id="fImport" accept=".json,application/json" hidden>
+      <button class="k" id="bNieuw">Nieuw formulier</button>
+    </div>
+  </section>
+</div>
+
+<div class="balk">
+  <span class="stat" id="stat"></span>
+  <button class="k oranje" id="bWord">Download Word (.docx)</button>
+</div>
+
+<script>
+'use strict';
+const SLEUTEL = 'fudura-sat-v4', VAST = 'fudura-sat-vast';
+const PROJECT = [
+  ['datum','Datum SAT','date'],['projnr','Projectnummer'],['fabrikant','Fabrikant EOS','text',['Delta','iwell','Sungrow','REPT']],
+  ['type','Type EOS','text',['DELTerra C AIO 125 kW / 261 kWh']],['serie','Serienummer EOS'],
+  ['eigendom','Eigendom','select',['Huur','Koop']],
+  ['iv','Installatie-verantwoordelijkheid EOS','select',['Opdrachtgever','Eindgebruiker','Fudura','Gedeeld, zie SLD']]];
+const LOCATIE = [['bedrijf','Bedrijfsnaam'],['straat','Straatnaam & huisnummer'],['toev','Toevoeging'],['pcplaats','Postcode & plaats']];
+const ROL_F = [['pl','Projectleider'],['uitv','Uitvoerder SAT'],['alm','ALM / Installatie-verantwoordelijke']];
+const ROL_K = [['og','Opdrachtgever'],['ivk','Installatie-verantwoordelijke'],['eg','Eindgebruiker']];
+// [rij in Word-tabel, tekst, toegestane opties] — null = tussenkop
+const I31 = [[1,'Overeenkomst van het project.','ONV'],[2,'As-designed set documentatie (AFD-PER en IRIS EOS)',null],
+ [3,'Handleiding en/of instructie EOS','ON'],[4,'FAT document EOS','ONV'],[5,'Opstellingstekening','ON'],[6,'Fundatiegegevens/boringen, et cetera','ONV'],
+ [7,'Groepenverklaring','ONV'],[8,'Eenlijnsschema / Single Line Diagram (SLD)','ON'],[9,'Bedradingsschema','ONV'],
+ [10,'Gegevens LS-verdeler en transformator waarop EOS is aangesloten','ON'],[11,'Kabelberekeningen (DC en/of AC sterkstroombekabeling)','ON'],
+ [12,'Beveiligingsinstellingen MS-vermogensschakelaar','ONV'],[13,'Beveiligingsinstellingen LS-vermogensschakelaar','ONV'],
+ [14,'Beveiligingsinstellingen EOS-vermogensschakelaar','ON'],[15,'EMS-ontwerp (topologie)','ONV'],
+ [16,'CE-certificeringen (Machinerichtlijn 2006/42/EG) van EOS en componenten binnen scope','ON'],
+ [17,'Analyses en rapporten (tijdens/voorafgaand aan inbedrijfstelling)',null],
+ [18,'PGS 37-1 GAP-analyse, inclusief noodplan','ON'],[19,'Meetrapport isolatieweerstand (DC en/of AC sterkstroombekabeling)','ON'],
+ [20,'Meetrapport continuïteit databekabeling','ONV'],[21,'Rapport aarding/aardpen(nen)','ONV'],[22,'Keuringsrapport bliksemafleidingsinstallatie','ONV'],
+ [23,'Eerste inspectierapport NEN 1010','ON'],[24,'Inbedrijfstellingstest met meerdere laad- en ontlaadcycli','ON'],
+ [25,'Controle cyber security (autorisatie toegangsrechten) bij leverancier EOS én Fudura datamanagement','ON']];
+const I32 = [[1,'Uitleg aan opdrachtgever over het systeem door projectleider','ONV'],[2,"Foto's (vastgelegd in hoofdstuk 6)",null],
+ [3,'Overzichtsfoto van alle vier de zijdes van het EOS','O',['eos0','eos1','eos2','eos3']],[4,'Foto invoer van de bekabeling in het EOS','O',['eos4']],
+ [5,'Foto van gedraaide en gemarkeerde boutverbindingen (EOS)','O',['eos5']],[6,'Foto detail typeplaatje EOS','O',['eos6']],
+ [7,"Overzichtsfoto('s) kabeltracé",'OV',['kab0','kab1']],[8,'Overzichtsfoto LS-verdeler','OV',['ls0']],[9,'Foto instelling van vermogensschakelaar','OV',['ls1']],
+ [10,'Foto schakelbare strook met geplaatste smeltpatronen','OV',['ls2','ls3']],[11,'Foto PEN/aardrail','OV',['ls4']],
+ [12,'Foto\'s van gedraaide en gemarkeerde boutverbindingen (LS-verdeler)','OV',['ls5']],[13,'Overzichtsfoto EMS','OV',['ems0','ems1']],
+ [14,"Screenshot('s) vanuit EMS t.b.v. functioneren systeem",'OV',['met0','met1']],
+ [15,'Steekproef as-built documentatie bij de installatie, minimaal:',null],
+ [16,'Installatie beveiligd tegen gevaren verbonden aan het gebruik van het elektrisch materieel','ON'],
+ [17,'Beveiligingen ingesteld/gekozen zoals vastgesteld','ON'],[18,'Elektrische stelsels (TN-C, TN-C-S, TN-S of IT) per deel aangegeven in het SLD','ON'],
+ [19,'Installatie beschermd tegen invloeden van buitenaf op elektrisch materieel en materiaal','ON'],
+ [20,'Opstelling EOS, fundatie, overige componenten én bekabeling zoals ontworpen','ON'],
+ [21,'Veiligheidsafstanden conform Bijlage D EOS-veiligheidsafstanden','ON'],
+ [22,'Storz-koppeling sprinklerinstallatie conform voorschrift veiligheidsregio','ONV'],
+ [23,'Behuizing EOS vrij van beschadigingen en uitvoering conform bestelling','ON'],[24,'Signaleringsbord conform Bijlage G geplaatst','ON'],
+ [25,'ISO 7010-pictogrammen conform PGS 37-1 M66 (P003, W012, W026)','ON'],
+ [26,'','ON','eigen'],[27,'','ON','eigen'],
+ [28,'Inzicht in functioneren van het systeem via het EMS (screenshots in hoofdstuk 6)','ONV']];
+const FOTOS = [
+  ['EOS',10,[['eos0','Overzichtsfoto voorzijde'],['eos1','Overzichtsfoto linkerzijde'],['eos2','Overzichtsfoto rechterzijde'],['eos3','Overzichtsfoto achterzijde'],['eos4','Foto invoer van de bekabeling in het EOS'],['eos5','Gedraaide en gemarkeerde boutverbindingen'],['eos6','Foto detail typeplaatje EOS']]],
+  ['Kabelroute',11,[['kab0','Overzichtsfoto kabeltracé'],['kab1','Overzichtsfoto kabeltracé']]],
+  ['LS-verdeler',12,[['ls0','Overzichtsfoto'],['ls1','Instelling vermogensschakelaar'],['ls2','Schakelbare strook'],['ls3','Smeltpatronen strook t.b.v. EOS'],['ls4','PEN/aardrail'],['ls5','Gedraaide en gemarkeerde boutverbindingen']]],
+  ['EMS',13,[['ems0','Overzichtsfoto'],['ems1','Overzichtsfoto']]],
+  ['Metingen',14,[['met0','Screenshot(s) EMS functioneren'],['met1','Screenshot(s) EMS functioneren']]]];
+const SIG = [['pl','Projectleider','Fudura'],['uitv','Uitvoerder SAT','Fudura'],['alm','ALM / Installatie-verantwoordelijke','Fudura'],['og','Opdrachtgever',''],['ivk','Installatie-verantwoordelijke',''],['eg','Eindgebruiker','']];
+
+// ---------- toestand ----------
+let S = leeg();
+function leeg(){ return {v:{datum:new Date().toISOString().slice(0,10)}, r:{}, c31:{}, c32:{}, eigen:{}, foto:{}, sig:{}}; }
+const $ = s => document.querySelector(s), el = (t, a = {}, ...k) => { const e = document.createElement(t); for (const [x, y] of Object.entries(a)) x === 'class' ? e.className = y : x.startsWith('on') ? e[x] = y : e.setAttribute(x, y); k.forEach(c => e.append(c)); return e; };
+let bewaarT; function bewaar(){ clearTimeout(bewaarT); bewaarT = setTimeout(() => { try { localStorage.setItem(SLEUTEL, JSON.stringify(S)); } catch(e) { try { const k = {...S, foto:{}}; localStorage.setItem(SLEUTEL, JSON.stringify(k)); } catch(_){} } }, 300); stat(); }
+function laad(){ try { const x = JSON.parse(localStorage.getItem(SLEUTEL) || 'null'); if (x) S = Object.assign(leeg(), x); } catch(e){}
+  try { const f = JSON.parse(localStorage.getItem(VAST) || 'null'); if (f) for (const k of ['pl','uitv','alm']) for (const z of ['n','t']) if (!S.r[k+z] && f[k+z]) S.r[k+z] = f[k+z]; } catch(e){} }
+
+// ---------- opbouw ----------
+function veld(def, bak){ const [k, lab, type = 'text', opt] = def; let inp;
+  if (type === 'select'){ inp = el('select', {}, el('option', {value:''}, '— kies —')); opt.forEach(o => inp.append(el('option', {value:o}, o))); }
+  else { inp = el('input', {type}); if (opt){ const id = 'dl_' + k; inp.setAttribute('list', id); const dl = el('datalist', {id}); opt.forEach(o => dl.append(el('option', {value:o}))); bak.append(dl); } }
+  inp.value = S.v[k] || ''; inp.oninput = () => { S.v[k] = inp.value; bewaar(); if (k === 'bedrijf') bouwSig(); };
+  bak.append(el('label', {class:'v'}, lab, inp)); }
+function rollen(tab, lijst){ tab.innerHTML = ''; lijst.forEach(([k, lab]) => { const n = el('input', {placeholder:'Naam', 'aria-label':lab + ' naam'}), t = el('input', {placeholder:'Telefoon', type:'tel', 'aria-label':lab + ' telefoon'});
+  n.value = S.r[k+'n'] || ''; t.value = S.r[k+'t'] || ''; n.oninput = () => { S.r[k+'n'] = n.value; bewaar(); bouwSig(); }; t.oninput = () => { S.r[k+'t'] = t.value; bewaar(); };
+  tab.append(el('tr', {}, el('td', {}, lab), el('td', {}, n), el('td', {}, t))); }); }
+function lijst(id, defs, sleutel){ const bak = $('#' + id); bak.innerHTML = '';
+  defs.forEach(([rij, tekst, opt, x]) => {
+    if (!opt){ bak.append(el('div', {class:'kop'}, tekst)); return; }
+    const st = S[sleutel][rij] || {}; const it = el('div', {class:'item' + (st.s === 'NOK' ? ' nok' : '')});
+    const keus = el('div', {class:'keus'});
+    [['OK','O'],['NOK','N'],['NVT','V']].forEach(([s, c]) => { const b = el('button', {'data-s':s, type:'button'}, s); if (!opt.includes(c)) b.disabled = true; if (st.s === s) b.classList.add('aan');
+      b.onclick = () => { const o = S[sleutel][rij] || {}; o.s = o.s === s ? '' : s; S[sleutel][rij] = o; bewaar(); lijst(id, defs, sleutel); }; keus.append(b); });
+    const tk = el('div', {class:'tekst'});
+    if (x === 'eigen'){ const i = el('input', {placeholder:'Extra controlepunt op verzoek van opdrachtgever (leeg = regel vervalt)'}); i.value = S.eigen[rij] || ''; i.oninput = () => { S.eigen[rij] = i.value; bewaar(); }; tk.append(i); }
+    else tk.append(tekst);
+    if (Array.isArray(x)){ const n = x.filter(f => S.foto[f]).length; tk.append(el('div', {class:'fotohint'}, `${n}/${x.length} foto${x.length > 1 ? "'s" : ''} toegevoegd`)); }
+    it.append(keus, tk);
+    if (st.s === 'NOK'){ const e = el('select', {'aria-label':'Ernst'}, el('option', {value:''}, 'Ernst…')); ['Hoog','Midden','Laag'].forEach(o => e.append(el('option', {value:o}, o))); e.value = st.e || '';
+      const t = el('textarea', {placeholder:'Omschrijving niet-conformiteit'}); t.value = st.t || '';
+      e.onchange = () => { st.e = e.value; bewaar(); }; t.oninput = () => { st.t = t.value; bewaar(); };
+      it.append(el('div', {class:'nc'}, e, t)); }
+    bak.append(it); }); }
+function verklein(file){ return new Promise((ok, fout) => { const img = new Image(); img.onload = () => { const m = 1600, f = Math.min(1, m / Math.max(img.width, img.height)); const c = document.createElement('canvas'); c.width = Math.round(img.width * f); c.height = Math.round(img.height * f); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(img.src); ok({d:c.toDataURL('image/jpeg', .82), w:c.width, h:c.height}); }; img.onerror = fout; img.src = URL.createObjectURL(file); }); }
+function bouwFotos(){ const bak = $('#fotos'); bak.innerHTML = '';
+  FOTOS.forEach(([titel, , slots]) => { bak.append(el('h3', {}, titel)); const g = el('div', {class:'fotos'});
+    slots.forEach(([k, lab]) => { const inp = el('input', {type:'file', accept:'image/*'}); const ph = el('div', {class:'ph', role:'button', tabindex:'0', 'aria-label':'Foto ' + lab});
+      if (S.foto[k]){ ph.append(el('img', {src:S.foto[k].d, alt:lab})); const x = el('button', {class:'x', type:'button', title:'Verwijderen'}, '×'); x.onclick = ev => { ev.stopPropagation(); delete S.foto[k]; fotoKlaar(); }; ph.append(x); }
+      else ph.append('+ foto');
+      ph.onclick = () => inp.click(); ph.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') inp.click(); };
+      inp.onchange = async () => { if (!inp.files[0]) return; try { S.foto[k] = await verklein(inp.files[0]); fotoKlaar(); } catch(e){ alert('Deze foto kon niet gelezen worden.'); } };
+      g.append(el('div', {class:'foto'}, ph, inp, el('span', {}, lab))); });
+    bak.append(g); }); }
+function fotoKlaar(){ // foto-punten in 3.2 automatisch op OK zetten zodra alle bijbehorende foto's er zijn
+  I32.forEach(([rij, , , x]) => { if (!Array.isArray(x)) return; const o = S.c32[rij] || {}; if (x.every(f => S.foto[f])){ if (!o.s) o.s = 'OK'; } else if (o.s === 'OK' && !x.some(f => S.foto[f])) o.s = ''; S.c32[rij] = o; });
+  bewaar(); bouwFotos(); lijst('i32', I32, 'c32'); }
+function bouwSig(){ const bak = $('#sig'); bak.innerHTML = '';
+  SIG.forEach(([k, rol, bedrijf]) => { const c = el('canvas', {width:560, height:220}); const ctx = c.getContext('2d'); ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.strokeStyle = '#10233f';
+    if (S.sig[k]){ const im = new Image(); im.onload = () => ctx.drawImage(im, 0, 0, c.width, c.height); im.src = S.sig[k]; }
+    let teken = false, gezet = !!S.sig[k]; const pos = e => { const r = c.getBoundingClientRect(); return [(e.clientX - r.left) * c.width / r.width, (e.clientY - r.top) * c.height / r.height]; };
+    c.onpointerdown = e => { teken = true; c.setPointerCapture(e.pointerId); ctx.beginPath(); ctx.moveTo(...pos(e)); };
+    c.onpointermove = e => { if (!teken) return; ctx.lineTo(...pos(e)); ctx.stroke(); gezet = true; };
+    c.onpointerup = () => { if (!teken) return; teken = false; if (gezet){ S.sig[k] = c.toDataURL('image/png'); bewaar(); } };
+    const wis = el('button', {class:'k', type:'button'}, 'Wissen'); wis.onclick = () => { ctx.clearRect(0, 0, c.width, c.height); delete S.sig[k]; gezet = false; bewaar(); };
+    const naam = S.r[k+'n'] || '—', bed = bedrijf || S.v.bedrijf || '';
+    bak.append(el('div', {class:'s'}, el('span', {class:'rol'}, rol), el('span', {}, naam + (bed ? ' · ' + bed : '')), c, el('div', {}, wis))); }); }
+function stat(){ const tel = (defs, k) => { let open = 0, nok = 0, leegNC = 0; defs.forEach(([r, , o, x]) => { if (!o || (x === 'eigen' && !S.eigen[r])) return; const s = (S[k][r] || {}).s; if (!s) open++; if (s === 'NOK'){ nok++; if (!S[k][r].e || !S[k][r].t) leegNC++; } }); return [open, nok, leegNC]; };
+  const a = tel(I31, 'c31'), b = tel(I32, 'c32'), f = Object.keys(S.foto).length;
+  $('#stat').innerHTML = `Open: <b>${a[0] + b[0]}</b> · NOK: <b class="${a[1] + b[1] ? 'r' : ''}">${a[1] + b[1]}</b>${a[2] + b[2] ? ` (<b class="r">${a[2] + b[2]}</b> zonder ernst/omschrijving)` : ''} · Foto's: <b>${f}</b>/19`; }
+function alles(){ PROJECT.forEach(d => veld(d, $('#vProject'))); LOCATIE.forEach(d => veld(d, $('#vLocatie'))); }
+function bouw(){ $('#vProject').innerHTML = ''; $('#vLocatie').innerHTML = ''; alles(); rollen($('#tFudura'), ROL_F); rollen($('#tKlant'), ROL_K); lijst('i31', I31, 'c31'); lijst('i32', I32, 'c32'); bouwFotos(); bouwSig(); stat(); }
+
+document.querySelectorAll('[data-alles]').forEach(b => b.onclick = () => { const [defs, k, id] = b.dataset.alles === '31' ? [I31, 'c31', 'i31'] : [I32, 'c32', 'i32'];
+  defs.forEach(([r, , o, x]) => { if (!o || !o.includes('O') || (x === 'eigen' && !S.eigen[r])) return; const st = S[k][r] || {}; if (!st.s) st.s = 'OK'; S[k][r] = st; }); bewaar(); lijst(id, defs, k); });
+$('#bVast').onclick = () => { const f = {}; for (const k of ['pl','uitv','alm']) for (const z of ['n','t']) f[k+z] = S.r[k+z] || ''; try { localStorage.setItem(VAST, JSON.stringify(f)); $('#bVast').textContent = 'Onthouden ✓'; } catch(e){} };
+$('#bNieuw').onclick = () => { if (!confirmNieuw()) return; S = leeg(); laadVast(); bewaar(); bouw(); };
+function confirmNieuw(){ return window.confirm ? confirm('Nieuw formulier starten? Het huidige formulier wordt gewist (exporteer het eerst als je het wilt bewaren).') : true; }
+function laadVast(){ try { const f = JSON.parse(localStorage.getItem(VAST) || 'null'); if (f) Object.assign(S.r, f); } catch(e){} }
+$('#bExport').onclick = () => download(new Blob([JSON.stringify(S)], {type:'application/json'}), naam('json'));
+$('#bImport').onclick = () => $('#fImport').click();
+$('#fImport').onchange = async e => { const f = e.target.files[0]; if (!f) return; try { S = Object.assign(leeg(), JSON.parse(await f.text())); bewaar(); bouw(); } catch(_){ alert('Dit bestand kon niet gelezen worden.'); } e.target.value = ''; };
+function naam(ext){ const p = (S.v.projnr || 'project').replace(/[^\w.-]+/g, '_'), d = (S.v.datum || '').replace(/-/g, ''); return `SAT_EOS_${p}_${d}.${ext}`; }
+function download(blob, n){ const a = el('a', {href:URL.createObjectURL(blob), download:n}); document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000); }
+
+// ---------- Word-bestand vullen ----------
+const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main', W14 = 'http://schemas.microsoft.com/office/word/2010/wordml', XMLNS = 'http://www.w3.org/XML/1998/namespace';
+const kind = (n, ln, ns = W) => [...n.childNodes].filter(c => c.namespaceURI === ns && c.localName === ln);
+const alle = (n, ln, ns = W) => [...n.getElementsByTagNameNS(ns, ln)];
+const rijen = tbl => kind(tbl, 'tr');
+const cellen = tr => alle(tr, 'tc');
+function ouderSdtCombo(tc){ const sc = tc.parentNode; if (sc && sc.localName === 'sdtContent'){ const sdt = sc.parentNode; return sdt; } return null; }
+function zetTekst(tc, tekst){ if (tekst == null || tekst === '') return; const doc = tc.ownerDocument;
+  const sdt = ouderSdtCombo(tc); if (sdt){ const pr = kind(sdt, 'sdtPr')[0]; kind(pr, 'showingPlcHdr').forEach(x => x.remove()); }
+  alle(tc, 'sdt').forEach(s => { const pr = kind(s, 'sdtPr')[0]; if (pr && kind(pr, 'comboBox').length) kind(pr, 'showingPlcHdr').forEach(x => x.remove()); });
+  const ps = alle(tc, 'p'); const p = ps[0]; ps.slice(1).forEach(x => x.remove());
+  let rPr = null; const eersteR = alle(p, 'r')[0]; if (eersteR){ const rp = kind(eersteR, 'rPr')[0]; if (rp){ rPr = rp.cloneNode(true); kind(rPr, 'rStyle').forEach(x => x.remove()); } }
+  [...p.childNodes].forEach(c => { if (c.localName !== 'pPr') c.remove(); });
+  const r = doc.createElementNS(W, 'w:r'); if (rPr) r.append(rPr);
+  String(tekst).split('\n').forEach((regel, i) => { if (i){ r.append(doc.createElementNS(W, 'w:br')); } const t = doc.createElementNS(W, 'w:t'); t.setAttributeNS(XMLNS, 'xml:space', 'preserve'); t.textContent = regel; r.append(t); });
+  p.append(r); }
+function vink(tc){ const cb = alle(tc, 'checkbox', W14)[0]; if (!cb) return false; const ch = alle(cb, 'checked', W14)[0]; ch.setAttributeNS(W14, 'w14:val', '1');
+  let s = cb; while (s && s.localName !== 'sdt') s = s.parentNode; const t = alle(kind(s, 'sdtContent')[0], 't')[0]; if (t) t.textContent = '☒'; return true; }
+const EMU = 360000; // per cm
+let mediaNr = 0;
+function plaatje(doc, zip, rels, dataUrl, breedCm, hoogCm){ mediaNr++; const id = 'rIdSat' + mediaNr, ext = dataUrl.startsWith('data:image/png') ? 'png' : 'jpeg', f = `media/sat${mediaNr}.${ext}`;
+  zip.file('word/' + f, dataUrl.split(',')[1], {base64:true});
+  const rel = rels.createElementNS('http://schemas.openxmlformats.org/package/2006/relationships', 'Relationship'); rel.setAttribute('Id', id); rel.setAttribute('Type', 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/image'); rel.setAttribute('Target', f); rels.documentElement.append(rel);
+  const cx = Math.round(breedCm * EMU), cy = Math.round(hoogCm * EMU), n = 9000 + mediaNr;
+  const xml = `<w:r xmlns:w="${W}" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="${n}" name="SAT ${mediaNr}"/><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="${n}" name="sat${mediaNr}.${ext}"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${id}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>`;
+  return doc.importNode(new DOMParser().parseFromString(xml, 'application/xml').documentElement, true); }
+function zetPlaatje(tc, r){ const p = alle(tc, 'p')[0]; [...p.childNodes].forEach(c => { if (c.localName !== 'pPr') c.remove(); }); p.append(r); }
+
+async function maakWord(){
+  const knop = $('#bWord'); knop.disabled = true; knop.textContent = 'Bezig…';
+  try {
+    const res = await fetch('EOS_SAT_formulier_v4.0.docx'); if (!res.ok) throw new Error('Sjabloon niet gevonden');
+    const zip = await JSZip.loadAsync(await res.arrayBuffer());
+    const doc = new DOMParser().parseFromString(await zip.file('word/document.xml').async('string'), 'application/xml');
+    const rels = new DOMParser().parseFromString(await zip.file('word/_rels/document.xml.rels').async('string'), 'application/xml');
+    mediaNr = 0;
+    const T = alle(doc, 'tbl');
+    const datum = S.v.datum ? S.v.datum.split('-').reverse().join('-') : '';
+    // 1 Gegevens
+    const g = [datum, S.v.projnr, S.v.fabrikant, S.v.type, S.v.serie, S.v.eigendom, S.v.iv];
+    rijen(T[1]).forEach((tr, i) => zetTekst(cellen(tr)[1], g[i]));
+    const l = [S.v.bedrijf, S.v.straat, S.v.toev, S.v.pcplaats]; rijen(T[2]).forEach((tr, i) => zetTekst(cellen(tr)[1], l[i]));
+    // 2 Rollen
+    [[T[3], ROL_F], [T[4], ROL_K]].forEach(([t, lst]) => lst.forEach(([k], i) => { const c = cellen(rijen(t)[i + 1]); zetTekst(c[1], S.r[k+'n']); zetTekst(c[2], S.r[k+'t']); }));
+    // 3 Checklijsten + 4 NC
+    const ncs = {c31:[], c32:[]};
+    [[T[5], I31, 'c31'], [T[6], I32, 'c32']].forEach(([t, defs, k]) => { const rr = rijen(t);
+      const weg = [];
+      defs.forEach(([rij, tekst, opt, x]) => { if (!opt) return; const tr = rr[rij], c = cellen(tr);
+        if (x === 'eigen'){ if (!S.eigen[rij]){ weg.push(tr); return; } zetTekst(c[3], S.eigen[rij]); tekst = S.eigen[rij]; }
+        const st = S[k][rij] || {}; const idx = {OK:0, NOK:1, NVT:2}[st.s]; if (idx != null) vink(c[idx]);
+        if (st.s === 'NOK') ncs[k].push({e:st.e || '', t:(tekst ? tekst.replace(/[;.]$/, '') + ': ' : '') + (st.t || '')}); });
+      weg.forEach(tr => tr.remove()); });
+    [[T[7], ncs.c31, '3.1'], [T[8], ncs.c32, '3.2']].forEach(([t, lst, pre]) => { let rr = rijen(t);
+      while (rr.length - 1 < lst.length){ const n = rr[rr.length - 1].cloneNode(true); t.append(n); rr = rijen(t); const c = cellen(n); const p = alle(c[0], 'p')[0]; [...p.childNodes].forEach(x => { if (x.localName !== 'pPr') x.remove(); }); zetTekst(c[0], pre + '.' + (rr.length - 1)); }
+      lst.forEach((nc, i) => { const c = cellen(rr[i + 1]); zetTekst(c[1], nc.e || 'Kies een item.'); zetTekst(c[2], nc.t); }); });
+    // 5 Ondertekening
+    rijen(T[9]).slice(1).forEach((tr, i) => { const [k, , bedrijf] = SIG[i], c = cellen(tr); zetTekst(c[0], S.r[k+'n']); if (!bedrijf) zetTekst(c[2], S.v.bedrijf);
+      if (S.sig[k]) zetPlaatje(c[3], plaatje(doc, zip, rels, S.sig[k], 3.6, 1.42)); });
+    // 6 Foto's
+    FOTOS.forEach(([, ti, slots]) => { const rr = rijen(T[ti]); slots.forEach(([k], i) => { const f = S.foto[k]; if (!f) return; const b = 7.2, h = Math.min(b * f.h / f.w, 9.5), bb = h * f.w / f.h; zetPlaatje(cellen(rr[i + 1])[0], plaatje(doc, zip, rels, f.d, bb, h)); }); });
+    zip.file('word/document.xml', new XMLSerializer().serializeToString(doc));
+    zip.file('word/_rels/document.xml.rels', new XMLSerializer().serializeToString(rels));
+    const blob = await zip.generateAsync({type:'blob', mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document', compression:'DEFLATE'});
+    download(blob, naam('docx'));
+  } catch(e){ console.error(e); alert('Het Word-bestand kon niet gemaakt worden: ' + e.message); }
+  knop.disabled = false; knop.textContent = 'Download Word (.docx)';
+}
+$('#bWord').onclick = maakWord;
+window.__SAT = {get S(){ return S; }, set S(x){ S = x; }, maakWord, bouw};
+laad(); bouw();
+</script>
+</body>
+</html>
