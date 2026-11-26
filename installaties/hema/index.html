@@ -113,7 +113,7 @@
       <li><b>EV</b>: Sungrow IDC480E power unit 480 kW (900 × 2200 × 1380 mm, 1100 kg) + 2 × IDC480E luchtgekoelde dispenser 240 kW (430 × 1800 × 450 mm), elk 2 × CCS2 7 m</li>
       <li><b>ZVK</b> (klant, Kromwijk, bestaand): ZVK01 PV (5 × 200 A) en ZVK02 EV + EOS (800 / 630 / 80 / 16 A), gevoed uit 2 × 630 kVA</li>
       <li><b>EMS-veldkast</b>: Pegeo met EMS Groot (model uit de EMS-pagina) naast de ZVK</li>
-      <li>Ligging: Atoomweg 60, Utrecht (Lage Weide) — opstellingsvoorstel na schouw (okt-2026): aangepast naar de schets op Google Maps (21-10): EOS-plein 10,2 × 4,2 m (EOS incl. LS-kast) in de trailervakken naast het terrein, power box los richting erfgrens, dispensers ± 35 m west op eilanden in de trailervakken, vrachtwagen haaks op het hek</li>
+      <li>Ligging: Atoomweg 60, Utrecht (Lage Weide) — opstellingsvoorstel na schouw (okt-2026): aangepast naar de schets op Google Maps (21-10): EOS-plein 10,2 × 4,2 m (EOS incl. LS-kast) in de trailervakken naast het terrein, achterkant batterij 10 m van het pand (26-11), power box los richting erfgrens, dispensers ± 35 m west op eilanden in de trailervakken, vrachtwagen haaks op het hek</li>
     </ul>
   </details>
   <details><summary>Bediening</summary>
@@ -294,7 +294,7 @@ const lp = (E, Nn) => { const [x, z] = rdL(E, Nn); return V(x, 0, z); };
 const wp = (s, n) => V(GA[0], 0, GA[1]).addScaledVector(U, s).addScaledVector(N, n);
 // opstelling volgens Nicks schets op Google Maps (21-10-2026), ingepast op de container, de gevelrichting en de rand van de verharding (PDOK), ± 13,1 px/m:
 // EOS-plein 10,2 × 4,2 m in de trailervakken naast het terrein (s 3,1–13,3, n 6,9–11,1), power box los ervoor richting hek
-const PL0 = wp(5.4, 8.2), PL1 = wp(15.6, 8.2);  // 2 m richting PV geschoven: EOS-zone vrij van de ZVK                              // dia 46: plein tegen het hek aan de trailerzijde (n 6,1–10,3), 2,5 m (plantsoen + buffer) van de erfgrens
+const PL0 = wp(5.4, 10.0), PL1 = wp(15.6, 10.0);  // 26-11: achterkant batterij 10 m van het pand i.p.v. 8 m (Nick); gevel uit BAG op n ≈ −1,13, achterkant EOS = plein − 1,10  // 2 m richting PV geschoven: EOS-zone vrij van de ZVK                              // dia 46: plein tegen het hek aan de trailerzijde (n 6,1–10,3), 2,5 m (plantsoen + buffer) van de erfgrens
 const PLEN = PL0.distanceTo(PL1);
 const opPlein = (s, d) => PL0.clone().addScaledVector(U, s).addScaledVector(N, d);
 const ASSET = {};
@@ -584,7 +584,7 @@ const HEK = new THREE.Group(); scene.add(HEK);
     seg(p, p.clone().addScaledVector(h2, 90), 'spijl'); }
   // afgeschermd technisch terrein (niet toegankelijk voor leken): verzinkt gaas 2 m van de gevel om omvormers, NSA, EMS, EOS, ZVK en power box tot aan het hek langs de weg
   // dubbele poort 2 × 1,5 m voor de AIO-deuren + 2 vluchtdeuren (naar buiten draaiend, panieksluiting, groen bord)
-  { const s0 = 0.95, n1 = 10.3,                                        // hek rokershokzijde op Nicks lijn (± 1,15 m verder dan eerst)
+  { const s0 = 0.95, n1 = 12.3,                                        // hek rokershokzijde op Nicks lijn (± 1,15 m verder dan eerst)
                                             // kopse kant = bestaand hek aan de kant van het rokershok blijft staan
     sE = fs(n1), gm0 = 9.19 - 1.5, gm1 = 9.19 + 1.5, vd = 11.95;                                    // vluchtdeur 2 direct naast de poort gaas2 = true;
     const vdG = {d: null, g: null, n: 0}; vdG.g = seg(wp(s0, 0.6), wp(s0, 8.75), 'gaas'); seg(wp(s0, 9.95), wp(s0, n1), 'gaas');   // 1e stuk wordt na de BAG op de echte gevel gezet (zie gevelDeur)
@@ -621,7 +621,7 @@ const HEK = new THREE.Group(); scene.add(HEK);
     // brandweer-opstelstrook langs het hek tussen het technische terrein en de poort: vrij houden (gele arcering)
     { const bw = ctex(512, 128, (c, W, Hh) => { c.clearRect(0, 0, W, Hh); c.strokeStyle = 'rgba(240,200,0,0.85)'; c.lineWidth = 6; c.strokeRect(3, 3, W - 6, Hh - 6); c.lineWidth = 5; for(let x = -Hh; x < W; x += 34){ c.beginPath(); c.moveTo(x, Hh); c.lineTo(x + Hh, 0); c.stroke(); }
         c.fillStyle = 'rgba(240,200,0,0.95)'; c.fillRect(W/2 - 150, Hh/2 - 26, 300, 52); c.fillStyle = '#222'; c.font = 'bold 34px Arial'; c.textAlign = 'center'; c.fillText('BRANDWEER VRIJ', W/2, Hh/2 + 12); });
-      const na = 10.6, nb = 28.8, q = [[fs(na) - 4.6, na], [fs(na) - 0.3, na], [fs(nb) - 0.3, nb], [fs(nb) - 4.6, nb]].map(([a, b]) => wp(a, b)), qg = new THREE.BufferGeometry();
+      const na = 12.6, nb = 28.8, q = [[fs(na) - 4.6, na], [fs(na) - 0.3, na], [fs(nb) - 0.3, nb], [fs(nb) - 4.6, nb]].map(([a, b]) => wp(a, b)), qg = new THREE.BufferGeometry();
       qg.setAttribute('position', new THREE.Float32BufferAttribute([q[0], q[1], q[2], q[0], q[2], q[3]].flatMap(p => [p.x, 0.045, p.z]), 3));
       qg.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0], 2));
       const bm = new THREE.Mesh(qg, new THREE.MeshBasicMaterial({map: bw, transparent: true, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -6})); bm.userData.info = '<b>Brandweer-opstelstrook</b> — vrij houden (± 4,3 m breed langs het hek, van het technische terrein tot de poort)'; KLIK.push(bm); HEK.add(bm); dxP(DXS, q, 'BRANDWEER', true); dxT(DXS, q[0].clone().lerp(q[2], 0.5), 'BRANDWEERSTROOK VRIJ', 0.3, 'TEKST'); }
@@ -651,7 +651,7 @@ function bootTrailers(img, bb){
     if(s > fsH(n) - 0.5) return false;                                                         // buiten het hek (weg / parkeerplaats)
     if(q.clone().sub(Cc).dot(oB) > -0.8) return false;                                          // voorbij het hek langs het fietspad
     if(s > -0.5 && n < 19) return false;                                                        // technisch terrein + rij vakken ernaast vrij (Nick)
-    if(n > 9.5 && n < 30 && s > fsH(n) - 4.8) return false;                                    // brandweerstrook langs het hek (tussen terrein en poort)                                                       // technisch terrein (EOS, omvormers, NSA, ZVK, power unit)
+    if(n > 11.5 && n < 30 && s > fsH(n) - 4.8) return false;                                    // brandweerstrook langs het hek (tussen terrein en poort)                                                       // technisch terrein (EOS, omvormers, NSA, ZVK, power unit)
     if(n > 28 && n < 39 && s > 7.5) return false;                                               // NP-vlak voor de poort
     if(n > 38 && n < 62 && s > -20) return false;                                             // laadvakken + aanrijroute naar de dispensers
     if(BAGR.some(r => inPoly(X, Y, r))) return false;                                           // gebouwen
@@ -772,7 +772,7 @@ function bouwMaat(){
     for(const k of ['d1', 'd2']) if(ASSET[k]){ const b = omhul(ASSET[k], 0.2); box4(b, 'DISPENSER'); dxT(DXM, wp(b.s1 + 0.3, (b.n0 + b.n1)/2), 'dispenser ' + k[1], 0.3, 'TEKST'); }
     dxP(DXM, [PL0.clone().addScaledVector(N, -2.1), PL1.clone().addScaledVector(N, -2.1), PL1.clone().addScaledVector(N, 2.1), PL0.clone().addScaledVector(N, 2.1)], 'EOS-PLEIN', true);
     dxL(DXM, wp(-60, WN), wp(30, WN), 'GEVEL'); }
-  const hS0 = 0.95, hN1 = 10.3, hSE = n => 18.35 - 0.025*n, gevel = WN;
+  const hS0 = 0.95, hN1 = 12.3, hSE = n => 18.35 - 0.025*n, gevel = WN;
   const C = [], ok = (t, v) => C.push((v ? '✅ ' : '❌ ') + t), mm = d => Math.round(d*1000) + ' mm';
   const over = (a, b) => Math.min(a.s1, b.s1) - Math.max(a.s0, b.s0) > 0.02 && Math.min(a.n1, b.n1) - Math.max(a.n0, b.n0) > 0.02;
   const BOD = {EOS: eosB, 'DC-unit': evB, PV: pvB, NSA: nsaB, ZVK: zvkB}, botst = (z, nietVan) => Object.entries(BOD).filter(([k, b]) => !nietVan.includes(k) && over(z, b)).map(([k]) => k);
