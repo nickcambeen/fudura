@@ -44,6 +44,11 @@ table.rol td:first-child{font-size:14px;width:34%}
 .keus button.aan[data-s="OK"]{background:var(--ok);border-color:var(--ok);color:#fff}
 .keus button.aan[data-s="NOK"]{background:var(--nok);border-color:var(--nok);color:#fff}
 .keus button.aan[data-s="NVT"]{background:var(--nvt);border-color:var(--nvt);color:#fff}
+.item.met-aan{grid-template-columns:auto 1fr 210px}
+.item .aan{display:flex;flex-direction:column;gap:1px;align-self:center}
+.item .aan span{font:600 10.5px Barlow,sans-serif;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.item .aan input{padding:5px 8px;font-size:14px;background:transparent;border-color:transparent;border-bottom:1px solid var(--lijn);border-radius:0}
+.item .aan input:hover,.item .aan input:focus{border-color:var(--lijn);border-radius:6px;background:var(--veld)}
 .item .tekst{font-size:15px;padding-top:4px}
 .item .tekst input{margin-top:2px}
 .item .nc{grid-column:1/-1;display:grid;grid-template-columns:130px 1fr;gap:8px}
@@ -66,7 +71,7 @@ button.k.oranje{background:var(--oranje);border-color:var(--oranje);color:#fff}
 .balk .stat{font-size:14px;color:var(--muted)}
 .balk .stat b.r{color:var(--nok)}
 .melding{font-size:14px;padding:8px 10px;border-radius:6px;background:#fdecea;color:#8a1f12;margin-top:8px;display:none}
-@media (max-width:560px){.item{grid-template-columns:1fr}.item .nc{grid-template-columns:1fr}}
+@media (max-width:560px){.item,.item.met-aan{grid-template-columns:1fr}.item .nc{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -230,10 +235,11 @@ function lijst(id, defs, sleutel){ const bak = $('#' + id); bak.innerHTML = '';
     const tk = el('div', {class:'tekst'});
     if (x === 'eigen'){ const i = el('input', {placeholder:'Extra controlepunt op verzoek van opdrachtgever (leeg = regel vervalt)'}); i.value = S.eigen[rij] || ''; i.oninput = () => { S.eigen[rij] = i.value; bewaar(); }; tk.append(i); }
     else tk.append(tekst);
-    if (sleutel === 'c31'){ const a = el('input', {list:'dlPartij', placeholder:'Aanleveren door…', 'aria-label':'Aanleveren door', style:'margin-top:4px;padding:4px 8px;font-size:13.5px;max-width:320px'}); a.value = aan(rij); a.oninput = () => { S.aan = S.aan || {}; S.aan[rij] = a.value; bewaar(); }; tk.append(el('div', {class:'fotohint', style:'display:flex;gap:6px;align-items:center;flex-wrap:wrap'}, 'Aanleveren door:', a)); }
     if (sleutel === 'c31' && rij === 3){ const dd = docsVoor(); dd.forEach(d => tk.append(el('div', {class:'fotohint'}, el('a', {href:d.url, download:'', target:'_blank'}, '⤓ ' + d.naam)))); if (!dd.length) tk.append(el('div', {class:'fotohint'}, 'Vul fabrikant/type in voor een downloadlink van de handleiding.')); }
     if (Array.isArray(x)){ const n = x.filter(f => S.foto[f]).length; tk.append(el('div', {class:'fotohint'}, `${n}/${x.length} foto${x.length > 1 ? "'s" : ''} toegevoegd`)); }
     it.append(keus, tk);
+    if (sleutel === 'c31'){ it.classList.add('met-aan'); const a = el('input', {list:'dlPartij', placeholder:'nog bepalen', 'aria-label':'Aanleveren door'}); a.value = aan(rij); a.oninput = () => { S.aan = S.aan || {}; S.aan[rij] = a.value; bewaar(); };
+      it.append(el('label', {class:'aan'}, el('span', {}, 'Aanleveren door'), a)); }
     if (st.s === 'NOK'){ const e = el('select', {'aria-label':'Ernst'}, el('option', {value:''}, 'Ernst…')); ['Hoog','Midden','Laag'].forEach(o => e.append(el('option', {value:o}, o))); e.value = st.e || '';
       const t = el('textarea', {placeholder:'Omschrijving niet-conformiteit'}); t.value = st.t || '';
       e.onchange = () => { st.e = e.value; bewaar(); }; t.oninput = () => { st.t = t.value; bewaar(); };
@@ -371,7 +377,8 @@ async function maakWord(){
 }
 $('#bWord').onclick = maakWord;
 window.__SAT = {get S(){ return S; }, set S(x){ S = x; }, maakWord, bouw};
-laad(); vulKeus(); if (!lees(SLEUTEL, null)){ const n = $('#sKeus').value; if (n && standaarden()[n]) pasToe(standaarden()[n]); }
+laad(); if (S.aan) for (const [k, x] of Object.entries(S.aan)) if (x === 'Projectleider Fudura' || x === 'Engineering Fudura') delete S.aan[k];
+vulKeus(); if (!lees(SLEUTEL, null)){ const n = $('#sKeus').value; if (n && standaarden()[n]) pasToe(standaarden()[n]); }
 bouw();
 </script>
 </body>
