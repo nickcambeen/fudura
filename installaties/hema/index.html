@@ -294,7 +294,7 @@ const lp = (E, Nn) => { const [x, z] = rdL(E, Nn); return V(x, 0, z); };
 const wp = (s, n) => V(GA[0], 0, GA[1]).addScaledVector(U, s).addScaledVector(N, n);
 // opstelling volgens Nicks schets op Google Maps (21-10-2026), ingepast op de container, de gevelrichting en de rand van de verharding (PDOK), ± 13,1 px/m:
 // EOS-plein 10,2 × 4,2 m in de trailervakken naast het terrein (s 3,1–13,3, n 6,9–11,1), power box los ervoor richting hek
-const PL0 = wp(5.4, 10.0), PL1 = wp(15.6, 10.0);  // 26-11: achterkant batterij 10 m van het pand i.p.v. 8 m (Nick); gevel uit BAG op n ≈ −1,13, achterkant EOS = plein − 1,10  // 2 m richting PV geschoven: EOS-zone vrij van de ZVK                              // dia 46: plein tegen het hek aan de trailerzijde (n 6,1–10,3), 2,5 m (plantsoen + buffer) van de erfgrens
+const PL0 = wp(5.4, 10.024), PL1 = wp(15.6, 10.024);  // 26-11: achterkant batterij 10 m van het pand i.p.v. 8 m (Nick), maatvoering gaf 9976 → +24 mm; gevel uit BAG op n ≈ −1,13, achterkant EOS = plein − 1,10  // 2 m richting PV geschoven: EOS-zone vrij van de ZVK                              // dia 46: plein tegen het hek aan de trailerzijde (n 6,1–10,3), 2,5 m (plantsoen + buffer) van de erfgrens
 const PLEN = PL0.distanceTo(PL1);
 const opPlein = (s, d) => PL0.clone().addScaledVector(U, s).addScaledVector(N, d);
 const ASSET = {};
