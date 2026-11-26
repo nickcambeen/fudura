@@ -196,8 +196,8 @@ const FOTOS = [
   ['LS-verdeler',12,[['ls0','Overzichtsfoto'],['ls1','Instelling vermogensschakelaar'],['ls2','Schakelbare strook'],['ls3','Smeltpatronen strook t.b.v. EOS'],['ls4','PEN/aardrail'],['ls5','Gedraaide en gemarkeerde boutverbindingen']]],
   ['EMS',13,[['ems0','Overzichtsfoto'],['ems1','Overzichtsfoto']]],
   ['Metingen',14,[['met0','Screenshot(s) EMS functioneren'],['met1','Screenshot(s) EMS functioneren']]]];
-const PARTIJEN = ['Projectleider Fudura','Engineering Fudura','Leverancier EOS','Installateur','Aannemer civiel','Fudura datamanagement','Opdrachtgever','Leverancier EOS + Fudura datamanagement'];
-const AAN = {1:'Projectleider Fudura',3:'Leverancier EOS',4:'Leverancier EOS',5:'Engineering Fudura',6:'Aannemer civiel',7:'Installateur',8:'Engineering Fudura',9:'Installateur',10:'Engineering Fudura',11:'Engineering Fudura',12:'Engineering Fudura',13:'Engineering Fudura',14:'Leverancier EOS',15:'Fudura datamanagement',16:'Leverancier EOS',18:'Projectleider Fudura',19:'Installateur',20:'Installateur',21:'Installateur',22:'Installateur',23:'Installateur',24:'Leverancier EOS',25:'Leverancier EOS + Fudura datamanagement'};
+const PARTIJEN = ['Projectleider','Engineer','EMS-engineer','Uitvoerder SAT','Leverancier EOS','Installateur','Fudura datamanagement','Opdrachtgever'];
+const AAN = {1:'Projectleider',3:'Leverancier EOS',4:'Uitvoerder SAT',5:'Engineer',6:'Projectleider',7:'Installateur',8:'Engineer',9:'Installateur',10:'Engineer',11:'Engineer',12:'Engineer',13:'Engineer',14:'',15:'EMS-engineer',16:'',18:'Projectleider',19:'Installateur',20:'Installateur',21:'Installateur',22:'Installateur',23:'Installateur',24:'Leverancier EOS',25:'Leverancier EOS + Fudura datamanagement'};
 const aan = rij => (S.aan && S.aan[rij] != null) ? S.aan[rij] : (AAN[rij] || '');
 const DOCS = [{wanneer: v => /delta|delterra/i.test((v.fabrikant || '') + ' ' + (v.type || '')), naam:'Installatiehandleiding DELTerra C (NL)', url:'docs/DELTerra_C_Installatiehandleiding_NL.pdf'}];
 const docsVoor = () => DOCS.filter(d => d.wanneer(S.v));
