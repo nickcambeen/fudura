@@ -76,6 +76,17 @@ button.k.oranje{background:var(--oranje);border-color:var(--oranje);color:#fff}
   <p class="sub">Vul het formulier hier in. Je krijgt het Fudura-formulier v4.0 als Word-bestand terug, ingevuld: vinkjes, niet-conformiteiten, foto's en handtekeningen. Wat je invult blijft bewaard in deze browser.</p>
 
   <section class="blok">
+    <h2>Standaard</h2>
+    <p class="uitleg">Sla vaste invulling op als standaard, bijvoorbeeld per type installatie. Dan neemt een nieuw formulier fabrikant, type, eigendom, IV, Fudura-rollen, OK/NOK/NVT-keuzes en extra controlepunten over. Projectnummer, serienummer, locatie, klant, foto's, handtekeningen en NC-teksten worden niet opgeslagen.</p>
+    <div class="knoppen" style="align-items:center">
+      <select id="sKeus" style="width:auto;min-width:220px" aria-label="Standaard kiezen"></select>
+      <button class="k vol" id="bStdLaad">Toepassen</button>
+      <button class="k" id="bStdOpslaan">Huidig formulier opslaan als standaard…</button>
+      <button class="k" id="bStdWeg">Verwijderen</button>
+    </div>
+  </section>
+
+  <section class="blok">
     <h2>1 · Gegevens</h2>
     <h3>Project</h3>
     <div class="velden" id="vProject"></div>
@@ -89,7 +100,7 @@ button.k.oranje{background:var(--oranje);border-color:var(--oranje);color:#fff}
     <table class="rol" id="tFudura"></table>
     <h3>Opdrachtgever / eindgebruiker</h3>
     <table class="rol" id="tKlant"></table>
-    <div class="knoppen"><button class="k" id="bVast" title="Onthoud de Fudura-rollen voor het volgende formulier">Fudura-rollen onthouden</button></div>
+    <div class="knoppen"></div>
   </section>
 
   <section class="blok">
@@ -136,7 +147,7 @@ button.k.oranje{background:var(--oranje);border-color:var(--oranje);color:#fff}
 
 <script>
 'use strict';
-const SLEUTEL = 'fudura-sat-v4', VAST = 'fudura-sat-vast';
+const SLEUTEL = 'fudura-sat-v4', VAST = 'fudura-sat-vast', STD = 'fudura-sat-standaarden', STD_LAATST = 'fudura-sat-std-laatst';
 const PROJECT = [
   ['datum','Datum SAT','date'],['projnr','Projectnummer'],['fabrikant','Fabrikant EOS','text',['Delta','iwell','Sungrow','REPT']],
   ['type','Type EOS','text',['DELTerra C AIO 125 kW / 261 kWh']],['serie','Serienummer EOS'],
@@ -249,13 +260,25 @@ function bouw(){ $('#vProject').innerHTML = ''; $('#vLocatie').innerHTML = ''; a
 
 document.querySelectorAll('[data-alles]').forEach(b => b.onclick = () => { const [defs, k, id] = b.dataset.alles === '31' ? [I31, 'c31', 'i31'] : [I32, 'c32', 'i32'];
   defs.forEach(([r, , o, x]) => { if (!o || !o.includes('O') || (x === 'eigen' && !S.eigen[r])) return; const st = S[k][r] || {}; if (!st.s) st.s = 'OK'; S[k][r] = st; }); bewaar(); lijst(id, defs, k); });
-$('#bVast').onclick = () => { const f = {}; for (const k of ['pl','uitv','alm']) for (const z of ['n','t']) f[k+z] = S.r[k+z] || ''; try { localStorage.setItem(VAST, JSON.stringify(f)); $('#bVast').textContent = 'Onthouden ✓'; } catch(e){} };
-$('#bNieuw').onclick = () => { if (!confirmNieuw()) return; S = leeg(); laadVast(); bewaar(); bouw(); };
+if(0)$('#bVast').onclick = () => { const f = {}; for (const k of ['pl','uitv','alm']) for (const z of ['n','t']) f[k+z] = S.r[k+z] || ''; try { localStorage.setItem(VAST, JSON.stringify(f)); $('#bVast').textContent = 'Onthouden ✓'; } catch(e){} };
+$('#bNieuw').onclick = () => { if (!confirmNieuw()) return; S = leeg(); laadVast(); const n = $('#sKeus').value; if (n && standaarden()[n]) pasToe(standaarden()[n]); bewaar(); bouw(); };
 function confirmNieuw(){ return window.confirm ? confirm('Nieuw formulier starten? Het huidige formulier wordt gewist (exporteer het eerst als je het wilt bewaren).') : true; }
 function laadVast(){ try { const f = JSON.parse(localStorage.getItem(VAST) || 'null'); if (f) Object.assign(S.r, f); } catch(e){} }
-$('#bExport').onclick = () => download(new Blob([JSON.stringify(S)], {type:'application/json'}), naam('json'));
+// ---------- standaarden ----------
+const INGEBOUWD = {'Delta AIO + FUSE kast': {v:{fabrikant:'Delta', type:'DELTerra C AIO 125 kW / 261 kWh', iv:'Fudura'}, c31:{}, c32:{}, eigen:{}, r:{}}};
+function lees(k, d){ try { return JSON.parse(localStorage.getItem(k) || 'null') || d; } catch(e){ return d; } }
+function standaarden(){ return Object.assign({}, INGEBOUWD, lees(STD, {})); }
+function vulKeus(sel){ const k = $('#sKeus'), lst = standaarden(); k.innerHTML = ''; k.append(el('option', {value:''}, '— geen standaard —')); Object.keys(lst).sort().forEach(n => k.append(el('option', {value:n}, n + (INGEBOUWD[n] && !lees(STD, {})[n] ? ' (ingebouwd)' : '')))); k.value = sel ?? (lees(STD_LAATST, '') || ''); }
+function maakStandaard(){ const v = {}; ['fabrikant','type','eigendom','iv'].forEach(k => { if (S.v[k]) v[k] = S.v[k]; }); const r = {}; ['pl','uitv','alm'].forEach(k => ['n','t'].forEach(z => { if (S.r[k+z]) r[k+z] = S.r[k+z]; }));
+  const st = k => Object.fromEntries(Object.entries(S[k]).filter(([, o]) => o && o.s).map(([n, o]) => [n, {s:o.s === 'NOK' ? '' : o.s}]).filter(([, o]) => o.s));
+  return {v, r, c31:st('c31'), c32:st('c32'), eigen:{...S.eigen}}; }
+function pasToe(std){ Object.assign(S.v, std.v || {}); Object.assign(S.r, std.r || {}); ['c31','c32'].forEach(k => Object.entries(std[k] || {}).forEach(([n, o]) => { const cur = S[k][n] || {}; if (!cur.s) S[k][n] = {...o}; })); Object.entries(std.eigen || {}).forEach(([n, t]) => { if (!S.eigen[n]) S.eigen[n] = t; }); }
+$('#bStdLaad').onclick = () => { const n = $('#sKeus').value; if (!n) return; pasToe(standaarden()[n]); try { localStorage.setItem(STD_LAATST, JSON.stringify(n)); } catch(e){} bewaar(); bouw(); };
+$('#bStdOpslaan').onclick = () => { const n = (prompt('Naam van de standaard (bijv. "Delta AIO + FUSE kast")', $('#sKeus').value || '') || '').trim(); if (!n) return; const lst = lees(STD, {}); lst[n] = maakStandaard(); try { localStorage.setItem(STD, JSON.stringify(lst)); localStorage.setItem(STD_LAATST, JSON.stringify(n)); } catch(e){ alert('Opslaan in de browser lukte niet.'); return; } vulKeus(n); };
+$('#bStdWeg').onclick = () => { const n = $('#sKeus').value, lst = lees(STD, {}); if (!lst[n]){ alert(INGEBOUWD[n] ? 'Een ingebouwde standaard kun je niet verwijderen; sla er een eigen versie onder dezelfde naam overheen.' : 'Kies eerst een eigen standaard.'); return; } delete lst[n]; try { localStorage.setItem(STD, JSON.stringify(lst)); } catch(e){} vulKeus(''); };
+$('#bExport').onclick = () => download(new Blob([JSON.stringify({...S, _standaarden:lees(STD, {})})], {type:'application/json'}), naam('json'));
 $('#bImport').onclick = () => $('#fImport').click();
-$('#fImport').onchange = async e => { const f = e.target.files[0]; if (!f) return; try { S = Object.assign(leeg(), JSON.parse(await f.text())); bewaar(); bouw(); } catch(_){ alert('Dit bestand kon niet gelezen worden.'); } e.target.value = ''; };
+$('#fImport').onchange = async e => { const f = e.target.files[0]; if (!f) return; try { const x = JSON.parse(await f.text()); if (x._standaarden){ const lst = Object.assign(lees(STD, {}), x._standaarden); try { localStorage.setItem(STD, JSON.stringify(lst)); } catch(_){} delete x._standaarden; } S = Object.assign(leeg(), x); bewaar(); bouw(); vulKeus(); } catch(_){ alert('Dit bestand kon niet gelezen worden.'); } e.target.value = ''; };
 function naam(ext){ const p = (S.v.projnr || 'project').replace(/[^\w.-]+/g, '_'), d = (S.v.datum || '').replace(/-/g, ''); return `SAT_EOS_${p}_${d}.${ext}`; }
 function download(blob, n){ const a = el('a', {href:URL.createObjectURL(blob), download:n}); document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000); }
 
@@ -329,7 +352,8 @@ async function maakWord(){
 }
 $('#bWord').onclick = maakWord;
 window.__SAT = {get S(){ return S; }, set S(x){ S = x; }, maakWord, bouw};
-laad(); bouw();
+laad(); vulKeus(); if (!lees(SLEUTEL, null)){ const n = $('#sKeus').value; if (n && standaarden()[n]) pasToe(standaarden()[n]); }
+bouw();
 </script>
 </body>
 </html>
