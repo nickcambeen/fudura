@@ -95,7 +95,6 @@ button.k.oranje{background:var(--oranje);border-color:var(--oranje);color:#fff}
     <h2>1 · Gegevens</h2>
     <h3>Project</h3>
     <div class="velden" id="vProject"></div>
-    <div id="docs" class="fotohint" style="margin-top:8px"></div>
     <h3>Locatie</h3>
     <div class="velden" id="vLocatie"></div>
   </section>
@@ -220,7 +219,7 @@ function laad(){ try { const x = JSON.parse(localStorage.getItem(SLEUTEL) || 'nu
 function veld(def, bak){ const [k, lab, type = 'text', opt] = def; let inp;
   if (type === 'select'){ inp = el('select', {}, el('option', {value:''}, '— kies —')); opt.forEach(o => inp.append(el('option', {value:o}, o))); }
   else { inp = el('input', {type}); if (opt){ const id = 'dl_' + k; inp.setAttribute('list', id); const dl = el('datalist', {id}); opt.forEach(o => dl.append(el('option', {value:o}))); bak.append(dl); } }
-  inp.value = S.v[k] || ''; inp.oninput = () => { S.v[k] = inp.value; bewaar(); if (k === 'bedrijf') bouwSig(); if (k === 'fabrikant' || k === 'type'){ lijst('i31', I31, 'c31'); toonDocs(); } };
+  inp.value = S.v[k] || ''; inp.oninput = () => { S.v[k] = inp.value; bewaar(); if (k === 'bedrijf') bouwSig(); if (k === 'fabrikant' || k === 'type'){ toonDocs(); lijst('i31', I31, 'c31'); } };
   bak.append(el('label', {class:'v'}, lab, inp)); }
 function rollen(tab, lijst){ tab.innerHTML = ''; lijst.forEach(([k, lab]) => { const n = el('input', {placeholder:'Naam', 'aria-label':lab + ' naam'}), t = el('input', {placeholder:'Telefoon', type:'tel', 'aria-label':lab + ' telefoon'});
   n.value = S.r[k+'n'] || ''; t.value = S.r[k+'t'] || ''; n.oninput = () => { S.r[k+'n'] = n.value; bewaar(); bouwSig(); }; t.oninput = () => { S.r[k+'t'] = t.value; bewaar(); };
@@ -272,7 +271,7 @@ function stat(){ const tel = (defs, k) => { let open = 0, nok = 0, leegNC = 0; d
   const a = tel(I31, 'c31'), b = tel(I32, 'c32'), f = Object.keys(S.foto).length;
   $('#stat').innerHTML = `Open: <b>${a[0] + b[0]}</b> · NOK: <b class="${a[1] + b[1] ? 'r' : ''}">${a[1] + b[1]}</b>${a[2] + b[2] ? ` (<b class="r">${a[2] + b[2]}</b> zonder ernst/omschrijving)` : ''} · Foto's: <b>${f}</b>/19`; }
 function vulPartijen(){ const d = $('#dlPartij'); if (d && !d.children.length) PARTIJEN.forEach(p => d.append(el('option', {value:p}))); }
-function toonDocs(){ const b = $('#docs'); if (!b) return; b.innerHTML = ''; docsVoor().forEach(d => b.append(el('a', {href:d.url, download:'', target:'_blank', style:'font-weight:600;font-size:14px'}, '⤓ ' + d.naam))); }
+function toonDocs(){ if (docsVoor().length){ const o = S.c31[3] || {}; if (!o.s){ o.s = 'OK'; S.c31[3] = o; bewaar(); } } } // handleiding zit in de tool → punt 3.1 'Handleiding' standaard OK
 function alles(){ PROJECT.forEach(d => veld(d, $('#vProject'))); LOCATIE.forEach(d => veld(d, $('#vLocatie'))); }
 function bouw(){ $('#vProject').innerHTML = ''; $('#vLocatie').innerHTML = ''; alles(); toonDocs(); vulPartijen(); rollen($('#tFudura'), ROL_F); rollen($('#tKlant'), S.zelfde !== false ? ROL_K.filter(([k]) => k !== 'eg') : ROL_K); $('#cZelfde').checked = S.zelfde !== false; lijst('i31', I31, 'c31'); lijst('i32', I32, 'c32'); bouwFotos(); bouwSig(); stat(); }
 
